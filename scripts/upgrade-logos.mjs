@@ -25,6 +25,8 @@ const OVERRIDES = {
   "louisiana-monroe": "2433",
   "sam-houston": "2534",
   charlotte: "2429",
+  troy: "2653",
+  "appalachian-state": "2026",
 };
 
 const API = "https://site.api.espn.com/apis/site/v2/sports/football";
