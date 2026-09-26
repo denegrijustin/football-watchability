@@ -109,3 +109,22 @@ test("narrow phone has no page overflow", async ({ page }) => {
     ),
   ).toBe(true);
 });
+
+test("day and watchability filters narrow the board", async ({ page }) => {
+  await page.goto("/");
+  const nfl = slate.games.filter((g: any) => g.league === "NFL");
+  const sunday = nfl.filter((g: any) => g.meta.startsWith("Sun ")).length;
+  await page.getByRole("button", { name: "Sunday", exact: true }).click();
+  await expect(page.locator(".game-card")).toHaveCount(sunday);
+  await page.getByRole("button", { name: "All days", exact: true }).click();
+  await page.getByRole("button", { name: "Must watch", exact: true }).click();
+  await expect(page.locator(".game-card")).toHaveCount(
+    nfl.filter((g: any) => g.score >= 90).length,
+  );
+  await page.getByRole("button", { name: "Reset filters" }).click();
+  await expect(page.locator(".game-card")).toHaveCount(nfl.length);
+  const scores = await page
+    .locator(".score strong")
+    .evaluateAll((els) => els.map((e) => Number(e.textContent)));
+  expect(scores).toEqual([...scores].sort((a, b) => b - a));
+});
