@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 const read = (name) =>
   JSON.parse(
     readFileSync(new URL(`../src/data/${name}.json`, import.meta.url), "utf8"),
@@ -55,11 +55,18 @@ for (const g of slate.games) {
   for (const t of g.teams) {
     text(t.name, "team.name");
     text(t.record, "team.record");
-    assert.match(
-      logos[t.logoId],
-      /^data:image\/(png|jpeg|webp|gif|svg\+xml);base64,[A-Za-z0-9+/=\s]+$/,
-      `Embedded logo missing for ${t.name}`,
-    );
+    const logo = logos[t.logoId];
+    if (typeof logo === "string" && logo.startsWith("/logos/"))
+      assert.ok(
+        existsSync(new URL(`../public${logo}`, import.meta.url)),
+        `Logo file missing for ${t.name}: public${logo}`,
+      );
+    else
+      assert.match(
+        logo,
+        /^data:image\/(png|jpeg|webp|gif|svg\+xml);base64,[A-Za-z0-9+/=\s]+$/,
+        `Logo missing for ${t.name}`,
+      );
     assert.equal(t.rankings.length, 3);
     t.rankings.forEach((v) => text(v, "ranking"));
     assert.equal(t.playoffOdds.length, 3);
@@ -79,5 +86,5 @@ for (const g of slate.games) {
   text(g.history.source, "history source");
 }
 console.log(
-  `Validated ${slate.games.length} games, ${Object.keys(logos).length} embedded logos and ${conferences.size} filters.`,
+  `Validated ${slate.games.length} games, ${Object.keys(logos).length} logos and ${conferences.size} filters.`,
 );
