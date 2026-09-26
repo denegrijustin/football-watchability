@@ -45,6 +45,13 @@ for (const g of slate.games) {
   assert.ok(g.chips.length > 0);
   g.chips.forEach((v) => text(v, "chip"));
   assert.ok(Array.isArray(g.narrativeChips));
+  for (const key of ["watch", "skip"]) {
+    assert.ok(
+      Array.isArray(g[key]) && g[key].length > 0,
+      `${g.id}: needs at least one "${key}" reason (run node scripts/write-narratives.mjs)`,
+    );
+    g[key].forEach((v) => text(v, `${g.id}.${key}`));
+  }
   for (const key of ["icon", "title", "detail", "impact"])
     text(g.weather[key], `weather.${key}`);
   if (g.league === "CFB")
@@ -88,3 +95,11 @@ for (const g of slate.games) {
 console.log(
   `Validated ${slate.games.length} games, ${Object.keys(logos).length} logos and ${conferences.size} filters.`,
 );
+{
+  const seen = new Map();
+  for (const g of slate.games)
+    for (const line of [g.narrative, ...g.watch, ...g.skip]) {
+      assert.ok(!seen.has(line), `Repeated note in ${g.id} and ${seen.get(line)}: ${line}`);
+      seen.set(line, g.id);
+    }
+}

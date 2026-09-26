@@ -16,7 +16,6 @@ export function GameCard({ game }: { game: Game }) {
   const delta = deltaValue(game.delta);
   const impact = impactLevel(game.weather.impact);
   const [away, home] = game.teams;
-  const take = game.narrative.split(/(?<=[.!?])\s+/)[0].replace(/\.$/, "");
   return (
     <article
       className={`game-card ${game.tier}`}
@@ -116,7 +115,7 @@ export function GameCard({ game }: { game: Game }) {
         </li>
       </ul>
 
-      <p className="take">{take}</p>
+      <p className="take">{game.narrative}</p>
       <Stakes game={game} />
       <GameDetails game={game} />
     </article>

@@ -6,8 +6,23 @@ export function GameDetails({ game }: { game: Game }) {
         <summary>
           Why watch / skip<span aria-hidden="true">+</span>
         </summary>
-        <div className="detail-content">
-          <p>{game.narrative}</p>
+        <div className="detail-content why-content">
+          <div className="why-col watch-col">
+            <h4 className="micro-label">Why watch</h4>
+            <ul>
+              {game.watch.map((line, i) => (
+                <li key={i}>{line}</li>
+              ))}
+            </ul>
+          </div>
+          <div className="why-col skip-col">
+            <h4 className="micro-label">Why skip</h4>
+            <ul>
+              {game.skip.map((line, i) => (
+                <li key={i}>{line}</li>
+              ))}
+            </ul>
+          </div>
           <div className="tag-list">
             {game.narrativeChips.map((chip, i) => (
               <span key={i}>{chip}</span>

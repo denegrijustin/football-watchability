@@ -31,7 +31,11 @@ On this Mac, the bundled Codex Node runtime can be used without installing syste
 
 ## Weekly data updates
 
-Edit **`src/data/slate.json`**, not React components. Set `period`, `snapshotDate`, `broadcastNote`, `provenance`, and replace the `games` array with the new slate. Give each game a unique `id`. Run validation and build, inspect the board, then commit and deploy.
+Edit **`src/data/slate.json`**, not React components. Set `period`, `snapshotDate`, `broadcastNote`, `provenance`, and replace the `games` array with the new slate. Give each game a unique `id`. Then write the watch/skip notes (below). Run validation and build, inspect the board, then commit and deploy.
+
+### Watch / skip notes
+
+Each card's one-line take and its **Why watch / Why skip** lists come from `node scripts/write-narratives.mjs`. The script writes specific reasons from facts already in the slate: spread and total, poll and playoff-odds swings, standings, series history, named players, weather, channel and overlapping kickoffs. Nothing is invented, and phrasing is rotated so cards don't repeat each other. One-line takes are hand-written in `src/data/headlines.json`, keyed by game `id`. Games without an entry get a generated take. After replacing the slate, update or clear `headlines.json`, rerun the script, and check the output. `pnpm validate:data` fails if any game is missing reasons or if any note appears on two cards.
 
 Game fields:
 
@@ -42,7 +46,7 @@ Game fields:
 | `matchup`, `meta`, `chips`, `broadcast` | Team matchup, supplied kickoff/venue/line text, rating tags and TV/streaming availability. Include the timezone in kickoff text. |
 | `weather` | Icon, outlook title, descriptive detail and impact text. |
 | `teams` | Exactly two team objects: `name`, `logoId`, `record`, `rankings`, `playoffOdds`. Both arrays are ordered **now, win, loss**. Odds are numeric percentages (0–100). |
-| `narrative`, `narrativeChips` | Expandable watch/skip rationale and supporting tags. |
+| `narrative`, `watch`, `skip`, `narrativeChips` | One-line take, why-watch and why-skip reasons, and supporting tags (generated; see below). |
 | `history` | Three labeled boxes for all-time series, recent meetings and key players/units; source attribution. Each box has `label`, `value`, `items`. First meetings must be stated explicitly. |
 
 `src/data/logos.json` maps stable team IDs to logo files in `public/logos/` (128px WebP built from ESPN's 500px dark-background logos; sources in `src/data/logo-sources.json`). For a new team, add its `logoId` to the slate and run the **Upgrade logos** GitHub workflow (Actions → Upgrade logos → Run workflow), or `node scripts/upgrade-logos.mjs` on a machine with internet access; add an ESPN team ID to `OVERRIDES` in that script if a name is ambiguous. Data-URI logos are still accepted. No external image host or font is needed at runtime. Images use descriptive surrounding team text with decorative empty alt attributes.
