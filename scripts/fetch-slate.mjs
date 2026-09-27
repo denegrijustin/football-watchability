@@ -47,7 +47,20 @@ const index = { start: START, end: END, season: SEASON, fetchedAt: new Date().to
 
 async function main() {
 for (const [key, { path, extra }] of Object.entries(leagues)) {
-  const board = (await get(`${SITE}/${path}/scoreboard?dates=${START}-${END}${extra}`)) ?? { events: [] };
+  // ESPN rejects date ranges for future weeks, so fetch day by day.
+  const board = { events: [] };
+  const days = [];
+  for (let d = new Date(`${START.slice(0, 4)}-${START.slice(4, 6)}-${START.slice(6)}T12:00:00Z`); ; d.setUTCDate(d.getUTCDate() + 1)) {
+    const ymd = d.toISOString().slice(0, 10).replace(/-/g, "");
+    days.push(ymd);
+    if (ymd >= END) break;
+  }
+  for (const day of days) {
+    const b = await get(`${SITE}/${path}/scoreboard?dates=${day}${extra}`);
+    for (const ev of b?.events ?? []) if (!board.events.some((e) => e.id === ev.id)) board.events.push(ev);
+    if (b && !board.leagues) board.leagues = b.leagues;
+    await sleep(150);
+  }
   save(`${key}-scoreboard.json`, board);
   console.log(`${key}: ${board.events?.length ?? 0} events`);
   for (const ev of board.events ?? []) {
