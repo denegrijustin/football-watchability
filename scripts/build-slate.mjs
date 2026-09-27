@@ -196,7 +196,7 @@ function cfbRanks(me, opp, pWin) {
     return [fmt(r), `▲ ${fmt(Math.max(1, r - up))}`, `▼ ${fmt(r + down)}`];
   }
   let win = null;
-  if (o && o <= 15) win = Math.min(25, o + 7);
+  if (o && o <= 15) win = Math.min(25, Math.max(18, o + 7));
   else if (o) win = 25;
   else if (apVotes.has(me.id) && pWin < 0.6) win = 25;
   return ["AP NR", `▲ ${fmt(win)}`, "▼ AP NR"];
