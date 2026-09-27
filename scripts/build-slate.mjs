@@ -12,7 +12,7 @@
 //   win or loss are rule-of-thumb estimates.
 // - Series history: ESPN results since 2004 (not all-time).
 // - Watchability score: a transparent formula (quality, closeness, stakes,
-//   TV/slot), rescaled across the slate. See scoreGame().
+//   TV/slot), rescaled across the slate.
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 
 const root = new URL("..", import.meta.url);

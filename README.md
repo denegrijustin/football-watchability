@@ -31,7 +31,30 @@ On this Mac, the bundled Codex Node runtime can be used without installing syste
 
 ## Weekly data updates
 
-Edit **`src/data/slate.json`**, not React components. Set `period`, `snapshotDate`, `broadcastNote`, `provenance`, and replace the `games` array with the new slate. Give each game a unique `id`. Then write the watch/skip notes (below). Run validation and build, inspect the board, then commit and deploy.
+The slate is built from ESPN data rather than typed in by hand. ESPN is fetched by GitHub Actions, because it isn't reachable from every environment.
+
+1. **Fetch.** On the `slate-data` branch, set `data-raw/request.json` to the week's dates (`{"start":"20261001","end":"20261005"}`) and push, or run **Actions → Fetch slate data** with those dates. The workflow runs `scripts/fetch-slate.mjs` (schedules, TV, lines, records, standings, AP poll, FPI, matchup predictor, season leaders, ESPN and Open-Meteo weather) and `scripts/fetch-history.mjs` (head-to-head results since 2004), then commits `data-raw/`.
+2. **Build.** `PERIOD="Oct. 1–5, 2026" node scripts/build-slate.mjs` writes `src/data/slate.json` and `src/data/team-ids.json`. Put corrections ESPN hasn't posted yet (a TV network, say) in `src/data/slate-overrides.json`, keyed by ESPN event id.
+3. **Logos.** Pushing a changed `team-ids.json` to `slate-data` runs **Upgrade logos**, which fetches only teams that don't have a logo yet. ESPN ids overlap across leagues, so logos are matched by league plus id.
+4. **Notes.** Write one-line takes in `src/data/headlines.json` (keyed by ESPN event id), then run `node scripts/write-narratives.mjs` (below).
+5. **Check and ship.** `pnpm build`, look at the board, then copy the source changes (not `data-raw/`) to `main`.
+
+How the numbers are made:
+- "Now" playoff odds are ESPN FPI. With-a-win and with-a-loss odds are estimated so that their average, weighted by ESPN's win probability, equals FPI.
+- AP rank is the current poll. The NFL "PR" is the FPI rank. Rank moves after a win or a loss are rule-of-thumb estimates.
+- Watchability blends team strength, projected closeness, playoff stakes, ranked matchups and TV slot, then rescales across the week. See the watchability section of `build-slate.mjs`.
+
+Game fields:
+
+| Field | Contents |
+| --- | --- |
+| `espnId`, `league`, `conferences` | ESPN event id; `NFL` or `CFB`; college conference ids from the top-level list. |
+| `score`, `tier`, `delta` | Watchability 0–100, color tier (`elite`, `vgood`, `good`, `watch`, `bg`), change from the prior rating (`new` for a fresh slate). |
+| `matchup`, `meta`, `chips`, `broadcast` | Matchup, kickoff (ET) · tier · line · venue, rating tags, TV/streaming. |
+| `weather` | Icon, outlook title, detail and impact text. |
+| `teams` | Two teams: `name`, `logoId`, `espnId`, `record`, `rankings`, `playoffOdds` (arrays ordered now, win, loss). |
+| `narrative`, `watch`, `skip`, `narrativeChips` | One-line take, why-watch and why-skip reasons, and supporting tags (generated; see below). |
+| `history` | Series since 2004, recent meetings, key players (season leaders), and source. |
 
 ### Watch / skip notes
 
@@ -55,7 +78,7 @@ Game fields:
 
 ## Data provenance
 
-The migration preserves **87 games (16 NFL, 71 college), 174 logo images, 87 populated history sections and 87 broadcast entries** from the supplied `football_watchability_full_history_tv.html`. Twelve college controls include All FBS and eleven conference filters. The original file and its SHA-256 are retained for auditability. Six original PNGs had corrupt palette chunks (Missouri, Georgia, Clemson, UConn, Charlotte and Tulsa); their matching ESPN logos were embedded as replacements, with source URLs in `src/data/logo-repairs.json`. All other logo data is unchanged. `node scripts/check-migration.mjs` verified the initial migration against the source (it predates the logo upgrade and will now report logo differences) and is intentionally separate from weekly validation. Rerunning the legacy importer restores the corrupt originals; run `node scripts/repair-logos.mjs` afterward to reapply the documented repair (network required). History, player names, schedules, odds and weather were migrated as supplied, not independently verified or refreshed. The original wording may contain inconsistencies. The app labels the board as the **Sept. 24–28, 2026 saved slate** and labels scenario values as projections. There is no live sports feed, automatic refresh or prediction model.
+The migration preserves **87 games (16 NFL, 71 college), 174 logo images, 87 populated history sections and 87 broadcast entries** from the supplied `football_watchability_full_history_tv.html`. Twelve college controls include All FBS and eleven conference filters. The original file and its SHA-256 are retained for auditability. Six original PNGs had corrupt palette chunks (Missouri, Georgia, Clemson, UConn, Charlotte and Tulsa); their matching ESPN logos were embedded as replacements, with source URLs in `src/data/logo-repairs.json`. All other logo data is unchanged. `node scripts/check-migration.mjs` verified the initial migration against the source (it predates the logo upgrade and will now report logo differences) and is intentionally separate from weekly validation. Rerunning the legacy importer restores the corrupt originals; run `node scripts/repair-logos.mjs` afterward to reapply the documented repair (network required). The first slate (Sept. 24–28) was migrated from a supplied file; later slates are built from ESPN data as described above. The original wording may contain inconsistencies. The app labels the board as the **Sept. 24–28, 2026 saved slate** and labels scenario values as projections. There is no live sports feed, automatic refresh or prediction model.
 
 ## Cloudflare Pages
 
