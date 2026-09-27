@@ -5,7 +5,7 @@
 //
 // The output is raw material for scripts/build-slate.mjs; nothing here is
 // shipped to the site.
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
 const START = process.env.START;
 const END = process.env.END;
@@ -14,15 +14,22 @@ const out = new URL("../data-raw/", import.meta.url);
 mkdirSync(new URL("summaries/", out), { recursive: true });
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const errors = [];
 async function get(url, { optional = false } = {}) {
+  let last = "";
   for (let attempt = 0; attempt < 3; attempt++) {
-    const res = await fetch(url, { headers: { "user-agent": "fbwatch-slate-builder" } });
-    if (res.ok) return res.json();
-    if (res.status === 404 && optional) return null;
+    try {
+      const res = await fetch(url, { headers: { "user-agent": "Mozilla/5.0 fbwatch-slate-builder" } });
+      if (res.ok) return await res.json();
+      last = `HTTP ${res.status}`;
+      if (res.status === 404) break;
+    } catch (e) {
+      last = String(e);
+    }
     await sleep(800 * (attempt + 1));
   }
-  if (optional) return null;
-  throw new Error(`GET ${url} failed`);
+  errors.push({ url, error: last, optional });
+  return null;
 }
 const save = (name, data) =>
   writeFileSync(new URL(name, out), JSON.stringify(data, null, 1));
@@ -38,8 +45,9 @@ const leagues = {
 
 const index = { start: START, end: END, season: SEASON, fetchedAt: new Date().toISOString(), events: [] };
 
+async function main() {
 for (const [key, { path, extra }] of Object.entries(leagues)) {
-  const board = await get(`${SITE}/${path}/scoreboard?dates=${START}-${END}${extra}`);
+  const board = (await get(`${SITE}/${path}/scoreboard?dates=${START}-${END}${extra}`)) ?? { events: [] };
   save(`${key}-scoreboard.json`, board);
   console.log(`${key}: ${board.events?.length ?? 0} events`);
   for (const ev of board.events ?? []) {
@@ -65,7 +73,7 @@ save("cfb-teams.json", await get(`${SITE}/college-football/teams?limit=1000`));
 // Weather: Open-Meteo daily forecast for each outdoor venue on game day.
 const seen = new Map();
 for (const key of Object.keys(leagues)) {
-  const board = (await import(new URL(`${key}-scoreboard.json`, out), { with: { type: "json" } })).default;
+  const board = JSON.parse(readFileSync(new URL(`${key}-scoreboard.json`, out), "utf8"));
   for (const ev of board.events ?? []) {
     const comp = ev.competitions?.[0];
     const addr = comp?.venue?.address ?? {};
@@ -92,5 +100,12 @@ for (const [place, geo] of seen) {
   await sleep(80);
 }
 save("weather.json", places);
+}
+try {
+  await main();
+} catch (e) {
+  errors.push({ fatal: String(e?.stack ?? e) });
+}
 save("index.json", index);
-console.log(`Saved ${index.events.length} events, weather for ${Object.keys(places).length} places`);
+save("errors.json", errors);
+console.log(`Saved ${index.events.length} events; ${errors.length} errors`);
