@@ -29,8 +29,16 @@ const ap = rankingsFeed.rankings.find((r) => /AP/.test(r.name));
 const apRank = new Map(ap.ranks.map((r) => [r.team.id, r.current]));
 const apVotes = new Set((ap.others ?? []).map((r) => r.team.id));
 const logoSources = src("logo-sources.json");
-const espnToLogo = new Map(logoSources.logos.map((l) => [l.espnId, l.logoId]));
+// ESPN ids overlap between leagues (Jaguars 30 = USC 30), so key by league.
+const nflNames = new Set(
+  (raw("nfl-teams.json").sports?.[0]?.leagues?.[0]?.teams ?? []).map((t) => t.team.displayName),
+);
+const espnToLogo = new Map(
+  logoSources.logos.map((l) => [`${l.league ?? (nflNames.has(l.team) ? "NFL" : "CFB")}:${l.espnId}`, l.logoId]),
+);
 const oldSlate = src("slate.json");
+// Hand corrections keyed by ESPN event id (e.g. a network ESPN hasn't posted).
+const overrides = existsSync(new URL("src/data/slate-overrides.json", root)) ? src("slate-overrides.json") : {};
 
 // ---------- FPI ----------
 function fpiMap(file) {
@@ -394,7 +402,7 @@ for (const [key, league] of [
       const playoffOdds = splitOdds(P, pWin, league === "NFL" ? 1.7 : 2.4);
       return {
         name,
-        logoId: espnToLogo.get(t.id) ?? slug(name),
+        logoId: espnToLogo.get(`${league}:${t.id}`) ?? slug(name),
         espnId: t.id,
         record,
         rankings: league === "NFL" ? nflRanks(t, opp.team) : cfbRanks(t, opp.team, pWin),
@@ -492,7 +500,7 @@ const games = built
       matchup: g.matchup,
       meta,
       chips: [label, rankView],
-      broadcast: g.broadcast,
+      broadcast: overrides[g.espnId]?.broadcast ?? g.broadcast,
       weather: g.weather,
       teams: g.teams,
       narrative: "",

@@ -128,6 +128,7 @@ for (const [logoId, { name, league }] of teams) {
     logoId,
     team: team.displayName,
     espnId: team.id,
+    league,
     source: url,
     bytes: out.length,
     retrievedAt: new Date().toISOString().slice(0, 10),

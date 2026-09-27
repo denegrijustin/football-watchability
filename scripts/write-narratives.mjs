@@ -771,7 +771,7 @@ function signals(f) {
     add(
       S,
       2,
-      `Power-ranking gap: ${away.nick} #${away.rNow} vs. ${home.nick} #${home.rNow}.`,
+      `FPI ranking gap: ${away.nick} #${away.rNow} vs. ${home.nick} #${home.rNow}.`,
       null,
       null,
     );
