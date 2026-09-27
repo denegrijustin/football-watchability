@@ -155,10 +155,9 @@ export default function App() {
               <p key={i}>{note}</p>
             ))}
             <p>
-              Watchability scores are editorial ratings, not game scores.
-              Ranking scenarios and playoff odds are imported estimates; no live
-              prediction service is connected. All kickoff times are shown as
-              supplied in Eastern time.
+              Watchability scores rate how worth watching a game should be, not
+              who will win. The board is a weekly snapshot, not a live feed.
+              All kickoff times are Eastern.
             </p>
           </details>
           <div className="footer-bottom">

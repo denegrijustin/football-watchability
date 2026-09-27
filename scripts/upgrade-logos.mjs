@@ -83,13 +83,25 @@ const pickLogo = (team) =>
     team.logos[0]
   )?.href;
 
+// Exact ESPN ids from the slate builder, when available.
+try {
+  const ids = JSON.parse(readFileSync(new URL("src/data/team-ids.json", root), "utf8"));
+  for (const [logoId, v] of Object.entries(ids)) OVERRIDES[logoId] ??= v.espnId;
+} catch {}
+// Only fetch teams without a logo file yet, unless ALL=1.
+const ALL = process.env.ALL === "1";
 const teams = new Map();
 for (const g of slate.games)
   for (const t of g.teams) teams.set(t.logoId, { name: t.name, league: g.league });
 
-const sources = [];
+let previous = { logos: [] };
+try {
+  previous = JSON.parse(readFileSync(new URL("src/data/logo-sources.json", root), "utf8"));
+} catch {}
+const sources = ALL ? [] : previous.logos.filter((l) => !teams.has(l.logoId) || String(logos[l.logoId]).startsWith("/logos/"));
 const problems = [];
 for (const [logoId, { name, league }] of teams) {
+  if (!ALL && String(logos[logoId] ?? "").startsWith("/logos/")) continue;
   const team = find(logoId, name, league);
   if (!team || team.ambiguous) {
     problems.push({ logoId, name, league, candidates: team?.ambiguous ?? [] });
@@ -116,6 +128,7 @@ for (const [logoId, { name, league }] of teams) {
     logoId,
     team: team.displayName,
     espnId: team.id,
+    league,
     source: url,
     bytes: out.length,
     retrievedAt: new Date().toISOString().slice(0, 10),
@@ -132,5 +145,5 @@ writeFileSync(
   JSON.stringify({ size: SIZE, logos: sources, unmatched: problems }, null, 2) +
     "\n",
 );
-console.log(`\n${sources.length} upgraded, ${problems.length} unmatched`);
+console.log(`\n${sources.length} logos on record, ${problems.length} unmatched`);
 for (const p of problems) console.log("✗", JSON.stringify(p));

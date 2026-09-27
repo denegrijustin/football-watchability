@@ -1,0 +1,43 @@
+name: Fetch slate data
+# Downloads raw schedule, TV, odds, rankings, FPI and weather for a date range
+# into data-raw/ and commits it to the branch that triggered the run.
+on:
+  workflow_dispatch:
+    inputs:
+      start: { description: "First date (YYYYMMDD)", required: true }
+      end: { description: "Last date (YYYYMMDD)", required: true }
+  push:
+    branches: [slate-data]
+    paths: [scripts/fetch-slate.mjs, scripts/fetch-history.mjs, .github/workflows/fetch-slate.yml, data-raw/request.json]
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Resolve dates
+        id: dates
+        run: |
+          if [ -n "${{ inputs.start }}" ]; then
+            echo "start=${{ inputs.start }}" >> "$GITHUB_OUTPUT"; echo "end=${{ inputs.end }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "start=$(node -p "require('./data-raw/request.json').start")" >> "$GITHUB_OUTPUT"
+            echo "end=$(node -p "require('./data-raw/request.json').end")" >> "$GITHUB_OUTPUT"
+          fi
+      - run: node scripts/fetch-slate.mjs
+        env:
+          START: ${{ steps.dates.outputs.start }}
+          END: ${{ steps.dates.outputs.end }}
+      - run: node scripts/fetch-history.mjs
+        timeout-minutes: 40
+      - name: Commit raw data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898699+github-actions[bot]@users.noreply.github.com"
+          git add data-raw
+          git diff --cached --quiet || git commit -q -m "Raw slate data ${{ steps.dates.outputs.start }}-${{ steps.dates.outputs.end }}"
+          git push

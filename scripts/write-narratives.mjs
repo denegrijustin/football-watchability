@@ -80,15 +80,17 @@ function parseMeeting(item) {
 }
 function parseSeries(value) {
   if (/first meeting/i.test(value)) return { first: true };
+  const since = /since (\d{4})/.exec(value)?.[1] ?? null;
+  if (/^No meetings since/i.test(value)) return { none: true, since, text: value };
   const m = /^(.+?) leads? (\d+)–(\d+)(?:–(\d+))?/.exec(value);
   if (m) {
     const [a, b, t = 0] = [+m[2], +m[3], +(m[4] ?? 0)];
-    return { leader: m[1], a, b, t, total: a + b + t, text: value };
+    return { leader: m[1], a, b, t, total: a + b + t, text: value, since };
   }
   const tie = /tied (\d+)–(\d+)(?:–(\d+))?/i.exec(value);
   if (tie) {
     const [a, b, t] = [+tie[1], +tie[2], +(tie[3] ?? 0)];
-    return { tied: true, a, b, t, total: a + b + t, text: value };
+    return { tied: true, a, b, t, total: a + b + t, text: value, since };
   }
   return { text: value };
 }
@@ -105,8 +107,9 @@ function abbrMatches(ab, name) {
     .filter(Boolean)
     .map((w) => w[0].toUpperCase())
     .join("");
-  if (!a || a[0] !== n[0]) return a === initials;
+  if (!a || a[0] !== n[0]) return a === initials || (a.startsWith("U") && a.slice(1) === initials);
   if (n.startsWith(a) || a === initials) return true;
+  if (a.startsWith("U") && a.slice(1) === initials) return true;
   let i = 0;
   for (const c of n) if (c === a[i]) i++;
   return i === a.length;
@@ -169,10 +172,12 @@ const facts = games.map((g) => {
 });
 
 // NFL total ranks, for "highest total on the slate"
-const nflTotals = facts
-  .filter((f) => f.meta.total != null)
-  .map((f) => f.meta.total)
-  .sort((a, b) => b - a);
+const totalsBy = (league) =>
+  facts
+    .filter((f) => f.g.league === league && f.meta.total != null)
+    .map((f) => f.meta.total)
+    .sort((a, b) => b - a);
+const leagueTotals = { NFL: totalsBy("NFL"), CFB: totalsBy("CFB") };
 
 const fmtList = (xs) =>
   xs.length <= 1
@@ -214,7 +219,7 @@ function signals(f) {
   const add = (list, weight, text, head, chip) =>
     text && list.push({ weight, text, head, chip });
   const isNFL = g.league === "NFL";
-  const rl = isNFL ? "power ranking" : "AP poll";
+  const rl = isNFL ? "FPI rankings" : "AP poll";
 
   // Ranked vs ranked
   if (!isNFL && away.rNow && home.rNow) {
@@ -232,7 +237,7 @@ function signals(f) {
     add(
       W,
       6,
-      `Two top-12 teams in the power rankings: the ${away.nick} (#${away.rNow}) and ${home.nick} (#${home.rNow}).`,
+      `Two top-12 teams in ESPN's FPI: the ${away.nick} (#${away.rNow}) and ${home.nick} (#${home.rNow}).`,
       `Top-12 ${away.nick} and ${home.nick} collide`,
       "Top-12 vs top-12",
     );
@@ -280,11 +285,16 @@ function signals(f) {
       add(
         W,
         5,
-        vary("poll", [
-          `An upset puts ${t.the} into the ${rl} at #${t.rWin}.`,
-          `${t.The} (${t.rec.wl}) ${isNFL ? "are" : "is"} one win from the Top 25 — projected #${t.rWin} with an upset.`,
-          `Poll watch: ${t.the} would debut at #${t.rWin} with a win.`,
-        ]),
+        o.rNow
+          ? vary("poll", [
+              `An upset of ${o.label} puts ${t.the} into the ${rl} at #${t.rWin}.`,
+              `${t.The} (${t.rec.wl}) ${isNFL ? "are" : "is"} one upset from the Top 25 — projected #${t.rWin} with a win.`,
+              `Poll watch: ${t.the} would debut around #${t.rWin} by beating ${o.label}.`,
+            ])
+          : vary("pollEdge", [
+              `${t.The} (${t.rec.wl}) ${isNFL ? "are" : "is"} knocking on the Top 25; a win could slip ${isNFL ? "them" : "it"} in around #${t.rWin}.`,
+              `A ${t.rec.w + 1}-${t.rec.l} ${t.name} would be in poll range — projected #${t.rWin} with a win.`,
+            ]),
         `${t.The} can play ${g.league === "NFL" ? "their" : "its"} way into the ${rl} at #${t.rWin}`,
         `${t.nick} poll debut in play`,
       );
@@ -343,25 +353,36 @@ function signals(f) {
     );
 
   // Betting line
+  const favT = meta.fav ? teams.find((t) => t.nick === meta.fav || t.name === meta.fav) : null;
+  const dogT = favT ? teams.find((t) => t !== favT) : null;
+  const HIGH = isNFL ? 47 : 60,
+    LOW = isNFL ? 42 : 44,
+    BIG = isNFL ? 6.5 : 17;
+  const totals = leagueTotals[g.league];
   if (meta.spread != null && meta.spread <= 3)
     add(
       W,
       meta.spread <= 1.5 ? 6.5 : 5.5,
       meta.spread <= 1.5
         ? `${away.nick}–${home.nick} is essentially a pick'em (${meta.line.split(" • ")[0]}).`
-        : `The line is ${meta.line.split(" • ")[0]} — Vegas sees a field-goal game between ${away.the} and ${home.the}.`,
+        : vary("tight", [
+            `The line is ${meta.line.split(" • ")[0]} — Vegas sees a one-score game between ${away.the} and ${home.the}.`,
+            `Only ${meta.spread} points separate ${away.the} and ${home.the} in the betting line.`,
+            `A ${meta.spread}-point spread (${meta.fav} favored) says this should go to the fourth quarter.`,
+            `Oddsmakers can barely split them: ${meta.line.split(" • ")[0]}.`,
+          ]),
       meta.spread <= 1.5
         ? `Coin-flip line in ${meta.venue.split(",")[0]}`
         : `Field-goal spread: ${meta.fav} −${meta.spread}`,
       meta.spread <= 1.5 ? "Pick'em line" : `${meta.fav} −${meta.spread}`,
     );
-  if (meta.total != null && meta.total >= 47) {
-    const rank = nflTotals.indexOf(meta.total) + 1;
+  if (meta.total != null && meta.total >= HIGH) {
+    const rank = totals.indexOf(meta.total) + 1;
     add(
       W,
-      3 + (meta.total - 47) / 2,
+      3 + (meta.total - HIGH) / 2,
       rank === 1
-        ? `O/U ${meta.total} is the highest total on the NFL slate — points expected from the ${away.nick} and ${home.nick}.`
+        ? `O/U ${meta.total} is the highest total on the ${isNFL ? "NFL" : "college"} slate — points expected from ${away.the} and ${home.the}.`
         : `O/U ${meta.total} (${rank}${ordinalSuffix(rank)}-highest this week) points to a ${away.nick}–${home.nick} shootout.`,
       `Shootout alert: O/U ${meta.total}`,
       `O/U ${meta.total}`,
@@ -413,7 +434,33 @@ function signals(f) {
         "Revenge game",
       );
   }
-  if (series.total >= 15) {
+  if (series.since && series.total >= 4) {
+    const share = Math.max(series.a, series.b) / (series.a + series.b || 1);
+    add(
+      W,
+      share <= 0.56 ? 3.5 : 1.5,
+      share <= 0.56
+        ? `Evenly matched lately: ${series.text}.`
+        : vary("seriesSince", [
+            `Familiar opponents: ${series.total} meetings since ${series.since} (${series.text.replace(/ since \d{4}$/, "")}).`,
+            `They've met ${series.total} times since ${series.since}; ${series.text.replace(/ since \d{4}$/, "")}.`,
+          ]),
+      share <= 0.56 ? `Even series: ${series.text.replace(/ since \d{4}$/, "")} since ${series.since}` : null,
+      `${series.total} meetings since ${series.since}`,
+    );
+  }
+  if (series.none)
+    add(
+      W,
+      1.2,
+      vary("none", [
+        `${away.name} and ${home.name} haven't met since at least ${series.since} — effectively a fresh matchup.`,
+        `No meetings between these two since ${series.since}, so neither side has recent film on the other.`,
+      ]),
+      `Rare matchup: ${away.nick} vs. ${home.nick}`,
+      "Rare matchup",
+    );
+  if (!series.since && series.total >= 15) {
     const share = Math.max(series.a, series.b) / (series.a + series.b || 1);
     add(
       W,
@@ -449,8 +496,13 @@ function signals(f) {
   if (players.length)
     add(
       W,
-      players.length >= 2 ? 3 : 2,
-      `Players to watch: ${fmtList(players)}.`,
+      players.length >= 2 ? 1.6 : 1,
+      vary("players", [
+        `Players to watch: ${fmtList(players)}.`,
+        `Season leaders on display: ${fmtList(players)}.`,
+        `Star power: ${fmtList(players)} lead their teams in yards.`,
+        `${players[0]}${players[2] ? ` vs. ${players[2]}` : ""} is the marquee matchup${players[1] ? `, with ${players[1]} in support` : ""}.`,
+      ]),
       `${fmtList(players.slice(0, 2))} on one field`,
       players[0],
     );
@@ -505,9 +557,18 @@ function signals(f) {
     add(
       W,
       2,
-      `${wx.title} in ${meta.venue}: ${wx.detail} — adds chaos to kicking and deep shots.`,
-      `Wind watch in ${meta.venue.split(",")[0]}`,
-      "Wind factor",
+      /rain/i.test(wx.title)
+        ? vary("rain", [
+            `Rain is likely in ${meta.venue.split(",")[0]} (${wx.detail}) — ball security becomes a storyline.`,
+            `Wet-weather game in ${meta.venue.split(",")[0]}: ${wx.detail}. Expect a sloppier, run-heavier script.`,
+            `Forecast shows rain for kickoff in ${meta.venue.split(",")[0]} (${wx.detail}), which tends to level the field.`,
+          ])
+        : vary("wind", [
+            `${wx.title} in ${meta.venue.split(",")[0]}: ${wx.detail} — adds chaos to kicking and deep shots.`,
+            `Wind could be a factor in ${meta.venue.split(",")[0]} (${wx.detail}); watch field goals and punts.`,
+          ]),
+      /rain/i.test(wx.title) ? `Rain game in ${meta.venue.split(",")[0]}` : `Wind watch in ${meta.venue.split(",")[0]}`,
+      /rain/i.test(wx.title) ? "Rain forecast" : "Wind factor",
     );
   if (/indoor|roof/i.test(wx.title))
     add(W, 1, `Under a roof in ${meta.venue.split(",")[0]} — no weather to slow the ${away.nick} or ${home.nick} offense.`, null, "Dome");
@@ -583,15 +644,15 @@ function signals(f) {
       null,
       null,
     );
-  if (meta.spread != null && meta.spread >= 6.5)
+  if (meta.spread != null && meta.spread >= BIG && favT)
     add(
       S,
-      4 + (meta.spread - 6.5) / 2,
-      `The ${meta.fav} are ${meta.spread}-point favorites over the ${teams.find((t) => t.nick !== meta.fav)?.nick ?? "underdog"} — the book expects a comfortable margin.`,
+      4 + (meta.spread - BIG) / (isNFL ? 2 : 4),
+      `${favT.The} ${isNFL ? "are" : "is"} a ${meta.spread}-point favorite over ${dogT.the} — the book expects a comfortable margin.`,
       `${meta.fav} favored by ${meta.spread}`,
       `${meta.fav} −${meta.spread}`,
     );
-  if (meta.total != null && meta.total <= 42)
+  if (meta.total != null && meta.total <= LOW)
     add(
       S,
       3,
@@ -604,7 +665,9 @@ function signals(f) {
       S,
       4,
       vary("stakes", [
-        `Little at stake in ${meta.venue.split(",")[0]}: both sit at ${pct(Math.max(away.oNow, home.oNow))} playoff odds, and a win only reaches ${pct(Math.max(away.oWin, home.oWin))}.`,
+        Math.max(away.oWin, home.oWin) <= 1
+          ? `Little at stake in ${meta.venue.split(",")[0]}: neither team has a realistic playoff path, win or lose.`
+          : `Little at stake in ${meta.venue.split(",")[0]}: both sit at ${pct(Math.max(away.oNow, home.oNow))} playoff odds, and a win only reaches ${pct(Math.max(away.oWin, home.oWin))}.`,
         `No playoff path for ${away.name} or ${home.name} — the winner tops out at ${pct(Math.max(away.oWin, home.oWin))} odds.`,
         `${away.name} (${away.rec.wl}) and ${home.name} (${home.rec.wl}) have no realistic playoff route.`,
         `Playoff-wise it's a non-factor: ${away.nick} and ${home.nick} both project at ${pct(Math.max(away.oNow, home.oNow))}.`,
@@ -699,7 +762,7 @@ function signals(f) {
       vary("unranked", [
         `Neither ${away.name} nor ${home.name} is ranked, so it won't move the national picture.`,
         `No AP-ranked team on the field in ${meta.venue.split(",")[0]}.`,
-        `Both unranked — this one stays a ${away.rec.conf === home.rec.conf ? `${away.rec.conf} story` : "regional story"}.`,
+        `Both unranked — this one stays ${away.rec.conf === home.rec.conf ? `${an(away.rec.conf)} story` : "a regional story"}.`,
       ]),
       null,
       null,
@@ -708,7 +771,7 @@ function signals(f) {
     add(
       S,
       2,
-      `Power-ranking gap: ${away.nick} #${away.rNow} vs. ${home.nick} #${home.rNow}.`,
+      `FPI ranking gap: ${away.nick} #${away.rNow} vs. ${home.nick} #${home.rNow}.`,
       null,
       null,
     );
@@ -762,7 +825,8 @@ for (const f of facts) {
   const headSig = candidates[0]?.s;
   if (headSig) kindUse.set(kindOf(headSig.head), (kindUse.get(kindOf(headSig.head)) ?? 0) + 1);
   // Hand-written headlines (src/data/headlines.json) win over generated ones.
-  const custom = headlines[f.g.id];
+  const entry = headlines[f.g.espnId] ?? headlines[f.g.id];
+  const custom = typeof entry === "string" ? entry : entry?.take;
   const head = custom ?? headSig?.head ?? f.g.matchup;
   if (usedHead.has(head)) throw new Error(`Duplicate headline: ${head}`);
   usedHead.add(head);

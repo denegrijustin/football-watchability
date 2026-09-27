@@ -55,7 +55,7 @@ function TeamRow({ team }: { team: Team }) {
 }
 
 export function Stakes({ game }: { game: Game }) {
-  const rankLabel = game.league === "NFL" ? "Power rank" : "AP rank";
+  const rankLabel = game.league === "NFL" ? "FPI rank" : "AP rank";
   return (
     <div className="stakes">
       <table>
