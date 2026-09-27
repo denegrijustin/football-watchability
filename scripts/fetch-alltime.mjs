@@ -52,13 +52,52 @@ if (process.env.PHASE === "nflprobe") {
   await sleep(1500);
   save("fdb-teams.html", await getText("https://www.footballdb.com/teams/nfl/philadelphia-eagles/teamvsteam"));
 } else {
-  // Resolved by build step: data-raw/alltime/requests.json = [{key, url}]
-  const reqs = JSON.parse(readFileSync(new URL("requests.json", dir), "utf8"));
-  for (const r of reqs) {
-    if (existsSync(new URL(`${r.key}.html`, dir))) continue;
-    save(`${r.key}.html`, await getText(r.url));
-    await sleep(2500); // be polite
+  // NFL: FiveThirtyEight's game file (every game since 1920, incl. AFL).
+  if (!existsSync(new URL("nfl_elo.csv", dir)))
+    save("nfl_elo.csv", await getText("https://datahub.io/fivethirtyeight/nfl-elo/_r/-/data/nfl_elo.csv"));
+
+  // College: one Winsipedia matchup page per game, trying likely slugs.
+  const SLUGS = {
+    "Miami (FL)": ["miami", "miami-fl"],
+    "Miami (OH)": ["miami-oh", "miami-ohio"],
+    "Hawai'i": ["hawaii"],
+    "San José State": ["san-jose-state"],
+    "UL Monroe": ["louisiana-monroe", "ul-monroe"],
+    Louisiana: ["louisiana", "louisiana-lafayette"],
+    "Texas A&M": ["texas-am", "texas-a-m"],
+    "NC State": ["nc-state", "north-carolina-state"],
+    UConn: ["uconn", "connecticut"],
+    Massachusetts: ["massachusetts", "umass"],
+    UCF: ["ucf", "central-florida"],
+    USC: ["usc", "southern-california"],
+    McNeese: ["mcneese", "mcneese-state"],
+    "Middle Tennessee": ["middle-tennessee", "middle-tennessee-state"],
+    "Ole Miss": ["ole-miss", "mississippi"],
+  };
+  const slugify = (n) =>
+    n.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/&/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const cands = (n) => SLUGS[n] ?? [slugify(n)];
+  const slate = JSON.parse(readFileSync(new URL("../src/data/slate.json", import.meta.url), "utf8"));
+  const found = {};
+  for (const g of slate.games.filter((x) => x.league === "CFB")) {
+    const key = `cfb-${g.espnId}`;
+    if (existsSync(new URL(`${key}.html`, dir))) continue;
+    const [a, b] = g.teams.map((t) => t.name);
+    let ok = null;
+    outer: for (const x of cands(a))
+      for (const y of cands(b))
+        for (const url of [`https://www.winsipedia.com/games/${x}/vs/${y}`, `https://www.winsipedia.com/games/${y}/vs/${x}`]) {
+          const t = await getText(url);
+          await sleep(2000); // be polite
+          if (t && t.includes('\\"team1Score\\"')) {
+            save(`${key}.html`, t);
+            ok = url;
+            break outer;
+          }
+        }
+    found[g.espnId] = { matchup: g.matchup, url: ok };
   }
+  writeFileSync(new URL("found.json", dir), JSON.stringify(found, null, 1));
 }
 writeFileSync(new URL("fetch-log.json", dir), JSON.stringify(log, null, 1));
 console.log(log.map((l) => `${l.status ?? l.error} ${l.bytes ?? ""} ${l.url}`).join("\n"));
