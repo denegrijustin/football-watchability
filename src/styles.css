@@ -219,7 +219,7 @@ h1 em {
 
 /* How to read */
 .how-to {
-  margin: 0 0 14px;
+  margin: 18px 0 14px;
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--surface);
@@ -925,6 +925,44 @@ details summary::-webkit-details-marker {
 .history-content ul {
   margin: 0;
   padding-left: 18px;
+}
+.all-meetings {
+  grid-column: 1 / -1;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0 12px;
+}
+.all-meetings summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 42px;
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--text-2);
+}
+.all-meetings[open] summary > span {
+  transform: rotate(45deg);
+}
+.all-meetings ol {
+  margin: 0 0 10px;
+  padding-left: 0;
+  list-style: none;
+  max-height: 260px;
+  overflow-y: auto;
+  columns: 2;
+  column-gap: 16px;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+.all-meetings li {
+  padding: 2px 0;
+  break-inside: avoid;
+}
+@media (max-width: 760px) {
+  .all-meetings ol {
+    columns: 1;
+  }
 }
 .history-content .source-note {
   grid-column: 1 / -1;

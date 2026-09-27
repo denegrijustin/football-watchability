@@ -24,7 +24,6 @@ export default function App() {
   const { league } = filters;
   const games = filterGames(filters);
   const total = slate.games.filter((g) => g.league === league).length;
-  const mustWatch = slate.games.filter((g) => g.score >= 90).length;
   const filtered =
     filters.query !== "" ||
     filters.day !== "all" ||
@@ -53,27 +52,7 @@ export default function App() {
         </div>
       </header>
       <main className="page">
-        <section className="intro">
-          <div>
-            <h1>
-              Find your <em>must-watch.</em>
-            </h1>
-            <p className="intro-copy">
-              Every game this week, rated 0–100 for how worth watching it is —
-              with where to find it and what's on the line.
-            </p>
-          </div>
-          <dl className="slate-stats">
-            <div>
-              <dt>Games</dt>
-              <dd>{slate.games.length}</dd>
-            </div>
-            <div>
-              <dt>Must-watch</dt>
-              <dd>{mustWatch}</dd>
-            </div>
-          </dl>
-        </section>
+        <h1 className="sr-only">Football Watchability — {slate.period}</h1>
 
         <details className="how-to">
           <summary>How to read a card</summary>

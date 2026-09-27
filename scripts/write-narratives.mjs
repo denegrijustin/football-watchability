@@ -158,17 +158,21 @@ const facts = games.map((g) => {
   });
   const [away, home] = teams;
   const series = parseSeries(g.history.boxes[0]?.value ?? "");
-  const meetings = (g.history.boxes[1]?.items ?? [])
-    .map(parseMeeting)
-    .filter(Boolean)
-    .map((m) => {
-      const hits = teams.filter((t) => abbrMatches(m.ab, t.name));
-      return { ...m, winner: hits.length === 1 ? hits[0] : null };
-    });
+  const withWinner = (m) => {
+    if (!m) return { tie: true };
+    const exact = teams.filter((t) => t.abbr && t.abbr === m.ab);
+    const hits = exact.length ? exact : teams.filter((t) => abbrMatches(m.ab, t.name));
+    return { ...m, winner: hits.length === 1 ? hits[0] : null };
+  };
+  const meetings = (g.history.boxes[1]?.items ?? []).map(parseMeeting).filter(Boolean).map(withWinner);
+  // Full game list (all-time) when the slate carries it.
+  const allMeetings = (g.history.games ?? g.history.boxes[1]?.items ?? []).map((x) => withWinner(parseMeeting(x)));
+  const count = /^(\d+) meetings?/.exec((g.history.boxes[0]?.items ?? [])[0] ?? "")?.[1];
+  if (count && series.total != null) series.total = Number(count);
   const players = (g.history.boxes[2]?.items ?? []).filter(
     (p) => !GENERIC.test(p),
   );
-  return { g, meta, teams, away, home, series, meetings, players, awayT, homeT };
+  return { g, meta, teams, away, home, series, meetings, allMeetings, players, awayT, homeT };
 });
 
 // NFL total ranks, for "highest total on the slate"
@@ -213,7 +217,7 @@ const shortMatch = (f) => `${f.away.nick} @ ${f.home.nick}`;
 
 // ---------- signals ----------
 function signals(f) {
-  const { g, meta, teams, away, home, series, meetings, players } = f;
+  const { g, meta, teams, away, home, series, meetings, allMeetings, players } = f;
   const W = [],
     S = [];
   const add = (list, weight, text, head, chip) =>
@@ -414,14 +418,17 @@ function signals(f) {
     );
   if (meetings.length >= 2 && last?.winner && last.year >= 2005) {
     let streak = 0;
-    for (const m of meetings) if (m.winner === last.winner) streak++;
+    for (const m of allMeetings) if (m.winner === last.winner) streak++;
       else break;
     const loser = teams.find((t) => t !== last.winner);
+    const loserWin = allMeetings.slice(streak).find((m) => m.winner === loser);
     if (streak >= 3)
       add(
         W,
         2.5,
-        `${last.winner.The} ${isNFL ? "have" : "has"} won ${streak} straight in the series; ${loser.poss} last win in it came ${meetings[streak] ? `in ${meetings[streak].year}` : `before ${meetings[streak - 1].year}`}.`,
+        loserWin
+          ? `${last.winner.The} ${isNFL ? "have" : "has"} won ${streak} straight in the series; ${loser.poss} last win came in ${loserWin.year}.`
+          : `${last.winner.The} ${isNFL ? "have" : "has"} won all ${streak} meetings; ${loser.the} ${isNFL ? "have" : "has"} never beaten ${isNFL ? "them" : "them"}.`,
         `${loser.nick} tries to snap a ${streak}-game skid vs. ${last.winner.nick}`,
         `${last.winner.nick} ${streak} straight`,
       );

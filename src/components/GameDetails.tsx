@@ -48,6 +48,19 @@ export function GameDetails({ game }: { game: Game }) {
               )}
             </div>
           ))}
+          {game.history.games && game.history.games.length > 5 && (
+            <details className="all-meetings">
+              <summary>
+                All {game.history.games.length} meetings
+                <span aria-hidden="true">+</span>
+              </summary>
+              <ol reversed>
+                {game.history.games.map((g, i) => (
+                  <li key={i}>{g}</li>
+                ))}
+              </ol>
+            </details>
+          )}
           <p className="source-note">{game.history.source}</p>
         </div>
       </details>

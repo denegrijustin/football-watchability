@@ -267,42 +267,157 @@ function weatherFor(comp, summary, iso, localHour) {
 }
 
 // ---------- history ----------
-function historyFor(eventId, away, home, awayName, homeName, verb = "leads") {
-  const ms = history[eventId] ?? [];
-  const nameOf = (id) => (id === away.id ? awayName : id === home.id ? homeName : "?");
-  const abbrOf = (id) => (id === away.id ? away.abbreviation : home.abbreviation);
-  if (!ms.length)
+// All-time head-to-head: Winsipedia (college) and FiveThirtyEight (NFL,
+// 1920–2017), merged with ESPN results from HISTORY_FROM on so recent
+// seasons are always present.
+const ALLTIME = new URL("data-raw/alltime/", root);
+const norm = (s) => String(s ?? "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]/g, "");
+
+// Winsipedia pages that exist but list no games mean the teams never met.
+const fetchLog = existsSync(new URL("fetch-log.json", ALLTIME)) ? JSON.parse(readFileSync(new URL("fetch-log.json", ALLTIME), "utf8")) : [];
+const foundPages = existsSync(new URL("found.json", ALLTIME)) ? JSON.parse(readFileSync(new URL("found.json", ALLTIME), "utf8")) : {};
+function winsipediaGames(eventId, away, home, awayName, homeName) {
+  const f = new URL(`cfb-${eventId}.html`, ALLTIME);
+  if (!existsSync(f)) {
+    const slugs = [awayName, homeName].map((n) => norm(n));
+    const pageExisted = foundPages[eventId] && fetchLog.some(
+      (l) => l.status === 200 && /winsipedia\.com\/games\//.test(l.url) && slugs.every((sl) => norm(l.url).includes(sl)),
+    );
+    return pageExisted ? [] : null;
+  }
+  const h = readFileSync(f, "utf8").replace(/\\"/g, '"');
+  const t1 = /"team1Name":"([^"]*)"/.exec(h)?.[1];
+  const t2 = /"team2Name":"([^"]*)"/.exec(h)?.[1];
+  const byId = new Map();
+  for (const m of h.matchAll(/\{"date":"\d{4}-\d{2}-\d{2}"[^{}]*?"hasDetail":(?:true|false)\}/g)) {
+    try {
+      const o = JSON.parse(m[0]);
+      byId.set(o.gameId, o);
+    } catch {}
+  }
+  if (!byId.size) return [];
+  // Which of our teams is Winsipedia's team1?
+  const match = (wn, n) => norm(wn) === norm(n) || norm(n).startsWith(norm(wn)) || norm(wn).startsWith(norm(n));
+  const awayIsT1 = match(t1, awayName) ? true : match(t2, awayName) ? false : match(t2, homeName);
+  return [...byId.values()].map((o) => {
+    const s1 = Number(o.team1Score), s2 = Number(o.team2Score);
+    const w = o.winner === "tie" ? null : o.winner === "team1" ? (awayIsT1 ? "away" : "home") : awayIsT1 ? "home" : "away";
+    return {
+      date: o.date,
+      season: o.year,
+      awayScore: awayIsT1 ? s1 : s2,
+      homeScore: awayIsT1 ? s2 : s1,
+      winner: w,
+      post: o.bowlGame && o.bowlGame !== "$undefined",
+      vacated: !!o.vacated,
+      forfeited: !!o.forfeited,
+    };
+  });
+}
+
+// FiveThirtyEight franchise codes by ESPN abbreviation.
+const FIVE38 = { WSH: "wsh", LV: "oak", LAR: "lar", LAC: "lac" };
+let nflCsv = null;
+function nflGames(away, home) {
+  const f = new URL("nfl_elo.csv", ALLTIME);
+  if (!existsSync(f)) return null;
+  if (!nflCsv) {
+    const [head, ...lines] = readFileSync(f, "utf8").trim().split("\n");
+    const cols = head.split(",");
+    nflCsv = lines.map((l) => Object.fromEntries(l.split(",").map((v, i) => [cols[i], v])));
+  }
+  const ca = FIVE38[away.abbreviation] ?? away.abbreviation.toLowerCase();
+  const ch = FIVE38[home.abbreviation] ?? home.abbreviation.toLowerCase();
+  return nflCsv
+    .filter((r) => Number(r.season) < HISTORY_FROM && ((r.team1 === ca && r.team2 === ch) || (r.team1 === ch && r.team2 === ca)))
+    .map((r) => {
+      const aScore = Number(r.team1 === ca ? r.score1 : r.score2);
+      const hScore = Number(r.team1 === ca ? r.score2 : r.score1);
+      return {
+        date: r.date,
+        season: Number(r.season),
+        awayScore: aScore,
+        homeScore: hScore,
+        winner: aScore === hScore ? null : aScore > hScore ? "away" : "home",
+        post: !!r.playoff,
+      };
+    });
+}
+
+function espnGames(eventId, away, home) {
+  return (history[eventId] ?? []).map((m) => {
+    const A = m.teams.find((t) => t.id === away.id),
+      H = m.teams.find((t) => t.id === home.id);
+    return {
+      date: m.date.slice(0, 10),
+      season: m.season,
+      awayScore: A?.score ?? 0,
+      homeScore: H?.score ?? 0,
+      winner: A?.winner ? "away" : H?.winner ? "home" : null,
+      post: m.type === 3,
+    };
+  });
+}
+
+function historyFor(eventId, league, away, home, awayName, homeName, verb = "leads") {
+  const base = league === "NFL" ? nflGames(away, home) : winsipediaGames(eventId, away, home, awayName, homeName);
+  const espn = espnGames(eventId, away, home);
+  const allTime = base != null;
+  const games = [...(base ?? [])];
+  // Add ESPN results the all-time source is missing (newer seasons).
+  for (const e of espn) {
+    const dup = games.some(
+      (g) =>
+        Math.abs(new Date(g.date) - new Date(e.date)) < 4 * 864e5 ||
+        (g.season === e.season && g.awayScore === e.awayScore && g.homeScore === e.homeScore),
+    );
+    if (!dup && (league === "NFL" ? e.season >= HISTORY_FROM : true)) games.push(e);
+  }
+  games.sort((x, y) => y.date.localeCompare(x.date));
+  const scope = allTime ? "All-time series" : `Series (ESPN records since ${HISTORY_FROM})`;
+  if (!games.length)
     return {
       boxes: [
-        { label: `Series since ${HISTORY_FROM}`, value: `No meetings since ${HISTORY_FROM}`, items: [] },
+        { label: scope, value: allTime ? "First meeting" : `No meetings since ${HISTORY_FROM}`, items: [] },
         { label: "Recent meetings", value: "None on record", items: [] },
       ],
+      games: [],
     };
-  let a = 0,
-    b = 0;
-  for (const m of ms) {
-    const w = m.teams.find((t) => t.winner);
-    if (!w) continue;
-    if (w.id === away.id) a++;
-    else if (w.id === home.id) b++;
+  let aw = 0, hw = 0, ties = 0;
+  for (const g of games) {
+    if (!g.winner) ties++;
+    else if (g.vacated) continue;
+    else if (g.winner === "away") aw++;
+    else hw++;
   }
+  const vacated = games.filter((g) => g.vacated).length;
+  const t = ties ? `–${ties}` : "";
+  const tail = allTime ? "" : ` since ${HISTORY_FROM}`;
   const value =
-    a === b
-      ? `Series tied ${a}–${b} since ${HISTORY_FROM}`
-      : a > b
-        ? `${awayName} ${verb} ${a}–${b} since ${HISTORY_FROM}`
-        : `${homeName} ${verb} ${b}–${a} since ${HISTORY_FROM}`;
-  const items = ms.slice(0, 5).map((m) => {
-    const [x, y] = [...m.teams].sort((p, q) => q.score - p.score);
-    const yr = new Date(m.date).getUTCFullYear();
-    return `${yr} ${abbrOf(x.id)} ${x.score}–${y.score}${m.type === 3 ? " (postseason)" : ""}`;
-  });
-  void nameOf;
+    aw === hw
+      ? `Series tied ${aw}–${hw}${t}${tail}`
+      : aw > hw
+        ? `${awayName} ${verb} ${aw}–${hw}${t}${tail}`
+        : `${homeName} ${verb} ${hw}–${aw}${t}${tail}`;
+  const abbr = (side) => (side === "away" ? away.abbreviation : home.abbreviation);
+  const fmt = (g) => {
+    const hi = Math.max(g.awayScore, g.homeScore), lo = Math.min(g.awayScore, g.homeScore);
+    const tags = [g.post && "postseason", g.vacated && "vacated", g.forfeited && "forfeit"].filter(Boolean);
+    const score = g.winner ? `${abbr(g.winner)} ${g.winner === "away" ? g.awayScore : g.homeScore}–${g.winner === "away" ? g.homeScore : g.awayScore}` : `Tie ${hi}–${lo}`;
+    return `${g.season} ${score}${tags.length ? ` (${tags.join(", ")})` : ""}`;
+  };
+  const first = games[games.length - 1];
+  const summary = [
+    `${games.length} meeting${games.length === 1 ? "" : "s"}${allTime ? "" : ` since ${HISTORY_FROM}`}`,
+    ...(allTime ? [`First meeting: ${fmt(first)}`] : []),
+    ...(vacated ? [`${vacated} vacated result${vacated > 1 ? "s" : ""} not counted`] : []),
+  ];
   return {
     boxes: [
-      { label: `Series since ${HISTORY_FROM}`, value, items: [] },
-      { label: "Recent meetings", value: "", items },
+      { label: scope, value, items: summary },
+      { label: "Recent meetings", value: "", items: games.slice(0, 5).map(fmt) },
     ],
+    games: games.map(fmt),
   };
 }
 
@@ -404,6 +519,7 @@ for (const [key, league] of [
         name,
         logoId: espnToLogo.get(`${league}:${t.id}`) ?? slug(name),
         espnId: t.id,
+        abbr: t.abbreviation,
         record,
         rankings: league === "NFL" ? nflRanks(t, opp.team) : cfbRanks(t, opp.team, pWin),
         playoffOdds,
@@ -435,7 +551,7 @@ for (const [key, league] of [
     if (!tH._conf && league === "CFB") bonus -= 0.1;
     const rawScore = 0.38 * quality + 0.12 * top + 0.28 * close + 0.22 * stakes + bonus;
 
-    const hist = historyFor(ev.id, at, ht, short(at, aName), short(ht, hName), league === "NFL" ? "lead" : "leads");
+    const hist = historyFor(ev.id, league, at, ht, short(at, aName), short(ht, hName), league === "NFL" ? "lead" : "leads");
     const players = [...new Set([...tA._leaders.slice(0, 2), ...tH._leaders.slice(0, 2)])];
     hist.boxes.push({
       label: "Key players / units",
@@ -460,7 +576,7 @@ for (const [key, league] of [
       teams: [tA, tH].map(({ _conf, _leaders, ...t }) => t),
       history: {
         ...hist,
-        source: `Series and results: ESPN, ${HISTORY_FROM}–present. Key players: ESPN season leaders.`,
+        source: league === "NFL" ? `Series: FiveThirtyEight NFL game data (1920–2003) and ESPN (${HISTORY_FROM}–present), playoffs included. Key players: ESPN season leaders.` : `Series: Winsipedia game-by-game results, plus ESPN for the latest seasons. Key players: ESPN season leaders.`,
       },
     });
   }
@@ -520,7 +636,7 @@ const slate = {
   broadcastNote: `TV/streaming reflects ESPN's listings for ${PERIOD}. Local NFL availability varies by market; subscription access may be required.`,
   footerNotes: [
     `Playoff odds "now" are ESPN FPI. With-a-win / with-a-loss odds are estimates that keep FPI's number as the weighted average using ESPN's win probability. AP and NFL power-rank moves are rule-of-thumb estimates.`,
-    `Series records and recent meetings cover ${HISTORY_FROM}–present (ESPN results), not all-time history.`,
+    `Series records are all-time: Winsipedia for college (vacated wins not counted), FiveThirtyEight's NFL game file through 2003 plus ESPN since, playoffs included.`,
     `Watchability blends team strength (FPI), how close the game projects, playoff stakes, ranked matchups and TV slot, rescaled across the week.`,
   ],
   games,

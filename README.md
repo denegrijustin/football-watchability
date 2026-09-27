@@ -33,7 +33,7 @@ On this Mac, the bundled Codex Node runtime can be used without installing syste
 
 The slate is built from ESPN data rather than typed in by hand. ESPN is fetched by GitHub Actions, because it isn't reachable from every environment.
 
-1. **Fetch.** On the `slate-data` branch, set `data-raw/request.json` to the week's dates (`{"start":"20261001","end":"20261005"}`) and push, or run **Actions → Fetch slate data** with those dates. The workflow runs `scripts/fetch-slate.mjs` (schedules, TV, lines, records, standings, AP poll, FPI, matchup predictor, season leaders, ESPN and Open-Meteo weather) and `scripts/fetch-history.mjs` (head-to-head results since 2004), then commits `data-raw/`.
+1. **Fetch.** On the `slate-data` branch, set `data-raw/request.json` to the week's dates (`{"start":"20261001","end":"20261005"}`) and push, or run **Actions → Fetch slate data** with those dates. The workflow runs `scripts/fetch-slate.mjs` (schedules, TV, lines, records, standings, AP poll, FPI, matchup predictor, season leaders, ESPN and Open-Meteo weather) and `scripts/fetch-history.mjs` (ESPN head-to-head results since 2004), then commits `data-raw/`. Then run **Actions → Fetch all-time history** (or push `data-raw/alltime/phase.txt` containing `full`). It runs `scripts/fetch-alltime.mjs`, which saves each college matchup's Winsipedia page and FiveThirtyEight's NFL game file (every game from 1920 to 2017). The builder merges these with ESPN results so every series is complete through the latest season.
 2. **Build.** `PERIOD="Oct. 1–5, 2026" node scripts/build-slate.mjs` writes `src/data/slate.json` and `src/data/team-ids.json`. Put corrections ESPN hasn't posted yet (a TV network, say) in `src/data/slate-overrides.json`, keyed by ESPN event id.
 3. **Logos.** Pushing a changed `team-ids.json` to `slate-data` runs **Upgrade logos**, which fetches only teams that don't have a logo yet. ESPN ids overlap across leagues, so logos are matched by league plus id.
 4. **Notes.** Write one-line takes in `src/data/headlines.json` (keyed by ESPN event id), then run `node scripts/write-narratives.mjs` (below).
@@ -54,7 +54,7 @@ Game fields:
 | `weather` | Icon, outlook title, detail and impact text. |
 | `teams` | Two teams: `name`, `logoId`, `espnId`, `record`, `rankings`, `playoffOdds` (arrays ordered now, win, loss). |
 | `narrative`, `watch`, `skip`, `narrativeChips` | One-line take, why-watch and why-skip reasons, and supporting tags (generated; see below). |
-| `history` | Series since 2004, recent meetings, key players (season leaders), and source. |
+| `history` | All-time series (record, meeting count, first meeting), last five meetings, key players (season leaders), `games` (every meeting, newest first) and source. |
 
 ### Watch / skip notes
 
