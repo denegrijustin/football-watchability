@@ -31,7 +31,19 @@ async function getText(url) {
 }
 const save = (name, text) => text != null && writeFileSync(new URL(name, dir), text);
 
-if (process.env.PHASE === "probe") {
+if (process.env.PHASE === "nflprobe") {
+  for (const [name, url] of [
+    ["gh-538-list.json", "https://api.github.com/repos/fivethirtyeight/data/contents/nfl-elo"],
+    ["538-projects.csv", "https://projects.fivethirtyeight.com/nfl-api/nfl_elo.csv"],
+    ["datahub.html", "https://datahub.io/fivethirtyeight/nfl-elo"],
+    ["gh-538-raw.csv", "https://raw.githubusercontent.com/fivethirtyeight/data/master/nfl-elo/nfl_elo.csv"],
+    ["datahub-r.csv", "https://datahub.io/fivethirtyeight/nfl-elo/_r/-/data/nfl_elo.csv"],
+  ]) {
+    const t = await getText(url);
+    save(name, t ? t.slice(0, 400000) : null);
+    await sleep(800);
+  }
+} else if (process.env.PHASE === "probe") {
   save("winsipedia-schools.html", await getText("https://www.winsipedia.com/schools"));
   await sleep(1500);
   save("winsipedia-sample.html", await getText("https://www.winsipedia.com/games/alabama/vs/mississippi-state"));
