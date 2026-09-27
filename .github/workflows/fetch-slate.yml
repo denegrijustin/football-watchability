@@ -8,7 +8,7 @@ on:
       end: { description: "Last date (YYYYMMDD)", required: true }
   push:
     branches: [slate-data]
-    paths: [scripts/fetch-slate.mjs, .github/workflows/fetch-slate.yml, data-raw/request.json]
+    paths: [scripts/fetch-slate.mjs, scripts/fetch-history.mjs, .github/workflows/fetch-slate.yml, data-raw/request.json]
 permissions:
   contents: write
 jobs:
@@ -32,6 +32,8 @@ jobs:
         env:
           START: ${{ steps.dates.outputs.start }}
           END: ${{ steps.dates.outputs.end }}
+      - run: node scripts/fetch-history.mjs
+        timeout-minutes: 40
       - name: Commit raw data
         run: |
           git config user.name "github-actions[bot]"
