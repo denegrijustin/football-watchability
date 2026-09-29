@@ -7,7 +7,7 @@
 // Writes public/logos/<logoId>.webp, points src/data/logos.json at those
 // files, and records sources in src/data/logo-sources.json. Teams that cannot
 // be matched keep their existing image and are listed in the report.
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import sharp from "sharp";
 
 const SIZE = 128; // covers the largest on-screen size (34px) at 3× density
@@ -135,6 +135,36 @@ for (const [logoId, { name, league }] of teams) {
   });
   console.log(`✓ ${logoId} ← ${team.displayName} (${out.length} B)`);
 }
+
+// ---------- TV network logos (from ESPN's broadcast data) ----------
+mkdirSync(new URL("public/networks/", root), { recursive: true });
+let networkIds = {};
+try {
+  networkIds = JSON.parse(readFileSync(new URL("src/data/network-ids.json", root), "utf8"));
+} catch {}
+let networks = {};
+try {
+  networks = JSON.parse(readFileSync(new URL("src/data/networks.json", root), "utf8"));
+} catch {}
+for (const [slug, n] of Object.entries(networkIds)) {
+  const file = new URL(`public/networks/${slug}.webp`, root);
+  if (!ALL && networks[slug] && existsSync(file)) continue;
+  const url = n.darkLogo || n.logo;
+  const res = url && (await fetch(url));
+  if (!res?.ok) {
+    problems.push({ network: slug, error: `download failed: ${url}` });
+    continue;
+  }
+  const buf = await sharp(Buffer.from(await res.arrayBuffer()))
+    .trim({ threshold: 1 })
+    .resize({ height: 48, width: 160, fit: "inside" })
+    .webp({ quality: 90, alphaQuality: 100 })
+    .toBuffer();
+  writeFileSync(file, buf);
+  networks[slug] = { name: n.name, src: `/networks/${slug}.webp`, source: url };
+  console.log(`✓ network ${slug} (${buf.length} B)`);
+}
+writeFileSync(new URL("src/data/networks.json", root), JSON.stringify(networks, null, 2) + "\n");
 
 writeFileSync(
   new URL("src/data/logos.json", root),

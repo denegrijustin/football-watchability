@@ -33,6 +33,7 @@ jobs:
           START: ${{ steps.dates.outputs.start }}
           END: ${{ steps.dates.outputs.end }}
       - run: node scripts/fetch-weather.mjs
+      - run: node scripts/fetch-trends.mjs
       - run: node scripts/fetch-history.mjs
         timeout-minutes: 40
       - name: Commit raw data
