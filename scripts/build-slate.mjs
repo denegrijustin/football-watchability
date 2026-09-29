@@ -361,6 +361,8 @@ function weatherFor(comp, summary, iso, localHour) {
     impact: `${LEVELS[level]} impact`,
     level: LEVELS[level],
     effects: factors.filter((f) => f.level >= 1).map((f) => f.text),
+    // Keys and levels only, for the projected-score weather adjustment.
+    factors: factors.map(({ key, level }) => ({ key, level })),
     hours: hours.map(({ label, time, icon, tempF, feelsF, precip, windMph, gustMph, dir }) => ({ label, time, icon, tempF, feelsF, precip, windMph, gustMph, dir })),
     confidence: confText,
   };
@@ -726,6 +728,7 @@ for (const [key, league] of [
       trendH: tH.trend,
       pHome,
       neutral: !!comp.neutralSite,
+      weather,
     });
 
     // ---- watchability forecast (absolute; see scripts/score.mjs) ----

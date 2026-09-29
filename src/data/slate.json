@@ -90,6 +90,7 @@
         "impact": "none impact",
         "level": "none",
         "effects": [],
+        "factors": [],
         "hours": [
           {
             "label": "Q1",
@@ -308,7 +309,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 45.2,
             "espn": 45.2,
             "market": 57.2
@@ -316,9 +317,34 @@
         ]
       },
       "projected": {
-        "away": 25,
-        "home": 27,
-        "source": "line"
+        "away": 24,
+        "home": 26,
+        "blended": {
+          "away": 23.8,
+          "home": 25.2
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 24.5,
+            "home": 27,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 23.3,
+            "home": 20.9,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+1.8 pts to the home margin"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "AFC division leaders meet: FPI's No. 4 Jaguars at Cincinnati, with the week's top total",
       "narrativeChips": [
@@ -592,7 +618,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 45.5,
             "espn": 45.5,
             "market": 56.3
@@ -601,8 +627,33 @@
       },
       "projected": {
         "away": 23,
-        "home": 26,
-        "source": "line"
+        "home": 24,
+        "blended": {
+          "away": 23.3,
+          "home": 24.8
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 23,
+            "home": 25.5,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 24.8,
+            "home": 22.6,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+1.8 pts to the home margin"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Dallas at Houston under the roof, with only a field goal between them",
       "narrativeChips": [
@@ -691,6 +742,16 @@
         "effects": [
           "A steady breeze (winds near 8 mph, gusts to 21) — only a minor effect on kicks.",
           "Scattered showers possible (38% at worst)."
+        ],
+        "factors": [
+          {
+            "key": "wind",
+            "level": 1
+          },
+          {
+            "key": "rain",
+            "level": 1
+          }
         ],
         "hours": [
           {
@@ -910,7 +971,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 35.5,
             "espn": 35.5,
             "market": 40.7
@@ -919,8 +980,38 @@
       },
       "projected": {
         "away": 23,
-        "home": 20,
-        "source": "line"
+        "home": 21,
+        "blended": {
+          "away": 22.2,
+          "home": 20.5
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 23.3,
+            "home": 20.3,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 22.1,
+            "home": 21.1,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+1.8 pts to the home margin"
+          },
+          {
+            "id": "weather",
+            "label": "Weather",
+            "note": "-0.7 pts on the total (wind, rain)"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "The Rams visit Philly, where the Eagles have won the last four meetings",
       "narrativeChips": [
@@ -1216,7 +1307,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 29.9,
             "espn": 29.9,
             "market": 33.6
@@ -1224,9 +1315,34 @@
         ]
       },
       "projected": {
-        "away": 26,
-        "home": 22,
-        "source": "line"
+        "away": 24,
+        "home": 23,
+        "blended": {
+          "away": 24.7,
+          "home": 22.3
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 26,
+            "home": 21.5,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 23.1,
+            "home": 22.8,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+1.8 pts to the home margin"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Chiefs at Raiders in Vegas; Las Vegas won the teams' last meeting 14–12",
       "narrativeChips": [
@@ -1440,6 +1556,12 @@
         "level": "moderate",
         "effects": [
           "Wet ball: 62% chance of rain during the game — fumbles and drops become more likely."
+        ],
+        "factors": [
+          {
+            "key": "rain",
+            "level": 2
+          }
         ],
         "hours": [
           {
@@ -1659,7 +1781,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 38.9,
             "espn": 38.9,
             "market": 38.4
@@ -1667,9 +1789,39 @@
         ]
       },
       "projected": {
-        "away": 27,
+        "away": 26,
         "home": 24,
-        "source": "line"
+        "blended": {
+          "away": 25.6,
+          "home": 24.2
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 27,
+            "home": 23.5,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 25.9,
+            "home": 26.6,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+1.8 pts to the home margin"
+          },
+          {
+            "id": "weather",
+            "label": "Weather",
+            "note": "-1.3 pts on the total (rain)"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Sunday night in Charlotte: Detroit is favored against the NFC South co-leader Panthers",
       "narrativeChips": [
@@ -1760,6 +1912,7 @@
         "impact": "none impact",
         "level": "none",
         "effects": [],
+        "factors": [],
         "hours": [
           {
             "label": "Q1",
@@ -1978,7 +2131,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 70.7,
             "espn": 70.7,
             "market": 71.8
@@ -1987,8 +2140,33 @@
       },
       "projected": {
         "away": 21,
-        "home": 28,
-        "source": "line"
+        "home": 27,
+        "blended": {
+          "away": 20.4,
+          "home": 26.7
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 20.8,
+            "home": 27.8,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 20.8,
+            "home": 23.9,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+1.8 pts to the home margin"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "New England won two of three against Buffalo last season; now the Bills are touchdown favorites",
       "narrativeChips": [
@@ -2202,6 +2380,12 @@
         "level": "low",
         "effects": [
           "Warm: feels like 88°F at its peak."
+        ],
+        "factors": [
+          {
+            "key": "heat",
+            "level": 1
+          }
         ],
         "hours": [
           {
@@ -2421,7 +2605,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 77.2,
             "espn": 77.2,
             "market": 58.3
@@ -2429,9 +2613,34 @@
         ]
       },
       "projected": {
-        "away": 22,
-        "home": 25,
-        "source": "line"
+        "away": 21,
+        "home": 26,
+        "blended": {
+          "away": 21.3,
+          "home": 25.6
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 22.3,
+            "home": 25.3,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 20.4,
+            "home": 25.3,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+1.8 pts to the home margin"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "FPI's No. 1 49ers host Bo Nix and a Denver team with real playoff stakes",
       "narrativeChips": [
@@ -2527,6 +2736,7 @@
         "impact": "none impact",
         "level": "none",
         "effects": [],
+        "factors": [],
         "hours": [
           {
             "label": "Q1",
@@ -2745,7 +2955,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 74.2,
             "espn": 74.2,
             "market": 74.8
@@ -2753,9 +2963,34 @@
         ]
       },
       "projected": {
-        "away": 18,
-        "home": 25,
-        "source": "line"
+        "away": 17,
+        "home": 24,
+        "blended": {
+          "away": 17.9,
+          "home": 24.7
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 17.8,
+            "home": 24.8,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 19.1,
+            "home": 23.8,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+1.8 pts to the home margin"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Justin Herbert's winless Chargers visit the FPI No. 3 Seahawks",
       "narrativeChips": [
@@ -3057,7 +3292,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 44.7,
             "espn": 44.7,
             "market": 42.8
@@ -3066,8 +3301,33 @@
       },
       "projected": {
         "away": 21,
-        "home": 18,
-        "source": "line"
+        "home": 20,
+        "blended": {
+          "away": 20.6,
+          "home": 19.3
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 20.5,
+            "home": 18,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 21.6,
+            "home": 20.8,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+1.8 pts to the home margin"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Thursday night: 2-1 Steelers at 2-1 Browns, with one of the week's lowest totals",
       "narrativeChips": [
@@ -3296,6 +3556,7 @@
         "impact": "none impact",
         "level": "none",
         "effects": [],
+        "factors": [],
         "hours": [
           {
             "label": "Q1",
@@ -3514,7 +3775,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 45.4,
             "espn": 45.4,
             "market": 36.9
@@ -3523,8 +3784,33 @@
       },
       "projected": {
         "away": 26,
-        "home": 22,
-        "source": "line"
+        "home": 23,
+        "blended": {
+          "away": 25.3,
+          "home": 23.1
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 25.5,
+            "home": 22,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 24.9,
+            "home": 25.1,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "Neutral site: none"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Early wake-up call: Colts vs. Commanders in London at 9:30 ET",
       "narrativeChips": [
@@ -3804,7 +4090,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 62.9,
             "espn": 62.9,
             "market": 58.3
@@ -3814,7 +4100,32 @@
       "projected": {
         "away": 23,
         "home": 26,
-        "source": "line"
+        "blended": {
+          "away": 22.3,
+          "home": 25.3
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 22.8,
+            "home": 25.8,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 22.4,
+            "home": 23.7,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+1.8 pts to the home margin"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Monday night NFC South: the Falcons swept the Saints last season and lead the series 58–56",
       "narrativeChips": [
@@ -4008,6 +4319,12 @@
         "level": "low",
         "effects": [
           "A steady breeze (winds near 14 mph) — only a minor effect on kicks."
+        ],
+        "factors": [
+          {
+            "key": "wind",
+            "level": 1
+          }
         ],
         "hours": [
           {
@@ -4227,7 +4544,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 62.7,
             "espn": 62.7,
             "market": 60.4
@@ -4236,8 +4553,33 @@
       },
       "projected": {
         "away": 20,
-        "home": 23,
-        "source": "line"
+        "home": 24,
+        "blended": {
+          "away": 19.7,
+          "home": 23.6
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 19.5,
+            "home": 23,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 21,
+            "home": 23.8,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+1.8 pts to the home margin"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Caleb Williams and the 2-1 Bears host the Jets",
       "narrativeChips": [
@@ -4331,6 +4673,12 @@
         "level": "low",
         "effects": [
           "Scattered showers possible (44% at worst)."
+        ],
+        "factors": [
+          {
+            "key": "rain",
+            "level": 1
+          }
         ],
         "hours": [
           {
@@ -4550,7 +4898,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 84,
             "espn": 84,
             "market": 84.7
@@ -4558,9 +4906,34 @@
         ]
       },
       "projected": {
-        "away": 16,
-        "home": 28,
-        "source": "line"
+        "away": 17,
+        "home": 26,
+        "blended": {
+          "away": 17.4,
+          "home": 26.5
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 16,
+            "home": 27.5,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 20.8,
+            "home": 23.8,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+1.8 pts to the home margin"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Derrick Henry's Ravens are double-digit favorites over the winless Titans",
       "narrativeChips": [
@@ -4669,6 +5042,16 @@
         "effects": [
           "Stamina: feels like 98°F — expect heavy rotation and late-game fatigue.",
           "Scattered showers possible (33% at worst)."
+        ],
+        "factors": [
+          {
+            "key": "heat",
+            "level": 2
+          },
+          {
+            "key": "rain",
+            "level": 1
+          }
         ],
         "hours": [
           {
@@ -4888,7 +5271,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 32.6,
             "espn": 32.6,
             "market": 36.9
@@ -4896,9 +5279,39 @@
         ]
       },
       "projected": {
-        "away": 22,
-        "home": 18,
-        "source": "line"
+        "away": 21,
+        "home": 20,
+        "blended": {
+          "away": 21,
+          "home": 19.9
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 21.5,
+            "home": 18,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 22.5,
+            "home": 24,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+1.8 pts to the home margin"
+          },
+          {
+            "id": "weather",
+            "label": "Weather",
+            "note": "-1 pts on the total (heat, rain)"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Winless Tampa Bay hosts the Packers in heat that feels like the upper 90s",
       "narrativeChips": [
@@ -5207,7 +5620,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 83.2,
             "espn": 83.2,
             "market": 83.2
@@ -5216,8 +5629,33 @@
       },
       "projected": {
         "away": 14,
-        "home": 25,
-        "source": "line"
+        "home": 24,
+        "blended": {
+          "away": 15,
+          "home": 24.8
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 14,
+            "home": 24.5,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 17.7,
+            "home": 24.3,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+1.8 pts to the home margin"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Unbeaten Vikings host a winless Dolphins team FPI ranks last",
       "narrativeChips": [
@@ -5312,6 +5750,12 @@
         "level": "low",
         "effects": [
           "Scattered showers possible (34% at worst)."
+        ],
+        "factors": [
+          {
+            "key": "rain",
+            "level": 1
+          }
         ],
         "hours": [
           {
@@ -5531,7 +5975,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 45.6,
             "espn": 45.6,
             "market": 46.8
@@ -5540,8 +5984,33 @@
       },
       "projected": {
         "away": 23,
-        "home": 22,
-        "source": "line"
+        "home": 21,
+        "blended": {
+          "away": 22,
+          "home": 21.9
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 23,
+            "home": 21.5,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 21.1,
+            "home": 21.8,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+1.8 pts to the home margin"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Cardinals at Giants: two long shots, and the line has flipped to Arizona",
       "narrativeChips": [
@@ -5752,6 +6221,12 @@
         "level": "high",
         "effects": [
           "Ball security: rain likely (72%) with about 0.25\" during the game — expect a run-heavy, sloppier script."
+        ],
+        "factors": [
+          {
+            "key": "rain",
+            "level": 3
+          }
         ],
         "hours": [
           {
@@ -5993,7 +6468,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 25.9,
             "espn": 25.9,
             "market": 33.6
@@ -6001,9 +6476,39 @@
         ]
       },
       "projected": {
-        "away": 33,
+        "away": 31,
         "home": 27,
-        "source": "line"
+        "blended": {
+          "away": 30.5,
+          "home": 27.1
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 32.8,
+            "home": 26.8,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 31.7,
+            "home": 30.1,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          },
+          {
+            "id": "weather",
+            "label": "Weather",
+            "note": "-2.7 pts on the total (rain)"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Unbeaten, ranked SEC co-leaders in Starkville — Alabama leads the series 86–18–3",
       "narrativeChips": [
@@ -6195,6 +6700,12 @@
         "level": "moderate",
         "effects": [
           "Wet ball: 55% chance of rain during the game — fumbles and drops become more likely."
+        ],
+        "factors": [
+          {
+            "key": "rain",
+            "level": 2
+          }
         ],
         "hours": [
           {
@@ -6436,7 +6947,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 29.8,
             "espn": 29.8,
             "market": 35.5
@@ -6445,8 +6956,38 @@
       },
       "projected": {
         "away": 31,
-        "home": 26,
-        "source": "line"
+        "home": 27,
+        "blended": {
+          "away": 30.6,
+          "home": 26.4
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 31,
+            "home": 25.5,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 33.2,
+            "home": 28.7,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          },
+          {
+            "id": "weather",
+            "label": "Weather",
+            "note": "-1.3 pts on the total (rain)"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "No. 8 Florida at No. 25 Missouri; Mizzou leads the series 7–6",
       "narrativeChips": [
@@ -6539,6 +7080,7 @@
         "impact": "none impact",
         "level": "none",
         "effects": [],
+        "factors": [],
         "hours": [
           {
             "label": "Q1",
@@ -6779,7 +7321,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 17.1,
             "espn": 17.1,
             "market": 17.8
@@ -6787,9 +7329,34 @@
         ]
       },
       "projected": {
-        "away": 30,
-        "home": 16,
-        "source": "line"
+        "away": 28,
+        "home": 20,
+        "blended": {
+          "away": 28.3,
+          "home": 19.4
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 29.8,
+            "home": 15.8,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 27.1,
+            "home": 24.9,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "No. 5 Ohio State visits unbeaten No. 14 Iowa with 50+ points of playoff odds on the line",
       "narrativeChips": [
@@ -6939,6 +7506,7 @@
         "impact": "none impact",
         "level": "none",
         "effects": [],
+        "factors": [],
         "hours": [
           {
             "label": "Q1",
@@ -7179,7 +7747,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 42.2,
             "espn": 42.2,
             "market": 59.3
@@ -7188,8 +7756,33 @@
       },
       "projected": {
         "away": 26,
-        "home": 29,
-        "source": "line"
+        "home": 28,
+        "blended": {
+          "away": 25.8,
+          "home": 28.7
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 25.5,
+            "home": 29,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 27.8,
+            "home": 26.8,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Friday night ACC: two 4-0 teams, and the winner has the inside track",
       "narrativeChips": [
@@ -7293,6 +7886,12 @@
         "level": "low",
         "effects": [
           "A steady breeze (winds near 12 mph, gusts to 16) — only a minor effect on kicks."
+        ],
+        "factors": [
+          {
+            "key": "wind",
+            "level": 1
+          }
         ],
         "hours": [
           {
@@ -7523,7 +8122,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 44.1,
             "espn": 44.1,
             "market": 43.7
@@ -7532,8 +8131,33 @@
       },
       "projected": {
         "away": 24,
-        "home": 22,
-        "source": "line"
+        "home": 23,
+        "blended": {
+          "away": 24.9,
+          "home": 23
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 24,
+            "home": 21.5,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 28,
+            "home": 24.5,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Friday night in Evanston: Northwestern won 22–21 last year",
       "narrativeChips": [
@@ -7637,6 +8261,16 @@
         "effects": [
           "Ball security: rain likely (63%) with about 0.28\" during the game — expect a run-heavy, sloppier script.",
           "A steady breeze (winds near 7 mph, gusts to 19) — only a minor effect on kicks."
+        ],
+        "factors": [
+          {
+            "key": "rain",
+            "level": 3
+          },
+          {
+            "key": "wind",
+            "level": 1
+          }
         ],
         "hours": [
           {
@@ -7878,7 +8512,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 71,
             "espn": 71,
             "market": 71
@@ -7886,9 +8520,39 @@
         ]
       },
       "projected": {
-        "away": 24,
-        "home": 31,
-        "source": "line"
+        "away": 23,
+        "home": 30,
+        "blended": {
+          "away": 22.2,
+          "home": 29.2
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 23.8,
+            "home": 30.8,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 25,
+            "home": 29.4,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          },
+          {
+            "id": "weather",
+            "label": "Weather",
+            "note": "-3 pts on the total (rain, wind)"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "No. 17 Tennessee hosts Auburn, which leads this old series 29–22–3",
       "narrativeChips": [
@@ -8023,6 +8687,16 @@
         "effects": [
           "Ball security: rain likely (69%) with about 0.46\" during the game — expect a run-heavy, sloppier script.",
           "A steady breeze (winds near 7 mph, gusts to 20) — only a minor effect on kicks."
+        ],
+        "factors": [
+          {
+            "key": "rain",
+            "level": 3
+          },
+          {
+            "key": "wind",
+            "level": 1
+          }
         ],
         "hours": [
           {
@@ -8264,7 +8938,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 12.6,
             "espn": 12.6,
             "market": 14.8
@@ -8272,9 +8946,39 @@
         ]
       },
       "projected": {
-        "away": 32,
+        "away": 30,
         "home": 16,
-        "source": "line"
+        "blended": {
+          "away": 30.4,
+          "home": 16.2
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 32,
+            "home": 15.5,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 33.1,
+            "home": 20.6,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          },
+          {
+            "id": "weather",
+            "label": "Weather",
+            "note": "-3 pts on the total (rain, wind)"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "No. 4 Miami (FL) visits Clemson as a two-touchdown-plus favorite",
       "narrativeChips": [
@@ -8371,6 +9075,12 @@
         "level": "low",
         "effects": [
           "Scattered showers possible (34% at worst)."
+        ],
+        "factors": [
+          {
+            "key": "rain",
+            "level": 1
+          }
         ],
         "hours": [
           {
@@ -8601,7 +9311,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 29.5,
             "espn": 29.5,
             "market": 31.5
@@ -8610,8 +9320,33 @@
       },
       "projected": {
         "away": 27,
-        "home": 21,
-        "source": "line"
+        "home": 23,
+        "blended": {
+          "away": 26.7,
+          "home": 22.7
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 27,
+            "home": 20.5,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 27.6,
+            "home": 25.3,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "No. 10 BYU at TCU, a year after a 44–13 BYU rout",
       "narrativeChips": [
@@ -8708,6 +9443,12 @@
         "level": "moderate",
         "effects": [
           "Wet ball: 55% chance of rain during the game — fumbles and drops become more likely."
+        ],
+        "factors": [
+          {
+            "key": "rain",
+            "level": 2
+          }
         ],
         "hours": [
           {
@@ -8938,7 +9679,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 8.7,
             "espn": 8.7,
             "market": 9.2
@@ -8946,9 +9687,39 @@
         ]
       },
       "projected": {
-        "away": 34,
-        "home": 13,
-        "source": "line"
+        "away": 31,
+        "home": 16,
+        "blended": {
+          "away": 31.1,
+          "home": 15.8
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 34.3,
+            "home": 13.3,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 28.5,
+            "home": 21.2,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          },
+          {
+            "id": "weather",
+            "label": "Weather",
+            "note": "-1.3 pts on the total (rain)"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "No. 3 Notre Dame at North Carolina, a series the Irish lead 21–1",
       "narrativeChips": [
@@ -9056,6 +9827,16 @@
         "effects": [
           "Scattered showers possible (42% at worst).",
           "Warm: feels like 90°F at its peak."
+        ],
+        "factors": [
+          {
+            "key": "rain",
+            "level": 1
+          },
+          {
+            "key": "heat",
+            "level": 1
+          }
         ],
         "hours": [
           {
@@ -9297,7 +10078,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 41.6,
             "espn": 41.6,
             "market": 42.8
@@ -9305,9 +10086,34 @@
         ]
       },
       "projected": {
-        "away": 27,
-        "home": 25,
-        "source": "line"
+        "away": 28,
+        "home": 26,
+        "blended": {
+          "away": 27.8,
+          "home": 25.1
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 27,
+            "home": 24.5,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 30.8,
+            "home": 24.9,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Virginia is favored at Florida State after last year's 46–38 shootout",
       "narrativeChips": [
@@ -9411,6 +10217,16 @@
         "effects": [
           "Wet ball: 55% chance of rain during the game — fumbles and drops become more likely.",
           "A steady breeze (winds near 11 mph, gusts to 23) — only a minor effect on kicks."
+        ],
+        "factors": [
+          {
+            "key": "rain",
+            "level": 2
+          },
+          {
+            "key": "wind",
+            "level": 1
+          }
         ],
         "hours": [
           {
@@ -9652,7 +10468,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 57.9,
             "espn": 57.9,
             "market": 58.3
@@ -9660,9 +10476,39 @@
         ]
       },
       "projected": {
-        "away": 25,
+        "away": 24,
         "home": 28,
-        "source": "line"
+        "blended": {
+          "away": 25.2,
+          "home": 28.6
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 25.3,
+            "home": 28.3,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 28.9,
+            "home": 30.1,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          },
+          {
+            "id": "weather",
+            "label": "Weather",
+            "note": "-1.7 pts on the total (rain, wind)"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "No. 24 Kentucky needs to end a four-game skid against South Carolina to stay ranked",
       "narrativeChips": [
@@ -9781,6 +10627,12 @@
         "level": "moderate",
         "effects": [
           "Kicking game: winds near 20 mph from the NE can push long field goals and punts off line."
+        ],
+        "factors": [
+          {
+            "key": "wind",
+            "level": 2
+          }
         ],
         "hours": [
           {
@@ -10022,7 +10874,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 13.1,
             "espn": 13.1,
             "market": 20.4
@@ -10030,9 +10882,39 @@
         ]
       },
       "projected": {
-        "away": 32,
-        "home": 19,
-        "source": "line"
+        "away": 30,
+        "home": 20,
+        "blended": {
+          "away": 29.4,
+          "home": 20.2
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 31.5,
+            "home": 19,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 29.4,
+            "home": 23.4,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          },
+          {
+            "id": "weather",
+            "label": "Weather",
+            "note": "-1.7 pts on the total (wind)"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "No. 12 Texas Tech brings a 4-0 start to Boulder",
       "narrativeChips": [
@@ -10126,6 +11008,12 @@
         "level": "low",
         "effects": [
           "Warm: feels like 91°F at its peak."
+        ],
+        "factors": [
+          {
+            "key": "heat",
+            "level": 1
+          }
         ],
         "hours": [
           {
@@ -10356,7 +11244,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 47.6,
             "espn": 47.6,
             "market": 63.1
@@ -10364,9 +11252,34 @@
         ]
       },
       "projected": {
-        "away": 23,
+        "away": 24,
         "home": 27,
-        "source": "line"
+        "blended": {
+          "away": 23.9,
+          "home": 27.1
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 22.8,
+            "home": 26.8,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 27.5,
+            "home": 26.2,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Late-night Big 12: Arizona State won last year's meeting 27–24",
       "narrativeChips": [
@@ -10447,6 +11360,7 @@
         "impact": "none impact",
         "level": "none",
         "effects": [],
+        "factors": [],
         "hours": [
           {
             "label": "Q1",
@@ -10687,7 +11601,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 56.2,
             "espn": 56.2,
             "market": 71.4
@@ -10695,9 +11609,34 @@
         ]
       },
       "projected": {
-        "away": 24,
-        "home": 31,
-        "source": "line"
+        "away": 26,
+        "home": 30,
+        "blended": {
+          "away": 25.4,
+          "home": 30.3
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 24.3,
+            "home": 31.3,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 29,
+            "home": 27,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Unbeaten Cincinnati tries to crash the poll in a late Tucson kickoff",
       "narrativeChips": [
@@ -10776,6 +11715,12 @@
         "level": "moderate",
         "effects": [
           "Wet ball: 63% chance of rain during the game — fumbles and drops become more likely."
+        ],
+        "factors": [
+          {
+            "key": "rain",
+            "level": 2
+          }
         ],
         "hours": [
           {
@@ -11017,7 +11962,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 95.6,
             "espn": 95.6,
             "market": 93.1
@@ -11025,9 +11970,39 @@
         ]
       },
       "projected": {
-        "away": 13,
-        "home": 38,
-        "source": "line"
+        "away": 16,
+        "home": 37,
+        "blended": {
+          "away": 15.6,
+          "home": 36.1
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 13,
+            "home": 37.5,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 23.9,
+            "home": 33.9,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          },
+          {
+            "id": "weather",
+            "label": "Weather",
+            "note": "-1.3 pts on the total (rain)"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Vanderbilt at No. 2 Georgia: a 24-plus-point spread and a lopsided history",
       "narrativeChips": [
@@ -11194,6 +12169,16 @@
         "effects": [
           "Wet ball: 71% chance of rain during the game — fumbles and drops become more likely.",
           "Stamina: feels like 96°F — expect heavy rotation and late-game fatigue."
+        ],
+        "factors": [
+          {
+            "key": "rain",
+            "level": 2
+          },
+          {
+            "key": "heat",
+            "level": 2
+          }
         ],
         "hours": [
           {
@@ -11435,7 +12420,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 72.2,
             "espn": 72.2,
             "market": 78.7
@@ -11443,9 +12428,39 @@
         ]
       },
       "projected": {
-        "away": 20,
-        "home": 32,
-        "source": "line"
+        "away": 21,
+        "home": 30,
+        "blended": {
+          "away": 21.1,
+          "home": 30.5
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 19.5,
+            "home": 32,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 28.2,
+            "home": 29.1,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          },
+          {
+            "id": "weather",
+            "label": "Weather",
+            "note": "-2 pts on the total (rain, heat)"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "No. 20 Houston hosts UCF, likely in the rain, after winning 30–27 last year",
       "narrativeChips": [
@@ -11537,6 +12552,7 @@
         "impact": "none impact",
         "level": "none",
         "effects": [],
+        "factors": [],
         "hours": [
           {
             "label": "Q1",
@@ -11777,7 +12793,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 3.4,
             "espn": 3.4,
             "market": 7.4
@@ -11785,9 +12801,34 @@
         ]
       },
       "projected": {
-        "away": 40,
-        "home": 16,
-        "source": "line"
+        "away": 37,
+        "home": 20,
+        "blended": {
+          "away": 36.9,
+          "home": 19.1
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 40,
+            "home": 15.5,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 32.6,
+            "home": 24.5,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "No. 6 Indiana at Rutgers, who won the last three meetings",
       "narrativeChips": [
@@ -11879,6 +12920,7 @@
         "impact": "none impact",
         "level": "none",
         "effects": [],
+        "factors": [],
         "hours": [
           {
             "label": "Q1",
@@ -12119,7 +13161,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 67.3,
             "espn": 67.3,
             "market": 77.2
@@ -12127,9 +13169,34 @@
         ]
       },
       "projected": {
-        "away": 17,
-        "home": 27,
-        "source": "line"
+        "away": 20,
+        "home": 28,
+        "blended": {
+          "away": 18.8,
+          "home": 27.4
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 16.8,
+            "home": 26.8,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 24,
+            "home": 27.2,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Michigan State at Wisconsin in the early Big Ten window",
       "narrativeChips": [
@@ -12269,6 +13336,16 @@
         "effects": [
           "Wet ball: 54% chance of rain during the game — fumbles and drops become more likely.",
           "A steady breeze (winds near 11 mph, gusts to 21) — only a minor effect on kicks."
+        ],
+        "factors": [
+          {
+            "key": "rain",
+            "level": 2
+          },
+          {
+            "key": "wind",
+            "level": 1
+          }
         ],
         "hours": [
           {
@@ -12510,7 +13587,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 32.8,
             "espn": 32.8,
             "market": 36.9
@@ -12518,9 +13595,39 @@
         ]
       },
       "projected": {
-        "away": 31,
-        "home": 27,
-        "source": "line"
+        "away": 30,
+        "home": 28,
+        "blended": {
+          "away": 29.8,
+          "home": 28.3
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 31.3,
+            "home": 27.3,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 30.9,
+            "home": 31.2,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          },
+          {
+            "id": "weather",
+            "label": "Weather",
+            "note": "-1.7 pts on the total (rain, wind)"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Louisville at NC State, one of the week's higher college totals",
       "narrativeChips": [
@@ -12615,6 +13722,12 @@
         "level": "low",
         "effects": [
           "Warm: feels like 91°F at its peak."
+        ],
+        "factors": [
+          {
+            "key": "heat",
+            "level": 1
+          }
         ],
         "hours": [
           {
@@ -12867,7 +13980,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 83.8,
             "espn": 83.8,
             "market": 75.7
@@ -12875,9 +13988,34 @@
         ]
       },
       "projected": {
-        "away": 25,
-        "home": 34,
-        "source": "line"
+        "away": 26,
+        "home": 33,
+        "blended": {
+          "away": 25.1,
+          "home": 32.6
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 24.5,
+            "home": 34,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 27.5,
+            "home": 28.5,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "No. 18 USC tries to stop a three-game skid against Washington",
       "narrativeChips": [
@@ -13045,6 +14183,7 @@
         "impact": "none impact",
         "level": "none",
         "effects": [],
+        "factors": [],
         "hours": [
           {
             "label": "Q1",
@@ -13285,7 +14424,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 62.3,
             "espn": 62.3,
             "market": 59.3
@@ -13293,9 +14432,34 @@
         ]
       },
       "projected": {
-        "away": 25,
+        "away": 24,
         "home": 28,
-        "source": "line"
+        "blended": {
+          "away": 24.9,
+          "home": 28.4
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 24.5,
+            "home": 28,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 26.9,
+            "home": 27.9,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Iowa State is favored at home; West Virginia and the Cyclones are 6–6 all-time",
       "narrativeChips": [
@@ -13389,6 +14553,12 @@
         "level": "low",
         "effects": [
           "A steady breeze (winds near 13 mph, gusts to 21) — only a minor effect on kicks."
+        ],
+        "factors": [
+          {
+            "key": "wind",
+            "level": 1
+          }
         ],
         "hours": [
           {
@@ -13630,7 +14800,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 24.4,
             "espn": 24.4,
             "market": 33.6
@@ -13638,9 +14808,34 @@
         ]
       },
       "projected": {
-        "away": 25,
-        "home": 19,
-        "source": "line"
+        "away": 24,
+        "home": 21,
+        "blended": {
+          "away": 24.1,
+          "home": 22
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 24.5,
+            "home": 19,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 24.7,
+            "home": 26.2,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Michigan has won five straight against Minnesota, but 2024 ended 27–24",
       "narrativeChips": [
@@ -14020,7 +15215,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 40.9,
             "espn": 40.9,
             "market": 50.4
@@ -14030,7 +15225,32 @@
       "projected": {
         "away": 28,
         "home": 30,
-        "source": "line"
+        "blended": {
+          "away": 27.4,
+          "home": 29.3
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 28,
+            "home": 29.5,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 27.7,
+            "home": 27.5,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Thursday night: North Texas and Tulsa, with a 57.5 total",
       "narrativeChips": [
@@ -14138,6 +15358,7 @@
         "impact": "none impact",
         "level": "none",
         "effects": [],
+        "factors": [],
         "hours": [
           {
             "label": "Q1",
@@ -14378,7 +15599,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 47.9,
             "espn": 47.9,
             "market": 36.9
@@ -14386,9 +15607,34 @@
         ]
       },
       "projected": {
-        "away": 32,
+        "away": 31,
         "home": 28,
-        "source": "line"
+        "blended": {
+          "away": 31,
+          "home": 28.2
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 32,
+            "home": 27.5,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 30.6,
+            "home": 28.2,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Late-night first meeting: Texas State at San Diego State",
       "narrativeChips": [
@@ -14653,7 +15899,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 54,
             "espn": 54,
             "market": 56.3
@@ -14663,7 +15909,32 @@
       "projected": {
         "away": 26,
         "home": 28,
-        "source": "line"
+        "blended": {
+          "away": 25.1,
+          "home": 27.4
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 25.5,
+            "home": 28,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 25.7,
+            "home": 24.9,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Cal visits UNLV under the roof in a near pick'em",
       "narrativeChips": [
@@ -14744,6 +16015,7 @@
         "impact": "none impact",
         "level": "none",
         "effects": [],
+        "factors": [],
         "hours": [
           {
             "label": "Q1",
@@ -14984,7 +16256,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 92.7,
             "espn": 92.7,
             "market": 83.7
@@ -14992,9 +16264,34 @@
         ]
       },
       "projected": {
-        "away": 19,
-        "home": 34,
-        "source": "line"
+        "away": 20,
+        "home": 33,
+        "blended": {
+          "away": 20.5,
+          "home": 33.3
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 19,
+            "home": 33.5,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 24.7,
+            "home": 31.5,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Unbeaten Nebraska hosts Maryland after a 34–31 game last year",
       "narrativeChips": [
@@ -15081,6 +16378,16 @@
         "effects": [
           "Wet ball: 57% chance of rain during the game — fumbles and drops become more likely.",
           "A steady breeze (winds near 10 mph, gusts to 20) — only a minor effect on kicks."
+        ],
+        "factors": [
+          {
+            "key": "rain",
+            "level": 2
+          },
+          {
+            "key": "wind",
+            "level": 1
+          }
         ],
         "hours": [
           {
@@ -15322,7 +16629,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 86.7,
             "espn": 86.7,
             "market": 82.7
@@ -15330,9 +16637,39 @@
         ]
       },
       "projected": {
-        "away": 18,
-        "home": 32,
-        "source": "line"
+        "away": 20,
+        "home": 31,
+        "blended": {
+          "away": 19.2,
+          "home": 30.6
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 18.3,
+            "home": 32.3,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 24.7,
+            "home": 28.7,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          },
+          {
+            "id": "weather",
+            "label": "Weather",
+            "note": "-1.7 pts on the total (rain, wind)"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Texas A&M has won four straight over Arkansas, including a 45–42 thriller last year",
       "narrativeChips": [
@@ -15496,6 +16833,7 @@
         "impact": "none impact",
         "level": "none",
         "effects": [],
+        "factors": [],
         "hours": [
           {
             "label": "Q1",
@@ -15736,7 +17074,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 92.3,
             "espn": 92.3,
             "market": 90.4
@@ -15744,9 +17082,34 @@
         ]
       },
       "projected": {
-        "away": 16,
-        "home": 36,
-        "source": "line"
+        "away": 17,
+        "home": 34,
+        "blended": {
+          "away": 17.2,
+          "home": 33.7
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 15.5,
+            "home": 36,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 21.8,
+            "home": 27.9,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "No. 22 Boise State hosts Utah State after surviving 25–24 last year",
       "narrativeChips": [
@@ -15860,6 +17223,16 @@
         "effects": [
           "Wet ball: 67% chance of rain during the game — fumbles and drops become more likely.",
           "A steady breeze (winds near 9 mph, gusts to 22) — only a minor effect on kicks."
+        ],
+        "factors": [
+          {
+            "key": "rain",
+            "level": 2
+          },
+          {
+            "key": "wind",
+            "level": 1
+          }
         ],
         "hours": [
           {
@@ -16079,7 +17452,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 49,
             "espn": 49,
             "market": 45.7
@@ -16087,9 +17460,39 @@
         ]
       },
       "projected": {
-        "away": 25,
-        "home": 22,
-        "source": "line"
+        "away": 26,
+        "home": 24,
+        "blended": {
+          "away": 25.1,
+          "home": 23.5
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 24.5,
+            "home": 22,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 29.9,
+            "home": 27.4,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          },
+          {
+            "id": "weather",
+            "label": "Weather",
+            "note": "-1.7 pts on the total (rain, wind)"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Army has won all three meetings with Louisiana Tech",
       "narrativeChips": [
@@ -16172,6 +17575,12 @@
         "level": "moderate",
         "effects": [
           "Kicking game: winds near 18 mph, gusts to 24 from the NE can push long field goals and punts off line."
+        ],
+        "factors": [
+          {
+            "key": "wind",
+            "level": 2
+          }
         ],
         "hours": [
           {
@@ -16413,7 +17822,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 38.9,
             "espn": 38.9,
             "market": 32.5
@@ -16421,9 +17830,39 @@
         ]
       },
       "projected": {
-        "away": 34,
+        "away": 31,
         "home": 28,
-        "source": "line"
+        "blended": {
+          "away": 31.8,
+          "home": 28.5
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 34.3,
+            "home": 28.3,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 31,
+            "home": 30.1,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          },
+          {
+            "id": "weather",
+            "label": "Weather",
+            "note": "-1.7 pts on the total (wind)"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Oregon State at Colorado State, one of the week's highest college totals",
       "narrativeChips": [
@@ -16508,6 +17947,7 @@
         "impact": "none impact",
         "level": "none",
         "effects": [],
+        "factors": [],
         "hours": [
           {
             "label": "Q1",
@@ -16748,7 +18188,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 38.3,
             "espn": 38.3,
             "market": 53.2
@@ -16756,9 +18196,34 @@
         ]
       },
       "projected": {
-        "away": 22,
+        "away": 23,
         "home": 24,
-        "source": "line"
+        "blended": {
+          "away": 23,
+          "home": 24.4
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 21.5,
+            "home": 24,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 27.2,
+            "home": 23.8,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Pac-12 co-leader Fresno State visits Pullman as a slight underdog",
       "narrativeChips": [
@@ -16849,6 +18314,20 @@
           "Wet ball: 68% chance of rain during the game — fumbles and drops become more likely.",
           "A steady breeze (winds near 9 mph, gusts to 20) — only a minor effect on kicks.",
           "Warm: feels like 91°F at its peak."
+        ],
+        "factors": [
+          {
+            "key": "rain",
+            "level": 2
+          },
+          {
+            "key": "wind",
+            "level": 1
+          },
+          {
+            "key": "heat",
+            "level": 1
+          }
         ],
         "hours": [
           {
@@ -17090,7 +18569,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 68.7,
             "espn": 68.7,
             "market": 67.5
@@ -17100,7 +18579,37 @@
       "projected": {
         "away": 21,
         "home": 28,
-        "source": "line"
+        "blended": {
+          "away": 20.7,
+          "home": 27.5
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 21,
+            "home": 27.5,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 24,
+            "home": 28.5,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          },
+          {
+            "id": "weather",
+            "label": "Weather",
+            "note": "-1.7 pts on the total (rain, wind)"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Unbeaten South Florida hosts Temple, which leads the series 6–4",
       "narrativeChips": [
@@ -17193,6 +18702,12 @@
         "level": "low",
         "effects": [
           "A steady breeze (winds near 13 mph, gusts to 20) — only a minor effect on kicks."
+        ],
+        "factors": [
+          {
+            "key": "wind",
+            "level": 1
+          }
         ],
         "hours": [
           {
@@ -17434,7 +18949,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 34.8,
             "espn": 34.8,
             "market": 30
@@ -17442,9 +18957,34 @@
         ]
       },
       "projected": {
-        "away": 29,
-        "home": 22,
-        "source": "line"
+        "away": 28,
+        "home": 23,
+        "blended": {
+          "away": 27.9,
+          "home": 23
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 28.8,
+            "home": 21.8,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 27.7,
+            "home": 24,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Friday night C-USA: Liberty at Delaware after a 59–30 game last year",
       "narrativeChips": [
@@ -17523,6 +19063,12 @@
         "level": "moderate",
         "effects": [
           "Wet ball: 58% chance of rain during the game — fumbles and drops become more likely."
+        ],
+        "factors": [
+          {
+            "key": "rain",
+            "level": 2
+          }
         ],
         "hours": [
           {
@@ -17764,7 +19310,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 89.6,
             "espn": 89.6,
             "market": 90.8
@@ -17772,9 +19318,39 @@
         ]
       },
       "projected": {
-        "away": 17,
-        "home": 38,
-        "source": "line"
+        "away": 20,
+        "home": 35,
+        "blended": {
+          "away": 18.7,
+          "home": 34.9
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 17.3,
+            "home": 38.3,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 24.7,
+            "home": 29.1,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          },
+          {
+            "id": "weather",
+            "label": "Weather",
+            "note": "-1.3 pts on the total (rain)"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "No. 21 SMU is a three-touchdown favorite over Boston College",
       "narrativeChips": [
@@ -17859,6 +19435,7 @@
         "impact": "none impact",
         "level": "none",
         "effects": [],
+        "factors": [],
         "hours": [
           {
             "label": "Q1",
@@ -18088,7 +19665,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 29.1,
             "espn": 29.1,
             "market": 31.9
@@ -18096,9 +19673,34 @@
         ]
       },
       "projected": {
-        "away": 29,
-        "home": 22,
-        "source": "line"
+        "away": 28,
+        "home": 24,
+        "blended": {
+          "away": 27.6,
+          "home": 24.3
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 28.5,
+            "home": 22,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 27.4,
+            "home": 27.2,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Syracuse has won six straight against UConn",
       "narrativeChips": [
@@ -18195,6 +19797,7 @@
         "impact": "none impact",
         "level": "none",
         "effects": [],
+        "factors": [],
         "hours": [
           {
             "label": "Q1",
@@ -18413,7 +20016,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 65.1,
             "espn": 65.1,
             "market": 60.4
@@ -18421,9 +20024,34 @@
         ]
       },
       "projected": {
-        "away": 21,
-        "home": 24,
-        "source": "line"
+        "away": 23,
+        "home": 26,
+        "blended": {
+          "away": 23,
+          "home": 26.4
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 21.3,
+            "home": 24.3,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 27.6,
+            "home": 28.9,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Commander-in-Chief's Trophy game: Navy at Air Force",
       "narrativeChips": [
@@ -18562,6 +20190,7 @@
         "impact": "none impact",
         "level": "none",
         "effects": [],
+        "factors": [],
         "hours": [
           {
             "label": "Q1",
@@ -18802,7 +20431,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 81.1,
             "espn": 81.1,
             "market": 75.7
@@ -18811,8 +20440,33 @@
       },
       "projected": {
         "away": 26,
-        "home": 36,
-        "source": "line"
+        "home": 35,
+        "blended": {
+          "away": 26.3,
+          "home": 35.3
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 25.8,
+            "home": 35.8,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 28.7,
+            "home": 33,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Purdue at Illinois: the top college total and a 48–47–6 series",
       "narrativeChips": [
@@ -19187,7 +20841,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 51.4,
             "espn": 51.4,
             "market": 55.1
@@ -19195,9 +20849,34 @@
         ]
       },
       "projected": {
-        "away": 28,
-        "home": 30,
-        "source": "line"
+        "away": 27,
+        "home": 31,
+        "blended": {
+          "away": 26.7,
+          "home": 30.9
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 27.5,
+            "home": 30,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 26.7,
+            "home": 31.2,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Thursday C-USA: Western Kentucky at New Mexico State, a one-score line",
       "narrativeChips": [
@@ -19281,6 +20960,12 @@
         "level": "low",
         "effects": [
           "Scattered showers possible (41% at worst)."
+        ],
+        "factors": [
+          {
+            "key": "rain",
+            "level": 1
+          }
         ],
         "hours": [
           {
@@ -19522,7 +21207,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 93,
             "espn": 93,
             "market": 87.6
@@ -19530,9 +21215,34 @@
         ]
       },
       "projected": {
-        "away": 19,
+        "away": 20,
         "home": 37,
-        "source": "line"
+        "blended": {
+          "away": 19.3,
+          "home": 36.5
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 18.5,
+            "home": 37,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 22.2,
+            "home": 34.1,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Unbeaten James Madison hosts Marshall, which leads the series 4–2",
       "narrativeChips": [
@@ -19620,6 +21330,12 @@
         "level": "low",
         "effects": [
           "Scattered showers possible (47% at worst)."
+        ],
+        "factors": [
+          {
+            "key": "rain",
+            "level": 1
+          }
         ],
         "hours": [
           {
@@ -19861,7 +21577,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 43.6,
             "espn": 43.6,
             "market": 44.9
@@ -19869,9 +21585,34 @@
         ]
       },
       "projected": {
-        "away": 29,
+        "away": 27,
         "home": 26,
-        "source": "line"
+        "blended": {
+          "away": 26.9,
+          "home": 26.5
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 28.5,
+            "home": 26,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 25.4,
+            "home": 25.9,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Georgia Southern has won three straight over Coastal — 2025 was 45–40",
       "narrativeChips": [
@@ -19966,6 +21707,12 @@
         "level": "moderate",
         "effects": [
           "Wet ball: 61% chance of rain during the game — fumbles and drops become more likely."
+        ],
+        "factors": [
+          {
+            "key": "rain",
+            "level": 2
+          }
         ],
         "hours": [
           {
@@ -20207,7 +21954,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 87.9,
             "espn": 87.9,
             "market": 80.4
@@ -20216,8 +21963,38 @@
       },
       "projected": {
         "away": 21,
-        "home": 33,
-        "source": "line"
+        "home": 31,
+        "blended": {
+          "away": 21.3,
+          "home": 32
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 20.5,
+            "home": 33,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 26,
+            "home": 30.6,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          },
+          {
+            "id": "weather",
+            "label": "Weather",
+            "note": "-1.3 pts on the total (rain)"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Stanford at Wake Forest; Wake won 27–24 last time",
       "narrativeChips": [
@@ -20299,6 +22076,12 @@
         "level": "moderate",
         "effects": [
           "Wet ball: 68% chance of rain during the game — fumbles and drops become more likely."
+        ],
+        "factors": [
+          {
+            "key": "rain",
+            "level": 2
+          }
         ],
         "hours": [
           {
@@ -20540,7 +22323,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 64.9,
             "espn": 64.9,
             "market": 53.2
@@ -20548,9 +22331,39 @@
         ]
       },
       "projected": {
-        "away": 25,
+        "away": 23,
         "home": 28,
-        "source": "line"
+        "blended": {
+          "away": 23.6,
+          "home": 28.8
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 25,
+            "home": 27.5,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 24.5,
+            "home": 31.7,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          },
+          {
+            "id": "weather",
+            "label": "Weather",
+            "note": "-1.3 pts on the total (rain)"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Old Dominion has won three straight against Georgia State",
       "narrativeChips": [
@@ -20640,6 +22453,16 @@
         "effects": [
           "Wet ball: 85% chance of rain during the game — fumbles and drops become more likely.",
           "A steady breeze (winds near 9 mph, gusts to 19) — only a minor effect on kicks."
+        ],
+        "factors": [
+          {
+            "key": "rain",
+            "level": 2
+          },
+          {
+            "key": "wind",
+            "level": 1
+          }
         ],
         "hours": [
           {
@@ -20881,7 +22704,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 75.5,
             "espn": 75.5,
             "market": 68.5
@@ -20891,7 +22714,37 @@
       "projected": {
         "away": 21,
         "home": 27,
-        "source": "line"
+        "blended": {
+          "away": 20.6,
+          "home": 26.8
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 20.5,
+            "home": 27,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 24.7,
+            "home": 27.5,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          },
+          {
+            "id": "weather",
+            "label": "Weather",
+            "note": "-1.7 pts on the total (rain, wind)"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Sun Belt West leader Louisiana hosts Arkansas State",
       "narrativeChips": [
@@ -21030,6 +22883,20 @@
           "Wet ball: 71% chance of rain during the game — fumbles and drops become more likely.",
           "A steady breeze (winds near 12 mph, gusts to 19) — only a minor effect on kicks.",
           "Warm: feels like 89°F at its peak."
+        ],
+        "factors": [
+          {
+            "key": "rain",
+            "level": 2
+          },
+          {
+            "key": "wind",
+            "level": 1
+          },
+          {
+            "key": "heat",
+            "level": 1
+          }
         ],
         "hours": [
           {
@@ -21271,7 +23138,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 18.9,
             "espn": 18.9,
             "market": 21.3
@@ -21279,9 +23146,39 @@
         ]
       },
       "projected": {
-        "away": 34,
-        "home": 22,
-        "source": "line"
+        "away": 31,
+        "home": 23,
+        "blended": {
+          "away": 31.2,
+          "home": 23
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 33.5,
+            "home": 22,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 30.7,
+            "home": 25.8,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          },
+          {
+            "id": "weather",
+            "label": "Weather",
+            "note": "-1.7 pts on the total (rain, wind)"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "UTSA won by 48 against Rice last year",
       "narrativeChips": [
@@ -21374,6 +23271,12 @@
         "level": "moderate",
         "effects": [
           "Kicking game: winds near 11 mph, gusts to 26 from the NE can push long field goals and punts off line."
+        ],
+        "factors": [
+          {
+            "key": "wind",
+            "level": 2
+          }
         ],
         "hours": [
           {
@@ -21615,7 +23518,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 66.1,
             "espn": 66.1,
             "market": 56.3
@@ -21624,8 +23527,38 @@
       },
       "projected": {
         "away": 24,
-        "home": 27,
-        "source": "line"
+        "home": 26,
+        "blended": {
+          "away": 23.6,
+          "home": 26.1
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 24.3,
+            "home": 27.3,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 26.1,
+            "home": 24.9,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          },
+          {
+            "id": "weather",
+            "label": "Weather",
+            "note": "-1.7 pts on the total (wind)"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Near-midnight ET kickoff in Honolulu: San José State has won five straight",
       "narrativeChips": [
@@ -21946,7 +23879,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 91.6,
             "espn": 91.6,
             "market": 88.7
@@ -21954,9 +23887,34 @@
         ]
       },
       "projected": {
-        "away": 14,
-        "home": 32,
-        "source": "line"
+        "away": 16,
+        "home": 31,
+        "blended": {
+          "away": 15.5,
+          "home": 31
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 13.5,
+            "home": 32,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 20.6,
+            "home": 27.9,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Wyoming visits unbeaten North Dakota State in the Fargodome",
       "narrativeChips": [
@@ -22036,6 +23994,7 @@
         "impact": "none impact",
         "level": "none",
         "effects": [],
+        "factors": [],
         "hours": [
           {
             "label": "Q1",
@@ -22265,7 +24224,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 89.2,
             "espn": 89.2,
             "market": 89.3
@@ -22273,9 +24232,34 @@
         ]
       },
       "projected": {
-        "away": 16,
-        "home": 34,
-        "source": "line"
+        "away": 20,
+        "home": 33,
+        "blended": {
+          "away": 18.7,
+          "home": 31.9
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 15.5,
+            "home": 34,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 26.1,
+            "home": 26.5,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "First meeting: Middle Tennessee at Kansas",
       "narrativeChips": [
@@ -22347,6 +24331,12 @@
         "level": "high",
         "effects": [
           "Ball security: rain likely (62%) with about 0.16\" during the game — expect a run-heavy, sloppier script."
+        ],
+        "factors": [
+          {
+            "key": "rain",
+            "level": 3
+          }
         ],
         "hours": [
           {
@@ -22588,7 +24578,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 10.4,
             "espn": 10.4,
             "market": 10.1
@@ -22596,9 +24586,39 @@
         ]
       },
       "projected": {
-        "away": 37,
-        "home": 16,
-        "source": "line"
+        "away": 33,
+        "home": 17,
+        "blended": {
+          "away": 33,
+          "home": 18.3
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 36.5,
+            "home": 16,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 31.9,
+            "home": 25,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          },
+          {
+            "id": "weather",
+            "label": "Weather",
+            "note": "-2.7 pts on the total (rain)"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Memphis is a three-touchdown favorite at winless Charlotte",
       "narrativeChips": [
@@ -22681,6 +24701,16 @@
         "effects": [
           "Wet ball: 88% chance of rain during the game — fumbles and drops become more likely.",
           "Warm: feels like 90°F at its peak."
+        ],
+        "factors": [
+          {
+            "key": "rain",
+            "level": 2
+          },
+          {
+            "key": "heat",
+            "level": 1
+          }
         ],
         "hours": [
           {
@@ -22940,7 +24970,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 99.8,
             "espn": 99.8,
             "market": null
@@ -22948,8 +24978,30 @@
         ]
       },
       "projected": {
-        "away": 20,
-        "home": 33,
+        "away": 23,
+        "home": 30,
+        "blended": {
+          "away": 22,
+          "home": 30
+        },
+        "parts": [
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 24.4,
+            "home": 29.6
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          },
+          {
+            "id": "weather",
+            "label": "Weather",
+            "note": "-2 pts on the total (rain)"
+          }
+        ],
         "source": "season scoring"
       },
       "narrative": "No. 11 LSU hosts FCS McNeese at night",
@@ -23030,6 +25082,7 @@
         "impact": "none impact",
         "level": "none",
         "effects": [],
+        "factors": [],
         "hours": [
           {
             "label": "Q1",
@@ -23270,7 +25323,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 15.6,
             "espn": 15.6,
             "market": 17.8
@@ -23279,8 +25332,33 @@
       },
       "projected": {
         "away": 30,
-        "home": 17,
-        "source": "line"
+        "home": 20,
+        "blended": {
+          "away": 28.9,
+          "home": 19.5
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 30,
+            "home": 16.5,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 28.4,
+            "home": 23.8,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Western Michigan at Buffalo, the MAC matchup that once ended 71–68",
       "narrativeChips": [
@@ -23373,6 +25451,7 @@
         "impact": "none impact",
         "level": "none",
         "effects": [],
+        "factors": [],
         "hours": [
           {
             "label": "Q1",
@@ -23613,7 +25692,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 67.1,
             "espn": 67.1,
             "market": 68.5
@@ -23622,8 +25701,33 @@
       },
       "projected": {
         "away": 21,
-        "home": 27,
-        "source": "line"
+        "home": 26,
+        "blended": {
+          "away": 21.7,
+          "home": 26.6
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 20.5,
+            "home": 27,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 25.4,
+            "home": 24.5,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Akron beat Central Michigan 28–22 last year",
       "narrativeChips": [
@@ -23735,6 +25839,7 @@
         "impact": "none impact",
         "level": "none",
         "effects": [],
+        "factors": [],
         "hours": [
           {
             "label": "Q1",
@@ -23975,7 +26080,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 96.7,
             "espn": 96.7,
             "market": 92
@@ -23983,9 +26088,34 @@
         ]
       },
       "projected": {
-        "away": 13,
-        "home": 36,
-        "source": "line"
+        "away": 16,
+        "home": 35,
+        "blended": {
+          "away": 15.2,
+          "home": 35.3
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 13,
+            "home": 35.5,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 20.7,
+            "home": 33.6,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "New Mexico is a 22.5-point favorite over UTEP",
       "narrativeChips": [
@@ -24148,6 +26278,12 @@
         "level": "low",
         "effects": [
           "A steady breeze (winds near 15 mph) — only a minor effect on kicks."
+        ],
+        "factors": [
+          {
+            "key": "wind",
+            "level": 1
+          }
         ],
         "hours": [
           {
@@ -24389,7 +26525,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 6,
             "espn": 6,
             "market": 10.7
@@ -24397,9 +26533,34 @@
         ]
       },
       "projected": {
-        "away": 36,
-        "home": 17,
-        "source": "line"
+        "away": 35,
+        "home": 20,
+        "blended": {
+          "away": 35.2,
+          "home": 19.8
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 36,
+            "home": 16.5,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 35.1,
+            "home": 24.6,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Toledo has won four straight over Ball State",
       "narrativeChips": [
@@ -24531,6 +26692,7 @@
         "impact": "none impact",
         "level": "none",
         "effects": [],
+        "factors": [],
         "hours": [
           {
             "label": "Q1",
@@ -24782,7 +26944,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 82.9,
             "espn": 82.9,
             "market": 67.5
@@ -24790,9 +26952,34 @@
         ]
       },
       "projected": {
-        "away": 21,
+        "away": 20,
         "home": 28,
-        "source": "line"
+        "blended": {
+          "away": 20.5,
+          "home": 28.9
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 21,
+            "home": 27.5,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 20.8,
+            "home": 30.1,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "4-0 UMass hosts Eastern Michigan, winners of the last four meetings",
       "narrativeChips": [
@@ -24880,6 +27067,7 @@
         "impact": "none impact",
         "level": "none",
         "effects": [],
+        "factors": [],
         "hours": [
           {
             "label": "Q1",
@@ -25120,7 +27308,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 23.2,
             "espn": 23.2,
             "market": 40
@@ -25130,7 +27318,32 @@
       "projected": {
         "away": 27,
         "home": 24,
-        "source": "line"
+        "blended": {
+          "away": 27.7,
+          "home": 24.9
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 26.8,
+            "home": 23.8,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 30.9,
+            "home": 25.5,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Ohio beat Kent State 41–0 the last time they met",
       "narrativeChips": [
@@ -25289,6 +27502,16 @@
         "effects": [
           "Kicking game: winds near 10 mph, gusts to 25 from the NE can push long field goals and punts off line.",
           "Wet ball: 70% chance of rain during the game — fumbles and drops become more likely."
+        ],
+        "factors": [
+          {
+            "key": "wind",
+            "level": 2
+          },
+          {
+            "key": "rain",
+            "level": 2
+          }
         ],
         "hours": [
           {
@@ -25530,7 +27753,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 87.4,
             "espn": 87.4,
             "market": 81.2
@@ -25538,9 +27761,39 @@
         ]
       },
       "projected": {
-        "away": 15,
+        "away": 16,
         "home": 28,
-        "source": "line"
+        "blended": {
+          "away": 15.5,
+          "home": 27.9
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 14.5,
+            "home": 28,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 23.1,
+            "home": 30.5,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          },
+          {
+            "id": "weather",
+            "label": "Weather",
+            "note": "-3 pts on the total (wind, rain)"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Winless Bowling Green at Miami (OH)",
       "narrativeChips": [
@@ -25702,6 +27955,16 @@
         "effects": [
           "Wet ball: 76% chance of rain during the game — fumbles and drops become more likely.",
           "A steady breeze (winds near 9 mph, gusts to 20) — only a minor effect on kicks."
+        ],
+        "factors": [
+          {
+            "key": "rain",
+            "level": 2
+          },
+          {
+            "key": "wind",
+            "level": 1
+          }
         ],
         "hours": [
           {
@@ -25943,7 +28206,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 90.1,
             "espn": 90.1,
             "market": 82.2
@@ -25951,9 +28214,39 @@
         ]
       },
       "projected": {
-        "away": 22,
-        "home": 36,
-        "source": "line"
+        "away": 23,
+        "home": 35,
+        "blended": {
+          "away": 22.2,
+          "home": 34.5
+        },
+        "parts": [
+          {
+            "id": "line",
+            "label": "Betting line",
+            "away": 21.8,
+            "home": 35.8,
+            "weight": 65
+          },
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 26.9,
+            "home": 33.2,
+            "weight": 35
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          },
+          {
+            "id": "weather",
+            "label": "Weather",
+            "note": "-1.7 pts on the total (rain, wind)"
+          }
+        ],
+        "source": "line + season scoring"
       },
       "narrative": "Winless UL Monroe visits South Alabama, winners of four straight in the series",
       "narrativeChips": [
@@ -26048,6 +28341,12 @@
         "level": "high",
         "effects": [
           "Ball security: rain likely (74%) with about 0.49\" during the game — expect a run-heavy, sloppier script."
+        ],
+        "factors": [
+          {
+            "key": "rain",
+            "level": 3
+          }
         ],
         "hours": [
           {
@@ -26296,7 +28595,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 91.3,
             "espn": 91.3,
             "market": null
@@ -26306,6 +28605,28 @@
       "projected": {
         "away": 23,
         "home": 24,
+        "blended": {
+          "away": 22.5,
+          "home": 24.5
+        },
+        "parts": [
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 25.9,
+            "home": 25.1
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          },
+          {
+            "id": "weather",
+            "label": "Weather",
+            "note": "-4 pts on the total (rain)"
+          }
+        ],
         "source": "season scoring"
       },
       "narrative": "FCS Samford at UAB",
@@ -26388,6 +28709,20 @@
           "A steady breeze (winds near 16 mph) — only a minor effect on kicks.",
           "Scattered showers possible (32% at worst).",
           "Warm: feels like 90°F at its peak."
+        ],
+        "factors": [
+          {
+            "key": "wind",
+            "level": 1
+          },
+          {
+            "key": "rain",
+            "level": 1
+          },
+          {
+            "key": "heat",
+            "level": 1
+          }
         ],
         "hours": [
           {
@@ -26636,7 +28971,7 @@
         "basis": "ESPN matchup predictor",
         "history": [
           {
-            "at": "2026-09-29T23:49:55.262Z",
+            "at": "2026-09-29T23:58:23.496Z",
             "home": 98,
             "espn": 98,
             "market": null
@@ -26644,8 +28979,30 @@
         ]
       },
       "projected": {
-        "away": 27,
-        "home": 39,
+        "away": 26,
+        "home": 34,
+        "blended": {
+          "away": 26.5,
+          "home": 34
+        },
+        "parts": [
+          {
+            "id": "season",
+            "label": "Season scoring",
+            "away": 28.4,
+            "home": 33.1
+          },
+          {
+            "id": "home",
+            "label": "Home field",
+            "note": "+2.8 pts to the home margin"
+          },
+          {
+            "id": "weather",
+            "label": "Weather",
+            "note": "-1 pts on the total (wind, rain)"
+          }
+        ],
         "source": "season scoring"
       },
       "narrative": "FCS Texas Southern at Florida Atlantic",
