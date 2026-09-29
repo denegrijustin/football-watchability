@@ -16,6 +16,8 @@ on:
   schedule:
     - cron: "2 13 * * 0,1,2,4,5"
     - cron: "2 14 * * 0,1,2,4,5"
+  push:
+    branches: [refresh-test]
   workflow_dispatch:
     inputs:
       today:
@@ -41,7 +43,7 @@ jobs:
           offset=$(TZ=America/Chicago date +%z)
           sched="${{ github.event.schedule }}"
           run=no
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then run=yes
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] || [ "${{ github.event_name }}" = "push" ]; then run=yes
           elif [ "$sched" = "2 13 * * 0,1,2,4,5" ] && [ "$offset" = "-0500" ]; then run=yes
           elif [ "$sched" = "2 14 * * 0,1,2,4,5" ] && [ "$offset" = "-0600" ]; then run=yes
           fi
