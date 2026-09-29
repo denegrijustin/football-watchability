@@ -19,4 +19,4 @@ jobs:
           git config user.email "41898699+github-actions[bot]@users.noreply.github.com"
           git add data-raw/commons-probe.json
           git diff --cached --quiet || git commit -q -m "Commons logo probe"
-          git pull -q --rebase && git push
+          git pull -q --rebase origin "${GITHUB_REF_NAME}" && git push

@@ -161,6 +161,7 @@ try {
   networks = JSON.parse(readFileSync(new URL("src/data/networks.json", root), "utf8"));
 } catch {}
 for (const [slug, n] of Object.entries(networkIds)) {
+  try {
   const file = new URL(`public/networks/${slug}.webp`, root);
   if (!ALL && networks[slug] && existsSync(file)) continue;
   // ESPN's light-background logo (shown on a light chip), else Wikimedia Commons.
@@ -189,6 +190,10 @@ for (const [slug, n] of Object.entries(networkIds)) {
   writeFileSync(file, buf);
   networks[slug] = { name: n.name, src: `/networks/${slug}.webp`, source: url };
   console.log(`✓ network ${slug} (${buf.length} B)`);
+  } catch (e) {
+    problems.push({ network: slug, error: String(e?.message ?? e) });
+    console.log(`✗ network ${slug}: ${e?.message ?? e}`);
+  }
 }
 writeFileSync(new URL("src/data/networks.json", root), JSON.stringify(networks, null, 2) + "\n");
 

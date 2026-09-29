@@ -24,4 +24,5 @@ jobs:
           git config user.email "41898699+github-actions[bot]@users.noreply.github.com"
           git add data-raw/weather.json data-raw/weather-errors.json data-raw/trends.json data-raw/trends-errors.json
           git diff --cached --quiet || git commit -q -m "Weather refresh $(date -u +%FT%H:%MZ)"
+          git pull -q --rebase origin "${GITHUB_REF_NAME}" || true
           git push
