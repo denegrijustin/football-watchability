@@ -83,36 +83,8 @@ save("cfb-rankings.json", await get(`${SITE}/college-football/rankings`, { optio
 save("nfl-teams.json", await get(`${SITE}/nfl/teams`));
 save("cfb-teams.json", await get(`${SITE}/college-football/teams?limit=1000`));
 
-// Weather: Open-Meteo daily forecast for each outdoor venue on game day.
-const seen = new Map();
-for (const key of Object.keys(leagues)) {
-  const board = JSON.parse(readFileSync(new URL(`${key}-scoreboard.json`, out), "utf8"));
-  for (const ev of board.events ?? []) {
-    const comp = ev.competitions?.[0];
-    const addr = comp?.venue?.address ?? {};
-    const place = [addr.city, addr.state].filter(Boolean).join(", ");
-    if (!place || seen.has(place)) continue;
-    const geo = await get(
-      `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(addr.city)}&count=5&language=en&format=json&countryCode=US`,
-      { optional: true },
-    );
-    seen.set(place, geo);
-    await sleep(80);
-  }
-}
-const places = {};
-for (const [place, geo] of seen) {
-  const state = place.split(", ")[1];
-  const hit = geo?.results?.find((r) => !state || r.admin1_code === state || r.admin1 === state) ?? geo?.results?.[0];
-  if (!hit) continue;
-  const wx = await get(
-    `https://api.open-meteo.com/v1/forecast?latitude=${hit.latitude}&longitude=${hit.longitude}&hourly=temperature_2m,precipitation_probability,precipitation,wind_speed_10m,wind_gusts_10m,relative_humidity_2m,weather_code&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=America%2FNew_York&start_date=${START.slice(0, 4)}-${START.slice(4, 6)}-${START.slice(6)}&end_date=${END.slice(0, 4)}-${END.slice(4, 6)}-${END.slice(6)}`,
-    { optional: true },
-  );
-  places[place] = { lat: hit.latitude, lon: hit.longitude, name: hit.name, admin1: hit.admin1, forecast: wx };
-  await sleep(80);
-}
-save("weather.json", places);
+// Weather lives in scripts/fetch-weather.mjs (run after this script).
+
 }
 try {
   await main();
