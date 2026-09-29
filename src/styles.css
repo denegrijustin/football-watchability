@@ -1940,3 +1940,17 @@ footer details[open] summary::before {
 .pwp-head h4 {
   white-space: nowrap;
 }
+
+/* ---------- Home-team card color ---------- */
+/* --team-bg is the home team's dark color, deepened at build time so text
+   keeps at least 4.5:1 contrast. Inner surfaces become translucent layers so
+   they sit on the team color instead of the default slate. */
+.game-card.team-tinted {
+  --surface: var(--team-bg);
+  --surface-2: rgb(255 255 255 / 6%);
+  --surface-3: rgb(255 255 255 / 11%);
+  --line: rgb(255 255 255 / 13%);
+  --line-strong: rgb(255 255 255 / 24%);
+  background: var(--team-bg);
+  border-color: rgb(255 255 255 / 14%);
+}

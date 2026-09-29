@@ -87,6 +87,7 @@ export type ResultTeam = {
   name: string;
   logoId: string;
   abbr: string;
+  color: string | null;
   record: string;
   score: number;
   linescores: number[];
