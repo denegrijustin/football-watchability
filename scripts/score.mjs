@@ -315,42 +315,148 @@ export function readout({ forecast, actual, pHome }) {
 
 // ---------- projected final score ----------
 const logit = (p) => Math.log(p / (1 - p));
+const r1 = (x) => Math.round(x * 10) / 10;
+
+// A score is "standard" if touchdowns (7) and field goals (3) can make it
+// with at most 4 field goals and no more than touchdowns + 2: 17, 20, 23, 24,
+// 27 are in;
+// 22 (1 TD + 5 FGs), 25, 29 and 32 need a safety, a two-pointer or a missed
+// kick, so the projection avoids them.
+export const standardScore = (s) => {
+  for (let td = 0; td * 7 <= s; td++) {
+    const rest = s - td * 7;
+    if (rest % 3 === 0 && rest / 3 <= Math.min(td + 2, 4)) return true;
+  }
+  return false;
+};
+
+const LEAGUE_AVG = { NFL: 22.5, CFB: 28 };
+const HOME_FIELD = { NFL: 1.8, CFB: 2.8 }; // points of margin
+// Points off the combined total by weather factor and level (1–3).
+const WX_TOTAL = {
+  wind: [0, -0.5, -2.5, -5],
+  rain: [0, -0.5, -2, -4],
+  snow: [0, -2, -3, -4],
+  storm: [0, -0.5, -1, -1.5],
+  cold: [0, -0.5, -2, -3],
+  heat: [0, 0, -1, -1.5],
+};
+
 /**
- * Projected final score. Best source first:
- *   line: spread and over/under (home = (total + home margin) / 2)
- *   season averages: each offense's points per game against the other
- *     defense's points allowed, plus home field, nudged to the spread if known
- *   win probability: margin implied by the win chance, league-typical total
+ * Projected final score, blended from:
+ *   Betting line   spread and over/under (home = (total + home margin) / 2)
+ *   Season scoring each offense's points per game against the other
+ *                  defense's points allowed, shrunk toward the league average
+ *                  early in the season
+ *   Home field     added to the season-scoring part (the line already has it)
+ *   Weather        wind, rain, snow, storms, cold and heat take points off the
+ *                  total (half as much on the line part, which prices some in)
+ * The blend (line 65%, season 35% when both exist) is then snapped to the
+ * nearest pair of standard football scores that keeps the projected winner.
  */
-export function projectScore({ league, homeMargin, total, trendA, trendH, pHome, neutral }) {
-  let h, a, source;
-  const hfa = neutral ? 0 : league === "NFL" ? 1.25 : 1.5;
+export function projectScore({ league, homeMargin, total, trendA, trendH, pHome, neutral, weather }) {
+  const avg = LEAGUE_AVG[league] ?? 24;
+  const parts = [];
+
+  let line = null;
   if (homeMargin != null && total) {
-    h = (total + homeMargin) / 2;
-    a = (total - homeMargin) / 2;
-    source = "line";
-  } else if (trendA && trendH) {
-    h = (trendH.ppg + trendA.oppg) / 2 + hfa;
-    a = (trendA.ppg + trendH.oppg) / 2 - hfa;
-    if (homeMargin != null) {
-      const t = h + a;
-      h = (t + homeMargin) / 2;
-      a = (t - homeMargin) / 2;
+    line = { home: (total + homeMargin) / 2, away: (total - homeMargin) / 2 };
+    parts.push({ id: "line", label: "Betting line", away: r1(line.away), home: r1(line.home) });
+  }
+
+  let season = null;
+  if (trendA && trendH) {
+    const shrink = (v, n) => (v * n + avg * 3) / (n + 3);
+    const nA = trendA.games?.length ?? 0,
+      nH = trendH.games?.length ?? 0;
+    const offA = shrink(trendA.ppg, nA),
+      defA = shrink(trendA.oppg, nA),
+      offH = shrink(trendH.ppg, nH),
+      defH = shrink(trendH.oppg, nH);
+    season = { home: (offH + defA) / 2, away: (offA + defH) / 2 };
+    parts.push({ id: "season", label: "Season scoring", away: r1(season.away), home: r1(season.home) });
+    const hfa = neutral ? 0 : HOME_FIELD[league] ?? 2;
+    if (hfa) {
+      season.home += hfa / 2;
+      season.away -= hfa / 2;
     }
-    source = homeMargin != null ? "spread + season scoring" : "season scoring";
+    parts.push({
+      id: "home",
+      label: "Home field",
+      note: neutral ? "Neutral site: none" : `+${hfa} pts to the home margin`,
+    });
+  }
+
+  let home, away, wLine;
+  if (line && season) {
+    wLine = 0.65;
+    home = wLine * line.home + (1 - wLine) * season.home;
+    away = wLine * line.away + (1 - wLine) * season.away;
+  } else if (line) {
+    wLine = 1;
+    ({ home, away } = line);
+  } else if (season) {
+    wLine = 0;
+    ({ home, away } = season);
+    if (homeMargin != null) {
+      // Spread but no total: take the margin from the spread.
+      const t = home + away,
+        m = 0.65 * homeMargin + 0.35 * (home - away);
+      home = (t + m) / 2;
+      away = (t - m) / 2;
+      parts.push({ id: "spread", label: "Point spread", note: `Margin blended with the spread (${homeMargin > 0 ? "home" : "away"} -${Math.abs(homeMargin)})` });
+    }
   } else {
+    wLine = 0;
     const p = Math.min(0.97, Math.max(0.03, pHome));
     const m = homeMargin ?? logit(p) * (league === "NFL" ? 6 : 8);
-    const t = total ?? (league === "NFL" ? 44 : 52);
-    h = (t + m) / 2;
-    a = (t - m) / 2;
-    source = "win probability";
+    home = avg + m / 2;
+    away = avg - m / 2;
+    parts.push({ id: "wp", label: "Win probability", note: `League-average scoring with the margin implied by ${Math.round(p * 100)}%` });
   }
-  let home = Math.max(0, Math.round(h)),
-    away = Math.max(0, Math.round(a));
-  if (home === away && Math.abs(h - a) > 0.01) h > a ? home++ : away++;
-  else if (home === away) pHome >= 0.5 ? home++ : away++;
-  return { away, home, source };
+  if (line && season) parts.find((p) => p.id === "line").weight = 65;
+  if (line && season) parts.find((p) => p.id === "season").weight = 35;
+
+  // Weather
+  let wx = 0;
+  const hits = [];
+  for (const f of weather?.factors ?? []) {
+    const v = WX_TOTAL[f.key]?.[f.level] ?? 0;
+    if (v) {
+      wx += v;
+      hits.push(f.key);
+    }
+  }
+  wx = Math.max(-9, wx) * (wLine * 0.5 + (1 - wLine));
+  if (wx <= -0.5) {
+    home += wx / 2;
+    away += wx / 2;
+    parts.push({ id: "weather", label: "Weather", note: `${r1(wx)} pts on the total (${hits.join(", ")})` });
+  }
+
+  const blended = { away: r1(away), home: r1(home) };
+  const snapped = snapScores(away, home, pHome);
+  const source = line && season ? "line + season scoring" : line ? "line" : season ? "season scoring" : "win probability";
+  return { ...snapped, blended, parts, source };
+}
+
+/** Nearest standard-score pair to the blend that keeps its winner. */
+function snapScores(ea, eh, pHome) {
+  const em = eh - ea;
+  const homeWins = Math.abs(em) > 0.25 ? em > 0 : pHome >= 0.5;
+  const cands = (e) => {
+    const out = [];
+    for (let s = Math.max(0, Math.floor(e) - 9); s <= Math.ceil(e) + 9; s++) if (standardScore(s)) out.push(s);
+    return out;
+  };
+  let best = null;
+  for (const a of cands(ea))
+    for (const h of cands(eh)) {
+      if (h === a || h > a !== homeWins) continue;
+      const cost = (a - ea) ** 2 + (h - eh) ** 2 + 0.6 * (h - a - em) ** 2;
+      if (!best || cost < best.cost) best = { away: a, home: h, cost };
+    }
+  return best ? { away: best.away, home: best.home } : { away: Math.round(ea), home: Math.round(eh) };
 }
 
 /**

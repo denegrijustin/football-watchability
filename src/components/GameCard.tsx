@@ -12,6 +12,7 @@ import { WeatherLook } from "./WeatherLook";
 import { TeamForm } from "./Trends";
 import { networkLogo } from "../data";
 import { PregameWinProb, type WinProbData } from "./PregameWinProb";
+import { ProjectedScore, type Projection } from "./ProjectedScore";
 
 const impactLevel = (impact: string) =>
   impact.replace(/\s*impact$/i, "").toLowerCase();
@@ -23,6 +24,8 @@ export function GameCard({ game }: { game: Game }) {
   const impact = impactLevel(game.weather.impact);
   const [away, home] = game.teams;
   // Card background: the home team's dark color (deepened for contrast at build time).
+  const awayAbbr = (away as { abbr?: string }).abbr ?? away.name;
+  const homeAbbr = (home as { abbr?: string }).abbr ?? home.name;
   const homeColor = (home as { color?: string | null }).color ?? null;
   return (
     <article
@@ -123,18 +126,7 @@ export function GameCard({ game }: { game: Game }) {
       <WeatherLook game={game} />
 
       <p className="take">{game.narrative}</p>
-      {"projected" in game && (
-        <div className="proj">
-          <span className="micro-label">Projected score</span>
-          <strong>
-            {(away as { abbr?: string }).abbr} {(game.projected as { away: number }).away}
-            <span aria-hidden="true">–</span>
-            <span className="sr-only"> to </span>
-            {(game.projected as { home: number }).home} {(home as { abbr?: string }).abbr}
-          </strong>
-          <span className="proj-src">from the {(game.projected as { source: string }).source}</span>
-        </div>
-      )}
+      {"projected" in game && <ProjectedScore p={game.projected as Projection} away={awayAbbr} home={homeAbbr} />}
       {"winProb" in game && (
         <PregameWinProb
           wp={game.winProb as WinProbData}
