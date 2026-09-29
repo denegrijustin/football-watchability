@@ -156,6 +156,18 @@ export default function App() {
                       <p>
                         {rs.length} final{rs.length === 1 ? "" : "s"} · forecast avg {avg(rs.map((r) => r.forecast.score))} · actual avg{" "}
                         {avg(rs.map((r) => r.actual.score))}
+                        {rs.some((r) => r.scoreCheck) && (
+                          <>
+                            {" "}
+                            · winners picked {rs.filter((r) => r.scoreCheck?.winnerRight).length} of{" "}
+                            {rs.filter((r) => r.scoreCheck).length} · margin off by{" "}
+                            {(
+                              rs.reduce((a, r) => a + Math.abs(r.scoreCheck?.marginMiss ?? 0), 0) /
+                              (rs.filter((r) => r.scoreCheck).length || 1)
+                            ).toFixed(1)}{" "}
+                            on average
+                          </>
+                        )}
                         {best && best.delta > 4 && (
                           <>
                             {" "}

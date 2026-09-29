@@ -312,3 +312,129 @@ export function readout({ forecast, actual, pHome }) {
   const said = (b) => b.startsWith("Surprise:") && /underdog|rallied|came back/.test(headline);
   return { headline, bullets: bullets.filter((b) => !said(b)) };
 }
+
+// ---------- projected final score ----------
+const logit = (p) => Math.log(p / (1 - p));
+/**
+ * Projected final score. Best source first:
+ *   line: spread and over/under (home = (total + home margin) / 2)
+ *   season averages: each offense's points per game against the other
+ *     defense's points allowed, plus home field, nudged to the spread if known
+ *   win probability: margin implied by the win chance, league-typical total
+ */
+export function projectScore({ league, homeMargin, total, trendA, trendH, pHome, neutral }) {
+  let h, a, source;
+  const hfa = neutral ? 0 : league === "NFL" ? 1.25 : 1.5;
+  if (homeMargin != null && total) {
+    h = (total + homeMargin) / 2;
+    a = (total - homeMargin) / 2;
+    source = "line";
+  } else if (trendA && trendH) {
+    h = (trendH.ppg + trendA.oppg) / 2 + hfa;
+    a = (trendA.ppg + trendH.oppg) / 2 - hfa;
+    if (homeMargin != null) {
+      const t = h + a;
+      h = (t + homeMargin) / 2;
+      a = (t - homeMargin) / 2;
+    }
+    source = homeMargin != null ? "spread + season scoring" : "season scoring";
+  } else {
+    const p = Math.min(0.97, Math.max(0.03, pHome));
+    const m = homeMargin ?? logit(p) * (league === "NFL" ? 6 : 8);
+    const t = total ?? (league === "NFL" ? 44 : 52);
+    h = (t + m) / 2;
+    a = (t - m) / 2;
+    source = "win probability";
+  }
+  let home = Math.max(0, Math.round(h)),
+    away = Math.max(0, Math.round(a));
+  if (home === away && Math.abs(h - a) > 0.01) h > a ? home++ : away++;
+  else if (home === away) pHome >= 0.5 ? home++ : away++;
+  return { away, home, source };
+}
+
+/**
+ * Post-game check of the projected score: winner, margin, total, each team's
+ * points, the betting line, and the quarter where the projection broke.
+ * proj: { away, home, source }, line: { homeMargin, total } (optional)
+ */
+export function scoreCheck({ proj, away, home, nameA, nameH, lines, line }) {
+  const pm = proj.home - proj.away,
+    am = home - away;
+  const winnerRight = Math.sign(pm) === Math.sign(am);
+  const marginMiss = am - pm; // + means home did better than projected
+  const totalMiss = home + away - (proj.home + proj.away);
+  const miss = Math.abs(marginMiss) + Math.abs(totalMiss) / 2;
+  const totalOk = Math.abs(totalMiss) <= 7;
+  const grade = !winnerRight
+    ? "wrong"
+    : Math.abs(marginMiss) <= 3 && totalOk
+      ? "nailed"
+      : Math.abs(marginMiss) <= 10
+        ? "close"
+        : "off";
+  const projFav = pm >= 0 ? nameH : nameA;
+  const winner = am > 0 ? nameH : am < 0 ? nameA : null;
+  const by = (n) => `${Math.abs(n)}`;
+
+  let headline;
+  if (!winner) headline = `Projected ${projFav} by ${by(pm)}; it ended in a tie.`;
+  else if (!winnerRight) headline = `Wrong winner: projected ${projFav} by ${by(pm)}, ${winner} won by ${by(am)} (a ${Math.abs(marginMiss)}-pt miss on the margin).`;
+  else if (grade === "nailed") headline = `Called it: projected ${winner} by ${by(pm)}, won by ${by(am)}.`;
+  else if (Math.abs(marginMiss) <= 3)
+    headline = `Called the margin (${winner} by ${by(am)}), missed the scoring: ${home + away} points, not ${proj.home + proj.away}.`;
+  else if (Math.abs(am) > Math.abs(pm)) headline = `Right winner, wrong script: ${winner} won by ${by(am)}, not ${by(pm)}.`;
+  else headline = `Right winner, but closer than projected: ${winner} won by ${by(am)}, not ${by(pm)}.`;
+
+  const bullets = [];
+  const team = (n, p, a) => `${n} ${a} (projected ${p}, ${a - p > 0 ? "+" : a - p < 0 ? "−" : "±"}${Math.abs(a - p)})`;
+  bullets.push(`Points: ${team(nameA, proj.away, away)}; ${team(nameH, proj.home, home)}.`);
+  bullets.push(
+    `Total: ${home + away} vs ${proj.home + proj.away} projected${Math.abs(totalMiss) <= 4 ? ", right on" : totalMiss > 0 ? `, ${totalMiss} more than expected` : `, ${-totalMiss} fewer than expected`}.`,
+  );
+
+  // Where it broke: the quarter whose margin differed most from an even share
+  // of the projected margin.
+  const [la = [], lh = []] = lines ?? [];
+  let worst = null;
+  for (let q = 0; q < Math.min(la.length, lh.length); q++) {
+    const qm = (lh[q] ?? 0) - (la[q] ?? 0);
+    const exp = q < 4 ? pm / 4 : 0;
+    const dev = qm - exp;
+    if (!worst || Math.abs(dev) > Math.abs(worst.dev)) worst = { q, qm, dev, a: la[q], h: lh[q] };
+  }
+  if (worst && Math.abs(worst.dev) >= 7 && (grade === "wrong" || grade === "off")) {
+    const qn = worst.q < 4 ? `Q${worst.q + 1}` : "overtime";
+    const lead = worst.qm > 0 ? nameH : worst.qm < 0 ? nameA : null;
+    bullets.push(
+      lead
+        ? `It broke in ${qn}: ${lead} won the quarter ${Math.max(worst.a, worst.h)}–${Math.min(worst.a, worst.h)}.`
+        : `It broke in ${qn}, a ${worst.a}–${worst.h} quarter.`,
+    );
+  }
+
+  let ats = null;
+  if (line?.homeMargin != null) {
+    const cover = am - line.homeMargin; // >0 home beat the number
+    const fav = line.homeMargin >= 0 ? nameH : nameA;
+    const favCovered = line.homeMargin >= 0 ? cover > 0 : cover < 0;
+    ats = cover === 0 ? "push" : favCovered ? "favorite covered" : "underdog covered";
+    let s = line.homeMargin === 0 ? `Pick'em: ${winner ?? "nobody"} won` : cover === 0 ? `${fav} -${Math.abs(line.homeMargin)} pushed` : `${fav} -${Math.abs(line.homeMargin)} ${favCovered ? "covered" : "didn't cover"}`;
+    if (line.total) {
+      const t = home + away;
+      s += t === line.total ? `; the total (${line.total}) pushed` : `; the ${t > line.total ? "over" : "under"} (${line.total}) hit`;
+    }
+    bullets.push(`${s}.`);
+  }
+  return {
+    projected: { away: proj.away, home: proj.home, source: proj.source },
+    winnerRight,
+    marginMiss,
+    totalMiss,
+    miss: Math.round(miss * 10) / 10,
+    grade,
+    ats,
+    headline,
+    bullets,
+  };
+}

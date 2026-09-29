@@ -13,6 +13,7 @@ export function ResultCard({ result: r }: { result: Result }) {
   const winner = away.score > home.score ? 0 : home.score > away.score ? 1 : -1;
   const periods = Math.max(away.linescores.length, home.linescores.length);
   const d = r.delta;
+  const sc = r.scoreCheck;
   const sourceNote =
     r.forecast.source === "published"
       ? "Forecast as published before this site switched to its current formula, so there's no component breakdown."
@@ -82,6 +83,44 @@ export function ResultCard({ result: r }: { result: Result }) {
         </table>
       </div>
 
+      {sc && (
+        <section className={`score-call grade-${sc.grade}`} aria-label="Projected score versus final">
+          <h4 className="micro-label">Score: projected vs final</h4>
+          <div className="sc-row">
+            <div className="sc-box">
+              <span className="micro-label">Projected</span>
+              <strong>
+                {away.abbr} {sc.projected.away}–{sc.projected.home} {home.abbr}
+              </strong>
+            </div>
+            <span className={`sc-badge ${sc.winnerRight ? "right" : "wrong"}`}>
+              <span aria-hidden="true">{sc.winnerRight ? "✓" : "✗"}</span> {sc.winnerRight ? "Winner" : "Wrong winner"}
+              <span className="sc-miss">
+                Margin {sc.marginMiss === 0 ? "exact" : `off ${Math.abs(sc.marginMiss)}`}
+              </span>
+            </span>
+            <div className="sc-box final">
+              <span className="micro-label">Final</span>
+              <strong>
+                {away.abbr} {away.score}–{home.score} {home.abbr}
+              </strong>
+            </div>
+          </div>
+          <p className="take sc-head">{sc.headline}</p>
+          <ul className="readout">
+            {sc.bullets.map((b, i) => (
+              <li key={i}>{b}</li>
+            ))}
+          </ul>
+          <p className="sc-source">
+            {sc.projected.source.endsWith("(rebuilt)")
+              ? `No pregame projection was saved for this game; rebuilt from the ${sc.projected.source.replace(" (rebuilt)", "")}.`
+              : `Projected before kickoff from the ${sc.projected.source}.`}
+          </p>
+        </section>
+      )}
+
+      <h4 className="micro-label fva-label">Watchability: forecast vs actual</h4>
       <div className="fva" aria-label={`Forecast ${r.forecast.score}, actual ${r.actual.score}`}>
         <div className={`fva-box ${r.forecast.tier}`}>
           <span className="micro-label">Forecast</span>

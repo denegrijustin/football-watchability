@@ -123,6 +123,18 @@ export function GameCard({ game }: { game: Game }) {
       <WeatherLook game={game} />
 
       <p className="take">{game.narrative}</p>
+      {"projected" in game && (
+        <div className="proj">
+          <span className="micro-label">Projected score</span>
+          <strong>
+            {(away as { abbr?: string }).abbr} {(game.projected as { away: number }).away}
+            <span aria-hidden="true">–</span>
+            <span className="sr-only"> to </span>
+            {(game.projected as { home: number }).home} {(home as { abbr?: string }).abbr}
+          </strong>
+          <span className="proj-src">from the {(game.projected as { source: string }).source}</span>
+        </div>
+      )}
       {"winProb" in game && (
         <PregameWinProb
           wp={game.winProb as WinProbData}

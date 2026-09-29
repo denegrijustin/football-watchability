@@ -167,6 +167,10 @@ test("final view compares forecast with actual and explains the score", async ({
   await expect(card.locator(".fva-box").first().locator("strong")).toHaveText(String(top.forecast.score));
   await expect(card.locator(".readout-head")).toHaveText(top.readout.headline);
   await expect(card.locator(".ls-total").first()).toHaveText(String(top.teams[0].score));
+  if (top.scoreCheck) {
+    await expect(card.locator(".sc-head")).toHaveText(top.scoreCheck.headline);
+    await expect(card.locator(".sc-box").first()).toContainText(`${top.scoreCheck.projected.away}–${top.scoreCheck.projected.home}`);
+  }
   await card.locator("summary").filter({ hasText: "Why it scored" }).click();
   const rows = card.locator(".breakdown tbody tr");
   await expect(rows).toHaveCount(top.actual.parts.length + 2);
@@ -180,6 +184,9 @@ test("final view compares forecast with actual and explains the score", async ({
   // Back to upcoming: every card explains its forecast.
   await page.getByRole("button", { name: /^Upcoming/ }).click();
   const g = page.locator(".game-card").first();
+  await expect(page.locator(".game-card .proj")).toHaveCount(
+    slate.games.filter((x: any) => x.league === league && x.projected).length,
+  );
   const withWp = slate.games.filter((x: any) => x.league === league && x.winProb).length;
   await expect(page.locator(".game-card .pwp")).toHaveCount(withWp);
   await expect(page.locator(".pwp-bar").first()).toBeVisible();

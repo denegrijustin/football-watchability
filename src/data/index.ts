@@ -118,6 +118,17 @@ export type Result = {
   };
   actual: { score: number; tier: string; base: number; parts: Part[] };
   delta: number;
+  scoreCheck?: {
+    projected: { away: number; home: number; source: string };
+    winnerRight: boolean;
+    marginMiss: number;
+    totalMiss: number;
+    miss: number;
+    grade: "nailed" | "close" | "off" | "wrong";
+    ats: string | null;
+    headline: string;
+    bullets: string[];
+  };
   readout: { headline: string; bullets: string[] };
   /** Home win probability (0–100) and quarter, thinned to ~80 points. */
   wp: [number, number | null][];
