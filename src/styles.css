@@ -1954,3 +1954,117 @@ footer details[open] summary::before {
   background: var(--team-bg);
   border-color: rgb(255 255 255 / 14%);
 }
+
+/* ---------- Projected score ---------- */
+.proj {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  margin: 0 0 12px;
+}
+.proj strong {
+  font-size: 17px;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.proj strong > span[aria-hidden] {
+  margin: 0 4px;
+  color: var(--muted);
+}
+.proj-src {
+  font-size: 12px;
+  color: var(--muted);
+}
+.score-call {
+  padding: 10px 0 4px;
+  border-top: 1px solid var(--line);
+}
+.score-call > h4,
+.fva-label {
+  margin: 0 0 8px;
+}
+.fva-label {
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+.fva-label + .fva {
+  border-top: 0;
+  padding-top: 0;
+}
+.sc-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.sc-box {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 7px 6px;
+  border-radius: 12px;
+  border: 1px dashed var(--line-strong);
+  background: var(--surface-2);
+  text-align: center;
+}
+.sc-box.final {
+  border-style: solid;
+}
+.sc-box strong {
+  font-size: 15px;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.sc-box .micro-label {
+  font-size: 10.5px;
+}
+.sc-badge {
+  display: grid;
+  justify-items: center;
+  gap: 1px;
+  padding: 4px 8px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+.sc-badge.right {
+  background: #1d3326;
+  color: var(--green);
+}
+.sc-badge.wrong {
+  background: #3a1f22;
+  color: var(--red);
+}
+.sc-miss {
+  font-size: 11px;
+  font-weight: 550;
+  opacity: 0.85;
+}
+.score-call .sc-head {
+  border-left-color: var(--text-2);
+}
+.grade-nailed .sc-head {
+  border-left-color: var(--green);
+}
+.grade-wrong .sc-head,
+.grade-off .sc-head {
+  border-left-color: var(--red);
+}
+@media (max-width: 420px) {
+  .sc-box strong {
+    font-size: 13px;
+  }
+}
+.sc-source {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.sc-box strong {
+  white-space: normal;
+}

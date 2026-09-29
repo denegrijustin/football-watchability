@@ -16,7 +16,7 @@
 //   Finished games go to src/data/results.json; the last pregame forecast of
 //   each game is kept in src/data/forecasts.json.
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
-import { forecastScore, actualScore, readout, tierFor, BASE } from "./score.mjs";
+import { forecastScore, actualScore, readout, tierFor, BASE, projectScore, scoreCheck } from "./score.mjs";
 
 const root = new URL("..", import.meta.url);
 // RAW_DIR lets a past week (e.g. data-raw-test/) be built; shared files such
@@ -654,17 +654,20 @@ for (const [key, league] of [
     // Line text: "Alabama -6 • O/U 59.5"
     let line = null,
       spread = null,
-      total = null;
+      total = null,
+      homeMargin = null;
     if (odds?.details && !/^EVEN/i.test(odds.details)) {
       const favHome = odds.homeTeamOdds?.favorite ?? odds.details.startsWith(ht.abbreviation);
       const favName = favHome ? short(ht, hName) : short(at, aName);
       spread = Math.abs(Number(odds.spread ?? odds.details.split(" ").pop()));
       total = odds.overUnder ?? null;
       line = `${favName} -${spread}${total ? ` • O/U ${total}` : ""}`;
+      homeMargin = Number.isFinite(spread) ? (favHome ? spread : -spread) : null;
     } else if (/^EVEN/i.test(odds?.details ?? "")) {
       spread = 0;
       total = odds.overUnder ?? null;
       line = `Pick'em${total ? ` • O/U ${total}` : ""}`;
+      homeMargin = 0;
     }
 
     const { day, time, hour24 } = etParts(ev.date);
@@ -715,6 +718,15 @@ for (const [key, league] of [
     };
     const tA = team(away, at, aName, home, pAway);
     const tH = team(home, ht, hName, away, pHome);
+    const projected = projectScore({
+      league,
+      homeMargin,
+      total: Number(total) || null,
+      trendA: tA.trend,
+      trendH: tH.trend,
+      pHome,
+      neutral: !!comp.neutralSite,
+    });
 
     // ---- watchability forecast (absolute; see scripts/score.mjs) ----
     const net = (comp.broadcasts?.[0]?.names ?? [])[0] ?? "";
@@ -781,6 +793,8 @@ for (const [key, league] of [
       breakdown: fc,
       pHome,
       winProb,
+      projected,
+      lineNums: { homeMargin, total: Number(total) || null },
       status,
       final,
       summary,
@@ -838,6 +852,8 @@ for (const g of built) {
     take: prev?.take ?? oldById.get(g.espnId)?.narrative ?? null,
     prevScore: prev?.score ?? null,
     // One win-probability reading per refresh day, to show how it has moved.
+    projected: g.projected,
+    lineNums: g.lineNums,
     wpHistory: [
       ...(prev?.wpHistory ?? []).filter((h) => h.at.slice(0, 10) !== nowIso.slice(0, 10)),
       { at: nowIso, home: g.winProb.home, espn: g.winProb.espn, market: g.winProb.market },
@@ -890,6 +906,17 @@ for (const g of built) {
     source: "reconstructed",
   };
   const ro = readout({ forecast, actual: act, pHome });
+  // Projected score: frozen pregame value, else rebuilt from the closing line.
+  const proj = fcast?.projected ?? { ...g.projected, source: `${g.projected.source} (rebuilt)` };
+  const sc = scoreCheck({
+    proj,
+    away: g.final.away,
+    home: g.final.home,
+    nameA: g.league === "NFL" ? tA.name.split(" ").pop() : tA.name,
+    nameH: g.league === "NFL" ? tH.name.split(" ").pop() : tH.name,
+    lines: g.final.linescores,
+    line: fcast?.lineNums ?? g.lineNums,
+  });
   results.set(g.espnId, {
     espnId: g.espnId,
     league: g.league,
@@ -924,6 +951,7 @@ for (const g of built) {
     },
     actual: { score: act.score, tier: tierFor(act.score)[0], base: act.base, parts: act.parts },
     delta: act.score - forecast.score,
+    scoreCheck: sc,
     readout: ro,
     wp: thin(g.summary?.winprobability),
   });
@@ -970,6 +998,7 @@ const games = built
       teams: g.teams,
       breakdown: { base: g.breakdown.base, parts: g.breakdown.parts },
       winProb: { ...g.winProb, history: forecasts[g.espnId]?.wpHistory ?? [] },
+      projected: g.projected,
       narrative: "",
       narrativeChips: [],
       history: g.history,
