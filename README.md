@@ -37,6 +37,7 @@ The slate is built from ESPN data rather than typed in by hand. ESPN is fetched 
 2. **Build.** `PERIOD="Oct. 1–5, 2026" node scripts/build-slate.mjs` writes `src/data/slate.json` and `src/data/team-ids.json`. Put corrections ESPN hasn't posted yet (a TV network, say) in `src/data/slate-overrides.json`, keyed by ESPN event id.
 3. **Logos.** Pushing a changed `team-ids.json` to `slate-data` runs **Upgrade logos**, which fetches only teams that don't have a logo yet. ESPN ids overlap across leagues, so logos are matched by league plus id.
 4. **Notes.** Write one-line takes in `src/data/headlines.json` (keyed by ESPN event id), then run `node scripts/write-narratives.mjs` (below).
+**Weather look-ahead:** `scripts/fetch-weather.mjs` pulls Open-Meteo's hourly forecast for each venue. It takes a few seconds, so run **Actions → Fetch weather** the day before games, rebuild, and ship. Each outdoor card shows four readings across the game window (about one per quarter): temperature, rain chance and wind or gusts. It also shows an impact rating (none, low, moderate or high) based on wind, rain, thunderstorms, snow, and heat or cold, plus plain-language effects (kicking, ball security, stamina) and how confident the forecast is based on days out.
 5. **Check and ship.** `pnpm build`, look at the board, then copy the source changes (not `data-raw/`) to `main`.
 
 How the numbers are made:
@@ -51,7 +52,7 @@ Game fields:
 | `espnId`, `league`, `conferences` | ESPN event id; `NFL` or `CFB`; college conference ids from the top-level list. |
 | `score`, `tier`, `delta` | Watchability 0–100, color tier (`elite`, `vgood`, `good`, `watch`, `bg`), change from the prior rating (`new` for a fresh slate). |
 | `matchup`, `meta`, `chips`, `broadcast` | Matchup, kickoff (ET) · tier · line · venue, rating tags, TV/streaming. |
-| `weather` | Icon, outlook title, detail and impact text. |
+| `weather` | Icon, title, detail, `impact`/`level`, `effects` (plain-language impacts), `hours` (four game-window readings) and `confidence`. |
 | `teams` | Two teams: `name`, `logoId`, `espnId`, `record`, `rankings`, `playoffOdds` (arrays ordered now, win, loss). |
 | `narrative`, `watch`, `skip`, `narrativeChips` | One-line take, why-watch and why-skip reasons, and supporting tags (generated; see below). |
 | `history` | All-time series (record, meeting count, first meeting), last five meetings, key players (season leaders), `games` (every meeting, newest first) and source. |

@@ -7,6 +7,7 @@ import {
 } from "../data";
 import { Stakes } from "./TeamImpact";
 import { GameDetails } from "./GameDetails";
+import { WeatherLook } from "./WeatherLook";
 
 const impactLevel = (impact: string) =>
   impact.replace(/\s*impact$/i, "").toLowerCase();
@@ -110,10 +111,11 @@ export function GameCard({ game }: { game: Game }) {
             <span className="weather-detail"> · {game.weather.detail}</span>
           </span>
           {impact !== "low" && impact !== "none" && (
-            <span className="impact-pill">{impact} weather impact</span>
+            <span className={`impact-pill ${impact}`}>{impact} weather impact</span>
           )}
         </li>
       </ul>
+      <WeatherLook game={game} />
 
       <p className="take">{game.narrative}</p>
       <Stakes game={game} />
