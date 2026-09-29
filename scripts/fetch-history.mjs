@@ -6,7 +6,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 
 const FIRST_SEASON = 2004;
-const raw = new URL("../data-raw/", import.meta.url);
+const raw = new URL(`../${process.env.RAW_DIR ?? "data-raw"}/`, import.meta.url);
 const read = (n) => JSON.parse(readFileSync(new URL(n, raw), "utf8"));
 const { season } = read("index.json");
 const LAST = Number(season);
@@ -44,9 +44,19 @@ async function schedule(path, team, yr, type) {
   return cache.get(k);
 }
 
+// Reuse history already fetched for the same events (mid-week refreshes).
+let previous = {};
+try {
+  previous = JSON.parse(readFileSync(new URL("history.json", raw), "utf8"));
+} catch {}
 const out = {};
 let done = 0;
 async function run(job) {
+  if (previous[job.eventId] && process.env.FULL_HISTORY !== "1") {
+    out[job.eventId] = previous[job.eventId];
+    done++;
+    return;
+  }
   const meetings = [];
   for (let yr = FIRST_SEASON; yr < LAST + 1; yr++) {
     for (const type of [2, 3]) {

@@ -1,7 +1,8 @@
 // Builds src/data/slate.json for a new week from data-raw/ (see
 // scripts/fetch-slate.mjs and scripts/fetch-history.mjs).
 //
-//   PERIOD="Oct. 1–5, 2026" node scripts/build-slate.mjs
+//   node scripts/build-slate.mjs                 (current week, data-raw/)
+//   RAW_DIR=data-raw-prev ARCHIVE_ONLY=1 node scripts/build-slate.mjs
 //
 // Sources and method (also shown in the site footer):
 // - Schedule, TV, venue, lines, records, standings, season leaders, ESPN
@@ -10,17 +11,31 @@
 //   estimate that keeps FPI's number as the probability-weighted average.
 // - AP poll: ESPN rankings feed. NFL "PR" is the FPI rank. Rank moves with a
 //   win or loss are rule-of-thumb estimates.
-// - Series history: ESPN results since 2004 (not all-time).
-// - Watchability score: a transparent formula (quality, closeness, stakes,
-//   TV/slot), rescaled across the slate.
+// - Series history: all-time (Winsipedia, FiveThirtyEight, ESPN).
+// - Watchability: absolute forecast and postgame actual (scripts/score.mjs).
+//   Finished games go to src/data/results.json; the last pregame forecast of
+//   each game is kept in src/data/forecasts.json.
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { forecastScore, actualScore, readout, tierFor, BASE } from "./score.mjs";
 
 const root = new URL("..", import.meta.url);
-const raw = (n) => JSON.parse(readFileSync(new URL(`data-raw/${n}`, root), "utf8"));
-const optRaw = (n) => (existsSync(new URL(`data-raw/${n}`, root)) ? raw(n) : null);
+// RAW_DIR lets a past week (e.g. data-raw-test/) be built; shared files such
+// as history.json fall back to data-raw/.
+const RAW = process.env.RAW_DIR ?? "data-raw";
+const readJson = (u) => JSON.parse(readFileSync(u, "utf8"));
+const raw = (n) => readJson(new URL(`${RAW}/${n}`, root));
+const optRaw = (n) =>
+  existsSync(new URL(`${RAW}/${n}`, root))
+    ? raw(n)
+    : existsSync(new URL(`data-raw/${n}`, root)) && ["history.json"].includes(n)
+      ? readJson(new URL(`data-raw/${n}`, root))
+      : null;
 const src = (n) => JSON.parse(readFileSync(new URL(`src/data/${n}`, root), "utf8"));
+const optSrc = (n, fallback) => (existsSync(new URL(`src/data/${n}`, root)) ? src(n) : fallback);
+// ARCHIVE_ONLY=1: record finished games in results.json without touching the
+// live slate (used on Tuesdays to catch Monday night's final).
+const ARCHIVE_ONLY = process.env.ARCHIVE_ONLY === "1";
 
-const PERIOD = process.env.PERIOD ?? "Oct. 1–5, 2026";
 const index = raw("index.json");
 const history = optRaw("history.json") ?? {};
 const HISTORY_FROM = 2004;
@@ -663,26 +678,53 @@ for (const [key, league] of [
     const tA = team(away, at, aName, home, pAway);
     const tH = team(home, ht, hName, away, pHome);
 
-    // ---- watchability (raw) ----
-    const sA = strength(league, at.id),
-      sH = strength(league, ht.id);
-    const quality = (sA + sH) / 2;
-    const top = Math.max(sA, sH);
-    const close = 1 - Math.abs(2 * pHome - 1);
-    const swing = (t) => t.playoffOdds[1] - t.playoffOdds[2];
-    const stakes = clamp((swing(tA) + swing(tH)) / (league === "NFL" ? 70 : 60), 0, 1);
+    // ---- watchability forecast (absolute; see scripts/score.mjs) ----
     const net = (comp.broadcasts?.[0]?.names ?? [])[0] ?? "";
-    let bonus = 0;
-    const rA = apRank.get(at.id),
-      rH = apRank.get(ht.id);
-    if (league === "CFB" && rA && rH) bonus += 0.08 + (rA <= 10 || rH <= 10 ? 0.04 : 0);
-    else if (league === "CFB" && (rA || rH) && close > 0.6) bonus += 0.04;
-    if (NATIONAL.test(net)) bonus += 0.03;
-    if (STREAM_ONLY.test(net)) bonus -= 0.04;
-    if (hour24 >= 19 && NATIONAL.test(net)) bonus += 0.02;
-    if (!tA._conf && league === "CFB") bonus -= 0.1;
-    if (!tH._conf && league === "CFB") bonus -= 0.1;
-    const rawScore = 0.38 * quality + 0.12 * top + 0.28 * close + 0.22 * stakes + bonus;
+    const stA = standingFor(summary, at.id, league),
+      stH = standingFor(summary, ht.id, league);
+    const recOf = (c) => c.records?.find((r) => r.type === "total")?.summary ?? "0-0";
+    const favPct = pHome >= 0.5 ? pHome : 1 - pHome;
+    const fc = forecastScore({
+      league,
+      sA: strength(league, at.id),
+      sH: strength(league, ht.id),
+      rankA: FPI[league].get(at.id)?.rank,
+      rankH: FPI[league].get(ht.id)?.rank,
+      nameA: short(at, aName),
+      nameH: short(ht, hName),
+      pHome,
+      spreadText: line ? line.split(" • ")[0] : null,
+      swingA: tA.playoffOdds[1] - tA.playoffOdds[2],
+      swingH: tH.playoffOdds[1] - tH.playoffOdds[2],
+      apA: apRank.get(at.id) <= 25 ? apRank.get(at.id) : null,
+      apH: apRank.get(ht.id) <= 25 ? apRank.get(ht.id) : null,
+      winA: winPct(recOf(away)),
+      winH: winPct(recOf(home)),
+      divisional: league === "NFL" && !!stA?.group && stA.group === stH?.group,
+      national: NATIONAL.test(net),
+      streamOnly: STREAM_ONLY.test(net),
+      primetime: hour24 >= 19,
+      net: TV[net] ?? net,
+      fcsA: league === "CFB" && !tA._conf,
+      fcsH: league === "CFB" && !tH._conf,
+    });
+    void favPct;
+
+    // ---- status and final ----
+    const status = comp.status?.type?.state ?? "pre";
+    const scoreOf = (c) => Number(c.score?.value ?? c.score ?? 0);
+    const lines = (c) => (c.linescores ?? []).map((l) => Number(l.value ?? l.displayValue ?? 0));
+    const final =
+      status === "post"
+        ? {
+            away: scoreOf(away),
+            home: scoreOf(home),
+            periods: comp.status?.period ?? 4,
+            overtime: (comp.status?.period ?? 4) > 4,
+            detail: comp.status?.type?.shortDetail ?? "Final",
+            linescores: [lines(away), lines(home)],
+          }
+        : null;
 
     const hist = historyFor(ev.id, league, at, ht, short(at, aName), short(ht, hName), league === "NFL" ? "lead" : "leads");
     const players = [...new Set([...tA._leaders.slice(0, 2), ...tH._leaders.slice(0, 2)])];
@@ -697,7 +739,12 @@ for (const [key, league] of [
       league,
       date: ev.date,
       conferences: [...new Set([tA._conf?.[0], tH._conf?.[0]].filter(Boolean))],
-      rawScore,
+      score: fc.score,
+      breakdown: fc,
+      pHome,
+      status,
+      final,
+      summary,
       _day: day,
       _time: time,
       _line: line,
@@ -716,29 +763,149 @@ for (const [key, league] of [
   }
 }
 
-// ---------- rescale scores and assign tiers ----------
-const TIERS = [
-  ["elite", 90, "Must Watch"],
-  ["vgood", 82, "Very Good"],
-  ["good", 74, "Good"],
-  ["watch", 64, "Watchable"],
-  ["bg", 0, "Background"],
-];
-for (const league of ["NFL", "CFB"]) {
-  const gs = built.filter((g) => g.league === league);
-  const xs = gs.map((g) => g.rawScore).sort((a, b) => a - b);
-  const lo = xs[0],
-    hi = xs[xs.length - 1];
-  const [floor, ceil] = league === "NFL" ? [60, 97] : [42, 97];
-  for (const g of gs) g.score = Math.round(floor + (ceil - floor) * ((g.rawScore - lo) / (hi - lo || 1)));
+// ---------- period label from the week's dates ----------
+const MONTHS = ["Jan.", "Feb.", "March", "April", "May", "June", "July", "Aug.", "Sept.", "Oct.", "Nov.", "Dec."];
+function periodLabel(dates) {
+  const et = (iso) => {
+    const [y, m, d] = new Date(iso).toLocaleDateString("en-CA", { timeZone: "America/New_York" }).split("-").map(Number);
+    return { y, m, d };
+  };
+  const ds = dates.map(et).sort((p, q) => p.y - q.y || p.m - q.m || p.d - q.d);
+  if (!ds.length) return "";
+  const [f, l] = [ds[0], ds[ds.length - 1]];
+  if (f.m === l.m && f.d === l.d) return `${MONTHS[f.m - 1]} ${f.d}, ${f.y}`;
+  if (f.m === l.m) return `${MONTHS[f.m - 1]} ${f.d}–${l.d}, ${l.y}`;
+  return `${MONTHS[f.m - 1]} ${f.d}–${MONTHS[l.m - 1]} ${l.d}, ${l.y}`;
 }
+const PERIOD = process.env.PERIOD ?? periodLabel(built.map((g) => g.date));
+
+// ---------- forecasts: keep the last pregame forecast of every game ----------
+const forecasts = optSrc("forecasts.json", {});
+const oldById = new Map((oldSlate.games ?? []).map((g) => [g.espnId, g]));
+const nowIso = new Date().toISOString();
+for (const g of built) {
+  if (g.status !== "pre") continue;
+  const [tier] = tierFor(g.score);
+  const prev = forecasts[g.espnId];
+  forecasts[g.espnId] = {
+    matchup: g.matchup,
+    date: g.date,
+    score: g.score,
+    tier,
+    base: g.breakdown.base,
+    parts: g.breakdown.parts,
+    line: g._line,
+    pHome: Math.round(g.pHome * 1000) / 1000,
+    take: prev?.take ?? oldById.get(g.espnId)?.narrative ?? null,
+    prevScore: prev?.score ?? null,
+    at: nowIso,
+    source: "frozen",
+  };
+}
+
+// ---------- finished games: actual score and readout (src/data/results.json) ----------
+const resultsFile = optSrc("results.json", { games: [] });
+const results = new Map(resultsFile.games.map((r) => [r.espnId, r]));
+const thin = (wp) => {
+  // ~80 points is plenty for a sparkline.
+  if (!wp?.length) return [];
+  const step = Math.max(1, Math.ceil(wp.length / 80));
+  const out = wp.filter((_, i) => i % step === 0).map(([p, q]) => [Math.round(p * 100), q]);
+  const last = wp[wp.length - 1];
+  out.push([Math.round(last[0] * 100), last[1]]);
+  return out;
+};
+for (const g of built) {
+  if (g.status !== "post" || !g.final) continue;
+  const fcast = forecasts[g.espnId] ?? null;
+  const pHome = fcast?.pHome ?? g.pHome;
+  const [tA, tH] = g.teams;
+  const act = actualScore({
+    league: g.league,
+    awayScore: g.final.away,
+    homeScore: g.final.home,
+    overtime: g.final.overtime,
+    periods: g.final.periods,
+    wp: g.summary?.winprobability ?? [],
+    plays: g.summary?.scoringPlays ?? [],
+    pHome,
+    nameA: g.league === "NFL" ? tA.name.split(" ").pop() : tA.name,
+    nameH: g.league === "NFL" ? tH.name.split(" ").pop() : tH.name,
+    forecastParts: fcast?.parts ?? g.breakdown.parts,
+    fcsA: g.breakdown.parts.some((p) => p.id === "fcs") && tA.record.includes("FCS"),
+    fcsH: g.breakdown.parts.some((p) => p.id === "fcs") && tH.record.includes("FCS"),
+  });
+  const forecast = fcast ?? {
+    score: g.score,
+    tier: tierFor(g.score)[0],
+    base: g.breakdown.base,
+    parts: g.breakdown.parts,
+    line: g._line,
+    pHome: Math.round(g.pHome * 1000) / 1000,
+    take: null,
+    source: "reconstructed",
+  };
+  const ro = readout({ forecast, actual: act, pHome });
+  results.set(g.espnId, {
+    espnId: g.espnId,
+    league: g.league,
+    week: PERIOD,
+    date: g.date,
+    day: g._day,
+    time: g._time,
+    matchup: g.matchup,
+    conferences: g.conferences,
+    broadcast: overrides[g.espnId]?.broadcast ?? g.broadcast,
+    network: overrides[g.espnId]?.network ?? g._network,
+    venue: g._venue,
+    teams: g.teams.map((t, i) => ({
+      name: t.name,
+      logoId: t.logoId,
+      abbr: t.abbr,
+      record: t.record.split(" · ")[0],
+      score: i ? g.final.home : g.final.away,
+      linescores: g.final.linescores[i],
+    })),
+    final: { detail: g.final.detail, overtime: g.final.overtime },
+    forecast: {
+      score: forecast.score,
+      tier: forecast.tier,
+      base: forecast.base ?? BASE,
+      parts: forecast.parts ?? null,
+      line: forecast.line ?? null,
+      pHome: forecast.pHome ?? null,
+      take: forecast.take ?? null,
+      source: forecast.source,
+    },
+    actual: { score: act.score, tier: tierFor(act.score)[0], base: act.base, parts: act.parts },
+    delta: act.score - forecast.score,
+    readout: ro,
+    wp: thin(g.summary?.winprobability),
+  });
+}
+// Keep the two most recent weeks.
+const weeks = [...new Set([...results.values()].sort((a, b) => b.date.localeCompare(a.date)).map((r) => r.week))].slice(0, 2);
+const resultGames = [...results.values()].filter((r) => weeks.includes(r.week)).sort((a, b) => b.date.localeCompare(a.date));
+writeFileSync(new URL("src/data/results.json", root), JSON.stringify({ updated: nowIso.slice(0, 10), games: resultGames }, null, 1) + "\n");
+// Forecasts only matter until a game is archived; drop anything older than 3 weeks.
+for (const [id, f] of Object.entries(forecasts)) if (Date.now() - Date.parse(f.date) > 21 * 864e5) delete forecasts[id];
+writeFileSync(new URL("src/data/forecasts.json", root), JSON.stringify(forecasts, null, 1) + "\n");
+const doneCount = built.filter((g) => g.status === "post").length;
+if (ARCHIVE_ONLY) {
+  console.log(`Archived ${doneCount} finished games for ${PERIOD}.`);
+  process.exit(0);
+}
+
 const games = built
+  .filter((g) => g.status !== "post")
   .sort((a, b) => (a.league === b.league ? b.score - a.score : a.league === "NFL" ? -1 : 1))
   .map((g, i, all) => {
     const n = all.slice(0, i + 1).filter((x) => x.league === g.league).length;
-    const [tier, , label] = TIERS.find(([, min]) => g.score >= min);
+    const [tier, , label] = tierFor(g.score);
     const rankView = g.league === "NFL" ? "PR impact view" : "AP impact view";
     const meta = [`${g._day} ${g._time} ET`, label, ...(g._line ? [g._line] : []), g._venue].join(" · ");
+    const prevScore = forecasts[g.espnId]?.prevScore;
+    const d = prevScore == null ? null : g.score - prevScore;
     return {
       id: `${g.league.toLowerCase()}-${n}`,
       espnId: g.espnId,
@@ -746,7 +913,9 @@ const games = built
       conferences: g.conferences,
       score: g.score,
       tier,
-      delta: "new",
+      delta: d == null ? "new" : `Δ ${d > 0 ? "+" : ""}${d}`,
+      status: g.status,
+      date: g.date,
       matchup: g.matchup,
       meta,
       chips: [label, rankView],
@@ -754,6 +923,7 @@ const games = built
       network: overrides[g.espnId]?.network ?? g._network,
       weather: g.weather,
       teams: g.teams,
+      breakdown: { base: g.breakdown.base, parts: g.breakdown.parts },
       narrative: "",
       narrativeChips: [],
       history: g.history,
@@ -773,7 +943,7 @@ const slate = {
     `Weather: Open-Meteo hourly forecast for each game window (about one reading per quarter), fetched ${weatherFetched.toISOString().slice(0, 16).replace("T", " ")} UTC. Impact ratings weigh wind, rain, storms, snow and heat or cold; forecasts sharpen as kickoff nears.`,
     `Playoff odds "now" are ESPN FPI. With-a-win / with-a-loss odds are estimates that keep FPI's number as the weighted average using ESPN's win probability. AP and NFL power-rank moves are rule-of-thumb estimates.`,
     `Series records are all-time: Winsipedia for college (vacated wins not counted), FiveThirtyEight's NFL game file through 2003 plus ESPN since, playoffs included.`,
-    `Watchability blends team strength (FPI), how close the game projects, playoff stakes, ranked matchups and TV slot, rescaled across the week.`,
+    `Watchability forecast: 35 base points plus team quality (FPI, 27), competitiveness (win probability, 19), playoff stakes (15), marquee matchup (6) and TV window (3); FCS opponents cost 12. Finished games get an actual score on the same scale from the finish (21), drama (17), late tension (11), stakes and quality (10), surprise (7) and scoring (4), using ESPN win probability and scoring plays.`,
   ],
   games,
 };

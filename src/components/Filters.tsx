@@ -3,11 +3,14 @@ import {
   daysFor,
   scoreFilters,
   slate,
+  results,
   type FilterState,
   type League,
+  type View,
 } from "../data";
 
 type Props = FilterState & {
+  view: View;
   onChange: (patch: Partial<FilterState>) => void;
 };
 
@@ -17,15 +20,16 @@ export function Filters({
   query,
   day,
   minScore,
+  view,
   onChange,
 }: Props) {
-  const days = daysFor(league);
+  const days = daysFor(league, view);
   return (
     <div className="filter-dock">
       <div className="filter-main">
         <div className="league-switch" role="group" aria-label="League">
           {(["NFL", "CFB"] as League[]).map((l) => {
-            const n = slate.games.filter((g) => g.league === l).length;
+            const n = (view === "final" ? results : slate.games).filter((g) => g.league === l).length;
             const name = l === "NFL" ? "NFL" : "College football";
             return (
               <button

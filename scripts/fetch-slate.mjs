@@ -5,13 +5,44 @@
 //
 // The output is raw material for scripts/build-slate.mjs; nothing here is
 // shipped to the site.
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 
 const START = process.env.START;
 const END = process.env.END;
 const SEASON = process.env.SEASON ?? START.slice(0, 4);
-const out = new URL("../data-raw/", import.meta.url);
+const out = new URL(`../${process.env.RAW_DIR ?? "data-raw"}/`, import.meta.url);
+// Summaries are per week: clear last week's so the folder doesn't grow forever.
+rmSync(new URL("summaries/", out), { recursive: true, force: true });
 mkdirSync(new URL("summaries/", out), { recursive: true });
+
+// Keep only what the site uses; completed games carry every play otherwise.
+function trimSummary(sum) {
+  const periodByPlay = new Map();
+  for (const d of sum.drives?.previous ?? [])
+    for (const p of d.plays ?? []) periodByPlay.set(p.id, p.period?.number ?? null);
+  return {
+    header: sum.header,
+    predictor: sum.predictor,
+    pickcenter: (sum.pickcenter ?? []).slice(0, 2),
+    gameInfo: sum.gameInfo,
+    standings: sum.standings,
+    leaders: sum.leaders,
+    boxscore: { teams: sum.boxscore?.teams ?? [] },
+    // Home win probability after each play, with the quarter it happened in.
+    winprobability: (sum.winprobability ?? []).map((w) => [
+      Math.round((w.homeWinPercentage ?? 0) * 1000) / 1000,
+      periodByPlay.get(w.playId) ?? null,
+    ]),
+    scoringPlays: (sum.scoringPlays ?? []).map((p) => ({
+      period: p.period?.number,
+      clock: p.clock?.displayValue,
+      team: p.team?.id,
+      text: p.text,
+      away: p.awayScore,
+      home: p.homeScore,
+    })),
+  };
+}
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const errors = [];
@@ -65,7 +96,7 @@ for (const [key, { path, extra }] of Object.entries(leagues)) {
   console.log(`${key}: ${board.events?.length ?? 0} events`);
   for (const ev of board.events ?? []) {
     const sum = await get(`${SITE}/${path}/summary?event=${ev.id}`, { optional: true });
-    if (sum) save(`summaries/${ev.id}.json`, sum);
+    if (sum) save(`summaries/${ev.id}.json`, trimSummary(sum));
     index.events.push({ league: key, id: ev.id, name: ev.name, hasSummary: !!sum });
     await sleep(120);
   }

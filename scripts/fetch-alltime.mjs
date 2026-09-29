@@ -13,7 +13,17 @@ mkdirSync(dir, { recursive: true });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36";
+// Keep earlier runs' log and found list: build-slate uses them to tell "never
+// met" apart from "page not fetched yet".
+const readOld = (n, d) => {
+  try {
+    return JSON.parse(readFileSync(new URL(n, dir), "utf8"));
+  } catch {
+    return d;
+  }
+};
 const log = [];
+const oldLog = readOld("fetch-log.json", []);
 async function getText(url) {
   for (let a = 0; a < 3; a++) {
     try {
@@ -78,7 +88,7 @@ if (process.env.PHASE === "nflprobe") {
     n.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/&/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
   const cands = (n) => SLUGS[n] ?? [slugify(n)];
   const slate = JSON.parse(readFileSync(new URL("../src/data/slate.json", import.meta.url), "utf8"));
-  const found = {};
+  const found = readOld("found.json", {});
   for (const g of slate.games.filter((x) => x.league === "CFB")) {
     const key = `cfb-${g.espnId}`;
     if (existsSync(new URL(`${key}.html`, dir))) continue;
@@ -99,5 +109,5 @@ if (process.env.PHASE === "nflprobe") {
   }
   writeFileSync(new URL("found.json", dir), JSON.stringify(found, null, 1));
 }
-writeFileSync(new URL("fetch-log.json", dir), JSON.stringify(log, null, 1));
+writeFileSync(new URL("fetch-log.json", dir), JSON.stringify([...oldLog, ...log].slice(-4000), null, 1));
 console.log(log.map((l) => `${l.status ?? l.error} ${l.bytes ?? ""} ${l.url}`).join("\n"));

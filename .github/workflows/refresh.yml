@@ -1,0 +1,135 @@
+name: Scheduled refresh
+# Refreshes the board at 8am Central on Tuesday, Thursday, Friday, Sunday and
+# Monday, then deploys it:
+#   Tue  new week's slate (Tue–Mon window), plus Monday night's final archived
+#   Thu  midweek update (lines, weather, injuries in odds)
+#   Fri  Thursday games move to Final with forecast vs actual
+#   Sun  Saturday college games move to Final
+#   Mon  Sunday NFL games move to Final
+#
+# GitHub runs schedules from the default branch (main) in UTC, so there are two
+# crons and the gate below keeps whichever one is 8am in Chicago right now
+# (13:02 UTC in daylight time, 14:02 UTC in standard time). The data is
+# fetched and committed on slate-data, then the site files are copied to main,
+# which Cloudflare Pages deploys.
+on:
+  schedule:
+    - cron: "2 13 * * 0,1,2,4,5"
+    - cron: "2 14 * * 0,1,2,4,5"
+  workflow_dispatch:
+    inputs:
+      today:
+        description: "Pretend today is (YYYY-MM-DD, Central). Blank = today."
+        required: false
+      deploy:
+        description: "Deploy to main"
+        type: boolean
+        default: true
+permissions:
+  contents: write
+concurrency:
+  group: slate-data-writes
+  cancel-in-progress: false
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Gate on 8am Central
+        id: gate
+        run: |
+          offset=$(TZ=America/Chicago date +%z)
+          sched="${{ github.event.schedule }}"
+          run=no
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then run=yes
+          elif [ "$sched" = "2 13 * * 0,1,2,4,5" ] && [ "$offset" = "-0500" ]; then run=yes
+          elif [ "$sched" = "2 14 * * 0,1,2,4,5" ] && [ "$offset" = "-0600" ]; then run=yes
+          fi
+          echo "Chicago offset $offset, schedule '$sched' -> run=$run"
+          echo "run=$run" >> "$GITHUB_OUTPUT"
+
+      - if: steps.gate.outputs.run == 'yes'
+        uses: actions/checkout@v4
+        with:
+          ref: slate-data
+          fetch-depth: 0
+      - if: steps.gate.outputs.run == 'yes'
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.19.0
+      - if: steps.gate.outputs.run == 'yes'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - if: steps.gate.outputs.run == 'yes'
+        run: pnpm install --frozen-lockfile
+
+      - name: Work out the week
+        if: steps.gate.outputs.run == 'yes'
+        id: week
+        env:
+          TODAY: ${{ inputs.today }}
+        run: node scripts/slate-window.mjs | tee -a "$GITHUB_OUTPUT"
+
+      - name: Archive last week's late finals (Tuesdays)
+        if: steps.gate.outputs.run == 'yes' && steps.week.outputs.dow == '2'
+        env:
+          RAW_DIR: data-raw-prev
+          START: ${{ steps.week.outputs.prev_start }}
+          END: ${{ steps.week.outputs.prev_end }}
+        run: |
+          node scripts/fetch-slate.mjs
+          ARCHIVE_ONLY=1 node scripts/build-slate.mjs
+          rm -rf data-raw-prev
+
+      - name: Fetch this week
+        if: steps.gate.outputs.run == 'yes'
+        env:
+          START: ${{ steps.week.outputs.start }}
+          END: ${{ steps.week.outputs.end }}
+        run: |
+          echo "{\"start\":\"$START\",\"end\":\"$END\"}" > data-raw/request.json
+          node scripts/fetch-slate.mjs
+          node scripts/fetch-weather.mjs || echo "weather failed; building without it"
+          node scripts/fetch-trends.mjs || echo "trends failed; building without them"
+          node scripts/fetch-history.mjs || echo "history failed; using what we have"
+
+      - name: Build
+        if: steps.gate.outputs.run == 'yes'
+        run: |
+          node scripts/build-slate.mjs
+          # New matchups: all-time series pages, then rebuild with them.
+          node scripts/fetch-alltime.mjs > /dev/null || echo "all-time fetch failed"
+          node scripts/build-slate.mjs
+          node scripts/upgrade-logos.mjs || echo "logo fetch failed; validation will catch missing logos"
+          node scripts/write-narratives.mjs
+          pnpm build
+
+      - name: Browser checks
+        if: steps.gate.outputs.run == 'yes'
+        run: |
+          pnpm exec playwright install --with-deps chromium
+          pnpm test
+
+      - name: Commit data to slate-data
+        if: steps.gate.outputs.run == 'yes'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898699+github-actions[bot]@users.noreply.github.com"
+          git add -A data-raw src public
+          git diff --cached --quiet || git commit -q -m "Scheduled refresh $(TZ=America/Chicago date +'%a %b %-d %H:%M %Z')"
+          git pull -q --rebase -X theirs origin slate-data
+          git push origin HEAD:slate-data
+
+      - name: Deploy to main
+        if: steps.gate.outputs.run == 'yes' && (github.event_name == 'schedule' || inputs.deploy)
+        run: |
+          src=$(git rev-parse HEAD)
+          git fetch -q origin main
+          git checkout -q -B main origin/main
+          git checkout "$src" -- . ':!data-raw' ':!data-raw-test' ':!data-raw-prev'
+          git rm -r -q --cached --ignore-unmatch data-raw data-raw-test data-raw-prev
+          git diff --cached --quiet && { echo "Nothing to deploy"; exit 0; }
+          git commit -q -m "Refresh board $(TZ=America/Chicago date +'%a %b %-d, %-I:%M %p %Z')"
+          git push origin main

@@ -29,12 +29,31 @@ On this Mac, the bundled Codex Node runtime can be used without installing syste
 - `pnpm import:legacy` — recreate JSON from `source/original.html`; **overwrites weekly data edits**. Intended only for migration recovery.
 - `pnpm deploy` — build and upload to the existing Cloudflare Pages project `football-watchability` after authentication.
 
-## Weekly data updates
+## Automatic refresh
+
+**Actions → Scheduled refresh** (`.github/workflows/refresh.yml`) updates the board at 8am Central on Tuesday, Thursday, Friday, Sunday and Monday. A week runs Tuesday through Monday (`scripts/slate-window.mjs`):
+
+- **Tuesday** starts the new week. It first archives last week's late finals (Monday night) with `ARCHIVE_ONLY=1`.
+- **Thursday** refreshes lines, weather and the forecasts.
+- **Friday, Sunday and Monday** move finished games (Thursday's, Saturday's, Sunday's) to **Final**.
+
+Each run fetches ESPN and Open-Meteo, runs every build step and the browser tests, commits the data to `slate-data` and copies the site files to `main`, which Cloudflare deploys. GitHub runs schedules in UTC from `main`, so the workflow has 13:02 and 14:02 UTC crons and a gate that keeps whichever is 8am in Chicago (daylight or standard time). Runs can start a few minutes late when GitHub is busy. To run it by hand, use **Run workflow** (optionally with a pretend date and with deploy switched off).
+
+### Forecast vs actual
+
+`scripts/score.mjs` scores every game on one absolute 0–100 scale, before and after:
+
+- **Forecast:** 35 base points, plus team quality (FPI, up to 27), competitiveness (win probability, 19), playoff stakes (15), marquee matchup (ranked vs ranked, or NFL records and division games, 6) and TV window (3). Each FCS team costs 12.
+- **Actual:** 35 base points, plus the finish (final margin and overtime, 21), drama (lead changes and ESPN's win-probability swings, 17), late tension (how much of the 4th quarter was in doubt, 11), stakes and quality carried from the forecast (10), surprise (upset or comeback, 7) and fireworks (combined points, 4).
+
+The last forecast before kickoff is frozen in `src/data/forecasts.json` with its take. Once a game is final, the builder writes `src/data/results.json` (the two most recent weeks). It holds the final score and linescore, forecast and actual scores with their component breakdowns, a readout explaining the gap, and a thinned win-probability line. The Sept. 24–28 forecasts are the scores published at the time. They came from the older rescaled formula, so they have no breakdown.
+
+## Manual data updates
 
 The slate is built from ESPN data rather than typed in by hand. ESPN is fetched by GitHub Actions, because it isn't reachable from every environment.
 
 1. **Fetch.** On the `slate-data` branch, set `data-raw/request.json` to the week's dates (`{"start":"20261001","end":"20261005"}`) and push, or run **Actions → Fetch slate data** with those dates. The workflow runs `scripts/fetch-slate.mjs` (schedules, TV, lines, records, standings, AP poll, FPI, matchup predictor, season leaders, ESPN and Open-Meteo weather) and `scripts/fetch-history.mjs` (ESPN head-to-head results since 2004), then commits `data-raw/`. Then run **Actions → Fetch all-time history** (or push `data-raw/alltime/phase.txt` containing `full`). It runs `scripts/fetch-alltime.mjs`, which saves each college matchup's Winsipedia page and FiveThirtyEight's NFL game file (every game from 1920 to 2017). The builder merges these with ESPN results so every series is complete through the latest season.
-2. **Build.** `PERIOD="Oct. 1–5, 2026" node scripts/build-slate.mjs` writes `src/data/slate.json` and `src/data/team-ids.json`. Put corrections ESPN hasn't posted yet (a TV network, say) in `src/data/slate-overrides.json`, keyed by ESPN event id.
+2. **Build.** `node scripts/build-slate.mjs` (the period label comes from the game dates; `RAW_DIR` builds from another folder) writes `src/data/slate.json` and `src/data/team-ids.json`. Put corrections ESPN hasn't posted yet (a TV network, say) in `src/data/slate-overrides.json`, keyed by ESPN event id.
 3. **Logos.** Pushing a changed `team-ids.json` to `slate-data` runs **Upgrade logos**, which fetches only teams that don't have a logo yet. ESPN ids overlap across leagues, so logos are matched by league plus id.
 4. **Notes.** Write one-line takes in `src/data/headlines.json` (keyed by ESPN event id), then run `node scripts/write-narratives.mjs` (below).
 **Weather look-ahead:** `scripts/fetch-weather.mjs` pulls Open-Meteo's hourly forecast for each venue. It takes a few seconds, so run **Actions → Fetch weather** the day before games, rebuild, and ship. Each outdoor card shows four readings across the game window (about one per quarter): temperature, rain chance and wind or gusts. It also shows an impact rating (none, low, moderate or high) based on wind, rain, thunderstorms, snow, and heat or cold, plus plain-language effects (kicking, ball security, stamina) and how confident the forecast is based on days out.
@@ -46,14 +65,14 @@ The slate is built from ESPN data rather than typed in by hand. ESPN is fetched 
 How the numbers are made:
 - "Now" playoff odds are ESPN FPI. With-a-win and with-a-loss odds are estimated so that their average, weighted by ESPN's win probability, equals FPI.
 - AP rank is the current poll. The NFL "PR" is the FPI rank. Rank moves after a win or a loss are rule-of-thumb estimates.
-- Watchability blends team strength, projected closeness, playoff stakes, ranked matchups and TV slot, then rescales across the week. See the watchability section of `build-slate.mjs`.
+- Watchability is an absolute score; see **Forecast vs actual** above and `scripts/score.mjs`. Hand-written takes whose numbers no longer match the data are replaced with generated ones.
 
 Game fields:
 
 | Field | Contents |
 | --- | --- |
 | `espnId`, `league`, `conferences` | ESPN event id; `NFL` or `CFB`; college conference ids from the top-level list. |
-| `score`, `tier`, `delta` | Watchability 0–100, color tier (`elite`, `vgood`, `good`, `watch`, `bg`), change from the prior rating (`new` for a fresh slate). |
+| `score`, `tier`, `delta`, `breakdown` | Watchability forecast 0–100, color tier (`elite`, `vgood`, `good`, `watch`, `bg`), change since the previous refresh (`new` for a fresh slate), and the base plus components behind the score. |
 | `matchup`, `meta`, `chips`, `broadcast`, `network` | Matchup, kickoff (ET) · tier · line · venue, rating tags, TV/streaming. |
 | `weather` | Icon, title, detail, `impact`/`level`, `effects` (plain-language impacts), `hours` (four game-window readings) and `confidence`. |
 | `teams` | Two teams: `name`, `logoId`, `espnId`, `abbr`, `record`, `rankings`, `playoffOdds` (arrays ordered now, win, loss), `trend` (this season's games and averages). |
@@ -82,7 +101,7 @@ Game fields:
 
 ## Data provenance
 
-The migration preserves **87 games (16 NFL, 71 college), 174 logo images, 87 populated history sections and 87 broadcast entries** from the supplied `football_watchability_full_history_tv.html`. Twelve college controls include All FBS and eleven conference filters. The original file and its SHA-256 are retained for auditability. Six original PNGs had corrupt palette chunks (Missouri, Georgia, Clemson, UConn, Charlotte and Tulsa); their matching ESPN logos were embedded as replacements, with source URLs in `src/data/logo-repairs.json`. All other logo data is unchanged. `node scripts/check-migration.mjs` verified the initial migration against the source (it predates the logo upgrade and will now report logo differences) and is intentionally separate from weekly validation. Rerunning the legacy importer restores the corrupt originals; run `node scripts/repair-logos.mjs` afterward to reapply the documented repair (network required). The first slate (Sept. 24–28) was migrated from a supplied file; later slates are built from ESPN data as described above. The original wording may contain inconsistencies. The app labels the board as the **Sept. 24–28, 2026 saved slate** and labels scenario values as projections. There is no live sports feed, automatic refresh or prediction model.
+The migration preserves **87 games (16 NFL, 71 college), 174 logo images, 87 populated history sections and 87 broadcast entries** from the supplied `football_watchability_full_history_tv.html`. Twelve college controls include All FBS and eleven conference filters. The original file and its SHA-256 are retained for auditability. Six original PNGs had corrupt palette chunks (Missouri, Georgia, Clemson, UConn, Charlotte and Tulsa); their matching ESPN logos were embedded as replacements, with source URLs in `src/data/logo-repairs.json`. All other logo data is unchanged. `node scripts/check-migration.mjs` verified the initial migration against the source (it predates the logo upgrade and will now report logo differences) and is intentionally separate from weekly validation. Rerunning the legacy importer restores the corrupt originals; run `node scripts/repair-logos.mjs` afterward to reapply the documented repair (network required). The first slate (Sept. 24–28) was migrated from a supplied file; later slates are built from ESPN data as described above. The original wording may contain inconsistencies. The app labels the board as the **Sept. 24–28, 2026 saved slate** and labels scenario values as projections. There is no live sports feed; the board refreshes on the schedule above.
 
 ## Cloudflare Pages
 

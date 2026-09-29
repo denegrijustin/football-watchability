@@ -1,0 +1,36 @@
+name: Fetch test week
+# Pulls a past week into data-raw-test/ (for testing completed-game features).
+on:
+  workflow_dispatch:
+  push:
+    branches: [slate-data]
+    paths: [data-raw-test/request.json, .github/workflows/fetch-test.yml]
+permissions:
+  contents: write
+concurrency:
+  group: slate-data-writes
+  cancel-in-progress: false
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    env:
+      RAW_DIR: data-raw-test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: |
+          echo "START=$(node -p "require('./data-raw-test/request.json').start")" >> "$GITHUB_ENV"
+          echo "END=$(node -p "require('./data-raw-test/request.json').end")" >> "$GITHUB_ENV"
+      - run: node scripts/fetch-slate.mjs
+      - run: node scripts/fetch-trends.mjs
+      - run: node scripts/fetch-weather.mjs || true
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898699+github-actions[bot]@users.noreply.github.com"
+          git add data-raw-test
+          git diff --cached --quiet || git commit -q -m "Test week data"
+          git pull -q --rebase -X theirs origin "${GITHUB_REF_NAME}"
+          git push

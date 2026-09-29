@@ -149,3 +149,38 @@ test("season form chart, trends panel and network logos render", async ({ page }
   expect(logos.length).toBeGreaterThan(0);
   expect(logos.every(Boolean)).toBe(true);
 });
+
+const results = JSON.parse(readFileSync("src/data/results.json", "utf8"));
+test("final view compares forecast with actual and explains the score", async ({ page }) => {
+  test.skip(!results.games.length, "no finished games in this build");
+  const errors: string[] = [];
+  page.on("pageerror", (err) => errors.push(err.message));
+  await page.goto("/");
+  const league = results.games.some((r: any) => r.league === "NFL") ? "NFL" : "CFB";
+  if (league === "CFB") await page.getByRole("button", { name: /^College football/ }).click();
+  await page.getByRole("button", { name: /^Final/ }).click();
+  const expected = results.games.filter((r: any) => r.league === league);
+  await expect(page.locator(".result-card")).toHaveCount(expected.length);
+  const top = [...expected].sort((a: any, b: any) => b.actual.score - a.actual.score)[0];
+  const card = page.locator(".result-card").first();
+  await expect(card.locator(".fva-box.actual strong")).toHaveText(String(top.actual.score));
+  await expect(card.locator(".fva-box").first().locator("strong")).toHaveText(String(top.forecast.score));
+  await expect(card.locator(".readout-head")).toHaveText(top.readout.headline);
+  await expect(card.locator(".ls-total").first()).toHaveText(String(top.teams[0].score));
+  await card.locator("summary").filter({ hasText: "Why it scored" }).click();
+  const rows = card.locator(".breakdown tbody tr");
+  await expect(rows).toHaveCount(top.actual.parts.length + 2);
+  if (top.wp.length >= 8) {
+    await expect(card.locator(".wp svg")).toBeVisible();
+    await card.locator(".wp svg rect[tabindex='0']").first().focus();
+    await expect(card.locator(".wp-tip")).toBeVisible();
+  }
+  const width = await page.evaluate(() => document.documentElement.scrollWidth);
+  expect(width).toBeLessThanOrEqual((page.viewportSize()?.width ?? 0) + 1);
+  // Back to upcoming: every card explains its forecast.
+  await page.getByRole("button", { name: /^Upcoming/ }).click();
+  const g = page.locator(".game-card").first();
+  await g.locator("summary").filter({ hasText: "Why it's a" }).click();
+  await expect(g.locator(".breakdown .bd-total td")).toHaveText(await g.locator(".score strong").innerText());
+  expect(errors).toEqual([]);
+});

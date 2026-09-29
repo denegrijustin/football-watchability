@@ -6,7 +6,7 @@
 //   node scripts/fetch-weather.mjs
 import { readFileSync, writeFileSync } from "node:fs";
 
-const raw = new URL("../data-raw/", import.meta.url);
+const raw = new URL(`../${process.env.RAW_DIR ?? "data-raw"}/`, import.meta.url);
 const read = (n) => JSON.parse(readFileSync(new URL(n, raw), "utf8"));
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const errors = [];
