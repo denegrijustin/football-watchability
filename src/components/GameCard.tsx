@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import {
   deltaValue,
   logos,
@@ -21,9 +22,12 @@ export function GameCard({ game }: { game: Game }) {
   const delta = deltaValue(game.delta);
   const impact = impactLevel(game.weather.impact);
   const [away, home] = game.teams;
+  // Card background: the home team's dark color (deepened for contrast at build time).
+  const homeColor = (home as { color?: string | null }).color ?? null;
   return (
     <article
-      className={`game-card ${game.tier}`}
+      className={`game-card ${game.tier}${homeColor ? " team-tinted" : ""}`}
+      style={homeColor ? ({ "--team-bg": homeColor } as CSSProperties) : undefined}
       aria-labelledby={`${game.id}-title`}
     >
       <header className="card-top">

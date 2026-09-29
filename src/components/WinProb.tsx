@@ -28,7 +28,7 @@ export function WinProb({
   // Quarter starts
   const marks: { i: number; q: number }[] = [];
   wp.forEach(([, q], i) => {
-    if (q && q > 1 && q !== wp[i - 1]?.[1] && !marks.some((m) => m.q === q)) marks.push({ i, q });
+    if (q && q > 1 && q <= 5 && q !== wp[i - 1]?.[1] && !marks.some((m) => m.q === q)) marks.push({ i, q });
   });
   const peak = (side: "home" | "away") =>
     Math.max(...wp.map(([p]) => (side === "home" ? p : 100 - p)));

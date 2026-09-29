@@ -568,6 +568,26 @@ function trendFor(league, id) {
   };
 }
 
+// ---------- team card color ----------
+// The darker of a team's two ESPN colors (a hue before black/grey), deepened until light text and the
+// site's muted text stay readable on it (relative luminance <= 0.03).
+const hexRgb = (h) => (/^[0-9a-f]{6}$/i.test(h ?? "") ? [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16)) : null);
+const lum = (rgb) =>
+  rgb
+    .map((v) => v / 255)
+    .map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4))
+    .reduce((a, c, i) => a + c * [0.2126, 0.7152, 0.0722][i], 0);
+function darkColor(t) {
+  const cands = [t.color, t.alternateColor].map(hexRgb).filter(Boolean);
+  if (!cands.length) return null;
+  // Prefer a real team hue over black or grey (Eagles midnight green, not black).
+  const chroma = (c) => Math.max(...c) - Math.min(...c);
+  const hued = cands.filter((c) => chroma(c) >= 40);
+  let rgb = (hued.length ? hued : cands).sort((a, b) => lum(a) - lum(b))[0];
+  while (lum(rgb) > 0.03) rgb = rgb.map((v) => Math.round(v * 0.9));
+  return `#${rgb.map((v) => v.toString(16).padStart(2, "0")).join("")}`;
+}
+
 // ---------- TV network logos ----------
 const networkIds = {};
 const netSlug = (name) => slug(String(name).replace(/\+/g, " plus"));
@@ -684,6 +704,7 @@ for (const [key, league] of [
         logoId: espnToLogo.get(`${league}:${t.id}`) ?? slug(name),
         espnId: t.id,
         abbr: t.abbreviation,
+        color: darkColor(t),
         record,
         rankings: league === "NFL" ? nflRanks(t, opp.team) : cfbRanks(t, opp.team, pWin),
         trend: trendFor(league, t.id),
@@ -885,6 +906,7 @@ for (const g of built) {
       name: t.name,
       logoId: t.logoId,
       abbr: t.abbr,
+      color: t.color ?? null,
       record: t.record.split(" · ")[0],
       score: i ? g.final.home : g.final.away,
       linescores: g.final.linescores[i],

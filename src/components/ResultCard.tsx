@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { logos, networkLogo, tierLabel, type Result } from "../data";
 import { ScoreBreakdown } from "./ScoreBreakdown";
 import { WinProb } from "./WinProb";
@@ -19,7 +20,11 @@ export function ResultCard({ result: r }: { result: Result }) {
         ? "No pregame forecast was saved for this game; it was rebuilt from ESPN's pregame line with the current formula."
         : null;
   return (
-    <article className={`game-card result-card ${r.actual.tier}`} aria-labelledby={`r-${r.espnId}`}>
+    <article
+      className={`game-card result-card ${r.actual.tier}${home.color ? " team-tinted" : ""}`}
+      style={home.color ? ({ "--team-bg": home.color } as CSSProperties) : undefined}
+      aria-labelledby={`r-${r.espnId}`}
+    >
       <header className="card-top">
         <div className="kickoff">
           <strong>{r.final.detail}</strong> · {r.day} {r.time}
