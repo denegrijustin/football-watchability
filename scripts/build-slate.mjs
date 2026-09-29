@@ -517,6 +517,46 @@ function leadersFor(summary, teamId) {
   return out;
 }
 
+// ---------- season trends ----------
+const trendsFile = optRaw("trends.json") ?? { teams: {} };
+function trendFor(league, id) {
+  const gs = trendsFile.teams[`${league === "NFL" ? "nfl" : "cfb"}:${id}`];
+  if (!gs?.length) return null;
+  const games = gs.map((g) => ({
+    wk: g.week,
+    opp: g.opp.abbr ?? g.opp.name,
+    oppName: g.opp.name,
+    oppRank: g.opp.rank,
+    home: g.home,
+    neutral: g.neutral,
+    pf: g.pf,
+    pa: g.pa,
+    post: g.type === 3,
+  }));
+  const n = games.length;
+  const sum = (f) => games.reduce((t, g) => t + f(g), 0);
+  const ppg = sum((g) => g.pf) / n,
+    oppg = sum((g) => g.pa) / n;
+  const res = (g) => (g.pf > g.pa ? "W" : g.pf < g.pa ? "L" : "T");
+  let k = n - 1;
+  const last = res(games[k]);
+  while (k > 0 && res(games[k - 1]) === last) k--;
+  const recent = games.slice(-3);
+  const r1 = (x) => Math.round(x * 10) / 10;
+  return {
+    games,
+    ppg: r1(ppg),
+    oppg: r1(oppg),
+    margin: r1(ppg - oppg),
+    streak: `${last}${n - k}`,
+    last3Margin: n >= 4 ? r1(recent.reduce((t, g) => t + g.pf - g.pa, 0) / recent.length) : null,
+  };
+}
+
+// ---------- TV network logos ----------
+const networkIds = {};
+const netSlug = (name) => slug(String(name).replace(/\+/g, " plus"));
+
 // ---------- scoring ----------
 function strength(league, id) {
   const f = FPI[league].get(id);
@@ -580,6 +620,13 @@ for (const [key, league] of [
     const venue = [addr.city, addr.state ?? addr.country].filter(Boolean).join(", ");
     const neutral = comp.neutralSite ? " (neutral site)" : "";
     const weather = weatherFor(comp, summary, ev.date, hour24);
+    const media = (comp.geoBroadcasts ?? []).find((b) => b.market?.type === "National" && b.type?.shortName !== "Radio")?.media
+      ?? (comp.geoBroadcasts ?? [])[0]?.media;
+    let network = null;
+    if (media?.shortName && (media.darkLogo || media.logo)) {
+      network = netSlug(media.shortName);
+      networkIds[network] ??= { name: media.shortName, logo: media.logo, darkLogo: media.darkLogo };
+    }
 
     const team = (c, t, name, opp, pWin) => {
       const conf = CONF[t.conferenceId];
@@ -607,6 +654,7 @@ for (const [key, league] of [
         abbr: t.abbreviation,
         record,
         rankings: league === "NFL" ? nflRanks(t, opp.team) : cfbRanks(t, opp.team, pWin),
+        trend: trendFor(league, t.id),
         playoffOdds,
         _conf: conf,
         _leaders: leadersFor(summary, t.id),
@@ -655,6 +703,7 @@ for (const [key, league] of [
       _line: line,
       _venue: venue + neutral,
       _net: net,
+      _network: network,
       matchup: `${aName} @ ${hName}`,
       broadcast: (comp.broadcasts ?? []).flatMap((b) => b.names).map((n) => TV[n] ?? n)[0] ?? "TBA",
       weather,
@@ -702,6 +751,7 @@ const games = built
       meta,
       chips: [label, rankView],
       broadcast: overrides[g.espnId]?.broadcast ?? g.broadcast,
+      network: overrides[g.espnId]?.network ?? g._network,
       weather: g.weather,
       teams: g.teams,
       narrative: "",
@@ -728,6 +778,8 @@ const slate = {
   games,
 };
 writeFileSync(new URL("src/data/slate.json", root), JSON.stringify(slate, null, 2) + "\n");
+
+writeFileSync(new URL("src/data/network-ids.json", root), JSON.stringify(networkIds, null, 2) + "\n");
 
 // New logos needed?
 const logos = src("logos.json");

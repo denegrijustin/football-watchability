@@ -1,0 +1,22 @@
+name: Probe Commons logos
+on:
+  push:
+    branches: [slate-data]
+    paths: [scripts/probe-commons.mjs, .github/workflows/probe-commons.yml]
+permissions:
+  contents: write
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/probe-commons.mjs
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898699+github-actions[bot]@users.noreply.github.com"
+          git add data-raw/commons-probe.json
+          git diff --cached --quiet || git commit -q -m "Commons logo probe"
+          git pull -q --rebase && git push
