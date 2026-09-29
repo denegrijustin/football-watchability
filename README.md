@@ -38,6 +38,9 @@ The slate is built from ESPN data rather than typed in by hand. ESPN is fetched 
 3. **Logos.** Pushing a changed `team-ids.json` to `slate-data` runs **Upgrade logos**, which fetches only teams that don't have a logo yet. ESPN ids overlap across leagues, so logos are matched by league plus id.
 4. **Notes.** Write one-line takes in `src/data/headlines.json` (keyed by ESPN event id), then run `node scripts/write-narratives.mjs` (below).
 **Weather look-ahead:** `scripts/fetch-weather.mjs` pulls Open-Meteo's hourly forecast for each venue. It takes a few seconds, so run **Actions → Fetch weather** the day before games, rebuild, and ship. Each outdoor card shows four readings across the game window (about one per quarter): temperature, rain chance and wind or gusts. It also shows an impact rating (none, low, moderate or high) based on wind, rain, thunderstorms, snow, and heat or cold, plus plain-language effects (kicking, ball security, stamina) and how confident the forecast is based on days out.
+**Season trends:** `scripts/fetch-trends.mjs` (in the weather job and the full fetch) saves every team's completed games this season from ESPN. Cards show a "Form this season" chart (scoring margin per game, wins above the line in blue and losses below in red, on one scale for both teams, with a tooltip per game). A **Season trends** panel adds points for and against per game, average margin, last-3 margin, a larger chart and a game-by-game table. Hot offenses, stingy defenses, streaks and margin gaps also feed the watch/skip notes.
+
+**Network logos:** the builder records each game's network in `src/data/network-ids.json`. **Upgrade logos** fetches missing ones: ESPN's logo when it has one, otherwise a public-domain file from Wikimedia Commons (mapped in `COMMONS` inside `upgrade-logos.mjs`). Logos show on a light chip; a network with no reliable logo (currently BTN) keeps the TV icon.
 5. **Check and ship.** `pnpm build`, look at the board, then copy the source changes (not `data-raw/`) to `main`.
 
 How the numbers are made:
@@ -51,9 +54,9 @@ Game fields:
 | --- | --- |
 | `espnId`, `league`, `conferences` | ESPN event id; `NFL` or `CFB`; college conference ids from the top-level list. |
 | `score`, `tier`, `delta` | Watchability 0–100, color tier (`elite`, `vgood`, `good`, `watch`, `bg`), change from the prior rating (`new` for a fresh slate). |
-| `matchup`, `meta`, `chips`, `broadcast` | Matchup, kickoff (ET) · tier · line · venue, rating tags, TV/streaming. |
+| `matchup`, `meta`, `chips`, `broadcast`, `network` | Matchup, kickoff (ET) · tier · line · venue, rating tags, TV/streaming. |
 | `weather` | Icon, title, detail, `impact`/`level`, `effects` (plain-language impacts), `hours` (four game-window readings) and `confidence`. |
-| `teams` | Two teams: `name`, `logoId`, `espnId`, `record`, `rankings`, `playoffOdds` (arrays ordered now, win, loss). |
+| `teams` | Two teams: `name`, `logoId`, `espnId`, `abbr`, `record`, `rankings`, `playoffOdds` (arrays ordered now, win, loss), `trend` (this season's games and averages). |
 | `narrative`, `watch`, `skip`, `narrativeChips` | One-line take, why-watch and why-skip reasons, and supporting tags (generated; see below). |
 | `history` | All-time series (record, meeting count, first meeting), last five meetings, key players (season leaders), `games` (every meeting, newest first) and source. |
 
@@ -67,7 +70,7 @@ Game fields:
 | --- | --- |
 | `league`, `conferences` | `NFL` or `CFB`; college conference IDs from the top-level list. A game can belong to multiple conferences. |
 | `score`, `tier`, `delta` | Editorial 0–100 watchability, color tier (`elite`, `vgood`, `good`, `watch`, `bg`), change from the prior rating. |
-| `matchup`, `meta`, `chips`, `broadcast` | Team matchup, supplied kickoff/venue/line text, rating tags and TV/streaming availability. Include the timezone in kickoff text. |
+| `matchup`, `meta`, `chips`, `broadcast`, `network` | Team matchup, supplied kickoff/venue/line text, rating tags and TV/streaming availability. Include the timezone in kickoff text. |
 | `weather` | Icon, outlook title, descriptive detail and impact text. |
 | `teams` | Exactly two team objects: `name`, `logoId`, `record`, `rankings`, `playoffOdds`. Both arrays are ordered **now, win, loss**. Odds are numeric percentages (0–100). |
 | `narrative`, `watch`, `skip`, `narrativeChips` | One-line take, why-watch and why-skip reasons, and supporting tags (generated; see below). |

@@ -1,5 +1,6 @@
 import slateData from "./slate.json";
 import logoData from "./logos.json";
+import networkData from "./networks.json";
 export type Game = (typeof slateData.games)[number];
 export type Team = Game["teams"][number];
 export type League = "NFL" | "CFB";
@@ -96,7 +97,7 @@ export function filterGames({
         (league === "NFL" ||
           !conference ||
           conference === "all-fbs" ||
-          game.conferences.includes(conference)) &&
+          (game.conferences as string[]).includes(conference)) &&
         (day === "all" || parseMeta(game.meta).day === day) &&
         game.score >= minScore &&
         `${game.matchup} ${game.broadcast} ${game.meta}`
@@ -105,3 +106,7 @@ export function filterGames({
     )
     .sort((a, b) => b.score - a.score);
 }
+
+/** Network logo path for a slate `network` slug, if we have one. */
+const networks = networkData as Record<string, { src: string; name?: string }>;
+export const networkLogo = (slug?: string | null) => (slug ? networks[slug]?.src ?? null : null);

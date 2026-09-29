@@ -128,3 +128,24 @@ test("day and watchability filters narrow the board", async ({ page }) => {
     .evaluateAll((els) => els.map((e) => Number(e.textContent)));
   expect(scores).toEqual([...scores].sort((a, b) => b - a));
 });
+
+test("season form chart, trends panel and network logos render", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: /College football/ }).click();
+  const card = page.locator(".game-card").first();
+  await expect(card.locator(".form-row")).toHaveCount(2);
+  await card.locator(".form .mb-svg rect").first().focus();
+  await expect(card.locator(".mb-tip")).toBeVisible();
+  await card.locator("summary", { hasText: "Season trends" }).click();
+  await expect(card.locator(".trend-team")).toHaveCount(2);
+  await expect(card.locator(".tiles dd").first()).not.toBeEmpty();
+  const logos = await page.locator(".net-chip img").evaluateAll((imgs) =>
+    Promise.all(imgs.slice(0, 6).map(async (img) => {
+      (img as HTMLImageElement).loading = "eager";
+      await (img as HTMLImageElement).decode().catch(() => {});
+      return (img as HTMLImageElement).naturalWidth > 0;
+    })),
+  );
+  expect(logos.length).toBeGreaterThan(0);
+  expect(logos.every(Boolean)).toBe(true);
+});

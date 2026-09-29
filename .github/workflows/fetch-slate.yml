@@ -33,6 +33,7 @@ jobs:
           START: ${{ steps.dates.outputs.start }}
           END: ${{ steps.dates.outputs.end }}
       - run: node scripts/fetch-weather.mjs
+      - run: node scripts/fetch-trends.mjs
       - run: node scripts/fetch-history.mjs
         timeout-minutes: 40
       - name: Commit raw data
@@ -41,4 +42,5 @@ jobs:
           git config user.email "41898699+github-actions[bot]@users.noreply.github.com"
           git add data-raw
           git diff --cached --quiet || git commit -q -m "Raw slate data ${{ steps.dates.outputs.start }}-${{ steps.dates.outputs.end }}"
+          git pull -q --rebase origin "${GITHUB_REF_NAME}" || true
           git push
