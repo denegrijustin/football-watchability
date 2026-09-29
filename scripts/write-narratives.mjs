@@ -564,7 +564,9 @@ function signals(f) {
     add(
       W,
       2,
-      /rain/i.test(wx.title)
+      wx.effects?.[0] && wx.level === "high"
+        ? `High weather impact in ${meta.venue.split(",")[0]}: ${wx.effects[0].charAt(0).toLowerCase()}${wx.effects[0].slice(1)}`
+        : /rain/i.test(wx.title)
         ? vary("rain", [
             `Rain is likely in ${meta.venue.split(",")[0]} (${wx.detail}) — ball security becomes a storyline.`,
             `Wet-weather game in ${meta.venue.split(",")[0]}: ${wx.detail}. Expect a sloppier, run-heavier script.`,
@@ -579,7 +581,9 @@ function signals(f) {
     );
   if (/indoor|roof/i.test(wx.title))
     add(W, 1, `Under a roof in ${meta.venue.split(",")[0]} — no weather to slow the ${away.nick} or ${home.nick} offense.`, null, "Dome");
-  if (/humid|heat/i.test(wx.title + wx.detail))
+  if (/thunder/i.test(wx.title) || (wx.effects ?? []).some((e) => /Lightning/.test(e)))
+    add(S, 2.5, `Thunderstorms are in the ${meta.venue.split(",")[0]} forecast — a lightning delay could stall the game.`, null, "Storm risk");
+  if (/humid|heat|^Hot/i.test(wx.title + " " + wx.detail))
     add(
       S,
       1,

@@ -219,51 +219,136 @@ function nflRanks(me, opp) {
 }
 
 // ---------- weather ----------
-const weatherRaw = optRaw("weather.json") ?? {};
+// Game-window forecast (kickoff + 3 hours) from Open-Meteo, with an impact
+// rating and plain-language effects. ESPN's kickoff forecast is a fallback.
+const weatherFile = optRaw("weather.json") ?? {};
+const weatherPlaces = weatherFile.places ?? weatherFile;
+const weatherFetched = new Date(weatherFile.fetchedAt ?? index.fetchedAt);
+const COMPASS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+const compass = (deg) => (deg == null ? "" : COMPASS[Math.round(deg / 45) % 8]);
+function wmo(code, night) {
+  if (code >= 95) return ["⛈️", "Thunderstorms"];
+  if (code >= 71 && code <= 77) return ["🌨️", "Snow"];
+  if (code >= 85 && code <= 86) return ["🌨️", "Snow showers"];
+  if ((code >= 61 && code <= 67) || code === 82) return ["🌧️", "Rain"];
+  if ((code >= 51 && code <= 57) || (code >= 80 && code <= 81)) return ["🌦️", "Showers"];
+  if (code === 45 || code === 48) return ["🌫️", "Fog"];
+  if (code === 3) return ["☁️", "Cloudy"];
+  if (code === 1 || code === 2) return [night ? "🌙" : "⛅", night ? "Partly cloudy night" : "Partly cloudy"];
+  return [night ? "🌙" : "☀️", night ? "Clear night" : "Sunny"];
+}
+const LEVELS = ["none", "low", "moderate", "high"];
+
 function weatherFor(comp, summary, iso, localHour) {
   const venue = comp.venue ?? summary?.gameInfo?.venue ?? {};
   if (venue.indoor)
-    return { icon: "🏟️", title: "Indoor / roof", detail: "no weather factor", impact: "none impact", tempF: null };
-  let temp = null,
-    precip = null,
-    gust = null,
-    wind = null,
-    humidity = null;
-  const w = summary?.gameInfo?.weather;
-  if (w?.temperature != null) {
-    temp = w.temperature;
-    precip = w.precipitation ?? null;
-    gust = w.gust ?? null;
-  }
+    return { icon: "🏟️", title: "Indoor / roof", detail: "no weather factor", impact: "none impact", indoor: true };
   const a = venue.address ?? {};
-  const place = weatherRaw[[a.city, a.state].filter(Boolean).join(", ")];
-  const hourly = place?.forecast?.hourly;
-  if (hourly?.time) {
-    const et = new Date(iso).toLocaleString("sv-SE", { timeZone: "America/New_York" }).slice(0, 13).replace(" ", "T");
-    const i = hourly.time.findIndex((t) => t.startsWith(et));
-    if (i >= 0) {
-      temp ??= Math.round(hourly.temperature_2m[i]);
-      precip ??= hourly.precipitation_probability[i];
-      wind = hourly.wind_speed_10m[i];
-      gust = Math.max(gust ?? 0, hourly.wind_gusts_10m[i] ?? 0);
-      humidity = hourly.relative_humidity_2m[i];
-    }
+  const place = weatherPlaces[[a.city, a.state ?? a.country].filter(Boolean).join(", ")] ?? weatherPlaces[[a.city, a.state].filter(Boolean).join(", ")];
+  const H = place?.forecast?.hourly;
+  const et = new Date(iso).toLocaleString("sv-SE", { timeZone: "America/New_York" }).slice(0, 13).replace(" ", "T");
+  const i0 = H?.time?.findIndex((t) => t.startsWith(et)) ?? -1;
+  const daysOut = (new Date(iso) - weatherFetched) / 864e5;
+  const confidence = daysOut <= 1.5 ? "High" : daysOut <= 3.5 ? "Medium" : "Low";
+  const confText = `${confidence} confidence · forecast ${Math.max(0, Math.round(daysOut))} day${Math.round(daysOut) === 1 ? "" : "s"} out`;
+
+  if (i0 < 0) {
+    const w = summary?.gameInfo?.weather;
+    if (w?.temperature == null)
+      return { icon: "❔", title: "Forecast pending", detail: "too far out for a reliable forecast", impact: "low impact", confidence: confText };
+    return {
+      icon: (w.precipitation ?? 0) >= 50 ? "🌧️" : "⛅",
+      title: (w.precipitation ?? 0) >= 50 ? "Rain likely" : "Forecast",
+      detail: `${w.temperature}°F at kickoff${w.precipitation != null ? `, ${w.precipitation}% rain` : ""}`,
+      impact: (w.precipitation ?? 0) >= 50 ? "moderate impact" : "low impact",
+      confidence: confText,
+    };
   }
-  if (temp == null) return { icon: "❔", title: "Forecast pending", detail: "too far out for a reliable forecast", impact: "low impact", tempF: null };
-  const night = localHour >= 19 || localHour < 5;
-  if (precip != null && precip >= 50)
-    return { icon: "🌧️", title: "Rain likely", detail: `${precip}% chance, ${temp}°F`, impact: "med impact", tempF: temp };
-  const g = Math.round(Math.max(gust ?? 0, wind ?? 0));
-  if (g >= 25 || (wind ?? 0) >= 16)
-    return { icon: "🌬️", title: "Wind watch", detail: `${wind ? `wind ~${Math.round(wind)} mph, ` : ""}gusts to ${g} mph, ${temp}°F`, impact: "med impact", tempF: temp };
-  if (temp >= 85 && (humidity ?? 60) >= 55)
-    return { icon: "☀️", title: "Warm / humid", detail: `${temp}°F, heat can matter`, impact: "low impact", tempF: temp };
-  if (temp <= 40)
-    return { icon: "🥶", title: "Cold", detail: `${temp}°F at kickoff`, impact: "low impact", tempF: temp };
-  if (precip != null && precip >= 30)
-    return { icon: "🌦️", title: "Chance of showers", detail: `${precip}% chance, ${temp}°F`, impact: "low impact", tempF: temp };
-  if (night) return { icon: "🌙", title: "Clear night", detail: `${temp}°F at kickoff`, impact: "low impact", tempF: temp };
-  return { icon: "⛅", title: temp >= 75 ? "Warm and dry" : "Mild fall weather", detail: `${temp}°F at kickoff`, impact: "low impact", tempF: temp };
+
+  // Four readings across the game window: roughly one per quarter.
+  const hours = [0, 1, 2, 3]
+    .map((k) => i0 + k)
+    .filter((i) => i < H.time.length)
+    .map((i, k) => {
+      const hr = Number(H.time[i].slice(11, 13));
+      const night = hr >= 19 || hr < 6;
+      const [icon, sky] = wmo(H.weather_code[i], night);
+      return {
+        label: `Q${k + 1}`,
+        time: `${((hr + 11) % 12) + 1}${hr < 12 ? "a" : "p"}`,
+        icon,
+        sky,
+        tempF: Math.round(H.temperature_2m[i]),
+        feelsF: Math.round(H.apparent_temperature?.[i] ?? H.temperature_2m[i]),
+        precip: H.precipitation_probability?.[i] ?? 0,
+        rainIn: H.precipitation?.[i] ?? 0,
+        windMph: Math.round(H.wind_speed_10m[i]),
+        gustMph: Math.round(H.wind_gusts_10m[i]),
+        dir: compass(H.wind_direction_10m?.[i]),
+        code: H.weather_code[i],
+        humidity: H.relative_humidity_2m?.[i],
+      };
+    });
+  const max = (k) => Math.max(...hours.map((h) => h[k]));
+  const min = (k) => Math.min(...hours.map((h) => h[k]));
+  const gust = max("gustMph"),
+    wind = max("windMph"),
+    pop = max("precip"),
+    rain = hours.reduce((t, h) => t + h.rainIn, 0),
+    hot = max("feelsF"),
+    cold = min("feelsF");
+  const windDir = hours.reduce((p, h) => (h.gustMph >= p.gustMph ? h : p)).dir;
+  const thunder = hours.some((h) => h.code >= 95);
+  const snow = hours.some((h) => (h.code >= 71 && h.code <= 77) || h.code === 85 || h.code === 86);
+
+  const factors = [];
+  const add = (level, key, text) => factors.push({ level, key, text });
+  if (thunder) add(3, "storm", `Lightning risk: thunderstorms in the forecast could force a delay.`);
+  if (snow) add(3, "snow", `Snow in the forecast — footing, ball handling and kicking all get harder.`);
+  const windText = gust > wind + 3 ? `winds near ${wind} mph, gusts to ${gust}` : `winds near ${Math.max(wind, gust)} mph`;
+  if (wind >= 22 || gust >= 35)
+    add(3, "wind", `Passing and kicking: ${windText}${windDir ? ` from the ${windDir}` : ""} — deep shots and long field goals become a gamble.`);
+  else if (wind >= 16 || gust >= 25)
+    add(2, "wind", `Kicking game: ${windText}${windDir ? ` from the ${windDir}` : ""} can push long field goals and punts off line.`);
+  else if (gust >= 18 || wind >= 12) add(1, "wind", `A steady breeze (${windText}) — only a minor effect on kicks.`);
+  if (pop >= 60 && rain >= 0.15)
+    add(3, "rain", `Ball security: rain likely (${pop}%) with about ${rain.toFixed(2)}" during the game — expect a run-heavy, sloppier script.`);
+  else if (pop >= 50)
+    add(2, "rain", `Wet ball: ${pop}% chance of rain during the game — fumbles and drops become more likely.`);
+  else if (pop >= 30) add(1, "rain", `Scattered showers possible (${pop}% at worst).`);
+  if (hot >= 95) add(2, "heat", `Stamina: feels like ${hot}°F — expect heavy rotation and late-game fatigue.`);
+  else if (hot >= 88) add(1, "heat", `Warm: feels like ${hot}°F at its peak.`);
+  if (cold <= 20) add(2, "cold", `Cold: feels like ${cold}°F — tougher to catch, throw and kick.`);
+  else if (cold <= 32) add(1, "cold", `Chilly: feels like ${cold}°F late.`);
+  factors.sort((x, y) => y.level - x.level);
+  const level = factors[0]?.level ?? 0;
+
+  const top = factors[0];
+  const k0 = hours[0];
+  const title =
+    top && top.level >= 2
+      ? { storm: "Thunderstorms possible", snow: "Snow possible", wind: "Windy", rain: "Rain likely", heat: "Hot", cold: "Cold" }[top.key]
+      : top?.key === "rain"
+        ? "Chance of showers"
+        : k0.sky;
+  const icon =
+    top && top.level >= 2
+      ? { storm: "⛈️", snow: "🌨️", wind: "🌬️", rain: "🌧️", heat: "🥵", cold: "🥶" }[top.key]
+      : k0.icon;
+  const last = hours[hours.length - 1];
+  const bits = [`${k0.tempF}°F at kickoff${last.tempF !== k0.tempF ? `, ${last.tempF}°F late` : ""}`];
+  if (pop >= 20) bits.push(k0.precip === pop ? `${pop}% rain` : `rain ${k0.precip}%→${pop}%`);
+  if (gust >= 18) bits.push(`gusts ${gust} mph`);
+  return {
+    icon,
+    title,
+    detail: bits.join(", "),
+    impact: `${LEVELS[level]} impact`,
+    level: LEVELS[level],
+    effects: factors.filter((f) => f.level >= 1).map((f) => f.text),
+    hours: hours.map(({ label, time, icon, tempF, feelsF, precip, windMph, gustMph, dir }) => ({ label, time, icon, tempF, feelsF, precip, windMph, gustMph, dir })),
+    confidence: confText,
+  };
 }
 
 // ---------- history ----------
@@ -572,7 +657,7 @@ for (const [key, league] of [
       _net: net,
       matchup: `${aName} @ ${hName}`,
       broadcast: (comp.broadcasts ?? []).flatMap((b) => b.names).map((n) => TV[n] ?? n)[0] ?? "TBA",
-      weather: { icon: weather.icon, title: weather.title, detail: weather.detail, impact: weather.impact },
+      weather,
       teams: [tA, tH].map(({ _conf, _leaders, ...t }) => t),
       history: {
         ...hist,
@@ -635,6 +720,7 @@ const slate = {
   },
   broadcastNote: `TV/streaming reflects ESPN's listings for ${PERIOD}. Local NFL availability varies by market; subscription access may be required.`,
   footerNotes: [
+    `Weather: Open-Meteo hourly forecast for each game window (about one reading per quarter), fetched ${weatherFetched.toISOString().slice(0, 16).replace("T", " ")} UTC. Impact ratings weigh wind, rain, storms, snow and heat or cold; forecasts sharpen as kickoff nears.`,
     `Playoff odds "now" are ESPN FPI. With-a-win / with-a-loss odds are estimates that keep FPI's number as the weighted average using ESPN's win probability. AP and NFL power-rank moves are rule-of-thumb estimates.`,
     `Series records are all-time: Winsipedia for college (vacated wins not counted), FiveThirtyEight's NFL game file through 2003 plus ESPN since, playoffs included.`,
     `Watchability blends team strength (FPI), how close the game projects, playoff stakes, ranked matchups and TV slot, rescaled across the week.`,
