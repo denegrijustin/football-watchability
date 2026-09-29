@@ -180,6 +180,9 @@ test("final view compares forecast with actual and explains the score", async ({
   // Back to upcoming: every card explains its forecast.
   await page.getByRole("button", { name: /^Upcoming/ }).click();
   const g = page.locator(".game-card").first();
+  const withWp = slate.games.filter((x: any) => x.league === league && x.winProb).length;
+  await expect(page.locator(".game-card .pwp")).toHaveCount(withWp);
+  await expect(page.locator(".pwp-bar").first()).toBeVisible();
   await g.locator("summary").filter({ hasText: "Why it's a" }).click();
   await expect(g.locator(".breakdown .bd-total td")).toHaveText(await g.locator(".score strong").innerText());
   expect(errors).toEqual([]);

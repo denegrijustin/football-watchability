@@ -10,6 +10,7 @@ import { GameDetails } from "./GameDetails";
 import { WeatherLook } from "./WeatherLook";
 import { TeamForm } from "./Trends";
 import { networkLogo } from "../data";
+import { PregameWinProb, type WinProbData } from "./PregameWinProb";
 
 const impactLevel = (impact: string) =>
   impact.replace(/\s*impact$/i, "").toLowerCase();
@@ -118,6 +119,13 @@ export function GameCard({ game }: { game: Game }) {
       <WeatherLook game={game} />
 
       <p className="take">{game.narrative}</p>
+      {"winProb" in game && (
+        <PregameWinProb
+          wp={game.winProb as WinProbData}
+          away={(away as { abbr?: string }).abbr ?? away.name}
+          home={(home as { abbr?: string }).abbr ?? home.name}
+        />
+      )}
       <Stakes game={game} />
       <TeamForm game={game} />
       <GameDetails game={game} />

@@ -614,6 +614,23 @@ for (const [key, league] of [
     }
     pAway = 1 - pHome;
 
+    // Pregame win probability from two independent sources: ESPN's FPI
+    // matchup predictor and the sportsbook moneyline (vig removed).
+    const pe = Number(summary?.predictor?.homeTeam?.gameProjection),
+      pa = Number(summary?.predictor?.awayTeam?.gameProjection);
+    const espnHome = Number.isFinite(pe) && Number.isFinite(pa) && pe + pa > 0 ? pe / (pe + pa) : null;
+    const implied = (ml) => (ml == null || !Number.isFinite(Number(ml)) ? null : ml < 0 ? -ml / (-ml + 100) : 100 / (Number(ml) + 100));
+    const mh = implied(odds?.homeTeamOdds?.moneyLine),
+      ma = implied(odds?.awayTeamOdds?.moneyLine);
+    const marketHome = mh != null && ma != null ? mh / (mh + ma) : null;
+    const winProb = {
+      home: Math.round(pHome * 1000) / 10,
+      espn: espnHome == null ? null : Math.round(espnHome * 1000) / 10,
+      market: marketHome == null ? null : Math.round(marketHome * 1000) / 10,
+      book: marketHome == null ? null : odds?.provider?.name ?? "Sportsbook",
+      basis: espnHome != null ? "ESPN matchup predictor" : odds?.spread != null ? "point spread" : "FPI ratings",
+    };
+
     // Line text: "Alabama -6 • O/U 59.5"
     let line = null,
       spread = null,
@@ -742,6 +759,7 @@ for (const [key, league] of [
       score: fc.score,
       breakdown: fc,
       pHome,
+      winProb,
       status,
       final,
       summary,
@@ -798,6 +816,11 @@ for (const g of built) {
     pHome: Math.round(g.pHome * 1000) / 1000,
     take: prev?.take ?? oldById.get(g.espnId)?.narrative ?? null,
     prevScore: prev?.score ?? null,
+    // One win-probability reading per refresh day, to show how it has moved.
+    wpHistory: [
+      ...(prev?.wpHistory ?? []).filter((h) => h.at.slice(0, 10) !== nowIso.slice(0, 10)),
+      { at: nowIso, home: g.winProb.home, espn: g.winProb.espn, market: g.winProb.market },
+    ].slice(-8),
     at: nowIso,
     source: "frozen",
   };
@@ -924,6 +947,7 @@ const games = built
       weather: g.weather,
       teams: g.teams,
       breakdown: { base: g.breakdown.base, parts: g.breakdown.parts },
+      winProb: { ...g.winProb, history: forecasts[g.espnId]?.wpHistory ?? [] },
       narrative: "",
       narrativeChips: [],
       history: g.history,
