@@ -8,11 +8,14 @@ import {
 import { Stakes } from "./TeamImpact";
 import { GameDetails } from "./GameDetails";
 import { WeatherLook } from "./WeatherLook";
+import { TeamForm } from "./Trends";
+import { networkLogo } from "../data";
 
 const impactLevel = (impact: string) =>
   impact.replace(/\s*impact$/i, "").toLowerCase();
 
 export function GameCard({ game }: { game: Game }) {
+  const netLogo = networkLogo((game as { network?: string | null }).network);
   const meta = parseMeta(game.meta);
   const delta = deltaValue(game.delta);
   const impact = impactLevel(game.weather.impact);
@@ -26,20 +29,17 @@ export function GameCard({ game }: { game: Game }) {
         <div className="kickoff">
           <strong>{meta.day}</strong> {meta.time}
         </div>
-        <div className="tv" title="Where to watch">
-          <svg viewBox="0 0 24 24" aria-hidden="true" width="14" height="14">
-            <rect
-              x="3"
-              y="5"
-              width="18"
-              height="12"
-              rx="2"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            />
-            <path d="M8 21h8" stroke="currentColor" strokeWidth="2" />
-          </svg>
+        <div className={`tv ${netLogo ? "has-logo" : ""}`} title="Where to watch">
+          {netLogo ? (
+            <span className="net-chip">
+              <img src={netLogo} alt="" height="16" loading="lazy" />
+            </span>
+          ) : (
+            <svg viewBox="0 0 24 24" aria-hidden="true" width="14" height="14">
+              <rect x="3" y="5" width="18" height="12" rx="2" fill="none" stroke="currentColor" strokeWidth="2" />
+              <path d="M8 21h8" stroke="currentColor" strokeWidth="2" />
+            </svg>
+          )}
           <span className="sr-only">Where to watch: </span>
           {game.broadcast}
         </div>
@@ -119,6 +119,7 @@ export function GameCard({ game }: { game: Game }) {
 
       <p className="take">{game.narrative}</p>
       <Stakes game={game} />
+      <TeamForm game={game} />
       <GameDetails game={game} />
     </article>
   );

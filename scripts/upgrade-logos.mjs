@@ -137,6 +137,20 @@ for (const [logoId, { name, league }] of teams) {
 }
 
 // ---------- TV network logos (from ESPN's broadcast data) ----------
+// Networks ESPN has no logo for: current public-domain logo files on Commons.
+const COMMONS = {
+  cbs: ["File:CBS logo (2020).svg"],
+  fox: ["File:Fox Broadcasting Company logo (2019).svg"],
+  nbc: ["File:NBC logo 2022.svg"],
+  "prime-video": ["File:Prime Video logo (2024).svg"],
+  cbssn: ["File:CBS Sports Network 2021.svg"],
+  tnt: ["File:TNT Logo 2016.svg"],
+  btn: ["File:Big Ten Network logo.svg", "File:BTN logo.svg", "search:Big Ten Network logo svg"],
+  fs1: ["File:2015 Fox Sports 1 logo.svg"],
+  "usa-net": ["File:USA Network 2025 logo.svg", "File:USA Network logo (2016).svg"],
+  "mw-plus": ["File:Mountain West Conference logo.svg"],
+  peacock: ["File:NBCUniversal Peacock Logo.svg", "search:Peacock streaming logo svg"],
+};
 mkdirSync(new URL("public/networks/", root), { recursive: true });
 let networkIds = {};
 try {
@@ -149,8 +163,20 @@ try {
 for (const [slug, n] of Object.entries(networkIds)) {
   const file = new URL(`public/networks/${slug}.webp`, root);
   if (!ALL && networks[slug] && existsSync(file)) continue;
-  const url = n.darkLogo || n.logo;
-  const res = url && (await fetch(url));
+  // ESPN's light-background logo (shown on a light chip), else Wikimedia Commons.
+  let url = n.logo || n.darkLogo;
+  if (!url && COMMONS[slug]) {
+    for (const title of COMMONS[slug]) {
+      const api = title.startsWith("search:")
+        ? `https://commons.wikimedia.org/w/api.php?action=query&format=json&generator=search&gsrnamespace=6&gsrlimit=1&gsrsearch=${encodeURIComponent(title.slice(7))}&prop=imageinfo&iiprop=url&iiurlwidth=320`
+        : `https://commons.wikimedia.org/w/api.php?action=query&format=json&titles=${encodeURIComponent(title)}&prop=imageinfo&iiprop=url&iiurlwidth=320`;
+      const j = await (await fetch(api, { headers: { "user-agent": "fbwatch/1.0 (github.com/denegrijustin/football-watchability)" } })).json();
+      const page = Object.values(j.query?.pages ?? {})[0];
+      url = page?.imageinfo?.[0]?.thumburl ?? page?.imageinfo?.[0]?.url;
+      if (url) break;
+    }
+  }
+  const res = url && (await fetch(url, { headers: { "user-agent": "fbwatch/1.0 (github.com/denegrijustin/football-watchability)" } }));
   if (!res?.ok) {
     problems.push({ network: slug, error: `download failed: ${url}` });
     continue;

@@ -542,6 +542,25 @@ h1 em {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.tv.has-logo {
+  padding-left: 4px;
+}
+.net-chip {
+  display: inline-grid;
+  place-items: center;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 99px;
+  background: #f4f6f8;
+  flex-shrink: 0;
+}
+.net-chip img {
+  display: block;
+  height: 14px;
+  width: auto;
+  max-width: 64px;
+  object-fit: contain;
+}
 .tv svg {
   flex-shrink: 0;
   color: #9cc3dc;
@@ -761,6 +780,207 @@ h1 em {
   margin: 6px 0 0;
   font-size: 11px;
   color: var(--muted);
+}
+/* Season form + trends */
+:root {
+  --win: #3987e5;
+  --loss: #e66767;
+  --tie: #6b7785;
+}
+.form {
+  margin: 10px 0 4px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+.form-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.form-key {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.form-key i {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+}
+.form-key i + i,
+.form-key .k-loss {
+  margin-left: 6px;
+}
+.k-win {
+  background: var(--win);
+}
+.k-loss {
+  background: var(--loss);
+}
+.form-row {
+  display: grid;
+  grid-template-columns: 22px 1fr 64px;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+}
+.form-row img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+.form-sum {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.2;
+  font-size: 12px;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+.form-sum strong {
+  font-size: 13px;
+  color: var(--text);
+}
+.mb-wrap {
+  position: relative;
+}
+.mb-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+.mb-base {
+  stroke: #33424f;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+.mb-win {
+  fill: var(--win);
+}
+.mb-loss {
+  fill: var(--loss);
+}
+.mb-tie {
+  fill: var(--tie);
+}
+.mb-active .mb-win,
+.mb-active .mb-loss {
+  filter: brightness(1.25);
+}
+.mb-svg rect:focus-visible {
+  outline: none;
+  stroke: var(--lime);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+.mb-week {
+  font-size: 9px;
+  fill: var(--muted);
+}
+.mb-tip {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  transform: translateX(-50%);
+  z-index: 3;
+  display: grid;
+  gap: 1px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  background: #0b1117;
+  border: 1px solid var(--line-strong);
+  font-size: 11.5px;
+  color: var(--text-2);
+  white-space: nowrap;
+  pointer-events: none;
+}
+.mb-tip strong {
+  font-size: 13px;
+  color: var(--text);
+}
+.trends-content {
+  display: grid;
+  gap: 16px;
+}
+.trend-team header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.trend-team header img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+.trend-team header strong {
+  color: var(--text);
+}
+.trend-team header span {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0 0 10px;
+}
+.tiles > div {
+  padding: 7px 8px;
+  border-radius: 8px;
+  background: var(--surface-2);
+}
+.tiles dt {
+  font-size: 10.5px;
+  color: var(--muted);
+  line-height: 1.2;
+}
+.tiles dd {
+  margin: 3px 0 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+}
+.trend-table {
+  margin-top: 6px;
+}
+.trend-table summary {
+  display: flex;
+  justify-content: space-between;
+  min-height: 36px;
+  align-items: center;
+  font-size: 12.5px;
+  font-weight: 650;
+}
+.trend-table[open] summary > span {
+  transform: rotate(45deg);
+}
+.trend-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+.trend-table th {
+  text-align: left;
+  font-weight: 600;
+  color: var(--muted);
+  padding: 4px 0;
+}
+.trend-table td {
+  padding: 4px 0;
+  border-top: 1px solid var(--line);
+}
+@media (max-width: 760px) {
+  .tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 .take {
   margin: 0 0 12px;

@@ -1,4 +1,5 @@
 import type { Game } from "../data";
+import { SeasonTrends } from "./Trends";
 export function GameDetails({ game }: { game: Game }) {
   return (
     <div className="game-details">
@@ -30,6 +31,14 @@ export function GameDetails({ game }: { game: Game }) {
           </div>
         </div>
       </details>
+      {(game.teams as { trend?: unknown }[]).some((t) => t.trend) && (
+        <details>
+          <summary>
+            Season trends<span aria-hidden="true">+</span>
+          </summary>
+          <SeasonTrends game={game} />
+        </details>
+      )}
       <details>
         <summary>
           History + key players<span aria-hidden="true">+</span>

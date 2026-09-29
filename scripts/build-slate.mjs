@@ -623,9 +623,9 @@ for (const [key, league] of [
     const media = (comp.geoBroadcasts ?? []).find((b) => b.market?.type === "National" && b.type?.shortName !== "Radio")?.media
       ?? (comp.geoBroadcasts ?? [])[0]?.media;
     let network = null;
-    if (media?.shortName && (media.darkLogo || media.logo)) {
+    if (media?.shortName) {
       network = netSlug(media.shortName);
-      networkIds[network] ??= { name: media.shortName, logo: media.logo, darkLogo: media.darkLogo };
+      networkIds[network] ??= { name: media.shortName, logo: media.logo ?? null, darkLogo: media.darkLogo ?? null };
     }
 
     const team = (c, t, name, opp, pWin) => {
