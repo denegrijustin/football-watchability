@@ -9,6 +9,10 @@ on:
     paths: [scripts/upgrade-logos.mjs, .github/workflows/upgrade-logos.yml, src/data/team-ids.json, src/data/network-ids.json]
 permissions:
   contents: write
+# Data jobs write to the same branch: run one at a time.
+concurrency:
+  group: slate-data-writes
+  cancel-in-progress: false
 jobs:
   upgrade:
     runs-on: ubuntu-latest
@@ -30,5 +34,5 @@ jobs:
           git config user.email "41898699+github-actions[bot]@users.noreply.github.com"
           git add public/logos public/networks src/data/logos.json src/data/logo-sources.json src/data/networks.json
           git diff --cached --quiet || git commit -m "Upgrade team logos to 128px WebP from ESPN"
-          git pull -q --rebase origin "${GITHUB_REF_NAME}" || true
+          git pull -q --rebase -X theirs origin "${GITHUB_REF_NAME}"
           git push
