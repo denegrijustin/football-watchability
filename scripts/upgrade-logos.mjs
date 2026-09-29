@@ -171,7 +171,16 @@ for (const [slug, n] of Object.entries(networkIds)) {
       const api = title.startsWith("search:")
         ? `https://commons.wikimedia.org/w/api.php?action=query&format=json&generator=search&gsrnamespace=6&gsrlimit=1&gsrsearch=${encodeURIComponent(title.slice(7))}&prop=imageinfo&iiprop=url&iiurlwidth=320`
         : `https://commons.wikimedia.org/w/api.php?action=query&format=json&titles=${encodeURIComponent(title)}&prop=imageinfo&iiprop=url&iiurlwidth=320`;
-      const j = await (await fetch(api, { headers: { "user-agent": "fbwatch/1.0 (github.com/denegrijustin/football-watchability)" } })).json();
+      let j = {};
+      for (let attempt = 0; attempt < 4; attempt++) {
+        await new Promise((r) => setTimeout(r, 2500 * (attempt + 1))); // Commons rate limit
+        const res = await fetch(api, { headers: { "user-agent": "fbwatch/1.0 (github.com/denegrijustin/football-watchability)" } });
+        const text = await res.text();
+        try {
+          j = JSON.parse(text);
+          break;
+        } catch {}
+      }
       const page = Object.values(j.query?.pages ?? {})[0];
       url = page?.imageinfo?.[0]?.thumburl ?? page?.imageinfo?.[0]?.url;
       if (url) break;

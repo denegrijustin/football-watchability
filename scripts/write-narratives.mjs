@@ -203,6 +203,7 @@ const vary = (kind, variants) => {
   return null;
 };
 const cap = (x) => x[0].toUpperCase() + x.slice(1);
+const signed = (n) => `${n > 0 ? "+" : n < 0 ? "−" : ""}${Math.abs(n)}`;
 const ordinalSuffix = (n) =>
   n % 10 === 1 && n % 100 !== 11
     ? "st"
@@ -602,6 +603,28 @@ function signals(f) {
     add(W, 2.5, `${shortMatch(f)} climbed ${delta} points in the ratings since the last update.`, null, `▲${delta} this week`);
   if (delta <= -3)
     add(S, 2, vary("slip", [`${shortMatch(f)} slipped ${-delta} points in the ratings since the last update.`, `${away.nick}–${home.nick} lost ${-delta} points of rating this week.`, `Trending down: ${shortMatch(f)} is ${-delta} points lower than last week.`]), null, `▼${-delta} this week`);
+
+  // ---- Season trends (this season's results) ----
+  const trs = teams.filter((t) => t.trend?.games?.length >= 2);
+  const HOT_O = isNFL ? 30 : 45, STINGY = isNFL ? 16 : 13, GAP = isNFL ? 14 : 28;
+  for (const t of trs) {
+    const tr = t.trend;
+    const n = Number(tr.streak.slice(1));
+    if (tr.ppg >= HOT_O)
+      add(W, 2.2, `${t.The} ${isNFL ? "are" : "is"} averaging ${tr.ppg} points a game this season.`, `${t.The} ${isNFL ? "are" : "is"} scoring ${Math.round(tr.ppg)} a game`, `${t.nick} ${Math.round(tr.ppg)} ppg`);
+    if (tr.oppg <= STINGY)
+      add(W, 2, `${cap(t.poss)} defense is allowing just ${tr.oppg} points a game.`, `${cap(t.poss)} defense allows ${tr.oppg} a game`, `${t.nick} D: ${tr.oppg} allowed`);
+    if (tr.streak[0] === "W" && n >= 3 && tr.margin >= 10)
+      add(W, 1.8, `${t.The} ${isNFL ? "have" : "has"} won ${n} straight this season, by ${tr.margin} points a game on average.`, null, `${t.nick} ${tr.streak}`);
+    if (tr.streak[0] === "L" && n >= 3)
+      add(S, 2.2, `${t.The} ${isNFL ? "have" : "has"} lost ${n} straight coming in (${t.rec.wl}).`, `${t.The} arrive${isNFL ? "" : "s"} on a ${n}-game skid`, `${t.nick} ${tr.streak}`);
+    if (tr.last3Margin != null && tr.last3Margin - tr.margin >= 10)
+      add(W, 1.6, `${t.The} ${isNFL ? "are" : "is"} trending up: ${signed(tr.last3Margin)} per game over the last three vs. ${signed(tr.margin)} for the season.`, null, `${t.nick} trending up`);
+  }
+  if (trs.length === 2 && Math.abs(trs[0].trend.margin - trs[1].trend.margin) >= GAP) {
+    const [hi, lo] = [...trs].sort((a, b) => b.trend.margin - a.trend.margin);
+    add(S, 2.4, `Season margins point one way: ${hi.nick} ${signed(hi.trend.margin)} per game, ${lo.nick} ${signed(lo.trend.margin)}.`, `${hi.nick} outscore opponents by ${Math.round(hi.trend.margin)} a game`, "Margin gap");
+  }
 
   // ---- Skip reasons ----
   const fcs = teams.find((t) => t.rec.fcs);
