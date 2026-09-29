@@ -97,7 +97,7 @@ export function filterGames({
         (league === "NFL" ||
           !conference ||
           conference === "all-fbs" ||
-          game.conferences.includes(conference)) &&
+          (game.conferences as string[]).includes(conference)) &&
         (day === "all" || parseMeta(game.meta).day === day) &&
         game.score >= minScore &&
         `${game.matchup} ${game.broadcast} ${game.meta}`

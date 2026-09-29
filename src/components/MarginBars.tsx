@@ -27,19 +27,22 @@ export const signed = (n: number) => `${n > 0 ? "+" : n < 0 ? "−" : ""}${Math.
 
 /**
  * Scoring margin per game: wins rise above the midline (blue), losses drop
- * below it (red). `scale` is shared across both teams on a card so bars are
+ * below it (red). `up`/`down` are shared across both teams on a card so bars are
  * comparable. Each game is a focusable hit area with a tooltip.
  */
 export function MarginBars({
   games,
-  scale,
+  up,
+  down,
   slots,
   height = 40,
   showWeeks = false,
   label,
 }: {
   games: TrendGame[];
-  scale: number;
+  /** Largest win margin and largest loss margin across the teams being compared. */
+  up: number;
+  down: number;
   slots: number;
   height?: number;
   showWeeks?: boolean;
@@ -49,14 +52,18 @@ export function MarginBars({
   const W = 240;
   const axisH = showWeeks ? 14 : 0;
   const H = height;
-  const mid = H / 2;
+  // Baseline sits where the wins/losses split the height, so an all-wins card
+  // doesn't waste half its space; both teams share up/down so bars compare.
+  const span = up + down || 1;
+  const mid = Math.max(6, Math.min(H - 6, (up / span) * H));
   const slot = W / Math.max(slots, 1);
   const bw = Math.min(24, slot * 0.62);
   const r = 4;
   const bar = (g: TrendGame, i: number) => {
     const m = g.pf - g.pa;
     const x = i * slot + (slot - bw) / 2;
-    const h = Math.max(2, (Math.abs(m) / scale) * (mid - 3));
+    const room = m >= 0 ? mid - 2 : H - mid - 2;
+    const h = Math.max(2, (Math.abs(m) / (m >= 0 ? up || 1 : down || 1)) * room);
     const rr = Math.min(r, h, bw / 2);
     if (m === 0) return <circle cx={x + bw / 2} cy={mid} r={4} className="mb-tie" />;
     if (m > 0) {

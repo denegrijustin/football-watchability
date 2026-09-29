@@ -145,11 +145,11 @@ const COMMONS = {
   "prime-video": ["File:Prime Video logo (2024).svg"],
   cbssn: ["File:CBS Sports Network 2021.svg"],
   tnt: ["File:TNT Logo 2016.svg"],
-  btn: ["File:Big Ten Network logo.svg", "File:BTN logo.svg", "search:Big Ten Network logo svg"],
+  btn: ["File:Big Ten Network logo.svg", "File:BTN logo.svg", "File:Big Ten Network 2011 logo.svg", "File:Big Ten Network (2011).svg", "File:BTN (Big Ten Network) logo.svg"],
   fs1: ["File:2015 Fox Sports 1 logo.svg"],
   "usa-net": ["File:USA Network 2025 logo.svg", "File:USA Network logo (2016).svg"],
   "mw-plus": ["File:Mountain West Conference logo.svg"],
-  peacock: ["File:NBCUniversal Peacock Logo.svg", "search:Peacock streaming logo svg"],
+  peacock: ["File:NBCUniversal Peacock Logo.svg"],
 };
 mkdirSync(new URL("public/networks/", root), { recursive: true });
 let networkIds = {};

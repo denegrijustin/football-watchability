@@ -4,16 +4,18 @@ import { MarginBars, gameLabel, signed, type Trend } from "./MarginBars";
 type T = { name: string; logoId: string; record: string; trend?: Trend | null };
 const teamsWithTrends = (game: Game) => (game.teams as unknown as T[]).filter((t) => t.trend?.games.length);
 function sharedScale(teams: T[]) {
-  const max = Math.max(7, ...teams.flatMap((t) => t.trend!.games.map((g) => Math.abs(g.pf - g.pa))));
+  const ms = teams.flatMap((t) => t.trend!.games.map((g) => g.pf - g.pa));
+  const up = Math.max(0, ...ms);
+  const down = Math.max(0, ...ms.map((m) => -m));
   const slots = Math.max(...teams.map((t) => t.trend!.games.length));
-  return { max, slots };
+  return { up, down, slots };
 }
 
 /** Compact form strip on the card: margin per game for both teams. */
 export function TeamForm({ game }: { game: Game }) {
   const teams = teamsWithTrends(game);
   if (teams.length < 2) return null;
-  const { max, slots } = sharedScale(teams);
+  const { up, down, slots } = sharedScale(teams);
   return (
     <div className="form">
       <div className="form-head">
@@ -25,7 +27,7 @@ export function TeamForm({ game }: { game: Game }) {
       {teams.map((t) => (
         <div className="form-row" key={t.name}>
           <img src={logos[t.logoId]} alt="" width="20" height="20" loading="lazy" />
-          <MarginBars games={t.trend!.games} scale={max} slots={slots} label={`${t.name} margins`} height={34} />
+          <MarginBars games={t.trend!.games} up={up} down={down} slots={slots} label={`${t.name} margins`} height={34} />
           <span className="form-sum">
             <strong>{t.trend!.streak}</strong>
             <span>{signed(t.trend!.margin)}/g</span>
@@ -40,7 +42,7 @@ export function TeamForm({ game }: { game: Game }) {
 export function SeasonTrends({ game }: { game: Game }) {
   const teams = teamsWithTrends(game);
   if (!teams.length) return null;
-  const { max, slots } = sharedScale(teams);
+  const { up, down, slots } = sharedScale(teams);
   return (
     <div className="detail-content trends-content">
       {teams.map((t) => {
@@ -71,7 +73,7 @@ export function SeasonTrends({ game }: { game: Game }) {
                 <dd>{recent != null ? signed(recent) : tr.streak}</dd>
               </div>
             </dl>
-            <MarginBars games={tr.games} scale={max} slots={slots} height={70} showWeeks label={`${t.name} scoring margin by game`} />
+            <MarginBars games={tr.games} up={up} down={down} slots={slots} height={70} showWeeks label={`${t.name} scoring margin by game`} />
             <details className="trend-table">
               <summary>
                 Game-by-game<span aria-hidden="true">+</span>
