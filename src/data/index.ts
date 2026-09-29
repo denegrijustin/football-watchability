@@ -1,6 +1,7 @@
 import slateData from "./slate.json";
 import logoData from "./logos.json";
 import networkData from "./networks.json";
+import resultsData from "./results.json";
 export type Game = (typeof slateData.games)[number];
 export type Team = Game["teams"][number];
 export type League = "NFL" | "CFB";
@@ -26,8 +27,10 @@ export const scoreFilters = [
   { id: 90, label: "Must watch" },
 ];
 
-const DAY_ORDER = ["Thu", "Fri", "Sat", "Sun", "Mon"];
+const DAY_ORDER = ["Tue", "Wed", "Thu", "Fri", "Sat", "Sun", "Mon"];
 const DAY_NAMES: Record<string, string> = {
+  Tue: "Tuesday",
+  Wed: "Wednesday",
   Thu: "Thursday",
   Fri: "Friday",
   Sat: "Saturday",
@@ -65,13 +68,82 @@ export const cleanRank = (rank: string) =>
 export const deltaValue = (delta: string) =>
   Number(delta.replace(/[^\d+-]/g, "")) || 0;
 
-export function daysFor(league: League) {
+export function daysFor(league: League, view: View = "upcoming") {
   const present = new Set(
-    slate.games
-      .filter((g) => g.league === league)
-      .map((g) => parseMeta(g.meta).day),
+    view === "final"
+      ? results.filter((r) => r.league === league).map((r) => r.day)
+      : slate.games
+          .filter((g) => g.league === league)
+          .map((g) => parseMeta(g.meta).day),
   );
   return DAY_ORDER.filter((d) => present.has(d));
+}
+
+// ---------- finished games ----------
+export type View = "upcoming" | "final";
+export type Part = { id: string; label: string; max: number; pts: number; note: string };
+export type Breakdown = { base: number; parts: Part[] };
+export type ResultTeam = {
+  name: string;
+  logoId: string;
+  abbr: string;
+  record: string;
+  score: number;
+  linescores: number[];
+};
+export type Result = {
+  espnId: string;
+  league: League;
+  week: string;
+  date: string;
+  day: string;
+  time: string;
+  matchup: string;
+  conferences: string[];
+  broadcast: string;
+  network: string | null;
+  venue: string;
+  teams: ResultTeam[];
+  final: { detail: string; overtime: boolean };
+  forecast: {
+    score: number;
+    tier: string;
+    base: number;
+    parts: Part[] | null;
+    line: string | null;
+    pHome: number | null;
+    take: string | null;
+    source: "frozen" | "published" | "reconstructed";
+  };
+  actual: { score: number; tier: string; base: number; parts: Part[] };
+  delta: number;
+  readout: { headline: string; bullets: string[] };
+  /** Home win probability (0–100) and quarter, thinned to ~80 points. */
+  wp: [number, number | null][];
+};
+export const results = resultsData.games as unknown as Result[];
+
+/** Weeks with results, newest first. */
+export const resultWeeks = [...new Set(results.map((r) => r.week))];
+
+export function filterResults({
+  league,
+  conference,
+  query,
+  day = "all",
+  minScore = 0,
+}: Partial<FilterState> & { league: League }) {
+  const q = (query ?? "").trim().toLowerCase();
+  return results
+    .filter(
+      (r) =>
+        r.league === league &&
+        (league === "NFL" || !conference || conference === "all-fbs" || r.conferences.includes(conference)) &&
+        (day === "all" || r.day === day) &&
+        r.actual.score >= minScore &&
+        `${r.matchup} ${r.broadcast} ${r.venue}`.toLowerCase().includes(q),
+    )
+    .sort((a, b) => b.actual.score - a.actual.score);
 }
 
 export type FilterState = {

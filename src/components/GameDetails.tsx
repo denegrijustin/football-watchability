@@ -1,8 +1,25 @@
 import type { Game } from "../data";
+import type { Breakdown } from "../data";
 import { SeasonTrends } from "./Trends";
+import { ScoreBreakdown } from "./ScoreBreakdown";
 export function GameDetails({ game }: { game: Game }) {
   return (
     <div className="game-details">
+      {"breakdown" in game && (
+        <details>
+          <summary>
+            Why it's a {game.score}
+            <span aria-hidden="true">+</span>
+          </summary>
+          <div className="detail-content">
+            <ScoreBreakdown
+              {...(game.breakdown as Breakdown)}
+              total={game.score}
+              caption="Watchability forecast"
+            />
+          </div>
+        </details>
+      )}
       <details>
         <summary>
           Why watch / skip<span aria-hidden="true">+</span>

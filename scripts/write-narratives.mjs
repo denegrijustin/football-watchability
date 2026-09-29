@@ -860,7 +860,19 @@ for (const f of facts) {
   if (headSig) kindUse.set(kindOf(headSig.head), (kindUse.get(kindOf(headSig.head)) ?? 0) + 1);
   // Hand-written headlines (src/data/headlines.json) win over generated ones.
   const entry = headlines[f.g.espnId] ?? headlines[f.g.id];
-  const custom = typeof entry === "string" ? entry : entry?.take;
+  let custom = typeof entry === "string" ? entry : entry?.take;
+  // Hand-written takes go stale as the week's data refreshes: if a number in
+  // the take no longer appears anywhere in the game's data, use a generated one.
+  if (custom) {
+    const hay = JSON.stringify([f.g.teams, f.g.meta, f.g.history, f.g.weather, f.g.broadcast]);
+    const nums = custom.match(/\d+(?:\.\d+)?/g) ?? [];
+    // Margins ("won by 48") are derived from scores, so accept score differences too.
+    const diffs = new Set([...hay.matchAll(/(\d+)[–-](\d+)/g)].map((m) => String(Math.abs(m[1] - m[2]))));
+    if (nums.some((n) => !hay.includes(n) && !diffs.has(n))) {
+      console.warn(`Stale take for ${f.g.matchup}: ${custom}`);
+      custom = null;
+    }
+  }
   const head = custom ?? headSig?.head ?? f.g.matchup;
   if (usedHead.has(head)) throw new Error(`Duplicate headline: ${head}`);
   usedHead.add(head);
@@ -909,6 +921,16 @@ for (const f of facts) {
 }
 
 writeFileSync(path, JSON.stringify(slate, null, 2) + "\n");
+
+// Freeze each upcoming game's take with its forecast (src/data/forecasts.json).
+const fcPath = new URL("../src/data/forecasts.json", import.meta.url);
+try {
+  const fcs = JSON.parse(readFileSync(fcPath, "utf8"));
+  for (const g of games) if (fcs[g.espnId]) fcs[g.espnId].take = g.narrative;
+  writeFileSync(fcPath, JSON.stringify(fcs, null, 1) + "\n");
+} catch {
+  /* no forecasts file yet */
+}
 console.log(
   `Wrote notes for ${games.length} games (${usedHead.size} unique headlines, ${usedText.size} unique bullets, ${missingSkip} with no skip reason).`,
 );

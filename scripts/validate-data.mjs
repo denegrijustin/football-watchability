@@ -103,3 +103,21 @@ console.log(
       seen.set(line, g.id);
     }
 }
+// Finished games: forecast vs actual with a readout and a breakdown.
+{
+  const results = JSON.parse(readFileSync(new URL("../src/data/results.json", import.meta.url), "utf8"));
+  const liveIds = new Set(slate.games.map((g) => g.espnId));
+  for (const r of results.games) {
+    const id = `${r.matchup} (${r.week})`;
+    assert.ok(!liveIds.has(r.espnId), `${id}: listed as both upcoming and final`);
+    assert.equal(r.teams.length, 2, `${id}: teams`);
+    r.teams.forEach((t) => assert.ok(logos[t.logoId], `${id}: missing logo ${t.logoId}`));
+    for (const s of [r.forecast.score, r.actual.score]) assert.ok(s >= 0 && s <= 100, `${id}: score ${s}`);
+    assert.equal(r.delta, r.actual.score - r.forecast.score, `${id}: delta`);
+    assert.ok(r.actual.parts.length >= 6, `${id}: actual breakdown`);
+    const sum = r.actual.base + r.actual.parts.reduce((a, p) => a + p.pts, 0);
+    assert.ok(Math.abs(Math.min(100, Math.max(0, sum)) - r.actual.score) <= 1, `${id}: breakdown adds to ${sum}, not ${r.actual.score}`);
+    text(r.readout.headline, "readout");
+  }
+  console.log(`Validated ${results.games.length} finished games.`);
+}
