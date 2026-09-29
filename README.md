@@ -65,6 +65,7 @@ The slate is built from ESPN data rather than typed in by hand. ESPN is fetched 
 How the numbers are made:
 - "Now" playoff odds are ESPN FPI. With-a-win and with-a-loss odds are estimated so that their average, weighted by ESPN's win probability, equals FPI.
 - AP rank is the current poll. The NFL "PR" is the FPI rank. Rank moves after a win or a loss are rule-of-thumb estimates.
+- Pregame win probability shows ESPN's matchup predictor and the sportsbook moneyline with the vig removed, plus how it has moved since the first refresh of the week (`wpHistory` in `forecasts.json`).
 - Watchability is an absolute score; see **Forecast vs actual** above and `scripts/score.mjs`. Hand-written takes whose numbers no longer match the data are replaced with generated ones.
 
 Game fields:
