@@ -230,3 +230,30 @@ export function recordLine(record: string, league: string) {
   const [wl, conf] = record.split(" · ");
   return conf && conf !== "Independent" ? `${wl} · ${conf.replace(/ (East|West)$/, "")}` : wl;
 }
+
+/**
+ * Card/grid color for a team. The build deepens every team color until it is
+ * nearly black so light text stays readable, which turns oranges into browns
+ * (Tennessee's #FF8200 arrives as #482500). Oranges get their lightness back
+ * to a level where white text still reads (about 4.8:1); other hues are as-is.
+ */
+export function teamColor(hex: string | null | undefined): string | null {
+  if (!hex || !/^#[0-9a-f]{6}$/i.test(hex)) return hex ?? null;
+  const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255);
+  const max = Math.max(r, g, b),
+    min = Math.min(r, g, b),
+    l = (max + min) / 2,
+    d = max - min;
+  if (!d) return hex;
+  const sat = d / (1 - Math.abs(2 * l - 1));
+  const hue =
+    (max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4) * 60;
+  const h = (hue + 360) % 360;
+  if (h < 15 || h > 36 || sat < 0.6 || l >= 0.36) return hex;
+  const a = sat * Math.min(0.36, 1 - 0.36);
+  const f = (n: number) => {
+    const k = (n + h / 30) % 12;
+    return Math.round(255 * (0.36 - a * Math.max(-1, Math.min(k - 3, 9 - k, 1))));
+  };
+  return `#${[f(0), f(8), f(4)].map((v) => v.toString(16).padStart(2, "0")).join("")}`;
+}

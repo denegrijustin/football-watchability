@@ -46,17 +46,18 @@ export function TvGrid() {
     return (days.find((d) => d.date >= today) ?? days[0])?.date ?? "";
   });
   const [league, setLeague] = useState<"all" | League>("all");
+  const [conference, setConference] = useState("all-fbs");
   const [onlyGood, setOnlyGood] = useState(false);
   const [open, setOpen] = useState<GridGame | null>(null);
   const [busy, setBusy] = useState(false);
   const menu = useRef<HTMLDetailsElement>(null);
 
-  const games = all.filter(
-    (g) =>
-      slot(g.start).date === day &&
-      (league === "all" || g.league === league) &&
-      (!onlyGood || ENTERTAINING.has(g.tier)),
-  );
+  // Conference only narrows college games, so it applies when College is picked.
+  const keep = (g: GridGame) =>
+    (league === "all" || g.league === league) &&
+    (league !== "CFB" || conference === "all-fbs" || g.conferences.includes(conference)) &&
+    (!onlyGood || ENTERTAINING.has(g.tier));
+  const games = all.filter((g) => slot(g.start).date === day && keep(g));
 
   const { lanes, placed, startMin, steps } = layoutGrid(games);
   const dayName = days.find((d) => d.date === day);
@@ -70,7 +71,6 @@ export function TvGrid() {
     if (menu.current) menu.current.open = false;
     setBusy(true);
     try {
-      const keep = (g: GridGame) => (league === "all" || g.league === league) && (!onlyGood || ENTERTAINING.has(g.tier));
       const label = (date: string) =>
         new Date(`${date}T12:00:00Z`).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric", timeZone: "UTC" });
       await downloadGridJpg({
@@ -111,7 +111,14 @@ export function TvGrid() {
         </div>
         <div className="segmented" role="group" aria-label="League">
           {(["all", "NFL", "CFB"] as const).map((l) => (
-            <button key={l} aria-pressed={league === l} onClick={() => setLeague(l)}>
+            <button
+              key={l}
+              aria-pressed={league === l}
+              onClick={() => {
+                setLeague(l);
+                if (l !== "CFB") setConference("all-fbs");
+              }}
+            >
               {l === "all" ? "All" : l === "NFL" ? "NFL" : "College"}
             </button>
           ))}
@@ -119,6 +126,18 @@ export function TvGrid() {
         <button className="tv-toggle" aria-pressed={onlyGood} onClick={() => setOnlyGood((v) => !v)}>
           Entertaining only
         </button>
+        {league === "CFB" && (
+          <label className="tv-conf">
+            <span className="sr-only">Conference</span>
+            <select value={conference} onChange={(e) => setConference(e.target.value)} aria-label="Conference">
+              {slate.conferences.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.id === "all-fbs" ? "All conferences" : c.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <details className="export export-jpg-menu" ref={menu}>
           <summary className="export-jpg" aria-disabled={busy || !placed.length}>
             <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
