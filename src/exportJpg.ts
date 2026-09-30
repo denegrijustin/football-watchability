@@ -3,9 +3,11 @@ import { GRID_SLOT, layoutGrid, type GridGame, type PlacedGame } from "./data/gr
 import { tzAbbr } from "./tz";
 
 /**
- * Draws one day of the TV grid (the same lanes, times and tier styling as the
- * on-screen grid, honoring its league and "Entertaining only" filters) onto a
- * canvas and downloads it as a JPG. Networks run down the side, time runs left
+ * Draws one day of the TV grid, or every day of the weekend (the same lanes,
+ * times and tier styling as the on-screen grid, honoring its league and
+ * "Entertaining only" filters) onto a canvas and downloads it as a JPG. The
+ * weekend image shares one time axis across all days, so a given time is the
+ * same column on every day. Networks run down the side, time runs left
  * to right. Entertaining games (Good or better) get a tier-colored outline,
  * Background games are dimmed. Times follow the site's chosen time zone.
  */
@@ -83,8 +85,13 @@ export async function downloadGridJpg({
   if (!sections.length) return;
   const one = scope === "day" || sections.length === 1;
   const allPlaced = sections.flatMap((d) => d.layout.placed);
+  // One shared time axis for every day, so the same kickoff time lines up in
+  // the same column (8 PM Saturday sits directly above 8 PM Sunday).
+  const axisStart = Math.floor(Math.min(...sections.map((d) => d.layout.startMin)) / 60) * 60;
+  const axisEnd = Math.max(...sections.map((d) => d.layout.endMin));
+  const axisSteps = (axisEnd - axisStart) / GRID_SLOT;
 
-  const W = Math.max(MIN_W, PAD * 2 + LABEL_W + Math.max(...sections.map((d) => d.layout.steps)) * STEP_W);
+  const W = Math.max(MIN_W, PAD * 2 + LABEL_W + axisSteps * STEP_W);
   const secH = (d: (typeof sections)[number]) => (one ? 0 : DAY_H) + HEAD_H + d.layout.lanes.length * LANE_H + 28;
   const H = TOP + sections.reduce((h, d) => h + secH(d), 0) + 52;
   // Phones cap canvas area (~16M px); shrink very tall weekend images to fit.
@@ -153,7 +160,9 @@ export async function downloadGridJpg({
 
   let y = TOP;
   for (const d of sections) {
-    const { lanes, placed, startMin, steps } = d.layout;
+    const { lanes, placed } = d.layout;
+    const startMin = axisStart;
+    const steps = axisSteps;
     if (!one) {
       ctx.textBaseline = "middle";
       ctx.fillStyle = "#eaf0f4";

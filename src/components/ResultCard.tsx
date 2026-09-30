@@ -3,6 +3,7 @@ import { logos, networkLogo, rankLine, rankTitle, teamColor, tierLabel, type Res
 import { ScoreBreakdown } from "./ScoreBreakdown";
 import { InsanityMeter } from "./InsanityMeter";
 import { AdvancedStats } from "./AdvancedStats";
+import { useOpenGame } from "./GameCenter";
 import { dayOf, timeOf, tzAbbr } from "../tz";
 
 const short = (r: Result, i: number) =>
@@ -16,6 +17,7 @@ export function ResultCard({ result: r }: { result: Result }) {
   const periods = Math.max(away.linescores.length, home.linescores.length);
   const d = r.delta;
   const sc = r.scoreCheck;
+  const openGame = useOpenGame();
   const sourceNote =
     r.forecast.source === "published"
       ? "Forecast as published before this site switched to its current formula, so there's no component breakdown."
@@ -46,7 +48,11 @@ export function ResultCard({ result: r }: { result: Result }) {
       <h3 id={`r-${r.espnId}`} className="sr-only">
         {r.matchup}, final {away.score}–{home.score}
       </h3>
-      <div className="final-board">
+      <div
+        className="final-board gc-open-area"
+        onClick={() => openGame(r.espnId)}
+        title="Open Game Center"
+      >
         <table className="linescore">
           <thead>
             <tr>
@@ -155,6 +161,12 @@ export function ResultCard({ result: r }: { result: Result }) {
       )}
       <InsanityMeter wp={r.wp} final overtime={r.final.overtime} away={short(r, 0)} home={short(r, 1)} />
 
+      <button type="button" className="gc-open" onClick={() => openGame(r.espnId)}>
+        <span>
+          <strong>Game Center</strong> · drive chart, momentum, field tilt, top 3 / bottom 3, player tracker
+        </span>
+        <span aria-hidden="true">↗</span>
+      </button>
       <div className="game-details">
         <details>
           <summary>
