@@ -51,6 +51,10 @@ The **TV grid** view (`src/components/TvGrid.tsx`, data in `src/data/grid.ts`) l
 
 `functions/api/scores.js` is a Cloudflare Pages Function: `/api/scores?league=nfl|cfb&date=YYYYMMDD` returns trimmed ESPN scores, cached at the edge for 30 seconds while games are live. `src/live.tsx` polls it every minute once a game on the board has kicked off (falling back to ESPN directly, which allows cross-origin requests) and stops when everything that has started is final. Cards show a Live or Final strip, and grid blocks show the score. The hourly check in **Scheduled refresh** then rebuilds within the hour of a final, moving the game to **Final** with its forecast vs actual readout.
 
+### Insanity meter
+
+`src/insanity.ts` scores how wild a game is (or was) from its home win-probability line: total swing, lead changes (with a dead band around 50%), how close it stayed late, the winner's worst moment (finals only) and overtime. The result is 0–100 with five tiers (Calm, Restless, Wild, Unhinged, Witching hour), and the busiest tenth of the game is shaded as the "witching hour". Finished games use the archived `wp` series in `results.json` (look-back, shown on Final cards, plus a "wildest" callout on each week header). Live games poll `/api/flow` (`functions/api/flow.js`, ESPN's summary win probability, cached 30 seconds, with a direct-ESPN fallback in `src/live.tsx`) every 45 seconds and add a Heating up / Cooling off trend; the meter appears on a card once the game starts.
+
 ### Game Center
 
 Clicking a game card's matchup (or its **Game Center** button) opens a full overlay for that game (`src/components/GameCenter.tsx`). Before kickoff it shows the projected score and winner with how the projection is built, both win-probability sources, and the season's advanced stats. From kickoff it loads the live game every 15 seconds from `functions/api/game.js` (a Cloudflare Pages Function that trims ESPN's game summary with `src/gameTrim.js`, cached 15 seconds at the edge, with ESPN directly as a fallback) and adds:

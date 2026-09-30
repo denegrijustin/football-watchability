@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { results, slate } from "./data";
+import type { WpPoint } from "./insanity";
 
 /** Live score for one game, from /api/scores (a Cloudflare Pages Function over ESPN). */
 export type LiveScore = {
@@ -129,4 +130,73 @@ export function LiveStrip({ live, away, home }: { live?: LiveScore; away: string
       </span>
     </div>
   );
+}
+
+// ---------- live game flow (win-probability line) for the insanity meter ----------
+const FLOW_MS = 45_000;
+const flowCache = new Map<string, { at: number; wp: WpPoint[] }>();
+
+/** Home win % (0–100) and period per play: our edge function first, ESPN directly as a fallback. */
+async function flow(league: "nfl" | "cfb", id: string): Promise<WpPoint[] | null> {
+  try {
+    const res = await fetch(`/api/flow?league=${league}&id=${id}`);
+    if (res.ok && (res.headers.get("content-type") ?? "").includes("json")) {
+      const body = (await res.json()) as { wp?: WpPoint[] };
+      if (body.wp?.length) return body.wp;
+    }
+  } catch {
+    /* fall through */
+  }
+  try {
+    const res = await fetch(
+      `https://site.api.espn.com/apis/site/v2/sports/football/${PATHS[league]}/summary?event=${id}`,
+    );
+    if (!res.ok) return null;
+    const sum = await res.json();
+    const periodByPlay = new Map<string, number | null>();
+    const drives = [...(sum.drives?.previous ?? []), ...(sum.drives?.current ? [sum.drives.current] : [])];
+    for (const d of drives) for (const p of d.plays ?? []) periodByPlay.set(p.id, p.period?.number ?? null);
+    const wp = (sum.winprobability ?? []).map(
+      (w: { homeWinPercentage?: number; playId: string }): WpPoint => [
+        Math.round((w.homeWinPercentage ?? 0) * 1000) / 10,
+        periodByPlay.get(w.playId) ?? null,
+      ],
+    );
+    return wp.length ? wp : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * A live game's win-probability line, refreshed while it is in progress (and
+ * once more when it ends, before the archive catches up). Null until the game
+ * has started or when the feed is unavailable.
+ */
+export function useFlow(espnId: string, league: string, live?: LiveScore): WpPoint[] | null {
+  const [wp, setWp] = useState<WpPoint[] | null>(() => flowCache.get(espnId)?.wp ?? null);
+  const state = live?.state;
+  useEffect(() => {
+    if (state !== "in" && state !== "post") return;
+    let stop = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const key = league === "NFL" ? "nfl" : "cfb";
+    const run = async () => {
+      const cached = flowCache.get(espnId);
+      if (!cached || Date.now() - cached.at > FLOW_MS - 1000) {
+        const next = await flow(key, espnId);
+        if (next) flowCache.set(espnId, { at: Date.now(), wp: next });
+      }
+      if (stop) return;
+      const hit = flowCache.get(espnId);
+      if (hit) setWp(hit.wp);
+      if (state === "in") timer = setTimeout(run, FLOW_MS);
+    };
+    run();
+    return () => {
+      stop = true;
+      clearTimeout(timer);
+    };
+  }, [espnId, league, state]);
+  return wp;
 }

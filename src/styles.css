@@ -3535,3 +3535,121 @@ details.proj summary strong {
     padding-top: 58px;
   }
 }
+
+/* ---------- Insanity meter ---------- */
+.insanity {
+  --ins-calm: #62778a;
+  --ins-restless: #7f93d6;
+  --ins-wild: #a08be0;
+  --ins-unhinged: #c47fd6;
+  --ins-witching: #dc78b0;
+  --ins: var(--ins-calm);
+  margin: 12px 0 4px;
+}
+.insanity.restless { --ins: var(--ins-restless); }
+.insanity.wild { --ins: var(--ins-wild); }
+.insanity.unhinged { --ins: var(--ins-unhinged); }
+.insanity.witching { --ins: var(--ins-witching); }
+.ins-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ins-head .micro-label {
+  margin: 0;
+}
+.ins-trend {
+  padding: 1px 8px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+  background: color-mix(in srgb, var(--ins) 18%, transparent);
+  color: var(--ins);
+}
+.ins-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 6px;
+}
+.ins-score {
+  min-width: 2ch;
+  font-size: 30px;
+  line-height: 1;
+  font-weight: 780;
+  letter-spacing: -1px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ins);
+}
+.ins-gauge {
+  flex: 1;
+  min-width: 0;
+}
+.ins-track {
+  position: relative;
+  display: flex;
+  gap: 2px;
+  height: 10px;
+}
+.ins-seg {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--seg);
+  opacity: 0.22;
+}
+.ins-seg.on {
+  opacity: 1;
+}
+.ins-seg.calm { --seg: var(--ins-calm); }
+.ins-seg.restless { --seg: var(--ins-restless); }
+.ins-seg.wild { --seg: var(--ins-wild); }
+.ins-seg.unhinged { --seg: var(--ins-unhinged); }
+.ins-seg.witching { --seg: var(--ins-witching); }
+.ins-needle {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  width: 3px;
+  margin-left: -1px;
+  border-radius: 2px;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 45%);
+}
+.ins-tier {
+  display: block;
+  margin-top: 5px;
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  color: var(--ins);
+}
+.ins-facts {
+  margin: 6px 0 2px;
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.ins-hour {
+  color: var(--ins);
+  font-weight: 700;
+}
+.insanity .wp {
+  margin-top: 6px;
+}
+.wp-hot {
+  fill: rgb(196 127 214 / 20%);
+}
+.insanity.live .ins-needle {
+  animation: ins-pulse 2s ease-in-out infinite;
+}
+@keyframes ins-pulse {
+  50% {
+    box-shadow: 0 0 0 1px rgb(0 0 0 / 45%), 0 0 8px 2px rgb(196 127 214 / 55%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .insanity.live .ins-needle {
+    animation: none;
+  }
+}

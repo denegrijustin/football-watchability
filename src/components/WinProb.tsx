@@ -9,10 +9,13 @@ export function WinProb({
   wp,
   away,
   home,
+  hot,
 }: {
   wp: [number, number | null][];
   away: string;
   home: string;
+  /** Shades the busiest stretch (indexes into wp): the insanity meter's witching hour. */
+  hot?: { from: number; to: number };
 }) {
   const [active, setActive] = useState<number | null>(null);
   const uid = useId().replace(/:/g, "");
@@ -49,6 +52,9 @@ export function WinProb({
           <clipPath id={`${uid}b`}>
             <rect x={0} y={y(50)} width={W} height={H} />
           </clipPath>
+          {hot && (
+            <rect x={x(hot.from)} y={0} width={Math.max(2, x(hot.to) - x(hot.from))} height={H} className="wp-hot" />
+          )}
           <path d={area} className="wp-home" clipPath={`url(#${uid}t)`} />
           <path d={area} className="wp-away" clipPath={`url(#${uid}b)`} />
           <line x1={padL} x2={W} y1={y(50)} y2={y(50)} className="wp-mid" />
