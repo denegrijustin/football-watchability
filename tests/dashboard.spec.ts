@@ -476,3 +476,31 @@ test("NFL cards carry an injury report with Out / Doubtful / Questionable and th
   const rot = await card.locator(".inj-title").evaluate((el) => getComputedStyle(el).transform);
   expect(rot === "none" || rot === "matrix(1, 0, 0, 1, 0, 0)").toBe(true);
 });
+
+test("college conference games carry the conference availability report", async ({ page }) => {
+  const games = slate.games.filter((g: any) => g.league === "CFB" && g.availability);
+  test.skip(!games.length, "no conference availability reports in this build");
+  for (const g of games) {
+    expect(["SEC", "ACC", "Big Ten", "Big 12"]).toContain(g.availability.conf);
+    for (const t of g.teams) for (const i of t.injuries ?? []) expect(i.status).not.toBe("Available");
+  }
+  const g = games.find((x: any) => !x.availability.pending) ?? games[0];
+  await page.goto("/");
+  await page.getByRole("button", { name: /^College football/ }).click();
+  const card = page
+    .locator(".game-card")
+    .filter({ hasText: g.teams[0].name })
+    .filter({ hasText: g.teams[1].name })
+    .filter({ has: page.locator("summary", { hasText: "Injury report" }) })
+    .first();
+  await card.scrollIntoViewIfNeeded();
+  await card.locator("summary").filter({ hasText: "Injury report" }).click();
+  if (g.availability.pending) {
+    await expect(card.locator(".inj-pending")).toContainText(`${g.availability.conf} posts its first availability report`);
+  } else {
+    await expect(card.locator(".inj-team")).toHaveCount(2);
+    await expect(card.locator(".inj .source-note")).toContainText(`${g.availability.conf} availability report`);
+    const status = card.locator(".inj-status").first();
+    if (await status.count()) await expect(status).toHaveText(/Out|Doubtful|Questionable|Probable|Game-time/i);
+  }
+});

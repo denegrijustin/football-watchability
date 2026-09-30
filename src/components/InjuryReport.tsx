@@ -13,23 +13,51 @@ export type Injury = {
 };
 type TeamInj = { name: string; abbr?: string; logoId: string; color?: string | null; injuries?: Injury[] };
 
-const GAME_STATUS = new Set(["Out", "Doubtful", "Questionable"]);
+/** College conference availability report behind a game's list (SEC, ACC, Big Ten, Big 12). */
+export type Availability = { conf: string; report: string | null; pending: boolean; when: string | null };
+
+// Game-week designations: the NFL's three, plus the college reports' extras.
+const GAME_STATUS = new Set(["Out", "Out (1st half)", "Doubtful", "Questionable", "Game-time decision", "Probable"]);
 const short = (s: string) =>
-  ({ Out: "Out", Doubtful: "Doubtful", Questionable: "Questionable", "Injured Reserve": "IR", "Physically Unable to Perform": "PUP" })[s] ??
-  s;
+  ({
+    "Out (1st half)": "Out 1st half",
+    "Game-time decision": "Game-time",
+    "Injured Reserve": "IR",
+    "Physically Unable to Perform": "PUP",
+  })[s] ?? s;
 const cls = (s: string) =>
-  s === "Out" ? "out" : s === "Doubtful" ? "doubtful" : s === "Questionable" ? "questionable" : "longterm";
+  s === "Out" || s === "Out (1st half)"
+    ? "out"
+    : s === "Doubtful"
+      ? "doubtful"
+      : s === "Questionable" || s === "Game-time decision"
+        ? "questionable"
+        : s === "Probable"
+          ? "probable"
+          : "longterm";
+// Statuses that make the card-face injury watch (Probable is expected to play).
+const WATCH = new Set(["Out", "Out (1st half)", "Doubtful", "Questionable", "Game-time decision"]);
 
 export const teamsOf = (game: Game) => game.teams as unknown as TeamInj[];
-export const hasInjuryData = (game: Game) => teamsOf(game).some((t) => (t.injuries ?? []).length);
+export const availabilityOf = (game: Game) => ((game as { availability?: Availability | null }).availability ?? null);
+export const hasInjuryData = (game: Game) => !!availabilityOf(game) || teamsOf(game).some((t) => (t.injuries ?? []).length);
 
 /** "JAX 2 out · CIN 1 out, 3 questionable" for the section header. */
 export function injurySummary(game: Game) {
+  const av = availabilityOf(game);
+  if (av?.pending) return `${av.conf} availability report due ${av.when ?? "before the game"}`;
   return teamsOf(game)
     .map((t) => {
       const inj = (t.injuries ?? []).filter((i) => GAME_STATUS.has(i.status));
       const n = (s: string) => inj.filter((i) => i.status === s).length;
-      const bits = [n("Out") && `${n("Out")} out`, n("Doubtful") && `${n("Doubtful")} doubtful`, n("Questionable") && `${n("Questionable")} questionable`].filter(Boolean);
+      const bits = [
+        n("Out") && `${n("Out")} out`,
+        n("Out (1st half)") && `${n("Out (1st half)")} out 1st half`,
+        n("Doubtful") && `${n("Doubtful")} doubtful`,
+        n("Questionable") && `${n("Questionable")} questionable`,
+        n("Game-time decision") && `${n("Game-time decision")} game-time`,
+        n("Probable") && `${n("Probable")} probable`,
+      ].filter(Boolean);
       return `${t.abbr ?? t.name} ${bits.join(", ") || "none listed"}`;
     })
     .join(" · ");
@@ -43,7 +71,7 @@ export function InjuryWatch({ game }: { game: Game }) {
   const box = game.history.boxes.find((b) => /Key players/.test(b.label)) as { players?: { name: string }[] } | undefined;
   const keyNames = new Set((box?.players ?? []).map((p) => p.name));
   const hits = teamsOf(game).flatMap((t) =>
-    (t.injuries ?? []).filter((i) => GAME_STATUS.has(i.status) && keyNames.has(i.name)).map((i) => ({ ...i, team: t.abbr ?? t.name })),
+    (t.injuries ?? []).filter((i) => WATCH.has(i.status) && keyNames.has(i.name)).map((i) => ({ ...i, team: t.abbr ?? t.name })),
   );
   if (!hits.length) return null;
   return (
@@ -61,6 +89,16 @@ export function InjuryWatch({ game }: { game: Game }) {
 
 /** Full injury report for both teams: status, player, position and injury. */
 export function InjuryReport({ game }: { game: Game }) {
+  const av = availabilityOf(game);
+  if (av?.pending)
+    return (
+      <div className="detail-content inj">
+        <p className="inj-none inj-pending">
+          The {av.conf} posts its first availability report for this game {av.when ? `${av.when}` : "the week of the game"}. It shows up
+          here with the next refresh, then updates each evening and again about two hours before kickoff.
+        </p>
+      </div>
+    );
   return (
     <div className="detail-content inj">
       {teamsOf(game).map((t) => {
@@ -83,25 +121,35 @@ export function InjuryReport({ game }: { game: Game }) {
                       <strong>{i.name}</strong>
                       {i.pos && <span className="kp-pos">{i.pos}</span>}
                     </span>
-                    <span className="inj-what">
-                      {i.type ?? "Undisclosed"}
+                    <span className={`inj-what${av ? " inj-jersey" : ""}`}>
+                      {av ? (i.jersey ? `#${i.jersey}` : "") : (i.type ?? "Undisclosed")}
                       {i.detail ? ` (${i.detail.toLowerCase()})` : ""}
                     </span>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="inj-none">No players listed out, doubtful or questionable.</p>
+              <p className="inj-none">
+                {av ? "Every player listed available." : "No players listed out, doubtful or questionable."}
+              </p>
             )}
             {long.length > 0 && (
               <p className="inj-long">
-                Also out long-term: {long.map((i) => `${i.name} (${i.pos ?? "?"}, ${short(i.status)}${i.type ? `, ${i.type.toLowerCase()}` : ""})`).join("; ")}
+                {av ? "Out for the season (exempt from the report)" : "Also out long-term"}: {long.map((i) => av ? `${i.name} (${i.pos ?? "?"})` : `${i.name} (${i.pos ?? "?"}, ${short(i.status)}${i.type ? `, ${i.type.toLowerCase()}` : ""})`).join("; ")}
               </p>
             )}
           </section>
         );
       })}
-      <p className="source-note">ESPN injury report, updated with each refresh. NFL teams list players as Out, Doubtful or Questionable.</p>
+      {av ? (
+        <p className="source-note">
+          {av.conf} availability report{av.report ? ` · ${av.report}` : ""}
+          {av.when ? `, posted ${av.when}` : ""}. Conference reports list who is available, not the injury. They update each
+          evening from three nights out and again about two hours before kickoff (90 minutes in the Big 12).
+        </p>
+      ) : (
+        <p className="source-note">ESPN injury report, updated with each refresh. NFL teams list players as Out, Doubtful or Questionable.</p>
+      )}
     </div>
   );
 }
