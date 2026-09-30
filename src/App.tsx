@@ -14,6 +14,8 @@ import { Filters } from "./components/Filters";
 import { GameCard } from "./components/GameCard";
 import { ResultCard } from "./components/ResultCard";
 import { TvGrid } from "./components/TvGrid";
+import { setTz, tzLabel, useTz, ZONES } from "./tz";
+import { downloadSlateJpg } from "./exportJpg";
 
 const upcomingCount = (l: League) => slate.games.filter((g) => g.league === l).length;
 const finalCount = (l: League) => results.filter((r) => r.league === l).length;
@@ -28,6 +30,8 @@ const initial: FilterState = {
 };
 
 export default function App() {
+  const tz = useTz();
+  const [busy, setBusy] = useState(false);
   const [filters, setFilters] = useState<FilterState>(initial);
   const [view, setView] = useState<View>(upcomingCount("NFL") ? "upcoming" : "final");
   const update = (patch: Partial<FilterState>) => {
@@ -69,6 +73,20 @@ export default function App() {
           </span>
           <span className="brand-name">Football Watchability</span>
         </a>
+        <label className="tz-pick">
+          <span className="sr-only">Time zone</span>
+          <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
+            <circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" strokeWidth="2" />
+            <path d="M12 7.5V12l3 2" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+          <select value={tz} onChange={(e) => setTz(e.target.value)} aria-label="Time zone">
+            {ZONES.map((z) => (
+              <option key={z.id} value={z.id}>
+                {z.label} ({z.abbr})
+              </option>
+            ))}
+          </select>
+        </label>
         <div className="edition">
           <span className="status-dot" aria-hidden="true" />
           <span className="edition-label">Weekly board</span>
@@ -132,23 +150,59 @@ export default function App() {
               Final<span className="vs-extra"> · forecast vs actual</span><span className="count">{finalCount(league)}</span>
             </button>
           </div>
-          <details className="export">
-            <summary>Export weekend</summary>
-            <div className="export-menu">
-              <a href="/exports/watch-slate.csv" download={`watch-slate-${slate.period.replace(/[^\w]+/g, "-")}.csv`}>
-                <strong>Spreadsheet</strong>
-                <span>Every game Thu–Mon: time, TV, watchability, projected score, odds, weather, take, finals</span>
-              </a>
-              <a href="/exports/entertaining.ics" download="entertaining-games.ics">
-                <strong>Calendar</strong>
-                <span>Entertaining games (74+) as calendar events with the channel</span>
-              </a>
-              <button type="button" onClick={() => window.print()}>
-                <strong>Print this view</strong>
-                <span>The board or TV grid as it looks now</span>
-              </button>
-            </div>
-          </details>
+          <div className="export-btns">
+            <button
+              type="button"
+              className="export-jpg"
+              disabled={busy}
+              onClick={async () => {
+                setBusy(true);
+                try {
+                  await downloadSlateJpg();
+                } finally {
+                  setBusy(false);
+                }
+              }}
+            >
+              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                <path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              {busy ? (
+                "Making image…"
+              ) : (
+                <>
+                  Download<span className="dl-extra"> weekend</span> JPG
+                </>
+              )}
+            </button>
+            <details className="export">
+              <summary aria-label="More export options">More</summary>
+              <div className="export-menu">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setBusy(true);
+                    try {
+                      await downloadSlateJpg({ onlyEntertaining: true });
+                    } finally {
+                      setBusy(false);
+                    }
+                  }}
+                >
+                  <strong>Entertaining games only (JPG)</strong>
+                  <span>Just the 74+ games, Thursday to Monday</span>
+                </button>
+                <a href="/exports/watch-slate.csv" download={`watch-slate-${slate.period.replace(/[^\w]+/g, "-")}.csv`}>
+                  <strong>Spreadsheet (CSV)</strong>
+                  <span>Every game with all the numbers, times Central</span>
+                </a>
+                <a href="/exports/entertaining.ics" download="entertaining-games.ics">
+                  <strong>Calendar (.ics)</strong>
+                  <span>Entertaining games as calendar events</span>
+                </a>
+              </div>
+            </details>
+          </div>
           </div>
           {view === "grid" ? (
             <TvGrid />
@@ -253,7 +307,7 @@ export default function App() {
             <p>
               Watchability scores rate how worth watching a game should be, not
               who will win. The board refreshes five mornings a week, not live.
-              All kickoff times are Eastern.
+              Kickoff times are shown in {tzLabel(tz)} time; change it at the top of the page.
             </p>
           </details>
           <div className="footer-bottom">

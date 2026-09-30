@@ -295,19 +295,19 @@ h1 em {
 
 /* ---------- Tier colors ---------- */
 .elite {
-  --score-color: #a3c96f;
+  --score-color: var(--lime);
 }
 .vgood {
-  --score-color: #98bc80;
+  --score-color: #b4dd92;
 }
 .good {
-  --score-color: #c9b47c;
+  --score-color: var(--gold);
 }
 .watch {
-  --score-color: #d0a273;
+  --score-color: var(--orange);
 }
 .bg {
-  --score-color: #cf8f8e;
+  --score-color: var(--red);
 }
 
 /* ---------- Filters ---------- */
@@ -509,7 +509,7 @@ h1 em {
   inset: 0 0 auto;
   height: 3px;
   background: var(--score-color);
-  opacity: 0.65;
+  opacity: 0.9;
 }
 .card-top {
   display: flex;
@@ -551,7 +551,7 @@ h1 em {
   height: 22px;
   padding: 0 6px;
   border-radius: 99px;
-  background: #d5dbe0;
+  background: #f4f6f8;
   flex-shrink: 0;
 }
 .net-chip img {
@@ -628,8 +628,8 @@ h1 em {
   width: 76px;
   padding: 8px 4px 7px;
   border-radius: 12px;
-  background: color-mix(in srgb, var(--score-color) 8%, #0c151b);
-  border: 1px solid color-mix(in srgb, var(--score-color) 30%, transparent);
+  background: color-mix(in srgb, var(--score-color) 12%, #0c151b);
+  border: 1px solid color-mix(in srgb, var(--score-color) 45%, transparent);
   color: var(--score-color);
 }
 .score strong {
@@ -1642,8 +1642,8 @@ footer details[open] summary::before {
   color: var(--score-color);
 }
 .fva-box.actual {
-  background: color-mix(in srgb, var(--score-color) 8%, #0c151b);
-  border: 1px solid color-mix(in srgb, var(--score-color) 30%, transparent);
+  background: color-mix(in srgb, var(--score-color) 12%, #0c151b);
+  border: 1px solid color-mix(in srgb, var(--score-color) 45%, transparent);
 }
 .fva-box strong {
   font-size: 28px;
@@ -1946,14 +1946,13 @@ footer details[open] summary::before {
    keeps at least 4.5:1 contrast. Inner surfaces become translucent layers so
    they sit on the team color instead of the default slate. */
 .game-card.team-tinted {
-  --team-muted: color-mix(in srgb, var(--team-bg) 50%, #0b1117);
-  --surface: var(--team-muted);
+  --surface: var(--team-bg);
   --surface-2: rgb(255 255 255 / 6%);
   --surface-3: rgb(255 255 255 / 11%);
   --line: rgb(255 255 255 / 13%);
   --line-strong: rgb(255 255 255 / 24%);
-  background: var(--team-muted);
-  border-color: rgb(255 255 255 / 10%);
+  background: var(--team-bg);
+  border-color: rgb(255 255 255 / 14%);
 }
 
 /* ---------- Projected score ---------- */
@@ -2365,7 +2364,7 @@ details.proj summary strong {
 /* Worth watching: lit ring in the tier color */
 .tv-game.hl {
   border: 2px solid var(--score-color);
-  box-shadow: 0 0 0 1px rgb(0 0 0 / 50%), 0 0 14px color-mix(in srgb, var(--score-color) 30%, transparent);
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 50%), 0 0 14px color-mix(in srgb, var(--score-color) 45%, transparent);
 }
 .tv-game.hl .tv-score {
   background: var(--score-color);
@@ -2722,4 +2721,98 @@ details.proj summary strong {
   font-size: 12px;
   line-height: 1.45;
   color: var(--muted);
+}
+
+/* ---------- Time zone picker ---------- */
+.tz-pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  margin-right: 10px;
+  padding: 0 4px 0 10px;
+  height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  background: var(--surface);
+  color: var(--text-2);
+}
+.tz-pick select {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0 18px 0 0;
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: calc(100% - 9px) 55%, calc(100% - 5px) 55%;
+  background-size: 4px 4px;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+.tz-pick select option {
+  color: #111;
+}
+@media (max-width: 760px) {
+  .tz-pick {
+    margin-right: 6px;
+    padding-left: 8px;
+  }
+  .tz-pick select {
+    font-size: 12px;
+    max-width: 118px;
+  }
+}
+.export-btns {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+.export-btns .export {
+  margin-left: 0;
+}
+.export-jpg {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--lime);
+  color: #142110;
+  font-size: 14px;
+  font-weight: 750;
+  cursor: pointer;
+}
+.export-jpg:disabled {
+  opacity: 0.7;
+  cursor: progress;
+}
+@media (max-width: 760px) {
+  .export-btns {
+    margin-left: 0;
+    width: 100%;
+  }
+  .export-jpg {
+    flex: 1;
+    justify-content: center;
+  }
+}
+@media (max-width: 520px) {
+  .site-header .edition {
+    display: none;
+  }
+  .tz-pick {
+    margin-right: 0;
+  }
+}
+@media (max-width: 420px) {
+  .export-jpg .dl-extra {
+    display: none;
+  }
 }

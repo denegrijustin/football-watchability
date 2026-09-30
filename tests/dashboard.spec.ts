@@ -245,7 +245,7 @@ test("weekend export files and advanced stats are available", async ({ page, req
   expect(ics).toContain("BEGIN:VCALENDAR");
   expect((ics.match(/BEGIN:VEVENT/g) ?? []).length).toBe(slate.games.filter((g: any) => g.score >= 74).length);
   await page.goto("/");
-  await page.getByText("Export weekend").click();
+  await page.locator(".export summary").click();
   await expect(page.locator(".export-menu a[href='/exports/watch-slate.csv']")).toBeVisible();
   const card = page.locator(".game-card").first();
   const adv = card.locator("summary").filter({ hasText: "Advanced stats" });
@@ -253,4 +253,20 @@ test("weekend export files and advanced stats are available", async ({ page, req
     await adv.click();
     await expect(card.locator(".adv-table tbody tr").first()).toBeVisible();
   }
+});
+
+test("times default to Central, follow the chosen zone, and the weekend JPG downloads", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator(".kickoff").first()).toContainText("CT");
+  const [download] = await Promise.all([
+    page.waitForEvent("download"),
+    page.getByRole("button", { name: /Download.*JPG/ }).click(),
+  ]);
+  expect(download.suggestedFilename()).toMatch(/\.jpg$/);
+  await page.selectOption(".tz-pick select", "America/New_York");
+  await expect(page.locator(".kickoff").first()).toContainText("ET");
+  await page.reload();
+  await expect(page.locator(".kickoff").first()).toContainText("ET");
+  const width = await page.evaluate(() => document.documentElement.scrollWidth);
+  expect(width).toBeLessThanOrEqual((page.viewportSize()?.width ?? 0) + 1);
 });

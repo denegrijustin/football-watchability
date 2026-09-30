@@ -2,6 +2,7 @@ import slateData from "./slate.json";
 import logoData from "./logos.json";
 import networkData from "./networks.json";
 import resultsData from "./results.json";
+import { dayOf } from "../tz";
 export type Game = (typeof slateData.games)[number];
 export type Team = Game["teams"][number];
 export type League = "NFL" | "CFB";
@@ -71,10 +72,10 @@ export const deltaValue = (delta: string) =>
 export function daysFor(league: League, view: View = "upcoming") {
   const present = new Set(
     view === "final"
-      ? results.filter((r) => r.league === league).map((r) => r.day)
+      ? results.filter((r) => r.league === league).map((r) => dayOf(r.date))
       : slate.games
           .filter((g) => g.league === league)
-          .map((g) => parseMeta(g.meta).day),
+          .map((g) => dayOf((g as { date?: string }).date ?? "")),
   );
   return DAY_ORDER.filter((d) => present.has(d));
 }
@@ -153,7 +154,7 @@ export function filterResults({
       (r) =>
         r.league === league &&
         (league === "NFL" || !conference || conference === "all-fbs" || r.conferences.includes(conference)) &&
-        (day === "all" || r.day === day) &&
+        (day === "all" || dayOf(r.date) === day) &&
         r.actual.score >= minScore &&
         `${r.matchup} ${r.broadcast} ${r.venue}`.toLowerCase().includes(q),
     )
@@ -184,7 +185,7 @@ export function filterGames({
           !conference ||
           conference === "all-fbs" ||
           (game.conferences as string[]).includes(conference)) &&
-        (day === "all" || parseMeta(game.meta).day === day) &&
+        (day === "all" || dayOf((game as { date?: string }).date ?? "") === day) &&
         game.score >= minScore &&
         `${game.matchup} ${game.broadcast} ${game.meta}`
           .toLowerCase()

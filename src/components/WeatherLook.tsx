@@ -1,3 +1,4 @@
+import { hourOf } from "../tz";
 import type { Game } from "../data";
 
 export type WeatherHour = {
@@ -34,7 +35,7 @@ export function WeatherLook({ game }: { game: Game }) {
         {wx.hours.map((h) => (
           <li key={h.label}>
             <span className="wx-when">
-              {h.label} <span>{h.time}</span>
+              {h.label} <span>{(h as { at?: string }).at ? hourOf((h as { at?: string }).at!) : h.time}</span>
             </span>
             <span className="wx-icon" aria-hidden="true">
               {h.icon}

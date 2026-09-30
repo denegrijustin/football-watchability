@@ -12,7 +12,8 @@ const out = new URL("../public/exports/", import.meta.url);
 mkdirSync(out, { recursive: true });
 
 const TIER = { elite: "Must watch", vgood: "Very good", good: "Good", watch: "Watchable", bg: "Background" };
-const et = (iso, o) => new Date(iso).toLocaleString("en-US", { timeZone: "America/New_York", ...o });
+// Central time, the site default.
+const et = (iso, o) => new Date(iso).toLocaleString("en-US", { timeZone: "America/Chicago", ...o });
 const csvCell = (v) => {
   const s = v == null ? "" : String(v);
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
@@ -75,7 +76,7 @@ rows.sort((x, y) => x.date.localeCompare(y.date) || y.score - x.score);
 const cols = [
   ["Day", (r) => et(r.date, { weekday: "short" })],
   ["Date", (r) => et(r.date, { month: "short", day: "numeric" })],
-  ["Kickoff (ET)", (r) => et(r.date, { hour: "numeric", minute: "2-digit" })],
+  ["Kickoff (CT)", (r) => et(r.date, { hour: "numeric", minute: "2-digit" })],
   ["League", (r) => r.league],
   ["Away", (r) => r.away],
   ["Away rank", (r) => r.awayRank],

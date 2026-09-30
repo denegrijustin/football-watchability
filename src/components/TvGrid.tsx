@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import { logos, networkLogo, rankLine, rankTitle, results, slate, tierLabel, type League } from "../data";
 import { gridDays, gridGames, netRank, slot, type GridGame } from "../data/grid";
 import { useLive } from "../live";
+import { dateOf, tzLabel, useTz } from "../tz";
 import { GameCard } from "./GameCard";
 import { ResultCard } from "./ResultCard";
 
@@ -37,11 +38,12 @@ function useWide() {
  * card as the main board.
  */
 export function TvGrid() {
-  const all = useMemo(gridGames, []);
+  const tz = useTz();
+  const all = useMemo(gridGames, [tz]);
   const days = useMemo(() => gridDays(all), [all]);
   const wide = useWide();
   const [day, setDay] = useState(() => {
-    const today = new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+    const today = dateOf(new Date());
     return (days.find((d) => d.date >= today) ?? days[0])?.date ?? "";
   });
   const [league, setLeague] = useState<"all" | League>("all");
@@ -136,7 +138,7 @@ export function TvGrid() {
         <span role="status">
           {games.length} games · {good} entertaining
         </span>
-        <span className="sort-label">Times Eastern</span>
+        <span className="sort-label">Times {tzLabel(tz)}</span>
       </div>
 
       {placed.length ? (
