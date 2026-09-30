@@ -247,6 +247,7 @@ test("weekend export files and advanced stats are available", async ({ page, req
   await page.goto("/");
   await page.locator(".export summary").click();
   await expect(page.locator(".export-menu a[href='/exports/watch-slate.csv']")).toBeVisible();
+  await expect(page.getByRole("button", { name: /Download.*JPG/ })).toHaveCount(0);
   const card = page.locator(".game-card").first();
   const adv = card.locator("summary").filter({ hasText: "Advanced stats" });
   if (await adv.count()) {
@@ -255,18 +256,58 @@ test("weekend export files and advanced stats are available", async ({ page, req
   }
 });
 
-test("times default to Central, follow the chosen zone, and the weekend JPG downloads", async ({ page }) => {
+test("times default to Central, follow the chosen zone, and the TV grid JPG downloads", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator(".kickoff").first()).toContainText("CT");
-  const [download] = await Promise.all([
-    page.waitForEvent("download"),
-    page.getByRole("button", { name: /Download.*JPG/ }).click(),
-  ]);
-  expect(download.suggestedFilename()).toMatch(/\.jpg$/);
   await page.selectOption(".tz-pick select", "America/New_York");
   await expect(page.locator(".kickoff").first()).toContainText("ET");
   await page.reload();
   await expect(page.locator(".kickoff").first()).toContainText("ET");
   const width = await page.evaluate(() => document.documentElement.scrollWidth);
   expect(width).toBeLessThanOrEqual((page.viewportSize()?.width ?? 0) + 1);
+  await page.getByRole("button", { name: "TV grid" }).click();
+  for (const [item, name] of [
+    [/This day/, /^tv-grid-(?!weekend).*\.jpg$/],
+    [/Full weekend/, /^tv-grid-weekend-.*\.jpg$/],
+  ] as const) {
+    await page.locator(".export-jpg-menu summary").click();
+    const [download] = await Promise.all([
+      page.waitForEvent("download"),
+      page.locator(".export-jpg-menu .export-menu button").filter({ hasText: item }).click(),
+    ]);
+    expect(download.suggestedFilename()).toMatch(name);
+  }
+});
+
+test("TV grid conference filter narrows college games and All conferences restores them", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "TV grid" }).click();
+  // The conference picker only appears for College.
+  await expect(page.getByLabel("Conference")).toHaveCount(0);
+  await page.locator(".tv-toolbar [aria-label='League'] button", { hasText: "College" }).click();
+  const pick = page.getByLabel("Conference");
+  await expect(pick).toHaveValue("all-fbs");
+  const days = page.locator(".tv-toolbar [aria-label='Day'] button");
+  const countAll = async () => {
+    let n = 0;
+    for (let i = 0; i < (await days.count()); i++) {
+      await days.nth(i).click();
+      n += await page.locator(".tv-game").count();
+    }
+    return n;
+  };
+  const all = await countAll();
+  await pick.selectOption("sec");
+  const sec = await countAll();
+  const expected = [...slate.games, ...results.games.filter((r: any) => r.week === slate.period)].filter(
+    (g: any) => g.league === "CFB" && g.conferences.includes("sec"),
+  ).length;
+  expect(sec).toBe(expected);
+  expect(sec).toBeGreaterThan(0);
+  expect(sec).toBeLessThan(all);
+  await pick.selectOption("all-fbs");
+  expect(await countAll()).toBe(all);
+  // Leaving College clears the picker.
+  await page.locator(".tv-toolbar [aria-label='League'] button", { hasText: "NFL" }).click();
+  await expect(page.getByLabel("Conference")).toHaveCount(0);
 });

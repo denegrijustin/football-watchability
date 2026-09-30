@@ -1,24 +1,31 @@
-import { logos, slate, tierLabel } from "./data";
-import { gridGames, slot, type GridGame } from "./data/grid";
+import { logos, networkLogo, rankLine } from "./data";
+import { GRID_SLOT, layoutGrid, type GridGame, type PlacedGame } from "./data/grid";
 import { tzAbbr } from "./tz";
 
 /**
- * Draws the weekend watch slate (Thursday–Monday, every game or only the
- * Entertaining ones) onto a canvas and downloads it as a JPG. Times follow the
- * site's chosen time zone.
+ * Draws one day of the TV grid (the same lanes, times and tier styling as the
+ * on-screen grid, honoring its league and "Entertaining only" filters) onto a
+ * canvas and downloads it as a JPG. Networks run down the side, time runs left
+ * to right. Entertaining games (Good or better) get a tier-colored outline,
+ * Background games are dimmed. Times follow the site's chosen time zone.
  */
-const W = 1800;
-const PAD = 48;
-const COLS = 3;
-const GAP = 16;
-const ROW_H = 78;
-const COL_W = (W - PAD * 2 - GAP * (COLS - 1)) / COLS;
+const PAD = 40;
+const LABEL_W = 132;
+const STEP_W = 68;
+const HEAD_H = 34;
+const LANE_H = 96;
+const BLOCK_H = 84;
+const SIDE = 104;
+const DAY_H = 56;
+const TOP = 176;
+const MIN_W = 1300;
+const ENT = new Set(["elite", "vgood", "good"]);
 const TIER_COLOR: Record<string, string> = {
-  elite: "#c0ed80",
-  vgood: "#b4dd92",
-  good: "#edd092",
-  watch: "#f3b681",
-  bg: "#f59f9e",
+  elite: "#a3c96f",
+  vgood: "#98bc80",
+  good: "#c9b47c",
+  watch: "#d0a273",
+  bg: "#cf8f8e",
 };
 const FONT = `Inter, "Segoe UI", Roboto, system-ui, -apple-system, sans-serif`;
 
@@ -44,71 +51,92 @@ const clockOf = (min: number) => {
     m = min % 60;
   return `${((h + 11) % 12) + 1}:${String(m).padStart(2, "0")} ${h < 12 ? "AM" : "PM"}`;
 };
+const kick = (min: number) => clockOf(min).replace(":00 ", " ");
 function fit(ctx: CanvasRenderingContext2D, text: string, max: number) {
   if (ctx.measureText(text).width <= max) return text;
   let t = text;
   while (t.length > 1 && ctx.measureText(`${t}…`).width > max) t = t.slice(0, -1);
   return `${t}…`;
 }
+/** Draws an image scaled to fit inside a box, centered. */
+function contain(ctx: CanvasRenderingContext2D, img: HTMLImageElement, x: number, y: number, w: number, h: number) {
+  const r = Math.min(w / img.width, h / img.height);
+  const dw = img.width * r,
+    dh = img.height * r;
+  ctx.drawImage(img, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh);
+}
 
-export async function downloadSlateJpg({ onlyEntertaining = false } = {}) {
-  const ENT = new Set(["elite", "vgood", "good"]);
-  const games = gridGames()
-    .filter((g) => !onlyEntertaining || ENT.has(g.tier))
-    .map((g) => ({ ...g, s: slot(g.start) }))
-    .sort((a, b) => a.s.date.localeCompare(b.s.date) || a.s.minute - b.s.minute || b.score - a.score);
-  const days: { date: string; day: string; games: typeof games }[] = [];
-  for (const g of games) {
-    let d = days.find((x) => x.date === g.s.date);
-    if (!d) days.push((d = { date: g.s.date, day: g.s.day, games: [] }));
-    d.games.push(g);
-  }
+export type ExportDay = { date: string; day: string; label: string; games: GridGame[] };
 
-  const HEAD = 170;
-  const DAY_HEAD = 58;
-  const height =
-    HEAD + days.reduce((h, d) => h + DAY_HEAD + Math.ceil(d.games.length / COLS) * (ROW_H + 10) + 24, 0) + 70;
+export async function downloadGridJpg({
+  days,
+  period,
+  scope,
+}: {
+  days: ExportDay[];
+  period: string;
+  scope: "day" | "weekend";
+}) {
+  const sections = days
+    .map((d) => ({ ...d, layout: layoutGrid(d.games) }))
+    .filter((d) => d.layout.placed.length);
+  if (!sections.length) return;
+  const one = scope === "day" || sections.length === 1;
+  const allPlaced = sections.flatMap((d) => d.layout.placed);
+
+  const W = Math.max(MIN_W, PAD * 2 + LABEL_W + Math.max(...sections.map((d) => d.layout.steps)) * STEP_W);
+  const secH = (d: (typeof sections)[number]) => (one ? 0 : DAY_H) + HEAD_H + d.layout.lanes.length * LANE_H + 28;
+  const H = TOP + sections.reduce((h, d) => h + secH(d), 0) + 52;
+  // Phones cap canvas area (~16M px); shrink very tall weekend images to fit.
+  const scale = Math.min(1, Math.sqrt(15e6 / (W * H)));
   const canvas = document.createElement("canvas");
-  const scale = 1;
-  canvas.width = W * scale;
-  canvas.height = height * scale;
+  canvas.width = Math.round(W * scale);
+  canvas.height = Math.round(H * scale);
   const ctx = canvas.getContext("2d")!;
   ctx.scale(scale, scale);
 
-  // Logos (same-origin files or data URIs).
-  const ids = new Set(games.flatMap((g) => g.sides.map((t) => t.logoId)));
-  const imgs = new Map<string, HTMLImageElement | null>();
-  await Promise.all([...ids].map(async (id) => imgs.set(id, logos[id] ? await load(logos[id]) : null)));
+  // Team and network logos (same-origin files or data URIs).
+  const teamIds = new Set(allPlaced.flatMap((g) => g.sides.map((t) => t.logoId)));
+  const nets = new Set(sections.flatMap((d) => d.layout.lanes.map((l) => l.network)));
+  const teamImgs = new Map<string, HTMLImageElement | null>();
+  const netImgs = new Map<string, HTMLImageElement | null>();
+  await Promise.all([
+    ...[...teamIds].map(async (id) => teamImgs.set(id, logos[id] ? await load(logos[id]) : null)),
+    ...[...nets].map(async (n) => {
+      const src = networkLogo(n);
+      netImgs.set(n, src ? await load(src) : null);
+    }),
+  ]);
 
   // Background and header
   ctx.fillStyle = "#0b1117";
-  ctx.fillRect(0, 0, W, height);
-  ctx.fillStyle = "#c0ed80";
-  roundRect(ctx, PAD, 44, 56, 46, 12);
+  ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = "#a3c96f";
+  roundRect(ctx, PAD, 36, 56, 46, 12);
   ctx.fill();
   ctx.fillStyle = "#142110";
   ctx.font = `italic 800 24px ${FONT}`;
   ctx.textBaseline = "middle";
-  ctx.fillText("FW", PAD + 11, 68);
+  ctx.fillText("FW", PAD + 11, 60);
   ctx.fillStyle = "#eaf0f4";
-  ctx.font = `800 40px ${FONT}`;
-  ctx.fillText(onlyEntertaining ? "Entertaining games this weekend" : "Weekend watch slate", PAD + 76, 60);
+  ctx.font = `800 36px ${FONT}`;
+  ctx.fillText(one ? `TV grid · ${sections[0].label}` : `TV grid · full weekend`, PAD + 76, 52);
+  const good = allPlaced.filter((g) => ENT.has(g.tier)).length;
   ctx.fillStyle = "#b9c6d0";
-  ctx.font = `500 22px ${FONT}`;
-  const ent = games.filter((g) => ENT.has(g.tier)).length;
+  ctx.font = `500 21px ${FONT}`;
   ctx.fillText(
-    `${slate.period} · ${games.length} games · ${ent} entertaining · times ${tzAbbr()} · fbwatch.elskatemm.com`,
+    `${period} · ${allPlaced.length} games · ${good} entertaining · times ${tzAbbr()} · fbwatch.elskatemm.com`,
     PAD + 76,
-    98,
+    88,
   );
   // Legend
   let lx = PAD;
-  const ly = 138;
+  const ly = 132;
   ctx.font = `600 18px ${FONT}`;
   for (const [label, color, dim] of [
-    ["Entertaining (74+)", "#c0ed80", false],
-    ["Watchable (64–73)", "#f3b681", false],
-    ["Background (<64), dimmed", "#f59f9e", true],
+    ["Entertaining (74+): outlined", TIER_COLOR.elite, false],
+    ["Watchable (64–73)", TIER_COLOR.watch, false],
+    ["Background (<64): dimmed", TIER_COLOR.bg, true],
   ] as const) {
     ctx.globalAlpha = dim ? 0.45 : 1;
     ctx.fillStyle = color;
@@ -119,38 +147,80 @@ export async function downloadSlateJpg({ onlyEntertaining = false } = {}) {
     ctx.fillText(label, lx + 26, ly);
     lx += ctx.measureText(label).width + 60;
   }
-
-  let y = HEAD;
-  for (const d of days) {
-    const dateText = new Date(`${d.date}T12:00:00Z`).toLocaleDateString("en-US", {
-      weekday: "long",
-      month: "short",
-      day: "numeric",
-      timeZone: "UTC",
-    });
-    ctx.fillStyle = "#eaf0f4";
-    ctx.font = `800 28px ${FONT}`;
-    ctx.fillText(dateText, PAD, y + 26);
-    const n = ctx.measureText(dateText).width;
-    ctx.fillStyle = "#8d9eac";
-    ctx.font = `500 20px ${FONT}`;
-    ctx.fillText(`${d.games.length} game${d.games.length === 1 ? "" : "s"}`, PAD + n + 16, y + 28);
-    ctx.fillStyle = "#243441";
-    ctx.fillRect(PAD, y + 48, W - PAD * 2, 2);
-    y += DAY_HEAD;
-    d.games.forEach((g, i) => {
-      const col = i % COLS,
-        row = Math.floor(i / COLS);
-      drawRow(ctx, g, PAD + col * (COL_W + GAP), y + row * (ROW_H + 10), imgs);
-    });
-    y += Math.ceil(d.games.length / COLS) * (ROW_H + 10) + 24;
-  }
   ctx.fillStyle = "#8d9eac";
-  ctx.font = `500 17px ${FONT}`;
+  ctx.font = `500 16px ${FONT}`;
+  ctx.fillText("Under each logo: conference rank · overall rank (ESPN FPI). Top: record, or AP rank.", lx, ly);
+
+  let y = TOP;
+  for (const d of sections) {
+    const { lanes, placed, startMin, steps } = d.layout;
+    if (!one) {
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "#eaf0f4";
+      ctx.font = `800 28px ${FONT}`;
+      ctx.fillText(d.label, PAD, y + 22);
+      const n = ctx.measureText(d.label).width;
+      ctx.fillStyle = "#8d9eac";
+      ctx.font = `500 20px ${FONT}`;
+      ctx.fillText(`${placed.length} game${placed.length === 1 ? "" : "s"}`, PAD + n + 16, y + 24);
+      y += DAY_H;
+    }
+    const gridW = LABEL_W + steps * STEP_W;
+    const gx = PAD + LABEL_W;
+    const laneY = (i: number) => y + HEAD_H + i * LANE_H;
+
+    // Time header and column stripes
+    ctx.font = `700 15px ${FONT}`;
+    ctx.textBaseline = "middle";
+    for (let r = 0; r < steps; r++) {
+      if (r % 2) continue;
+      const x = gx + r * STEP_W;
+      ctx.fillStyle = "rgba(255,255,255,0.03)";
+      ctx.fillRect(x, y + HEAD_H, STEP_W * 2, lanes.length * LANE_H);
+      ctx.fillStyle = "#b9c6d0";
+      ctx.fillText(kick(startMin + r * GRID_SLOT), x + 6, y + HEAD_H / 2);
+    }
+    ctx.fillStyle = "#243441";
+    ctx.fillRect(PAD, y + HEAD_H - 1, gridW, 2);
+    ctx.fillStyle = "#8d9eac";
+    ctx.font = `800 16px ${FONT}`;
+    ctx.fillText(d.day, PAD + 8, y + HEAD_H / 2);
+
+    // Network lanes
+    lanes.forEach((l, i) => {
+      const ly2 = laneY(i);
+      if (i > 0 && lanes[i - 1].network !== l.network) {
+        ctx.fillStyle = "#243441";
+        ctx.fillRect(PAD, ly2, gridW, 1);
+      }
+      const chipX = PAD + 6,
+        chipY = ly2 + (LANE_H - 32) / 2,
+        chipW = LABEL_W - 20;
+      const img = netImgs.get(l.network);
+      if (img) {
+        ctx.fillStyle = "#d5dbe0";
+        roundRect(ctx, chipX, chipY, chipW, 32, 16);
+        ctx.fill();
+        contain(ctx, img, chipX + 12, chipY + 6, chipW - 24, 20);
+      } else {
+        ctx.fillStyle = "#eaf0f4";
+        ctx.font = `800 20px ${FONT}`;
+        ctx.textBaseline = "middle";
+        ctx.fillText(fit(ctx, l.label, chipW), chipX + 4, ly2 + LANE_H / 2);
+      }
+    });
+
+    for (const g of placed) drawBlock(ctx, g, gx, laneY(g.lane), startMin, teamImgs);
+    y += HEAD_H + lanes.length * LANE_H + 28;
+  }
+
+  ctx.textBaseline = "alphabetic";
+  ctx.fillStyle = "#8d9eac";
+  ctx.font = `500 16px ${FONT}`;
   ctx.fillText(
-    `Watchability 0–100: team quality, competitiveness, stakes, matchup and TV window. Projected score and win probability from the line, season scoring and ESPN.`,
+    "Watchability 0–100: team quality, competitiveness, stakes, matchup and TV window. Each block spans the game's broadcast window.",
     PAD,
-    height - 36,
+    H - 22,
   );
 
   const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/jpeg", 0.92));
@@ -158,83 +228,99 @@ export async function downloadSlateJpg({ onlyEntertaining = false } = {}) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `${onlyEntertaining ? "entertaining-games" : "watch-slate"}-${slate.period.replace(/[^\w]+/g, "-")}.jpg`;
+  const slug = (t: string) => t.toLowerCase().replace(/[^\w]+/g, "-");
+  a.download = `tv-grid-${one ? slug(sections[0].day || sections[0].label) : "weekend"}-${slug(period)}.jpg`;
   document.body.append(a);
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 5000);
 }
 
-function drawRow(
+function drawBlock(
   ctx: CanvasRenderingContext2D,
-  g: GridGame & { s: { minute: number } },
-  x: number,
-  y: number,
+  g: PlacedGame,
+  gx: number,
+  laneTop: number,
+  startMin: number,
   imgs: Map<string, HTMLImageElement | null>,
 ) {
-  const tier = g.tier;
-  const dim = tier === "bg";
-  const hl = tier === "elite" || tier === "vgood" || tier === "good";
-  const color = TIER_COLOR[tier] ?? "#8d9eac";
+  const hl = ENT.has(g.tier);
+  const dim = g.tier === "bg";
+  const color = TIER_COLOR[g.tier] ?? "#8d9eac";
+  // Exact minutes, so back-to-back games on one lane never overlap.
+  const x = gx + ((g.minute - startMin) / GRID_SLOT) * STEP_W + 1;
+  const y = laneTop + (LANE_H - BLOCK_H) / 2;
+  const w = (g.minutes / GRID_SLOT) * STEP_W - 3;
+  const [a, h] = g.sides;
+
   ctx.save();
   ctx.globalAlpha = dim ? 0.42 : 1;
-  // Card
-  const [a, h] = g.sides;
-  const grad = ctx.createLinearGradient(x, 0, x + COL_W, 0);
-  grad.addColorStop(0, a.color ?? "#17222c");
-  grad.addColorStop(0.5, "#121b23");
-  grad.addColorStop(1, h.color ?? "#17222c");
-  ctx.fillStyle = grad;
-  roundRect(ctx, x, y, COL_W, ROW_H, 12);
-  ctx.fill();
-  if (hl) {
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = color;
-    roundRect(ctx, x + 1.5, y + 1.5, COL_W - 3, ROW_H - 3, 11);
-    ctx.stroke();
-  } else {
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = "rgba(255,255,255,0.12)";
-    roundRect(ctx, x + 0.5, y + 0.5, COL_W - 1, ROW_H - 1, 12);
-    ctx.stroke();
+  // Body, clipped to the rounded block: away color | dark middle | home color
+  roundRect(ctx, x, y, w, BLOCK_H, 12);
+  ctx.clip();
+  ctx.fillStyle = "#17222c";
+  ctx.fillRect(x, y, w, BLOCK_H);
+  ctx.fillStyle = a.color ?? "#1d2a35";
+  ctx.fillRect(x, y, SIDE, BLOCK_H);
+  ctx.fillStyle = h.color ?? "#1d2a35";
+  ctx.fillRect(x + w - SIDE, y, SIDE, BLOCK_H);
+  for (const [t, sx] of [
+    [a, x],
+    [h, x + w - SIDE],
+  ] as const) {
+    const img = imgs.get(t.logoId);
+    if (img) contain(ctx, img, sx + (SIDE - 40) / 2, y + 21, 40, 40);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "alphabetic";
+    if (t.tag) {
+      ctx.fillStyle = "rgba(255,255,255,0.88)";
+      ctx.font = `700 13px ${FONT}`;
+      ctx.fillText(fit(ctx, t.tag, SIDE - 8), sx + SIDE / 2, y + 17);
+    }
+    const rk = rankLine(t.ranks, true);
+    if (rk) {
+      ctx.fillStyle = "#ffffff";
+      // Shrink to fit before truncating ("Big Ten #10 · #96").
+      let px = 11.5;
+      ctx.font = `700 ${px}px ${FONT}`;
+      while (px > 8.5 && ctx.measureText(rk).width > SIDE - 6) ctx.font = `700 ${(px -= 0.5)}px ${FONT}`;
+      ctx.fillText(fit(ctx, rk, SIDE - 6), sx + SIDE / 2, y + BLOCK_H - 9);
+    }
+    ctx.textAlign = "left";
   }
-  // Time + network
+  ctx.restore();
+
+  // Outline: tier color for Entertaining, hairline otherwise
+  ctx.save();
+  ctx.globalAlpha = dim ? 0.42 : 1;
+  ctx.lineWidth = hl ? 3 : 1;
+  ctx.strokeStyle = hl ? color : "rgba(255,255,255,0.14)";
+  roundRect(ctx, x + ctx.lineWidth / 2, y + ctx.lineWidth / 2, w - ctx.lineWidth, BLOCK_H - ctx.lineWidth, 12);
+  ctx.stroke();
+
+  // Label: matchup, then kickoff · network (or final score)
+  const pillW = 46;
+  const tx = x + SIDE + 12;
+  const room = w - SIDE * 2 - pillW - 34;
   ctx.textBaseline = "alphabetic";
+  ctx.textAlign = "left";
   ctx.fillStyle = "#eaf0f4";
   ctx.font = `800 19px ${FONT}`;
-  ctx.fillText(clockOf(g.s.minute), x + 14, y + 32);
-  ctx.fillStyle = "rgba(234,240,244,0.72)";
+  ctx.fillText(fit(ctx, `${a.abbr} @ ${h.abbr}`, room), tx, y + 36);
+  ctx.fillStyle = "rgba(234,240,244,0.78)";
   ctx.font = `600 14px ${FONT}`;
-  ctx.fillText(fit(ctx, g.netLabel, 98), x + 14, y + 54);
-  // Logos and teams
-  const lx = x + 124;
-  const logo = (id: string, px: number) => {
-    const img = imgs.get(id);
-    if (img) ctx.drawImage(img, px, y + 17, 44, 44);
-  };
-  logo(a.logoId, lx);
-  logo(h.logoId, lx + 58);
-  ctx.fillStyle = "#eaf0f4";
-  ctx.font = `800 20px ${FONT}`;
-  const tag = (t: GridGame["sides"][number]) => (t.tag && t.tag.startsWith("#") ? `${t.tag} ` : "");
-  const title = `${tag(a)}${a.abbr} @ ${tag(h)}${h.abbr}`;
-  const tx = lx + 118;
-  const pillW = 74;
-  ctx.fillText(fit(ctx, title, COL_W - (tx - x) - pillW - 20), tx, y + 34);
-  ctx.fillStyle = "rgba(234,240,244,0.75)";
-  ctx.font = `500 15px ${FONT}`;
-  const sub = g.final ? `Final ${g.final}` : tierLabel(tier);
-  ctx.fillText(fit(ctx, sub, COL_W - (tx - x) - pillW - 20), tx, y + 56);
+  ctx.fillText(fit(ctx, g.final ? `Final ${g.final} · ${g.netLabel}` : `${kick(g.minute)} · ${g.netLabel}`, room), tx, y + 58);
   // Score pill
-  const px = x + COL_W - pillW - 12,
-    py = y + 20;
-  ctx.fillStyle = hl ? color : "rgba(0,0,0,0.45)";
-  roundRect(ctx, px, py, pillW, 38, 19);
+  const px = x + w - SIDE - pillW - 8,
+    py = y + (BLOCK_H - 30) / 2;
+  ctx.fillStyle = hl ? color : "rgba(0,0,0,0.5)";
+  roundRect(ctx, px, py, pillW, 30, 15);
   ctx.fill();
   ctx.fillStyle = hl ? "#10181f" : color;
-  ctx.font = `800 22px ${FONT}`;
+  ctx.font = `800 18px ${FONT}`;
   ctx.textAlign = "center";
-  ctx.fillText(String(g.score), px + pillW / 2, py + 27);
+  ctx.textBaseline = "middle";
+  ctx.fillText(String(g.score), px + pillW / 2, py + 16);
   ctx.textAlign = "left";
   ctx.restore();
 }

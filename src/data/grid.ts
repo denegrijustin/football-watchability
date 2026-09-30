@@ -1,4 +1,4 @@
-import { results, slate, cleanRank, type League, type Ranks, type Tier } from "./index";
+import { results, slate, cleanRank, teamColor, type League, type Ranks, type Tier } from "./index";
 import { dateOf, dayOf, minutesOf } from "../tz";
 
 /** One game placed on the TV grid (upcoming or already final). */
@@ -11,6 +11,7 @@ export type GridGame = {
   network: string;
   netLabel: string;
   matchup: string;
+  conferences: string[];
   score: number;
   tier: Tier;
   final: string | null;
@@ -62,6 +63,7 @@ export function gridGames(): GridGame[] {
       network: (g as { network?: string | null }).network ?? "tba",
       netLabel: netLabel(g.broadcast),
       matchup: g.matchup,
+      conferences: g.conferences as string[],
       score: g.score,
       tier: g.tier as Tier,
       final: null,
@@ -71,7 +73,7 @@ export function gridGames(): GridGame[] {
           abbr: t.abbr ?? t.name,
           name: t.name,
           logoId: t.logoId,
-          color: t.color ?? null,
+          color: teamColor(t.color),
           tag: g.league === "CFB" && r.startsWith("#") ? r : t.record.split(" · ")[0],
           ranks: t.ranks,
         };
@@ -89,10 +91,11 @@ export function gridGames(): GridGame[] {
       network: r.network ?? "tba",
       netLabel: netLabel(r.broadcast),
       matchup: r.matchup,
+      conferences: r.conferences,
       score: r.actual.score,
       tier: r.actual.tier as Tier,
       final: `${r.teams[0].score}–${r.teams[1].score}${r.final.overtime ? " OT" : ""}`,
-      sides: r.teams.map((t) => ({ abbr: t.abbr, name: t.name, logoId: t.logoId, color: t.color, tag: t.record, ranks: t.ranks })),
+      sides: r.teams.map((t) => ({ abbr: t.abbr, name: t.name, logoId: t.logoId, color: teamColor(t.color), tag: t.record, ranks: t.ranks })),
     }));
   return [...live, ...done].filter((g) => !Number.isNaN(g.start.getTime()));
 }
@@ -116,3 +119,40 @@ export const gridDays = (games: GridGame[]) => {
   }
   return [...seen].map(([date, day]) => ({ date, day }));
 };
+
+export const GRID_SLOT = 30; // minutes per time step
+export type PlacedGame = GridGame & { minute: number; lane: number };
+
+/**
+ * Lays one day's games out as a TV grid: a lane per network (extra lanes when a
+ * network carries overlapping games) and the time range they cover. Shared by
+ * the on-screen grid and the JPG export so both always match.
+ */
+export function layoutGrid(games: GridGame[]) {
+  const nets = [...new Set(games.map((g) => g.network))].sort((a, b) => netRank(a) - netRank(b) || a.localeCompare(b));
+  const lanes: { network: string; label: string }[] = [];
+  const placed: PlacedGame[] = [];
+  for (const net of nets) {
+    const ends: number[] = [];
+    const first = lanes.length;
+    const gs = games
+      .filter((g) => g.network === net)
+      .map((g) => ({ ...g, minute: slot(g.start).minute }))
+      .sort((a, b) => a.minute - b.minute);
+    for (const g of gs) {
+      let lane = ends.findIndex((end) => end <= g.minute);
+      if (lane < 0) {
+        lane = ends.length;
+        ends.push(0);
+        lanes.push({ network: net, label: g.netLabel });
+      }
+      ends[lane] = g.minute + g.minutes;
+      placed.push({ ...g, lane: first + lane });
+    }
+  }
+  const startMin = placed.length ? Math.floor(Math.min(...placed.map((g) => g.minute)) / GRID_SLOT) * GRID_SLOT : 12 * 60;
+  const endMin = placed.length
+    ? Math.ceil(Math.max(...placed.map((g) => g.minute + g.minutes)) / GRID_SLOT) * GRID_SLOT
+    : startMin + 4 * 60;
+  return { lanes, placed, startMin, endMin, steps: (endMin - startMin) / GRID_SLOT };
+}
