@@ -15,7 +15,7 @@ export async function onRequestGet({ request }) {
     return new Response(JSON.stringify({ error: "league=nfl|cfb and event=ID required" }), { status: 400 });
 
   const cache = caches.default;
-  const key = new Request(`https://fbwatch-cache/game/${league}/${event}`);
+  const key = new Request(`https://fbwatch-cache/game2/${league}/${event}`);
   const hit = await cache.match(key);
   if (hit) return hit;
 
@@ -38,32 +38,40 @@ export async function onRequestGet({ request }) {
   const summary = await res.json();
   // Player positions come from the two team rosters (cached for 12 hours).
   const positions = {};
+  const rosterStatus = [];
   const teamIds = (summary.header?.competitions?.[0]?.competitors ?? []).map((c) => c.team?.id).filter(Boolean);
   await Promise.all(
     teamIds.map(async (tid) => {
-      const rkey = new Request(`https://fbwatch-cache/roster/${league}/${tid}`);
+      const rkey = new Request(`https://fbwatch-cache/roster2/${league}/${tid}`);
       let r = await cache.match(rkey);
       if (!r) {
-        try {
-          const fresh = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/${PATHS[league]}/teams/${tid}/roster`, {
-            headers: { "user-agent": UA, accept: "application/json", referer: "https://www.espn.com/" },
-          });
-          if (!fresh.ok) return;
-          r = new Response(JSON.stringify(rosterPositions(await fresh.json())), {
-            headers: { "content-type": "application/json", "cache-control": "public, max-age=43200" },
-          });
-          await cache.put(rkey, r.clone());
-        } catch {
-          return;
+        for (const host of ["https://site.api.espn.com", "https://site.web.api.espn.com"]) {
+          try {
+            const fresh = await fetch(`${host}/apis/site/v2/sports/football/${PATHS[league]}/teams/${tid}/roster`, {
+              headers: { "user-agent": UA, accept: "application/json", referer: "https://www.espn.com/" },
+            });
+            rosterStatus.push(`${tid}:${fresh.status}`);
+            if (!fresh.ok) continue;
+            const map = rosterPositions(await fresh.json());
+            rosterStatus.push(`${tid}:${Object.keys(map).length}`);
+            r = new Response(JSON.stringify(map), {
+              headers: { "content-type": "application/json", "cache-control": "public, max-age=43200" },
+            });
+            await cache.put(rkey, r.clone());
+            break;
+          } catch (e) {
+            rosterStatus.push(`${tid}:${String(e).slice(0, 60)}`);
+          }
         }
+        if (!r) return;
       }
       Object.assign(positions, await r.json());
     }),
   );
   const game = trimGame(summary, positions);
   const ttl = game.status.state === "in" ? 15 : game.status.state === "post" ? 600 : 120;
-  const response = new Response(JSON.stringify(game), {
-    headers: { "content-type": "application/json", "cache-control": `public, max-age=${ttl}` },
+  const response = new Response(JSON.stringify({ ...game, _roster: rosterStatus.join(",") || "cached" }), {
+    headers: { "content-type": "application/json", "cache-control": `public, max-age=${ttl}`, "x-roster": rosterStatus.join(",") || "cached" },
   });
   await cache.put(key, response.clone());
   return response;
