@@ -8,15 +8,22 @@ import { ProjectedScore, type Projection } from "./ProjectedScore";
 import { InsanityMeter } from "./InsanityMeter";
 
 // ---------- open/close from anywhere ----------
-const Ctx = createContext<(espnId: string) => void>(() => {});
+/** A game the board doesn't carry any more (earlier weeks), described just enough to open. */
+export type GameStub = {
+  league: "NFL" | "CFB";
+  date: string;
+  matchup: string;
+  teams: { name: string; abbr: string; logoId: string; color?: string | null; score: number }[];
+};
+const Ctx = createContext<(espnId: string, stub?: GameStub) => void>(() => {});
 export const useOpenGame = () => useContext(Ctx);
 
 export function GameCenterProvider({ children }: { children: ReactNode }) {
-  const [id, setId] = useState<string | null>(null);
+  const [open, setOpen] = useState<{ id: string; stub?: GameStub } | null>(null);
   return (
-    <Ctx.Provider value={setId}>
+    <Ctx.Provider value={(id, stub) => setOpen({ id, stub })}>
       {children}
-      <GameCenter espnId={id} onClose={() => setId(null)} />
+      <GameCenter espnId={open?.id ?? null} stub={open?.stub} onClose={() => setOpen(null)} />
     </Ctx.Provider>
   );
 }
@@ -177,12 +184,13 @@ const mmss = (t: string) => {
 };
 const pct = (n: number) => `${Math.round(n)}%`;
 
-function GameCenter({ espnId, onClose }: { espnId: string | null; onClose: () => void }) {
+function GameCenter({ espnId, stub, onClose }: { espnId: string | null; stub?: GameStub; onClose: () => void }) {
   const ref = useRef<HTMLDialogElement>(null);
   const up = espnId ? slate.games.find((g) => g.espnId === espnId) : undefined;
   const fin = espnId && !up ? results.find((r) => r.espnId === espnId) : undefined;
-  const league = up?.league ?? fin?.league ?? null;
-  const date = (up as { date?: string } | undefined)?.date ?? fin?.date ?? "";
+  const old = !up && !fin ? stub : undefined;
+  const league = up?.league ?? fin?.league ?? old?.league ?? null;
+  const date = (up as { date?: string } | undefined)?.date ?? fin?.date ?? old?.date ?? "";
   const started = !!date && Date.parse(date) - 20 * 60e3 <= Date.now();
   const { game, updated } = useLiveGame(league ? (league === "NFL" ? "nfl" : "cfb") : null, espnId, started || !!fin);
 
@@ -193,16 +201,16 @@ function GameCenter({ espnId, onClose }: { espnId: string | null; onClose: () =>
     if (!espnId && d.open) d.close();
   }, [espnId]);
 
-  const teams = ((up?.teams ?? fin?.teams ?? []) as unknown as TeamLike[]).slice(0, 2);
+  const teams = ((up?.teams ?? fin?.teams ?? old?.teams.map((t) => ({ ...t, record: "" })) ?? []) as unknown as TeamLike[]).slice(0, 2);
   const [away, home] = teams;
   const abbr = (t?: TeamLike) => t?.abbr ?? t?.name ?? "";
-  const state = game?.status.state ?? (fin ? "post" : "pre");
+  const state = game?.status.state ?? (fin || old ? "post" : "pre");
   const proj: Projection | null =
     ((up as { projected?: Projection } | undefined)?.projected as Projection) ??
     (fin?.scoreCheck ? ({ ...fin.scoreCheck.projected } as Projection) : null);
   const wpData = (up as { winProb?: WinProbData } | undefined)?.winProb ?? null;
-  const scoreA = game?.teams[0]?.score ?? (fin ? fin.teams[0].score : null);
-  const scoreH = game?.teams[1]?.score ?? (fin ? fin.teams[1].score : null);
+  const scoreA = game?.teams[0]?.score ?? (fin ? fin.teams[0].score : old ? old.teams[0].score : null);
+  const scoreH = game?.teams[1]?.score ?? (fin ? fin.teams[1].score : old ? old.teams[1].score : null);
   const net = up?.broadcast ?? fin?.broadcast ?? "";
   const netSlug = (up as { network?: string } | undefined)?.network ?? fin?.network ?? null;
   const netLogo = networkLogo(netSlug);
@@ -212,7 +220,7 @@ function GameCenter({ espnId, onClose }: { espnId: string | null; onClose: () =>
     <dialog
       ref={ref}
       className="gc"
-      aria-label={up?.matchup ?? fin?.matchup ?? "Game Center"}
+      aria-label={up?.matchup ?? fin?.matchup ?? old?.matchup ?? "Game Center"}
       onClose={onClose}
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >

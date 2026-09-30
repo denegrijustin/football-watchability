@@ -3,7 +3,7 @@ import type { CSSProperties } from "react";
 import { logos, results, slate, teamColor } from "../data";
 import { rankGames, mostInsaneWeek, weekSummaries, type LedgerGame } from "../seasonRank";
 import { INSANITY_TIERS } from "../insanity";
-import { useOpenGame } from "./GameCenter";
+import { useOpenGame, type GameStub } from "./GameCenter";
 
 type Scope = "week" | "season";
 const tierLabel = (id: string) => INSANITY_TIERS.find((t) => t.id === id)?.label ?? id;
@@ -110,7 +110,7 @@ export function InsanityBoard({ defaultLeague }: { defaultLeague: "NFL" | "CFB" 
       ) : (
         <ol className="ib-cards">
           {list.slice(0, shown).map((g, i) => (
-            <InsanityCard key={g.id} g={g} rank={i + 1} showWeek={scope === "season"} onOpen={known.has(g.id) ? () => openGame(g.id) : null} />
+            <InsanityCard key={g.id} g={g} rank={i + 1} showWeek={scope === "season"} onOpen={() => (known.has(g.id) ? openGame(g.id) : openGame(g.id, stubOf(g)))} />
           ))}
         </ol>
       )}
@@ -146,6 +146,20 @@ export function InsanityBoard({ defaultLeague }: { defaultLeague: "NFL" | "CFB" 
       )}
     </section>
   );
+}
+
+/** Enough about an older game for the Game Center to open it (it loads the rest live). */
+function stubOf(g: LedgerGame): GameStub {
+  const [an, hn] = g.matchup.split(" @ ");
+  return {
+    league: g.league,
+    date: g.date,
+    matchup: g.matchup,
+    teams: [
+      { name: an ?? g.away.abbr, abbr: g.away.abbr, logoId: g.away.logoId, color: g.away.color, score: g.away.score },
+      { name: hn ?? g.home.abbr, abbr: g.home.abbr, logoId: g.home.logoId, color: g.home.color, score: g.home.score },
+    ],
+  };
 }
 
 const qName = (p: number | null) => (p == null ? "" : p > 4 ? "overtime" : `the ${["", "1st", "2nd", "3rd", "4th"][p]} quarter`);
