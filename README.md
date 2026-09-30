@@ -67,7 +67,7 @@ Clicking a game card's matchup (or its **Game Center** button) opens a full over
 - **Who's tilting the field**: each offense's share of snaps in enemy territory, overall and by quarter, plus time of possession (time on the field).
 - **Team stats**: yards, yards per play, passing, rushing, first downs, turnovers, 3rd down, red zone, penalties.
 - **Drive chart**: every drive as a bar from start to finish on the field, with its result.
-- **Top 3 / bottom 3** per team by a box-score impact score (yards, touchdowns and takeaways add; interceptions, fumbles, sacks taken and missed targets or kicks subtract; bottom 3 only counts involved players).
+- **Top 3 / bottom 3** per team, each player on a card in his team's color with the team logo, abbreviation, jersey number and position (from the team roster, which the Pages Function caches for 12 hours), ranked by a box-score impact score (yards, touchdowns and takeaways add; interceptions, fumbles, sacks taken and missed targets or kicks subtract; bottom 3 only counts involved players).
 - **Player tracker**: passing, rushing, receiving and defense lines for each team.
 - **Play-by-play** and scoring summary.
 

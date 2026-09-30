@@ -37,7 +37,20 @@ function playerStats(cat, stats) {
   }
 }
 
-export function trimGame(s) {
+/** Player id -> position abbreviation from an ESPN team roster response. */
+export function rosterPositions(roster) {
+  const out = {};
+  const walk = (o) => {
+    if (Array.isArray(o)) return o.forEach(walk);
+    if (!o || typeof o !== "object") return;
+    if (o.id && o.position && typeof o.position === "object" && o.position.abbreviation) out[o.id] = o.position.abbreviation;
+    for (const v of Object.values(o)) if (v && typeof v === "object") walk(v);
+  };
+  walk(roster?.athletes ?? []);
+  return out;
+}
+
+export function trimGame(s, positions = {}) {
   const comp = s.header?.competitions?.[0] ?? {};
   const st = comp.status?.type ?? {};
   const teams = (comp.competitors ?? []).map((c) => ({
@@ -144,6 +157,7 @@ export function trimGame(s) {
             name: a.athlete.displayName,
             short: a.athlete.shortName ?? a.athlete.displayName,
             jersey: a.athlete.jersey ?? "",
+            pos: positions[id] ?? a.athlete.position?.abbreviation ?? null,
             headshot: a.athlete.headshot?.href ?? null,
           });
         map.get(id)[cat.name] = st2;

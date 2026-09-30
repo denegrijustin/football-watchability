@@ -339,6 +339,11 @@ test("Game Center overlay opens from a card with projection, momentum, field til
     await expect(gc.getByText("Momentum")).toBeVisible();
     await expect(gc.locator(".gc-drives li")).toHaveCount(22);
     await expect(gc.locator(".gc-top li")).toHaveCount(6);
+    // Player cards show the team (logo, abbreviation, team color) and a position.
+    const card = gc.locator(".gc-top li.gc-pcard").first();
+    await expect(card.locator(".gc-plogo")).toBeVisible();
+    await expect(card.locator(".gc-pteam")).toContainText(/LAC|BUF/);
+    await expect(card.locator(".gc-pos")).not.toBeEmpty();
     await expect(gc.locator(".gc-tracker li").first()).toBeVisible();
     // Win-probability panel carries the insanity meter, with the witching hour shaded.
     await expect(gc.locator(".insanity [role=meter]")).toBeVisible();

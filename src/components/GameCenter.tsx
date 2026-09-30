@@ -1,5 +1,5 @@
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import { logos, networkLogo, rankLine, results, slate, tierLabel, type Ranks } from "../data";
+import { createContext, useContext, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { logos, networkLogo, rankLine, results, slate, teamColor, tierLabel, type Ranks } from "../data";
 import { trimGame } from "../gameTrim.js";
 import { dayOf, timeOf, tzAbbr } from "../tz";
 import { AdvancedStats, type Advanced } from "./AdvancedStats";
@@ -31,6 +31,7 @@ type PlayerRow = {
   name: string;
   short: string;
   jersey: string;
+  pos?: string | null;
   headshot: string | null;
   passing?: { cmp: number; att: number; yds: number; td: number; int: number; sacks: number; qbr: number | null };
   rushing?: { att: number; yds: number; td: number; long: number };
@@ -152,6 +153,18 @@ export function impact(p: PlayerRow) {
   const touches =
     (p.passing?.att ?? 0) + (p.rushing?.att ?? 0) + (p.receiving?.tgt ?? p.receiving?.rec ?? 0) + (p.kicking?.fga ?? 0) * 3;
   return { value: Math.round(v * 10) / 10, line: why.join(" · "), bad, touches };
+}
+
+/** Position from the roster when we have it, otherwise a best guess from the box score. */
+export function positionOf(p: PlayerRow) {
+  if (p.pos) return p.pos;
+  if (p.kicking && (p.kicking.fga || p.kicking.xpa)) return "K";
+  if (p.passing && p.passing.att >= 5) return "QB";
+  const rush = p.rushing?.att ?? 0,
+    tgt = p.receiving?.tgt ?? p.receiving?.rec ?? 0;
+  if (rush || tgt) return rush > tgt ? "RB" : "WR/TE";
+  if (p.defensive || p.interceptions) return "DEF";
+  return "";
 }
 
 // ---------- helpers ----------
@@ -641,14 +654,16 @@ function TopBottom({ game, teams }: { game: LiveGame; teams: TeamLike[] }) {
               <h4>
                 <img src={logos[teams[i].logoId]} alt="" width="22" height="22" /> {teams[i].name}
               </h4>
+              <h5 className="gc-tbl top">Top 3</h5>
               <ol className="gc-top">
                 {top.map((x) => (
-                  <PlayerLine key={x.p.id} x={x} good />
+                  <PlayerLine key={x.p.id} x={x} team={{ ...teams[i], abbr: t.abbr }} good />
                 ))}
               </ol>
+              <h5 className="gc-tbl bottom">Bottom 3</h5>
               <ol className="gc-bottom">
                 {bottom.map((x) => (
-                  <PlayerLine key={x.p.id} x={x} />
+                  <PlayerLine key={x.p.id} x={x} team={{ ...teams[i], abbr: t.abbr }} />
                 ))}
                 {!bottom.length && <li className="gc-none">No one struggling yet</li>}
               </ol>
@@ -660,15 +675,40 @@ function TopBottom({ game, teams }: { game: LiveGame; teams: TeamLike[] }) {
   );
 }
 
-function PlayerLine({ x, good }: { x: { p: PlayerRow; value: number; line: string; bad: string[] }; good?: boolean }) {
+function PlayerLine({
+  x,
+  team,
+  good,
+}: {
+  x: { p: PlayerRow; value: number; line: string; bad: string[] };
+  team: TeamLike & { abbr: string };
+  good?: boolean;
+}) {
+  const color = teamColor(team.color ?? null) ?? "#1d2a35";
+  const pos = positionOf(x.p);
   return (
-    <li>
-      {x.p.headshot ? <img src={x.p.headshot} alt="" width="34" height="34" loading="lazy" /> : <span className="gc-nohead" />}
+    <li className="gc-pcard" style={{ "--team": color } as CSSProperties}>
+      <span className="gc-ph">
+        {x.p.headshot ? <img src={x.p.headshot} alt="" width="40" height="40" loading="lazy" /> : <span className="gc-nohead" />}
+        <img className="gc-plogo" src={logos[team.logoId]} alt="" width="20" height="20" />
+      </span>
       <span className="gc-pl">
-        <strong>{x.p.short}</strong>
+        <strong>
+          {x.p.short}
+          {pos && (
+            <span className="gc-pos" title={pos === "WR/TE" || pos === "DEF" ? "Position estimated from the box score" : "Position"}>
+              {pos}
+            </span>
+          )}
+        </strong>
+        <span className="gc-pteam">
+          {team.abbr}
+          {x.p.jersey ? ` · #${x.p.jersey}` : ""}
+        </span>
         <small>{good || !x.bad.length ? x.line : `${x.bad.join(", ")} · ${x.line}`}</small>
       </span>
-      <span className={`gc-imp ${x.value >= 0 ? "pos" : "neg"}`}>
+      <span className={`gc-imp ${good ? "pos" : "neg"}`} title="Impact score">
+        <span aria-hidden="true">{good ? "▲" : "▼"}</span>
         {x.value > 0 ? "+" : ""}
         {x.value}
       </span>
@@ -710,7 +750,9 @@ function Tracker({ game, teams }: { game: LiveGame; teams: TeamLike[] }) {
                 {rows.map((p) => (
                   <li key={p.id}>
                     <span className="gc-jersey">{p.jersey ? `#${p.jersey}` : ""}</span>
-                    <strong>{p.short}</strong>
+                    <strong>
+                      {p.short} <span className="gc-pos">{positionOf(p)}</span>
+                    </strong>
                     <span>{line(p)}</span>
                   </li>
                 ))}
