@@ -9,5 +9,13 @@ const due = src("slate.json").games.filter((g) => {
   const t = Date.parse(g.date);
   return !archived.has(g.espnId) && now - t >= 3 * 3600e3 && now - t <= 9 * 3600e3;
 });
-console.log(`due=${due.length ? "yes" : "no"}`);
+// College conference games post a game-day availability report about two
+// hours before kickoff (90 minutes in the Big 12): rebuild once, 45–105
+// minutes out, so the card shows it.
+const gameDay = src("slate.json").games.filter((g) => {
+  const t = Date.parse(g.date);
+  return g.availability && t - now >= 45 * 60e3 && t - now <= 105 * 60e3;
+});
+console.log(`due=${due.length || gameDay.length ? "yes" : "no"}`);
 console.error(due.map((g) => g.matchup).join("\n") || "No games waiting on a final.");
+if (gameDay.length) console.error(`Game-day availability reports: ${gameDay.map((g) => g.matchup).join(", ")}`);

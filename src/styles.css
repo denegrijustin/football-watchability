@@ -4303,7 +4303,7 @@ button.ic-inner:focus-visible {
 }
 .inj-team li {
   display: grid;
-  grid-template-columns: 86px 28px minmax(0, 1fr) auto;
+  grid-template-columns: 104px 28px minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px;
   font-size: 12.5px;
@@ -4330,9 +4330,11 @@ button.ic-inner:focus-visible {
 }
 .inj-status {
   justify-self: start;
-  padding: 1px 8px;
+  max-width: 100%;
+  padding: 1px 7px;
   border-radius: 99px;
-  font-size: 11px;
+  font-size: 10.5px;
+  white-space: nowrap;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.3px;
@@ -4348,6 +4350,10 @@ button.ic-inner:focus-visible {
 .inj-status.questionable {
   background: #edd092;
   color: #2a2206;
+}
+.inj-status.probable {
+  background: #8fd3a8;
+  color: #0d2616;
 }
 .inj-status.longterm {
   background: rgb(255 255 255 / 16%);
@@ -4379,16 +4385,28 @@ button.ic-inner:focus-visible {
 .inj-chip.doubtful strong {
   color: var(--orange);
 }
+.inj-pending {
+  margin: 0;
+  line-height: 1.45;
+}
 .inj-chip.questionable strong {
   color: var(--gold);
 }
 @media (max-width: 420px) {
   .inj-team li {
-    grid-template-columns: 78px 28px minmax(0, 1fr);
+    grid-template-columns: 100px 28px minmax(0, 1fr);
   }
   .inj-what {
     grid-column: 3;
     text-align: left;
+  }
+  /* College reports carry only a jersey number: keep it on the row. */
+  .inj-team li:has(.inj-jersey) {
+    grid-template-columns: 100px 28px minmax(0, 1fr) auto;
+  }
+  .inj-what.inj-jersey {
+    grid-column: auto;
+    text-align: right;
   }
 }
 .inj .source-note {

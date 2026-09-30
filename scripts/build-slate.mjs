@@ -557,22 +557,83 @@ function leadersFor(summary, teamId) {
   return out;
 }
 
-/** Injury report for one team (NFL), most serious designation first. */
-const INJ_ORDER = { Out: 0, Doubtful: 1, Questionable: 2, "Injured Reserve": 3, "Physically Unable to Perform": 4, Suspension: 5 };
+/** Injury report for one team, most serious designation first. */
+const INJ_ORDER = {
+  Out: 0,
+  "Out (1st half)": 1,
+  Doubtful: 2,
+  Questionable: 3,
+  "Game-time decision": 4,
+  Probable: 5,
+  "Injured Reserve": 6,
+  "Physically Unable to Perform": 7,
+  Suspension: 8,
+  "Out for season": 9,
+};
+const sortInj = (list) =>
+  list.sort((a, b) => (INJ_ORDER[a.status] ?? 20) - (INJ_ORDER[b.status] ?? 20) || a.name.localeCompare(b.name));
 function injuriesFor(summary, teamId) {
   const block = (summary?.injuries ?? []).find((t) => t.team === teamId);
-  return (block?.players ?? [])
-    .filter((p) => p.name && p.status)
-    .map((p) => ({
-      name: p.name,
+  return sortInj(
+    (block?.players ?? [])
+      .filter((p) => p.name && p.status)
+      .map((p) => ({
+        name: p.name,
+        pos: p.pos,
+        jersey: p.jersey,
+        headshot: p.headshot,
+        status: p.status,
+        type: [p.side && p.side !== "Not Specified" ? p.side : null, p.type].filter(Boolean).join(" ") || null,
+        detail: p.detail,
+      })),
+  );
+}
+
+// College: conference availability reports (SEC, ACC, Big Ten, Big 12), from
+// scripts/fetch-availability.mjs. Statuses as the conferences publish them;
+// they don't disclose the injury.
+const availability = optRaw("availability.json")?.games ?? {};
+const AVAIL_STATUS = {
+  Out: "Out",
+  "Out - (1st Half)": "Out (1st half)",
+  Doubtful: "Doubtful",
+  Questionable: "Questionable",
+  Probable: "Probable",
+  "Game Time Decision": "Game-time decision",
+  Exempt: "Out for season",
+};
+function availabilityFor(eventId, teamId) {
+  const team = availability[eventId]?.teams?.find((t) => t.espnId === teamId);
+  if (!team) return null;
+  return sortInj(
+    team.players.map((p) => ({
+      name: p.espnName ?? p.name,
       pos: p.pos,
       jersey: p.jersey,
-      headshot: p.headshot,
-      status: p.status,
-      type: [p.side && p.side !== "Not Specified" ? p.side : null, p.type].filter(Boolean).join(" ") || null,
-      detail: p.detail,
-    }))
-    .sort((a, b) => (INJ_ORDER[a.status] ?? 9) - (INJ_ORDER[b.status] ?? 9) || a.name.localeCompare(b.name));
+      headshot: p.headshot ?? null,
+      status: AVAIL_STATUS[p.status] ?? p.status,
+      type: null,
+      detail: null,
+    })),
+  );
+}
+/** "Big Ten availability report · Update 1, posted Wed 7:00 PM ET" for the card. */
+const TZ_LABEL = { ET: "ET", CT: "CT", MT: "MT", PT: "PT" };
+function availabilityMeta(eventId) {
+  const r = availability[eventId];
+  if (!r) return null;
+  const pending = !r.teams.some((t) => t.listed);
+  const at = r.published ? new Date(`${r.published}Z`) : null;
+  const when = at
+    ? `${r.publishedDay?.slice(0, 3) ?? at.toLocaleDateString("en-US", { weekday: "short", timeZone: "UTC" })} ${at.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "UTC" })} ${TZ_LABEL[r.tz] ?? r.tz ?? ""}`.trim()
+    : null;
+  return {
+    conf: r.confName,
+    report: pending ? null : r.type,
+    pending,
+    when,
+    fetchedAt: r.fetchedAt,
+  };
 }
 
 /** Season leaders with photo and position, for the Key players box. */
@@ -853,7 +914,7 @@ for (const [key, league] of [
         color: darkColor(t),
         ranks: ranksFor(league, t.id, conf?.[0] === "independent" ? null : conf?.[1]),
         advanced: advancedFor(league, t),
-        injuries: injuriesFor(summary, t.id),
+        injuries: (league === "CFB" && availabilityFor(ev.id, t.id)) || injuriesFor(summary, t.id),
         record,
         rankings: league === "NFL" ? nflRanks(t, opp.team) : cfbRanks(t, opp.team, pWin),
         trend: trendFor(league, t.id),
@@ -960,6 +1021,7 @@ for (const [key, league] of [
       matchup: `${aName} @ ${hName}`,
       broadcast: (comp.broadcasts ?? []).flatMap((b) => b.names).map((n) => TV[n] ?? n)[0] ?? "TBA",
       weather,
+      availability: league === "CFB" ? availabilityMeta(ev.id) : null,
       teams: [tA, tH].map(({ _conf, _leaders, _leaderCards, ...t }) => t),
       history: {
         ...hist,
@@ -1157,6 +1219,7 @@ const games = built
       broadcast: overrides[g.espnId]?.broadcast ?? g.broadcast,
       network: overrides[g.espnId]?.network ?? g._network,
       weather: g.weather,
+      ...(g.availability ? { availability: g.availability } : {}),
       teams: g.teams,
       breakdown: { base: g.breakdown.base, parts: g.breakdown.parts },
       winProb: { ...g.winProb, history: forecasts[g.espnId]?.wpHistory ?? [] },
