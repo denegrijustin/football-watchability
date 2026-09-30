@@ -1,4 +1,4 @@
-import { results, slate, cleanRank, type League, type Tier } from "./index";
+import { results, slate, cleanRank, type League, type Ranks, type Tier } from "./index";
 
 /** One game placed on the TV grid (upcoming or already final). */
 export type GridGame = {
@@ -12,7 +12,7 @@ export type GridGame = {
   score: number;
   tier: Tier;
   final: string | null;
-  sides: { abbr: string; name: string; logoId: string; color: string | null; tag: string | null }[];
+  sides: { abbr: string; name: string; logoId: string; color: string | null; tag: string | null; ranks?: Ranks }[];
 };
 
 // Broadcast order across the grid: broadcast networks, then ESPN family,
@@ -55,6 +55,7 @@ export function gridGames(): GridGame[] {
       color?: string | null;
       record: string;
       rankings: string[];
+      ranks?: Ranks;
     }[];
     return {
       key: g.id,
@@ -75,6 +76,7 @@ export function gridGames(): GridGame[] {
           logoId: t.logoId,
           color: t.color ?? null,
           tag: g.league === "CFB" && r.startsWith("#") ? r : t.record.split(" · ")[0],
+          ranks: t.ranks,
         };
       }),
     };
@@ -92,7 +94,7 @@ export function gridGames(): GridGame[] {
       score: r.actual.score,
       tier: r.actual.tier as Tier,
       final: `${r.teams[0].score}–${r.teams[1].score}${r.final.overtime ? " OT" : ""}`,
-      sides: r.teams.map((t) => ({ abbr: t.abbr, name: t.name, logoId: t.logoId, color: t.color, tag: t.record })),
+      sides: r.teams.map((t) => ({ abbr: t.abbr, name: t.name, logoId: t.logoId, color: t.color, tag: t.record, ranks: t.ranks })),
     }));
   return [...live, ...done].filter((g) => !Number.isNaN(g.start.getTime()));
 }

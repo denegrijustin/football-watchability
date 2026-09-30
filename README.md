@@ -39,6 +39,10 @@ On this Mac, the bundled Codex Node runtime can be used without installing syste
 
 Each run fetches ESPN and Open-Meteo, runs every build step and the browser tests, commits the data to `slate-data` and copies the site files to `main`, which Cloudflare deploys. GitHub runs schedules in UTC from `main`, so the workflow has 13:02 and 14:02 UTC crons and a gate that keeps whichever is 8am in Chicago (daylight or standard time). Runs can start a few minutes late when GitHub is busy. To run it by hand, use **Run workflow** (optionally with a pretend date and with deploy switched off).
 
+### Conference and overall rank
+
+Every team shows a small rank line, such as "SEC #3 · #7 overall", on game cards and final cards, with a compact "SEC #3 · #7" on the TV grid. Conference rank is ESPN's conference standings order: the AFC/NFC seed order (1–16) for the NFL, the conference standings for college (independents show only the overall rank). Overall rank is the team's ESPN FPI rank (1–32 NFL, about 1–136 FBS). Hovering shows the full wording. For college, the record line drops its old conference place so the two don't disagree.
+
 ### TV grid
 
 The **TV grid** view (`src/components/TvGrid.tsx`, data in `src/data/grid.ts`) lays out the week Thursday to Monday, one day at a time. Networks run across the top (broadcast, then ESPN, FOX cable, conference networks, other cable, then streaming), with half-hour rows in Eastern time. Each game is a block spanning its broadcast window (3¼ hours for NFL, 3½ for college), with the away and home team on their team colors. Games rated Good or better (74+) get a ring in their tier color and a filled score; Background games (below 64) are dimmed. A network with overlapping games (ESPN+) gets extra lanes. Finished games from the current week stay on the grid with the final score. Tapping a block opens that game's card.

@@ -10,7 +10,7 @@ import { Stakes } from "./TeamImpact";
 import { GameDetails } from "./GameDetails";
 import { WeatherLook } from "./WeatherLook";
 import { TeamForm } from "./Trends";
-import { networkLogo } from "../data";
+import { networkLogo, rankLine, rankTitle, recordLine, type Ranks } from "../data";
 import { PregameWinProb, type WinProbData } from "./PregameWinProb";
 import { ProjectedScore, type Projection } from "./ProjectedScore";
 
@@ -72,7 +72,12 @@ export function GameCard({ game }: { game: Game }) {
                   {team.name}
                   {i === 1 && <span className="home-tag">Home</span>}
                 </h4>
-                <p>{team.record}</p>
+                <p>{recordLine(team.record, game.league)}</p>
+                {rankLine((team as { ranks?: Ranks }).ranks) && (
+                  <p className="rank-line" title={rankTitle((team as { ranks?: Ranks }).ranks)}>
+                    {rankLine((team as { ranks?: Ranks }).ranks)}
+                  </p>
+                )}
               </div>
             </div>
           ))}

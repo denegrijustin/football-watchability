@@ -1,5 +1,5 @@
 import { useMemo, useState, type CSSProperties } from "react";
-import { logos, networkLogo, tierLabel, type League } from "../data";
+import { logos, networkLogo, rankLine, rankTitle, tierLabel, type League } from "../data";
 import { gridDays, gridGames, netRank, slot, type GridGame } from "../data/grid";
 
 const SLOT = 30; // minutes per row
@@ -193,6 +193,11 @@ function Side({ t, cls }: { t: GridGame["sides"][number]; cls: string }) {
   return (
     <span className={`tv-side ${cls}`} style={{ background: t.color ?? "#1d2a35" }}>
       {t.tag && <span className="tv-tag">{t.tag}</span>}
+      {rankLine(t.ranks, true) && (
+        <span className="tv-rank" title={rankTitle(t.ranks)}>
+          {rankLine(t.ranks, true)}
+        </span>
+      )}
       <img src={logos[t.logoId]} alt="" loading="lazy" />
     </span>
   );
