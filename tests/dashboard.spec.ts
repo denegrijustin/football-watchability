@@ -278,3 +278,36 @@ test("times default to Central, follow the chosen zone, and the TV grid JPG down
     expect(download.suggestedFilename()).toMatch(name);
   }
 });
+
+test("TV grid conference filter narrows college games and All conferences restores them", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "TV grid" }).click();
+  // The conference picker only appears for College.
+  await expect(page.getByLabel("Conference")).toHaveCount(0);
+  await page.locator(".tv-toolbar [aria-label='League'] button", { hasText: "College" }).click();
+  const pick = page.getByLabel("Conference");
+  await expect(pick).toHaveValue("all-fbs");
+  const days = page.locator(".tv-toolbar [aria-label='Day'] button");
+  const countAll = async () => {
+    let n = 0;
+    for (let i = 0; i < (await days.count()); i++) {
+      await days.nth(i).click();
+      n += await page.locator(".tv-game").count();
+    }
+    return n;
+  };
+  const all = await countAll();
+  await pick.selectOption("sec");
+  const sec = await countAll();
+  const expected = [...slate.games, ...results.games.filter((r: any) => r.week === slate.period)].filter(
+    (g: any) => g.league === "CFB" && g.conferences.includes("sec"),
+  ).length;
+  expect(sec).toBe(expected);
+  expect(sec).toBeGreaterThan(0);
+  expect(sec).toBeLessThan(all);
+  await pick.selectOption("all-fbs");
+  expect(await countAll()).toBe(all);
+  // Leaving College clears the picker.
+  await page.locator(".tv-toolbar [aria-label='League'] button", { hasText: "NFL" }).click();
+  await expect(page.getByLabel("Conference")).toHaveCount(0);
+});

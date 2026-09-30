@@ -1,4 +1,4 @@
-import { results, slate, cleanRank, type League, type Ranks, type Tier } from "./index";
+import { results, slate, cleanRank, teamColor, type League, type Ranks, type Tier } from "./index";
 import { dateOf, dayOf, minutesOf } from "../tz";
 
 /** One game placed on the TV grid (upcoming or already final). */
@@ -11,6 +11,7 @@ export type GridGame = {
   network: string;
   netLabel: string;
   matchup: string;
+  conferences: string[];
   score: number;
   tier: Tier;
   final: string | null;
@@ -62,6 +63,7 @@ export function gridGames(): GridGame[] {
       network: (g as { network?: string | null }).network ?? "tba",
       netLabel: netLabel(g.broadcast),
       matchup: g.matchup,
+      conferences: g.conferences as string[],
       score: g.score,
       tier: g.tier as Tier,
       final: null,
@@ -71,7 +73,7 @@ export function gridGames(): GridGame[] {
           abbr: t.abbr ?? t.name,
           name: t.name,
           logoId: t.logoId,
-          color: t.color ?? null,
+          color: teamColor(t.color),
           tag: g.league === "CFB" && r.startsWith("#") ? r : t.record.split(" · ")[0],
           ranks: t.ranks,
         };
@@ -89,10 +91,11 @@ export function gridGames(): GridGame[] {
       network: r.network ?? "tba",
       netLabel: netLabel(r.broadcast),
       matchup: r.matchup,
+      conferences: r.conferences,
       score: r.actual.score,
       tier: r.actual.tier as Tier,
       final: `${r.teams[0].score}–${r.teams[1].score}${r.final.overtime ? " OT" : ""}`,
-      sides: r.teams.map((t) => ({ abbr: t.abbr, name: t.name, logoId: t.logoId, color: t.color, tag: t.record, ranks: t.ranks })),
+      sides: r.teams.map((t) => ({ abbr: t.abbr, name: t.name, logoId: t.logoId, color: teamColor(t.color), tag: t.record, ranks: t.ranks })),
     }));
   return [...live, ...done].filter((g) => !Number.isNaN(g.start.getTime()));
 }

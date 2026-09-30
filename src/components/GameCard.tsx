@@ -10,7 +10,7 @@ import { Stakes } from "./TeamImpact";
 import { GameDetails } from "./GameDetails";
 import { WeatherLook } from "./WeatherLook";
 import { TeamForm } from "./Trends";
-import { networkLogo, rankLine, rankTitle, recordLine, type Ranks } from "../data";
+import { networkLogo, rankLine, rankTitle, recordLine, teamColor, type Ranks } from "../data";
 import { PregameWinProb, type WinProbData } from "./PregameWinProb";
 import { ProjectedScore, type Projection } from "./ProjectedScore";
 import { LiveStrip, useLive } from "../live";
@@ -31,7 +31,7 @@ export function GameCard({ game }: { game: Game }) {
   const awayAbbr = (away as { abbr?: string }).abbr ?? away.name;
   const homeAbbr = (home as { abbr?: string }).abbr ?? home.name;
   const live = useLive(game.espnId);
-  const homeColor = (home as { color?: string | null }).color ?? null;
+  const homeColor = teamColor((home as { color?: string | null }).color);
   return (
     <article
       className={`game-card ${game.tier}${homeColor ? " team-tinted" : ""}`}

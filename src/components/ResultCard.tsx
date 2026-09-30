@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import { logos, networkLogo, rankLine, rankTitle, tierLabel, type Result } from "../data";
+import { logos, networkLogo, rankLine, rankTitle, teamColor, tierLabel, type Result } from "../data";
 import { ScoreBreakdown } from "./ScoreBreakdown";
 import { WinProb } from "./WinProb";
 import { AdvancedStats } from "./AdvancedStats";
@@ -24,8 +24,8 @@ export function ResultCard({ result: r }: { result: Result }) {
         : null;
   return (
     <article
-      className={`game-card result-card ${r.actual.tier}${home.color ? " team-tinted" : ""}`}
-      style={home.color ? ({ "--team-bg": home.color } as CSSProperties) : undefined}
+      className={`game-card result-card ${r.actual.tier}${teamColor(home.color) ? " team-tinted" : ""}`}
+      style={teamColor(home.color) ? ({ "--team-bg": teamColor(home.color) } as CSSProperties) : undefined}
       aria-labelledby={`r-${r.espnId}`}
     >
       <header className="card-top">
