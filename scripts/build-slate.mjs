@@ -557,6 +557,24 @@ function leadersFor(summary, teamId) {
   return out;
 }
 
+/** Injury report for one team (NFL), most serious designation first. */
+const INJ_ORDER = { Out: 0, Doubtful: 1, Questionable: 2, "Injured Reserve": 3, "Physically Unable to Perform": 4, Suspension: 5 };
+function injuriesFor(summary, teamId) {
+  const block = (summary?.injuries ?? []).find((t) => t.team === teamId);
+  return (block?.players ?? [])
+    .filter((p) => p.name && p.status)
+    .map((p) => ({
+      name: p.name,
+      pos: p.pos,
+      jersey: p.jersey,
+      headshot: p.headshot,
+      status: p.status,
+      type: [p.side && p.side !== "Not Specified" ? p.side : null, p.type].filter(Boolean).join(" ") || null,
+      detail: p.detail,
+    }))
+    .sort((a, b) => (INJ_ORDER[a.status] ?? 9) - (INJ_ORDER[b.status] ?? 9) || a.name.localeCompare(b.name));
+}
+
 /** Season leaders with photo and position, for the Key players box. */
 const LEADER_CATS = { passingYards: "Passing", rushingYards: "Rushing", receivingYards: "Receiving", sacks: "Sacks", totalTackles: "Tackles" };
 function leaderCards(summary, teamId) {
@@ -835,6 +853,7 @@ for (const [key, league] of [
         color: darkColor(t),
         ranks: ranksFor(league, t.id, conf?.[0] === "independent" ? null : conf?.[1]),
         advanced: advancedFor(league, t),
+        injuries: injuriesFor(summary, t.id),
         record,
         rankings: league === "NFL" ? nflRanks(t, opp.team) : cfbRanks(t, opp.team, pWin),
         trend: trendFor(league, t.id),

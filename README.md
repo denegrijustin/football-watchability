@@ -62,6 +62,10 @@ The **TV grid** view (`src/components/TvGrid.tsx`, data in `src/data/grid.ts`) l
 
 Each upcoming card's **History + key players** section lists both teams' season leaders (passing, rushing, receiving and a pass rusher or tackler) as player cards in team colors: photo, name, position, team logo and abbreviation, jersey number and stat line. They come from ESPN's season leaders in each game summary (`leaderCards` in `build-slate.mjs`), stored as `players` on the Key players box.
 
+### Injury report
+
+NFL cards have an **Injury report** section (header shows counts per team) listing each team's players who are Out, Doubtful or Questionable with photo, position and injury (for example "Questionable · Josh Allen QB · Left Knee"), plus a line of players on IR or PUP. When a key player (a season leader) is on the report, an **Injury watch** chip appears on the card face. Data comes from each ESPN game summary's injury report, trimmed in `fetch-slate.mjs` and built by `injuriesFor` in `build-slate.mjs`. ESPN doesn't carry college injury reports, so college cards don't show the section.
+
 ### Insanity tab cards
 
 Each ranked game on the **Insanity** tab is a compact card, shaded from the away team's color to the home team's, with both logos, the score, the insanity score and tier, a one-to-two sentence story of why it was wild (or flat), and the game's MVP (photo, position, team logo and stat line). Clicking a card opens its Game Center for the full detail, including games from earlier weeks that are no longer on the board (their details load live from ESPN). The MVP comes from ESPN's game leaders (passing, rushing, receiving, sacks, tackles for each team) by a simple impact score with a 25% edge for the winning side (`mvpOf` in `scripts/season-ledger.mjs`), and is stored with each game in `src/data/season.json`. **Backfill insanity ledger** can also be started by pushing `data-raw/backfill-request.json` to `slate-data`.

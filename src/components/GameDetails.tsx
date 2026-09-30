@@ -6,6 +6,7 @@ import { AdvancedStats, type Advanced } from "./AdvancedStats";
 import type { CSSProperties } from "react";
 import { logos, teamColor } from "../data";
 import { Headshot } from "./Headshot";
+import { InjuryReport, hasInjuryData, injurySummary } from "./InjuryReport";
 
 type KeyPlayer = {
   name: string;
@@ -90,6 +91,17 @@ export function GameDetails({ game }: { game: Game }) {
           </details>
         );
       })()}
+      {hasInjuryData(game) && (
+        <details>
+          <summary>
+            <div className="inj-title">
+              Injury report <small className="inj-sum">{injurySummary(game)}</small>
+            </div>
+            <span aria-hidden="true">+</span>
+          </summary>
+          <InjuryReport game={game} />
+        </details>
+      )}
       <details>
         <summary>
           Why watch / skip<span aria-hidden="true">+</span>
