@@ -15,11 +15,29 @@ export async function onRequestGet({ request }) {
   const hit = await cache.match(key);
   if (hit) return hit;
 
-  const espn = `https://site.api.espn.com/apis/site/v2/sports/football/${PATHS[league]}/scoreboard?dates=${date}${
-    league === "cfb" ? "&groups=80&limit=300" : ""
-  }`;
-  const res = await fetch(espn, { headers: { "user-agent": "fbwatch.elskatemm.com live scores" } });
-  if (!res.ok) return new Response(JSON.stringify([]), { status: 502, headers: { "content-type": "application/json" } });
+  const qs = `dates=${date}${league === "cfb" ? "&groups=80&limit=300" : ""}`;
+  const hosts = ["https://site.api.espn.com", "https://site.web.api.espn.com"];
+  let res = null;
+  for (const host of hosts) {
+    try {
+      res = await fetch(`${host}/apis/site/v2/sports/football/${PATHS[league]}/scoreboard?${qs}`, {
+        headers: {
+          "user-agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36",
+          accept: "application/json",
+          referer: "https://www.espn.com/",
+        },
+      });
+      if (res.ok) break;
+    } catch {
+      res = null;
+    }
+  }
+  // The browser falls back to ESPN directly when this fails.
+  if (!res?.ok)
+    return new Response(JSON.stringify({ error: `ESPN ${res?.status ?? "unreachable"}` }), {
+      status: 502,
+      headers: { "content-type": "application/json" },
+    });
   const data = await res.json();
   const out = (data.events ?? []).map((ev) => {
     const c = ev.competitions?.[0] ?? {};
