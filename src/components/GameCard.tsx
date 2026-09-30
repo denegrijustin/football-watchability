@@ -17,6 +17,7 @@ import { LiveStrip, useFlow, useLive } from "../live";
 import { InsanityMeter } from "./InsanityMeter";
 import { useOpenGame } from "./GameCenter";
 import { EdgeLine, type Advanced } from "./AdvancedStats";
+import { InjuryWatch } from "./InjuryReport";
 import { dayOf, timeOf, tzAbbr } from "../tz";
 
 const impactLevel = (impact: string) =>
@@ -160,6 +161,7 @@ export function GameCard({ game }: { game: Game }) {
         away={{ abbr: awayAbbr, adv: (away as { advanced?: Advanced }).advanced ?? null }}
         home={{ abbr: homeAbbr, adv: (home as { advanced?: Advanced }).advanced ?? null }}
       />
+      <InjuryWatch game={game} />
       <Stakes game={game} />
       <TeamForm game={game} />
       <button type="button" className="gc-open" onClick={() => openGame(game.espnId)}>

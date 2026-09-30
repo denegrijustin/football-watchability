@@ -462,3 +462,17 @@ test("Key players show photo, name, position and team for every upcoming game", 
   await expect(kp.first().locator(".kp-logo")).toBeVisible();
   await expect(kp.first().locator("img, .headshot-fallback").first()).toBeVisible();
 });
+
+test("NFL cards carry an injury report with Out / Doubtful / Questionable and the injury", async ({ page }) => {
+  const nfl = slate.games.filter((g: any) => g.league === "NFL" && g.teams.some((t: any) => (t.injuries ?? []).length));
+  test.skip(!nfl.length, "no injury data in this build");
+  for (const g of nfl) for (const t of g.teams) for (const i of t.injuries ?? []) expect(i.status).toBeTruthy();
+  await page.goto("/");
+  const card = page.locator(".game-card").filter({ has: page.locator("summary", { hasText: "Injury report" }) }).first();
+  await card.locator("summary").filter({ hasText: "Injury report" }).click();
+  await expect(card.locator(".inj-team")).toHaveCount(2);
+  const status = card.locator(".inj-status").first();
+  if (await status.count()) await expect(status).toHaveText(/Out|Doubtful|Questionable/i);
+  const rot = await card.locator(".inj-title").evaluate((el) => getComputedStyle(el).transform);
+  expect(rot === "none" || rot === "matrix(1, 0, 0, 1, 0, 0)").toBe(true);
+});
