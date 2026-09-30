@@ -27,6 +27,7 @@ const TIER_COLOR: Record<string, string> = {
   watch: "#d0a273",
   bg: "#cf8f8e",
 };
+const ENT = new Set(["elite", "vgood", "good"]);
 const FONT = `Inter, "Segoe UI", Roboto, system-ui, -apple-system, sans-serif`;
 
 const load = (src: string) =>
@@ -129,7 +130,6 @@ export async function downloadGridJpg({
     PAD + 76,
     88,
   );
-  // Legend
   let lx = PAD;
   const ly = 132;
   ctx.font = `600 18px ${FONT}`;
@@ -145,7 +145,7 @@ export async function downloadGridJpg({
     ctx.globalAlpha = 1;
     ctx.fillStyle = "#b9c6d0";
     ctx.fillText(label, lx + 26, ly);
-    lx += ctx.measureText(label).width + 60;
+    lx += ctx.measureText(label).width + 56;
   }
   ctx.fillStyle = "#8d9eac";
   ctx.font = `500 16px ${FONT}`;
@@ -322,5 +322,17 @@ function drawBlock(
   ctx.textBaseline = "middle";
   ctx.fillText(String(g.score), px + pillW / 2, py + 16);
   ctx.textAlign = "left";
+
+  // Text
+  const tx = x + 84;
+  const tw = px - tx - 6;
+  const tag = (t: GridGame["sides"][number]) => (t.tag && t.tag.startsWith("#") ? `${t.tag} ` : "");
+  ctx.fillStyle = "#eaf0f4";
+  ctx.font = `800 17px ${FONT}`;
+  ctx.fillText(fit(ctx, `${tag(a)}${a.abbr} @ ${tag(b)}${b.abbr}`, tw), tx, y + 23);
+  ctx.fillStyle = "rgba(234,240,244,0.78)";
+  ctx.font = `500 14px ${FONT}`;
+  const sub = g.final ? `Final ${g.final} · ${g.netLabel}` : `${clockOf(g.s.minute)} · ${g.netLabel}`;
+  ctx.fillText(fit(ctx, sub, tw), tx, y + 45);
   ctx.restore();
 }
