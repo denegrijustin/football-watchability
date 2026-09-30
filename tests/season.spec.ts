@@ -84,15 +84,12 @@ test("backfill script scores finished games from ESPN and is safe to re-run", as
     res.setHeader("content-type", "application/json");
     if (u.pathname.endsWith("/scoreboard")) {
       const nfl = u.pathname.includes("/nfl/");
-      const [a] = (u.searchParams.get("dates") ?? "").split("-");
-      const week1 = a === "20260908";
-      const events = nfl
-        ? week1
-          ? [ev("100", "2026-09-10T00:20Z", "post"), ev("104", "2026-09-13T17:00Z", "in")]
-          : [ev("102", "2026-09-17T00:20Z", "post", 5)]
-        : week1
-          ? [ev("101", "2026-09-12T19:00Z", "post"), ev("103", "2026-09-12T23:00Z", "post")]
-          : [];
+      // One day per request, like ESPN (which rejects ranges).
+      const day = u.searchParams.get("dates") ?? "";
+      const all = nfl
+        ? [ev("100", "2026-09-10T00:20Z", "post"), ev("104", "2026-09-13T17:00Z", "in"), ev("102", "2026-09-17T00:20Z", "post", 5)]
+        : [ev("101", "2026-09-12T19:00Z", "post"), ev("103", "2026-09-12T23:00Z", "post")];
+      const events = all.filter((e) => e.date.slice(0, 10).replace(/-/g, "") === day);
       return void res.end(JSON.stringify({ events }));
     }
     const id = u.searchParams.get("event") ?? "";
