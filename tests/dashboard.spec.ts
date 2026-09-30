@@ -399,3 +399,33 @@ test("insanity meter updates live from the flow feed", async ({ page }) => {
   expect(val).toBeGreaterThan(40);
   expect(flowCalls).toBeGreaterThan(0);
 });
+
+test("Insanity tab ranks the week and season for NFL and college", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (err) => errors.push(err.message));
+  await page.goto("/");
+  await page.getByRole("button", { name: /^Insanity/ }).click();
+  const rows = page.locator(".ib-row");
+  await expect(rows.first()).toBeVisible();
+  // Ranked most insane first, with scores in range.
+  const scoresOf = async () => (await page.locator(".ib-row .ib-score strong").allInnerTexts()).map(Number);
+  const nfl = await scoresOf();
+  expect(nfl.length).toBeGreaterThan(0);
+  expect(nfl).toEqual([...nfl].sort((a, b) => b - a));
+  expect(Math.max(...nfl)).toBeLessThanOrEqual(100);
+  // The week-by-week list names the wildest game of each week.
+  await expect(page.locator(".ib-weeks li").first()).toContainText("wildest:");
+  // College is ranked separately and the season scope works.
+  await page.locator(".ib [aria-label='League'] button", { hasText: "College" }).click();
+  await expect(page.locator(".ib-row").first()).toBeVisible();
+  const cfb = await scoresOf();
+  expect(cfb).toEqual([...cfb].sort((a, b) => b - a));
+  await page.locator(".ib [aria-label='Ranking'] button", { hasText: "Season" }).click();
+  await expect(page.locator(".ib-heading, .tv-heading h2")).toContainText("season ranking");
+  await expect(page.locator(".ib-row").first()).toContainText("Sept.");
+  // Filters bar is not shown here, and the page does not scroll sideways.
+  await expect(page.locator(".filter-dock")).toHaveCount(0);
+  const width = await page.evaluate(() => document.documentElement.scrollWidth);
+  expect(width).toBeLessThanOrEqual((page.viewportSize()?.width ?? 0) + 1);
+  expect(errors).toEqual([]);
+});

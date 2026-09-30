@@ -14,6 +14,7 @@ import {
 import { Filters } from "./components/Filters";
 import { GameCard } from "./components/GameCard";
 import { ResultCard } from "./components/ResultCard";
+import { InsanityBoard } from "./components/InsanityBoard";
 import { TvGrid } from "./components/TvGrid";
 import { setTz, tzLabel, useTz, ZONES } from "./tz";
 
@@ -134,7 +135,7 @@ export default function App() {
           </ul>
         </details>
 
-        {view !== "grid" && <Filters {...filters} view={view} onChange={update} />}
+        {view !== "grid" && view !== "insanity" && <Filters {...filters} view={view} onChange={update} />}
 
         <section id="games" tabIndex={-1} aria-label="Game dashboard">
           <div className="view-row">
@@ -144,6 +145,9 @@ export default function App() {
             </button>
             <button aria-pressed={view === "grid"} onClick={() => switchView("grid")}>
               TV grid
+            </button>
+            <button aria-pressed={view === "insanity"} onClick={() => switchView("insanity")}>
+              Insanity
             </button>
             <button aria-pressed={view === "final"} onClick={() => switchView("final")}>
               Final<span className="vs-extra"> · forecast vs actual</span><span className="count">{finalCount(league)}</span>
@@ -165,7 +169,9 @@ export default function App() {
             </details>
           </div>
           </div>
-          {view === "grid" ? (
+          {view === "insanity" ? (
+            <InsanityBoard defaultLeague={league === "CFB" ? "CFB" : "NFL"} />
+          ) : view === "grid" ? (
             <TvGrid />
           ) : (
             <>

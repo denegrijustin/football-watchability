@@ -6,37 +6,17 @@
  * Input is [home win %, period] per play, thinned to ~80 points (thinWp) so a
  * live series and an archived one are comparable.
  */
-export type WpPoint = [number, number | null];
-
-export type Insanity = {
-  /** 0–100 */
-  score: number;
-  tier: InsanityTier;
-  /** Times the favorite changed (win probability crossed 50%, ignoring noise). */
-  flips: number;
-  /** Largest win-probability move within about a tenth of the game, in points. */
-  biggestSwing: number;
-  /** Worst moment for the team that ended up ahead, as its win probability (final/late only). */
-  comebackFrom: number | null;
-  /** The busiest stretch of the game: indexes into the series, and its period. */
-  witching: { from: number; to: number; period: number | null };
-  /** Live only: how the last few minutes compare with the game so far. */
-  trend: "heating" | "cooling" | "steady" | null;
-  parts: { swing: number; flips: number; late: number; comeback: number; overtime: number };
-};
-
-export type InsanityTier = { id: "calm" | "restless" | "wild" | "unhinged" | "witching"; label: string; min: number };
-export const INSANITY_TIERS: InsanityTier[] = [
+export const INSANITY_TIERS = [
   { id: "witching", label: "Witching hour", min: 78 },
   { id: "unhinged", label: "Unhinged", min: 58 },
   { id: "wild", label: "Wild", min: 38 },
   { id: "restless", label: "Restless", min: 20 },
   { id: "calm", label: "Calm", min: 0 },
 ];
-export const insanityTier = (score: number) => INSANITY_TIERS.find((t) => score >= t.min) ?? INSANITY_TIERS[INSANITY_TIERS.length - 1];
+export const insanityTier = (score) => INSANITY_TIERS.find((t) => score >= t.min) ?? INSANITY_TIERS[INSANITY_TIERS.length - 1];
 
 /** ~80 points, like the archived series. Archived series (already <= 82) pass through untouched. */
-export function thinWp(wp: WpPoint[], target = 80): WpPoint[] {
+export function thinWp(wp, target = 80) {
   if (wp.length <= target + 20) return wp;
   const step = Math.ceil(wp.length / target);
   const out = wp.filter((_, i) => i % step === 0);
@@ -45,13 +25,14 @@ export function thinWp(wp: WpPoint[], target = 80): WpPoint[] {
   return out;
 }
 
-const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
+const clamp01 = (n) => Math.max(0, Math.min(1, n));
 
 /**
- * @param final true for a finished game: adds "comeback" (how far the winner
- *   fell) and counts overtime. Live games skip both, since the ending is unknown.
+ * @param {[number, number | null][]} series
+ * @param {{ final?: boolean, overtime?: boolean }} [opts] final: true for a finished game, which adds
+ *   "comeback" (how far the winner fell) and counts overtime. Live games skip both, since the ending is unknown.
  */
-export function insanity(series: WpPoint[], { final = false, overtime = false } = {}): Insanity | null {
+export function insanity(series, { final = false, overtime = false } = {}) {
   const wp = thinWp(series);
   if (wp.length < 8) return null;
   const p = wp.map(([v]) => v);
@@ -76,7 +57,7 @@ export function insanity(series: WpPoint[], { final = false, overtime = false } 
   const late = clamp01(tail.reduce((a, v) => a + (1 - Math.abs(v - 50) / 50), 0) / tail.length);
 
   // Comeback: the eventual winner's lowest win probability.
-  let comebackFrom: number | null = null;
+  let comebackFrom = null;
   let comeback = 0;
   if (final) {
     const homeWon = p[n - 1] >= 50;
@@ -106,7 +87,7 @@ export function insanity(series: WpPoint[], { final = false, overtime = false } 
   const period = wp[Math.round((from + to) / 2)]?.[1] ?? null;
 
   // Trend (live): the last window against the game's average window.
-  let trend: Insanity["trend"] = null;
+  let trend = null;
   if (!final && n >= win * 3) {
     let recent = 0;
     for (let j = n - win; j < n; j++) recent += Math.abs(p[j] - p[j - 1]);

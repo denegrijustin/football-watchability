@@ -16,6 +16,7 @@
 //   Finished games go to src/data/results.json; the last pregame forecast of
 //   each game is kept in src/data/forecasts.json.
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { fromResult, mergeLedger } from "./season-ledger.mjs";
 import { forecastScore, actualScore, readout, tierFor, BASE, projectScore, scoreCheck } from "./score.mjs";
 
 const root = new URL("..", import.meta.url);
@@ -1063,6 +1064,12 @@ for (const g of built) {
 const weeks = [...new Set([...results.values()].sort((a, b) => b.date.localeCompare(a.date)).map((r) => r.week))].slice(0, 2);
 const resultGames = [...results.values()].filter((r) => weeks.includes(r.week)).sort((a, b) => b.date.localeCompare(a.date));
 writeFileSync(new URL("src/data/results.json", root), JSON.stringify({ updated: nowIso.slice(0, 10), games: resultGames }, null, 1) + "\n");
+// The season ledger keeps every finished game's insanity score for the season ranking,
+// long after results.json has dropped the week.
+writeFileSync(
+  new URL("src/data/season.json", root),
+  JSON.stringify(mergeLedger(optSrc("season.json", { games: [] }), [...results.values()].map(fromResult), nowIso.slice(0, 10)), null, 1) + "\n",
+);
 // Forecasts only matter until a game is archived; drop anything older than 3 weeks.
 for (const [id, f] of Object.entries(forecasts)) if (Date.now() - Date.parse(f.date) > 21 * 864e5) delete forecasts[id];
 writeFileSync(new URL("src/data/forecasts.json", root), JSON.stringify(forecasts, null, 1) + "\n");
