@@ -311,3 +311,37 @@ test("TV grid conference filter narrows college games and All conferences restor
   await page.locator(".tv-toolbar [aria-label='League'] button", { hasText: "NFL" }).click();
   await expect(page.getByLabel("Conference")).toHaveCount(0);
 });
+
+test("Game Center overlay opens from a card with projection, momentum, field tilt, drives and players", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (err) => errors.push(err.message));
+  const fx = readFileSync("tests/fixtures/game-nfl.json", "utf8");
+  await page.route("**/api/game**", (r) => r.fulfill({ status: 200, contentType: "application/json", body: fx }));
+  await page.route("https://site.api.espn.com/**", (r) => r.abort());
+  await page.goto("/");
+  // Upcoming game: pregame view
+  await page.locator(".game-card .gc-open").first().click();
+  const gc = page.locator("dialog.gc");
+  await expect(gc).toBeVisible();
+  await expect(gc.locator(".gc-proj")).toContainText("Projected score");
+  await expect(gc.locator(".gc-ball")).toHaveCount(0);
+  await page.keyboard.press("Escape");
+  await expect(gc).toBeHidden();
+  // Finished game with the live-data fixture (Chargers at Bills)
+  const final = results.games.find((r: any) => r.espnId === "401872953");
+  test.skip(!final, "fixture game not in results");
+  if (final.league === "NFL") {
+    await page.getByRole("button", { name: /^Final/ }).click();
+    await page.getByPlaceholder("Search teams, TV…").fill("Bills");
+    await page.locator(".result-card .gc-open").first().click();
+    await expect(gc.locator(".gc-score").first()).toHaveText("16");
+    await expect(gc.getByText("Who's tilting the field")).toBeVisible();
+    await expect(gc.getByText("Momentum")).toBeVisible();
+    await expect(gc.locator(".gc-drives li")).toHaveCount(22);
+    await expect(gc.locator(".gc-top li")).toHaveCount(6);
+    await expect(gc.locator(".gc-tracker li").first()).toBeVisible();
+    const w = await gc.locator(".gc-body").evaluate((el) => el.scrollWidth - el.clientWidth);
+    expect(w).toBeLessThanOrEqual(1);
+  }
+  expect(errors).toEqual([]);
+});

@@ -14,6 +14,7 @@ import { networkLogo, rankLine, rankTitle, recordLine, teamColor, type Ranks } f
 import { PregameWinProb, type WinProbData } from "./PregameWinProb";
 import { ProjectedScore, type Projection } from "./ProjectedScore";
 import { LiveStrip, useLive } from "../live";
+import { useOpenGame } from "./GameCenter";
 import { EdgeLine, type Advanced } from "./AdvancedStats";
 import { dayOf, timeOf, tzAbbr } from "../tz";
 
@@ -31,6 +32,7 @@ export function GameCard({ game }: { game: Game }) {
   const awayAbbr = (away as { abbr?: string }).abbr ?? away.name;
   const homeAbbr = (home as { abbr?: string }).abbr ?? home.name;
   const live = useLive(game.espnId);
+  const openGame = useOpenGame();
   const homeColor = teamColor((home as { color?: string | null }).color);
   return (
     <article
@@ -59,7 +61,13 @@ export function GameCard({ game }: { game: Game }) {
       </header>
       <LiveStrip live={live} away={awayAbbr} home={homeAbbr} />
 
-      <div className="matchup">
+      <div
+        className="matchup gc-open-area"
+        onClick={(e) => {
+          if (!(e.target as HTMLElement).closest("a,button,summary")) openGame(game.espnId);
+        }}
+        title="Open Game Center"
+      >
         <h3 id={`${game.id}-title`} className="sr-only">
           {game.matchup}
         </h3>
@@ -151,6 +159,12 @@ export function GameCard({ game }: { game: Game }) {
       />
       <Stakes game={game} />
       <TeamForm game={game} />
+      <button type="button" className="gc-open" onClick={() => openGame(game.espnId)}>
+        <span>
+          <strong>Game Center</strong> · live win probability, momentum, field tilt, drive chart, player tracker
+        </span>
+        <span aria-hidden="true">↗</span>
+      </button>
       <GameDetails game={game} />
     </article>
   );
