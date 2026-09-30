@@ -63,7 +63,7 @@ export function trimGame(s) {
     const team = d.team?.id;
     const ps = (d.plays ?? []).filter((p) => p.type?.text !== "Kickoff" || p.scoringPlay);
     const first = ps.find((p) => p.start?.yardsToEndzone != null);
-    const snaps = ps.filter((p) => !/Punt|Kickoff|Timeout|End of|Two-minute/i.test(p.type?.text ?? ""));
+    const snaps = ps.filter((p) => !/Punt|Kickoff|Timeout|End of|Two-minute|Field Goal|Extra Point/i.test(p.type?.text ?? ""));
     const last = [...snaps].reverse().find((p) => p.end?.yardsToEndzone != null && p.end?.team?.id === team);
     // Field position from the offense's side: 0 = own goal line, 100 = opponent's.
     const from = first ? 100 - num(first.start.yardsToEndzone) : null;
