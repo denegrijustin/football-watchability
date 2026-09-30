@@ -266,9 +266,15 @@ test("times default to Central, follow the chosen zone, and the TV grid JPG down
   const width = await page.evaluate(() => document.documentElement.scrollWidth);
   expect(width).toBeLessThanOrEqual((page.viewportSize()?.width ?? 0) + 1);
   await page.getByRole("button", { name: "TV grid" }).click();
-  const [download] = await Promise.all([
-    page.waitForEvent("download"),
-    page.getByRole("button", { name: /Download.*JPG/ }).click(),
-  ]);
-  expect(download.suggestedFilename()).toMatch(/^tv-grid-.*\.jpg$/);
+  for (const [item, name] of [
+    [/This day/, /^tv-grid-(?!weekend).*\.jpg$/],
+    [/Full weekend/, /^tv-grid-weekend-.*\.jpg$/],
+  ] as const) {
+    await page.locator(".export-jpg-menu summary").click();
+    const [download] = await Promise.all([
+      page.waitForEvent("download"),
+      page.locator(".export-jpg-menu .export-menu button").filter({ hasText: item }).click(),
+    ]);
+    expect(download.suggestedFilename()).toMatch(name);
+  }
 });

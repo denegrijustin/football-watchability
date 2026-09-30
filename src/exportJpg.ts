@@ -1,4 +1,4 @@
-import { logos, networkLogo } from "./data";
+import { logos, networkLogo, rankLine } from "./data";
 import { GRID_SLOT, layoutGrid, type GridGame, type PlacedGame } from "./data/grid";
 import { tzAbbr } from "./tz";
 
@@ -11,10 +11,12 @@ import { tzAbbr } from "./tz";
  */
 const PAD = 40;
 const LABEL_W = 132;
-const STEP_W = 60;
+const STEP_W = 68;
 const HEAD_H = 34;
-const LANE_H = 84;
-const BLOCK_H = 70;
+const LANE_H = 96;
+const BLOCK_H = 84;
+const SIDE = 104;
+const DAY_H = 56;
 const TOP = 176;
 const MIN_W = 1300;
 const ENT = new Set(["elite", "vgood", "good"]);
@@ -64,37 +66,45 @@ function contain(ctx: CanvasRenderingContext2D, img: HTMLImageElement, x: number
   ctx.drawImage(img, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh);
 }
 
-export async function downloadGridJpg({
-  games,
-  dateLabel,
-  day,
-  period,
-}: {
-  games: GridGame[];
-  dateLabel: string;
-  day: string;
-  period: string;
-}) {
-  const { lanes, placed, startMin, steps } = layoutGrid(games);
-  if (!placed.length) return;
+export type ExportDay = { date: string; day: string; label: string; games: GridGame[] };
 
-  const gridW = LABEL_W + steps * STEP_W;
-  const W = Math.max(MIN_W, PAD * 2 + gridW);
-  const H = TOP + HEAD_H + lanes.length * LANE_H + 80;
+export async function downloadGridJpg({
+  days,
+  period,
+  scope,
+}: {
+  days: ExportDay[];
+  period: string;
+  scope: "day" | "weekend";
+}) {
+  const sections = days
+    .map((d) => ({ ...d, layout: layoutGrid(d.games) }))
+    .filter((d) => d.layout.placed.length);
+  if (!sections.length) return;
+  const one = scope === "day" || sections.length === 1;
+  const allPlaced = sections.flatMap((d) => d.layout.placed);
+
+  const W = Math.max(MIN_W, PAD * 2 + LABEL_W + Math.max(...sections.map((d) => d.layout.steps)) * STEP_W);
+  const secH = (d: (typeof sections)[number]) => (one ? 0 : DAY_H) + HEAD_H + d.layout.lanes.length * LANE_H + 28;
+  const H = TOP + sections.reduce((h, d) => h + secH(d), 0) + 52;
+  // Phones cap canvas area (~16M px); shrink very tall weekend images to fit.
+  const scale = Math.min(1, Math.sqrt(15e6 / (W * H)));
   const canvas = document.createElement("canvas");
-  canvas.width = W;
-  canvas.height = H;
+  canvas.width = Math.round(W * scale);
+  canvas.height = Math.round(H * scale);
   const ctx = canvas.getContext("2d")!;
+  ctx.scale(scale, scale);
 
   // Team and network logos (same-origin files or data URIs).
-  const teamIds = new Set(placed.flatMap((g) => g.sides.map((t) => t.logoId)));
+  const teamIds = new Set(allPlaced.flatMap((g) => g.sides.map((t) => t.logoId)));
+  const nets = new Set(sections.flatMap((d) => d.layout.lanes.map((l) => l.network)));
   const teamImgs = new Map<string, HTMLImageElement | null>();
   const netImgs = new Map<string, HTMLImageElement | null>();
   await Promise.all([
     ...[...teamIds].map(async (id) => teamImgs.set(id, logos[id] ? await load(logos[id]) : null)),
-    ...lanes.map(async (l) => {
-      const src = networkLogo(l.network);
-      if (!netImgs.has(l.network)) netImgs.set(l.network, src ? await load(src) : null);
+    ...[...nets].map(async (n) => {
+      const src = networkLogo(n);
+      netImgs.set(n, src ? await load(src) : null);
     }),
   ]);
 
@@ -110,12 +120,12 @@ export async function downloadGridJpg({
   ctx.fillText("FW", PAD + 11, 60);
   ctx.fillStyle = "#eaf0f4";
   ctx.font = `800 36px ${FONT}`;
-  ctx.fillText(`TV grid · ${dateLabel}`, PAD + 76, 52);
-  const good = placed.filter((g) => ENT.has(g.tier)).length;
+  ctx.fillText(one ? `TV grid · ${sections[0].label}` : `TV grid · full weekend`, PAD + 76, 52);
+  const good = allPlaced.filter((g) => ENT.has(g.tier)).length;
   ctx.fillStyle = "#b9c6d0";
   ctx.font = `500 21px ${FONT}`;
   ctx.fillText(
-    `${period} · ${placed.length} games · ${good} entertaining · times ${tzAbbr()} · fbwatch.elskatemm.com`,
+    `${period} · ${allPlaced.length} games · ${good} entertaining · times ${tzAbbr()} · fbwatch.elskatemm.com`,
     PAD + 76,
     88,
   );
@@ -137,52 +147,72 @@ export async function downloadGridJpg({
     ctx.fillText(label, lx + 26, ly);
     lx += ctx.measureText(label).width + 60;
   }
-
-  // Time header and column stripes
-  const gx = PAD + LABEL_W;
-  const laneY = (i: number) => TOP + HEAD_H + i * LANE_H;
-  ctx.font = `700 15px ${FONT}`;
-  ctx.textBaseline = "middle";
-  for (let r = 0; r < steps; r++) {
-    const x = gx + r * STEP_W;
-    if (r % 2 === 0) {
-      ctx.fillStyle = "rgba(255,255,255,0.03)";
-      ctx.fillRect(x, TOP + HEAD_H, STEP_W * 2, lanes.length * LANE_H);
-      ctx.fillStyle = "#b9c6d0";
-      ctx.fillText(kick(startMin + r * GRID_SLOT), x + 6, TOP + HEAD_H / 2);
-    }
-  }
-  ctx.fillStyle = "#243441";
-  ctx.fillRect(PAD, TOP + HEAD_H - 1, gridW, 2);
   ctx.fillStyle = "#8d9eac";
-  ctx.font = `800 16px ${FONT}`;
-  ctx.fillText(day, PAD + 8, TOP + HEAD_H / 2);
+  ctx.font = `500 16px ${FONT}`;
+  ctx.fillText("Under each logo: conference rank · overall rank (ESPN FPI). Top: record, or AP rank.", lx, ly);
 
-  // Network lanes
-  lanes.forEach((l, i) => {
-    const y = laneY(i);
-    if (i > 0 && lanes[i - 1].network !== l.network) {
-      ctx.fillStyle = "#243441";
-      ctx.fillRect(PAD, y, gridW, 1);
-    }
-    const chipX = PAD + 6,
-      chipY = y + (LANE_H - 32) / 2,
-      chipW = LABEL_W - 20;
-    const img = netImgs.get(l.network);
-    if (img) {
-      ctx.fillStyle = "#d5dbe0";
-      roundRect(ctx, chipX, chipY, chipW, 32, 16);
-      ctx.fill();
-      contain(ctx, img, chipX + 12, chipY + 6, chipW - 24, 20);
-    } else {
-      ctx.fillStyle = "#eaf0f4";
-      ctx.font = `800 20px ${FONT}`;
+  let y = TOP;
+  for (const d of sections) {
+    const { lanes, placed, startMin, steps } = d.layout;
+    if (!one) {
       ctx.textBaseline = "middle";
-      ctx.fillText(fit(ctx, l.label, chipW), chipX + 4, y + LANE_H / 2);
+      ctx.fillStyle = "#eaf0f4";
+      ctx.font = `800 28px ${FONT}`;
+      ctx.fillText(d.label, PAD, y + 22);
+      const n = ctx.measureText(d.label).width;
+      ctx.fillStyle = "#8d9eac";
+      ctx.font = `500 20px ${FONT}`;
+      ctx.fillText(`${placed.length} game${placed.length === 1 ? "" : "s"}`, PAD + n + 16, y + 24);
+      y += DAY_H;
     }
-  });
+    const gridW = LABEL_W + steps * STEP_W;
+    const gx = PAD + LABEL_W;
+    const laneY = (i: number) => y + HEAD_H + i * LANE_H;
 
-  for (const g of placed) drawBlock(ctx, g, gx, laneY(g.lane), startMin, teamImgs);
+    // Time header and column stripes
+    ctx.font = `700 15px ${FONT}`;
+    ctx.textBaseline = "middle";
+    for (let r = 0; r < steps; r++) {
+      if (r % 2) continue;
+      const x = gx + r * STEP_W;
+      ctx.fillStyle = "rgba(255,255,255,0.03)";
+      ctx.fillRect(x, y + HEAD_H, STEP_W * 2, lanes.length * LANE_H);
+      ctx.fillStyle = "#b9c6d0";
+      ctx.fillText(kick(startMin + r * GRID_SLOT), x + 6, y + HEAD_H / 2);
+    }
+    ctx.fillStyle = "#243441";
+    ctx.fillRect(PAD, y + HEAD_H - 1, gridW, 2);
+    ctx.fillStyle = "#8d9eac";
+    ctx.font = `800 16px ${FONT}`;
+    ctx.fillText(d.day, PAD + 8, y + HEAD_H / 2);
+
+    // Network lanes
+    lanes.forEach((l, i) => {
+      const ly2 = laneY(i);
+      if (i > 0 && lanes[i - 1].network !== l.network) {
+        ctx.fillStyle = "#243441";
+        ctx.fillRect(PAD, ly2, gridW, 1);
+      }
+      const chipX = PAD + 6,
+        chipY = ly2 + (LANE_H - 32) / 2,
+        chipW = LABEL_W - 20;
+      const img = netImgs.get(l.network);
+      if (img) {
+        ctx.fillStyle = "#d5dbe0";
+        roundRect(ctx, chipX, chipY, chipW, 32, 16);
+        ctx.fill();
+        contain(ctx, img, chipX + 12, chipY + 6, chipW - 24, 20);
+      } else {
+        ctx.fillStyle = "#eaf0f4";
+        ctx.font = `800 20px ${FONT}`;
+        ctx.textBaseline = "middle";
+        ctx.fillText(fit(ctx, l.label, chipW), chipX + 4, ly2 + LANE_H / 2);
+      }
+    });
+
+    for (const g of placed) drawBlock(ctx, g, gx, laneY(g.lane), startMin, teamImgs);
+    y += HEAD_H + lanes.length * LANE_H + 28;
+  }
 
   ctx.textBaseline = "alphabetic";
   ctx.fillStyle = "#8d9eac";
@@ -190,7 +220,7 @@ export async function downloadGridJpg({
   ctx.fillText(
     "Watchability 0–100: team quality, competitiveness, stakes, matchup and TV window. Each block spans the game's broadcast window.",
     PAD,
-    H - 30,
+    H - 22,
   );
 
   const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/jpeg", 0.92));
@@ -198,7 +228,8 @@ export async function downloadGridJpg({
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `tv-grid-${(day || dateLabel).toLowerCase().replace(/[^\w]+/g, "-")}-${period.replace(/[^\w]+/g, "-")}.jpg`;
+  const slug = (t: string) => t.toLowerCase().replace(/[^\w]+/g, "-");
+  a.download = `tv-grid-${one ? slug(sections[0].day || sections[0].label) : "weekend"}-${slug(period)}.jpg`;
   document.body.append(a);
   a.click();
   a.remove();
@@ -216,13 +247,11 @@ function drawBlock(
   const hl = ENT.has(g.tier);
   const dim = g.tier === "bg";
   const color = TIER_COLOR[g.tier] ?? "#8d9eac";
-  const at = Math.floor((g.minute - startMin) / GRID_SLOT);
-  const span = Math.max(4, Math.round(g.minutes / GRID_SLOT));
-  const x = gx + at * STEP_W + 2;
+  // Exact minutes, so back-to-back games on one lane never overlap.
+  const x = gx + ((g.minute - startMin) / GRID_SLOT) * STEP_W + 1;
   const y = laneTop + (LANE_H - BLOCK_H) / 2;
-  const w = span * STEP_W - 4;
+  const w = (g.minutes / GRID_SLOT) * STEP_W - 3;
   const [a, h] = g.sides;
-  const SIDE = 62;
 
   ctx.save();
   ctx.globalAlpha = dim ? 0.42 : 1;
@@ -240,7 +269,24 @@ function drawBlock(
     [h, x + w - SIDE],
   ] as const) {
     const img = imgs.get(t.logoId);
-    if (img) contain(ctx, img, sx + 9, y + 11, SIDE - 18, BLOCK_H - 22);
+    if (img) contain(ctx, img, sx + (SIDE - 40) / 2, y + 21, 40, 40);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "alphabetic";
+    if (t.tag) {
+      ctx.fillStyle = "rgba(255,255,255,0.88)";
+      ctx.font = `700 13px ${FONT}`;
+      ctx.fillText(fit(ctx, t.tag, SIDE - 8), sx + SIDE / 2, y + 17);
+    }
+    const rk = rankLine(t.ranks, true);
+    if (rk) {
+      ctx.fillStyle = "#ffffff";
+      // Shrink to fit before truncating ("Big Ten #10 · #96").
+      let px = 11.5;
+      ctx.font = `700 ${px}px ${FONT}`;
+      while (px > 8.5 && ctx.measureText(rk).width > SIDE - 6) ctx.font = `700 ${(px -= 0.5)}px ${FONT}`;
+      ctx.fillText(fit(ctx, rk, SIDE - 6), sx + SIDE / 2, y + BLOCK_H - 9);
+    }
+    ctx.textAlign = "left";
   }
   ctx.restore();
 
@@ -260,10 +306,10 @@ function drawBlock(
   ctx.textAlign = "left";
   ctx.fillStyle = "#eaf0f4";
   ctx.font = `800 19px ${FONT}`;
-  ctx.fillText(fit(ctx, `${a.abbr} @ ${h.abbr}`, room), tx, y + 30);
+  ctx.fillText(fit(ctx, `${a.abbr} @ ${h.abbr}`, room), tx, y + 36);
   ctx.fillStyle = "rgba(234,240,244,0.78)";
   ctx.font = `600 14px ${FONT}`;
-  ctx.fillText(fit(ctx, g.final ? `Final ${g.final} · ${g.netLabel}` : `${kick(g.minute)} · ${g.netLabel}`, room), tx, y + 50);
+  ctx.fillText(fit(ctx, g.final ? `Final ${g.final} · ${g.netLabel}` : `${kick(g.minute)} · ${g.netLabel}`, room), tx, y + 58);
   // Score pill
   const px = x + w - SIDE - pillW - 8,
     py = y + (BLOCK_H - 30) / 2;

@@ -49,6 +49,7 @@ export function TvGrid() {
   const [onlyGood, setOnlyGood] = useState(false);
   const [open, setOpen] = useState<GridGame | null>(null);
   const [busy, setBusy] = useState(false);
+  const menu = useRef<HTMLDetailsElement>(null);
 
   const games = all.filter(
     (g) =>
@@ -65,6 +66,24 @@ export function TvGrid() {
     day: "numeric",
     timeZone: "UTC",
   });
+  const exportJpg = async (scope: "day" | "weekend") => {
+    if (menu.current) menu.current.open = false;
+    setBusy(true);
+    try {
+      const keep = (g: GridGame) => (league === "all" || g.league === league) && (!onlyGood || ENTERTAINING.has(g.tier));
+      const label = (date: string) =>
+        new Date(`${date}T12:00:00Z`).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric", timeZone: "UTC" });
+      await downloadGridJpg({
+        period: slate.period,
+        scope,
+        days: days
+          .filter((d) => scope === "weekend" || d.date === day)
+          .map((d) => ({ ...d, label: label(d.date), games: all.filter((g) => slot(g.start).date === d.date && keep(g)) })),
+      });
+    } finally {
+      setBusy(false);
+    }
+  };
   const good = games.filter((g) => ENTERTAINING.has(g.tier)).length;
 
   // In the wide layout lanes are rows and time is columns; tall is the reverse.
@@ -100,24 +119,24 @@ export function TvGrid() {
         <button className="tv-toggle" aria-pressed={onlyGood} onClick={() => setOnlyGood((v) => !v)}>
           Entertaining only
         </button>
-        <button
-          type="button"
-          className="export-jpg"
-          disabled={busy || !placed.length}
-          onClick={async () => {
-            setBusy(true);
-            try {
-              await downloadGridJpg({ games, dateLabel, day: dayName?.day ?? "", period: slate.period });
-            } finally {
-              setBusy(false);
-            }
-          }}
-        >
-          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-            <path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          {busy ? "Making image…" : "Download JPG"}
-        </button>
+        <details className="export export-jpg-menu" ref={menu}>
+          <summary className="export-jpg" aria-disabled={busy || !placed.length}>
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+              <path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            {busy ? "Making image…" : "Download JPG"}
+          </summary>
+          <div className="export-menu">
+            <button type="button" disabled={busy || !placed.length} onClick={() => exportJpg("day")}>
+              <strong>This day ({dayName?.day})</strong>
+              <span>{dateLabel}, with the filters above</span>
+            </button>
+            <button type="button" disabled={busy} onClick={() => exportJpg("weekend")}>
+              <strong>Full weekend</strong>
+              <span>Every day, stacked in one image</span>
+            </button>
+          </div>
+        </details>
         <ul className="tv-key" aria-label="Key">
           <li className="k-hl">Entertaining (74+)</li>
           <li className="k-mid">Watchable (64–73)</li>
