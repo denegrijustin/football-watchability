@@ -3,6 +3,7 @@ import { logos, networkLogo, rankLine, rankTitle, tierLabel, type Result } from 
 import { ScoreBreakdown } from "./ScoreBreakdown";
 import { WinProb } from "./WinProb";
 import { AdvancedStats } from "./AdvancedStats";
+import { dayOf, timeOf, tzAbbr } from "../tz";
 
 const short = (r: Result, i: number) =>
   r.league === "NFL" ? r.teams[i].name.split(" ").pop()! : r.teams[i].abbr;
@@ -29,7 +30,7 @@ export function ResultCard({ result: r }: { result: Result }) {
     >
       <header className="card-top">
         <div className="kickoff">
-          <strong>{r.final.detail}</strong> · {r.day} {r.time}
+          <strong>{r.final.detail}</strong> · {dayOf(r.date)} {timeOf(r.date)} {tzAbbr()}
         </div>
         <div className={`tv ${netLogo ? "has-logo" : ""}`} title="Where it aired">
           {netLogo && (

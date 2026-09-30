@@ -128,6 +128,16 @@ const HARD_TO_FIND = {
 // ---------- per-game facts ----------
 const facts = games.map((g) => {
   const meta = parseMeta(g.meta);
+  // Notes quote kickoffs in Central time (the site's default zone).
+  if (g.date) {
+    const d = new Date(g.date);
+    const t = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/Chicago" });
+    const [hm, ap] = t.split(" ");
+    const [hh, mm] = hm.split(":").map(Number);
+    meta.day = d.toLocaleDateString("en-US", { weekday: "short", timeZone: "America/Chicago" });
+    meta.time = hm;
+    meta.minutes = ((hh % 12) + (ap === "PM" ? 12 : 0)) * 60 + mm;
+  }
   const [awayT, homeT] = g.teams;
   const teams = g.teams.map((t) => {
     const rec = parseRecord(t.record);
@@ -213,7 +223,7 @@ const ordinalSuffix = (n) =>
         ? "rd"
         : "th";
 const inConf = (c) => (/^C-USA|^Conference/.test(c) ? `in ${c}` : `in the ${c}`);
-const clock = (f) => `${f.meta.day} ${f.meta.time} ET`;
+const clock = (f) => `${f.meta.day} ${f.meta.time} CT`;
 const shortMatch = (f) => `${f.away.nick} @ ${f.home.nick}`;
 
 // ---------- signals ----------
@@ -530,7 +540,7 @@ function signals(f) {
       W,
       isNFL ? 4 : 3,
       `It has the ${clock(f)} window to itself — no other game on the board kicks within 30 minutes.`,
-      `Only game on at ${meta.day} ${meta.time} ET: ${away.nick} at ${home.nick}`,
+      `Only game on at ${meta.day} ${meta.time} CT: ${away.nick} at ${home.nick}`,
       "Standalone slot",
     );
   else if (!better.length && overlap.length >= 2)
@@ -747,14 +757,14 @@ function signals(f) {
   const channel = HARD_TO_FIND[g.broadcast];
   if (channel)
     add(S, 1.5, `${shortMatch(f)} is ${channel}.`, null, g.broadcast.split(" / ")[0]);
-  if (meta.minutes >= 22 * 60 + 30) {
+  if (meta.minutes >= 21 * 60 + 30) {
     const end = meta.minutes + 210;
     const eh = Math.floor(end / 60) % 24,
       em = end % 60;
     add(
       S,
       1.5,
-      `${shortMatch(f)} kicks at ${meta.time} ET, so expect a finish around ${eh % 12 || 12}:${String(em).padStart(2, "0")} AM ET.`,
+      `${shortMatch(f)} kicks at ${meta.time} CT, so expect a finish around ${eh % 12 || 12}:${String(em).padStart(2, "0")} ${eh >= 24 || eh < 12 ? "AM" : "PM"} CT.`,
       null,
       "Late night",
     );

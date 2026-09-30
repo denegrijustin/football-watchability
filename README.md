@@ -57,7 +57,11 @@ The **TV grid** view (`src/components/TvGrid.tsx`, data in `src/data/grid.ts`) l
 
 ### Weekend export
 
-`scripts/export-slate.mjs` (run in the refresh after the notes) writes `public/exports/watch-slate.csv` (every game Thursday–Monday by kickoff: TV, watchability, tier, projected score, win probability, line, venue, weather, take, and finals with actual watchability) and `public/exports/entertaining.ics` (a calendar of the 74+ games). **Export weekend** on the site offers both, plus printing the current view.
+`scripts/export-slate.mjs` (run in the refresh after the notes) writes `public/exports/watch-slate.csv` (every game Thursday–Monday by kickoff: TV, watchability, tier, projected score, win probability, line, venue, weather, take, and finals with actual watchability) and `public/exports/entertaining.ics` (a calendar of the 74+ games). The site's **Download weekend JPG** button draws the whole Thursday–Monday slate as one image in the browser (`src/exportJpg.ts`): days in order, three games per row with kickoff time, network, logos, AP ranks, tier and score, Entertaining games outlined and Background games dimmed, in the viewer's time zone. **More** adds an Entertaining-only JPG, the spreadsheet and the calendar.
+
+### Time zone
+
+Times show in Central by default. The clock menu in the header switches to Eastern, Mountain, Arizona, Pacific, Alaska or Hawaii (`src/tz.ts`); the choice is remembered in that browser. Cards, finals, the weather strip, the TV grid and the JPG all follow it. The written notes and the spreadsheet use Central.
 
 ### Forecast vs actual
 

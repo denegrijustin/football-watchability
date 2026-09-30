@@ -1,4 +1,5 @@
 import { results, slate, cleanRank, type League, type Ranks, type Tier } from "./index";
+import { dateOf, dayOf, minutesOf } from "../tz";
 
 /** One game placed on the TV grid (upcoming or already final). */
 export type GridGame = {
@@ -36,16 +37,10 @@ const netLabel = (broadcast: string) =>
     .replace(/^USA Network$/, "USA")
     .replace(/^NFL Network$/, "NFL Net");
 
-const etDay = (d: Date) => d.toLocaleDateString("en-US", { weekday: "short", timeZone: "America/New_York" });
-export const etDate = (d: Date) => d.toLocaleDateString("en-CA", { timeZone: "America/New_York" });
-/** Minutes after midnight Eastern. */
-export const etMinutes = (d: Date) => {
-  const [h, m] = d
-    .toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "America/New_York" })
-    .split(":")
-    .map(Number);
-  return h * 60 + m;
-};
+// Days and minutes follow the site's chosen time zone (Central by default).
+const etDay = (d: Date) => dayOf(d);
+export const etDate = (d: Date) => dateOf(d);
+const etMinutes = (d: Date) => minutesOf(d);
 
 export function gridGames(): GridGame[] {
   const live: GridGame[] = slate.games.map((g) => {
@@ -103,7 +98,7 @@ export function gridGames(): GridGame[] {
 }
 
 /**
- * A game's TV day and minute on that day's grid. Kickoffs before 4am Eastern
+ * A game's TV day and minute on that day's grid. Kickoffs before 4am local
  * belong to the previous night (minute 1440+).
  */
 export const slot = (d: Date) => {

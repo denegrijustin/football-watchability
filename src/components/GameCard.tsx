@@ -15,6 +15,7 @@ import { PregameWinProb, type WinProbData } from "./PregameWinProb";
 import { ProjectedScore, type Projection } from "./ProjectedScore";
 import { LiveStrip, useLive } from "../live";
 import { EdgeLine, type Advanced } from "./AdvancedStats";
+import { dayOf, timeOf, tzAbbr } from "../tz";
 
 const impactLevel = (impact: string) =>
   impact.replace(/\s*impact$/i, "").toLowerCase();
@@ -22,6 +23,7 @@ const impactLevel = (impact: string) =>
 export function GameCard({ game }: { game: Game }) {
   const netLogo = networkLogo((game as { network?: string | null }).network);
   const meta = parseMeta(game.meta);
+  const date = (game as { date?: string }).date ?? "";
   const delta = deltaValue(game.delta);
   const impact = impactLevel(game.weather.impact);
   const [away, home] = game.teams;
@@ -38,7 +40,7 @@ export function GameCard({ game }: { game: Game }) {
     >
       <header className="card-top">
         <div className="kickoff">
-          <strong>{meta.day}</strong> {meta.time}
+          <strong>{dayOf(date)}</strong> {timeOf(date)} {tzAbbr()}
         </div>
         <div className={`tv ${netLogo ? "has-logo" : ""}`} title="Where to watch">
           {netLogo ? (

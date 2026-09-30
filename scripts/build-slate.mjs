@@ -311,6 +311,8 @@ function weatherFor(comp, summary, iso, localHour) {
       return {
         label: `Q${k + 1}`,
         time: `${((hr + 11) % 12) + 1}${hr < 12 ? "a" : "p"}`,
+        // Hour of the reading as an instant, so the site can show it in any time zone.
+        at: new Date(Math.floor(Date.parse(iso) / 3600e3) * 3600e3 + k * 3600e3).toISOString(),
         icon,
         sky,
         tempF: Math.round(H.temperature_2m[i]),
@@ -383,7 +385,7 @@ function weatherFor(comp, summary, iso, localHour) {
     effects: factors.filter((f) => f.level >= 1).map((f) => f.text),
     // Keys and levels only, for the projected-score weather adjustment.
     factors: factors.map(({ key, level }) => ({ key, level })),
-    hours: hours.map(({ label, time, icon, tempF, feelsF, precip, windMph, gustMph, dir }) => ({ label, time, icon, tempF, feelsF, precip, windMph, gustMph, dir })),
+    hours: hours.map(({ label, time, at, icon, tempF, feelsF, precip, windMph, gustMph, dir }) => ({ label, time, at, icon, tempF, feelsF, precip, windMph, gustMph, dir })),
     confidence: confText,
   };
 }

@@ -2722,3 +2722,97 @@ details.proj summary strong {
   line-height: 1.45;
   color: var(--muted);
 }
+
+/* ---------- Time zone picker ---------- */
+.tz-pick {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  margin-right: 10px;
+  padding: 0 4px 0 10px;
+  height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  background: var(--surface);
+  color: var(--text-2);
+}
+.tz-pick select {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0 18px 0 0;
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: calc(100% - 9px) 55%, calc(100% - 5px) 55%;
+  background-size: 4px 4px;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+.tz-pick select option {
+  color: #111;
+}
+@media (max-width: 760px) {
+  .tz-pick {
+    margin-right: 6px;
+    padding-left: 8px;
+  }
+  .tz-pick select {
+    font-size: 12px;
+    max-width: 118px;
+  }
+}
+.export-btns {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+.export-btns .export {
+  margin-left: 0;
+}
+.export-jpg {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--lime);
+  color: #142110;
+  font-size: 14px;
+  font-weight: 750;
+  cursor: pointer;
+}
+.export-jpg:disabled {
+  opacity: 0.7;
+  cursor: progress;
+}
+@media (max-width: 760px) {
+  .export-btns {
+    margin-left: 0;
+    width: 100%;
+  }
+  .export-jpg {
+    flex: 1;
+    justify-content: center;
+  }
+}
+@media (max-width: 520px) {
+  .site-header .edition {
+    display: none;
+  }
+  .tz-pick {
+    margin-right: 0;
+  }
+}
+@media (max-width: 420px) {
+  .export-jpg .dl-extra {
+    display: none;
+  }
+}
