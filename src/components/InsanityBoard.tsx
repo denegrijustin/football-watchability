@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { logos, results, slate } from "../data";
+import type { CSSProperties } from "react";
+import { logos, results, slate, teamColor } from "../data";
 import { rankGames, mostInsaneWeek, weekSummaries, type LedgerGame } from "../seasonRank";
 import { INSANITY_TIERS } from "../insanity";
 import { useOpenGame } from "./GameCenter";
@@ -7,10 +8,10 @@ import { useOpenGame } from "./GameCenter";
 type Scope = "week" | "season";
 const tierLabel = (id: string) => INSANITY_TIERS.find((t) => t.id === id)?.label ?? id;
 const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? "" : "s"}`;
-const PAGE = 10;
+const PAGE = 12;
 const known = new Set([...slate.games.map((g) => g.espnId), ...results.map((r) => r.espnId)]);
 
-function facts(g: LedgerGame) {
+export function facts(g: LedgerGame) {
   return [
     g.overtime ? "overtime" : null,
     g.flips ? plural(g.flips, "lead change") : "no lead changes",
@@ -107,37 +108,9 @@ export function InsanityBoard({ defaultLeague }: { defaultLeague: "NFL" | "CFB" 
           <p>Games are ranked once they finish and the board refreshes.</p>
         </div>
       ) : (
-        <ol className="ib-list">
+        <ol className="ib-cards">
           {list.slice(0, shown).map((g, i) => (
-            <li key={g.id} className={`ib-row ${g.tier}`}>
-              <span className="ib-rank" aria-label={`Rank ${i + 1}`}>
-                {i + 1}
-              </span>
-              <div className="ib-score" title={`${tierLabel(g.tier)}`}>
-                <strong>{g.insanity}</strong>
-                <span>{tierLabel(g.tier)}</span>
-              </div>
-              <div className="ib-game">
-                <div className="ib-teams">
-                  {[g.away, g.home].map((t, k) => (
-                    <span key={k} className={`ib-team${(k === 0 ? g.away.score > g.home.score : g.home.score > g.away.score) ? " won" : ""}`}>
-                      {logos[t.logoId] && <img src={logos[t.logoId]} alt="" width="22" height="22" loading="lazy" />}
-                      {t.abbr} <b>{t.score}</b>
-                    </span>
-                  ))}
-                  {g.overtime && <span className="ib-ot">OT</span>}
-                </div>
-                <p className="ib-facts">
-                  {facts(g).join(" · ")}
-                  {scope === "season" && <span className="ib-week"> · {g.week}</span>}
-                </p>
-              </div>
-              {known.has(g.id) && (
-                <button className="ib-open" onClick={() => openGame(g.id)} aria-label={`Open Game Center: ${g.matchup}`}>
-                  Game Center
-                </button>
-              )}
-            </li>
+            <InsanityCard key={g.id} g={g} rank={i + 1} showWeek={scope === "season"} onOpen={known.has(g.id) ? () => openGame(g.id) : null} />
           ))}
         </ol>
       )}
@@ -172,5 +145,104 @@ export function InsanityBoard({ defaultLeague }: { defaultLeague: "NFL" | "CFB" 
         </section>
       )}
     </section>
+  );
+}
+
+const qName = (p: number | null) => (p == null ? "" : p > 4 ? "overtime" : `the ${["", "1st", "2nd", "3rd", "4th"][p]} quarter`);
+
+/** One or two plain sentences on why the game was (or wasn't) insane. */
+export function insanityStory(g: LedgerGame) {
+  const aw = g.away.score > g.home.score;
+  const tie = g.away.score === g.home.score;
+  const winner = tie ? null : aw ? g.away.abbr : g.home.abbr;
+  const loser = tie ? null : aw ? g.home.abbr : g.away.abbr;
+  const margin = Math.abs(g.away.score - g.home.score);
+  const flips = g.flips ? plural(g.flips, "lead change") : "no lead changes";
+  const came = g.comebackFrom != null && g.comebackFrom <= 25 ? ` after falling to a ${g.comebackFrom}% chance` : "";
+  const when = g.witchingPeriod ? `, and the craziest stretch came in ${qName(g.witchingPeriod)}` : "";
+  switch (g.tier) {
+    case "witching":
+    case "unhinged":
+      return `${g.tier === "witching" ? "Pure chaos" : "Wild to the end"}: ${flips} and a ${g.swing}-point swing in win probability${when}. ${
+        winner ? `${winner} won by ${margin}${came}${g.overtime ? " in overtime" : ""}.` : "It ended level."
+      }`;
+    case "wild":
+      return `Plenty of life: ${flips} and a ${g.swing}-point win-probability swing${when}. ${
+        winner ? `${winner} ${margin <= 8 ? "held on" : "pulled away"} to win by ${margin}${came}.` : ""
+      }`.trim();
+    case "restless":
+      return `Some tension, never true chaos: ${flips}, biggest swing ${g.swing} points. ${
+        winner ? `${winner} won by ${margin}${margin >= 14 ? ` and ${loser} never really threatened late` : ""}.` : ""
+      }`.trim();
+    default:
+      return `Why it was flat: ${g.flips ? flips : `${winner ?? "one side"} never trailed`}, and win probability barely moved (biggest swing ${g.swing} points). ${
+        winner ? `${winner} won by ${margin}.` : ""
+      }`.trim();
+  }
+}
+
+function InsanityCard({ g, rank, showWeek, onOpen }: { g: LedgerGame; rank: number; showWeek: boolean; onOpen: (() => void) | null }) {
+  const ca = teamColor(g.away.color ?? null) ?? "#1d2a35";
+  const ch = teamColor(g.home.color ?? null) ?? "#1d2a35";
+  const mvpTeam = g.mvp?.side === "away" ? g.away : g.mvp?.side === "home" ? g.home : null;
+  const body = (
+    <>
+      <div className="ic-top">
+        <span className="ic-rank">#{rank}</span>
+        <span className="ic-ins" title="Insanity score">
+          <strong>{g.insanity}</strong> {tierLabel(g.tier)}
+        </span>
+        {showWeek && <span className="ic-week">{g.week}</span>}
+      </div>
+      <div className="ic-teams">
+        {[g.away, null, g.home].map((t, k) => {
+          if (!t)
+            return (
+              <span key="sep" className="ic-sep" aria-hidden="true">
+                {g.overtime ? "OT" : "–"}
+              </span>
+            );
+          k = k ? 1 : 0;
+          const won = k === 0 ? g.away.score > g.home.score : g.home.score > g.away.score;
+          return (
+            <span key={k} className={`ic-team ${k ? "home" : "away"}${won ? " won" : ""}`}>
+              {logos[t.logoId] ? <img src={logos[t.logoId]} alt="" width="40" height="40" loading="lazy" /> : <i className="ic-nologo" />}
+              <span className="ic-abbr">{t.abbr}</span>
+              <b>{t.score}</b>
+            </span>
+          );
+        })}
+      </div>
+      <p className="ic-story">{insanityStory(g)}</p>
+      {g.mvp && (
+        <div className="ic-mvp">
+          {g.mvp.headshot ? <img src={g.mvp.headshot} alt="" width="34" height="34" loading="lazy" /> : <i className="ic-nohead" />}
+          <span>
+            <span className="ic-mvp-label">MVP</span>
+            <strong>{g.mvp.short}</strong>
+            {g.mvp.pos && <span className="ic-pos">{g.mvp.pos}</span>}
+            {mvpTeam && logos[mvpTeam.logoId] && <img className="ic-mvp-logo" src={logos[mvpTeam.logoId]} alt={mvpTeam.abbr} width="16" height="16" />}
+            <small>{g.mvp.line}</small>
+          </span>
+        </div>
+      )}
+      {onOpen && (
+        <span className="ic-more" aria-hidden="true">
+          Game Center ↗
+        </span>
+      )}
+    </>
+  );
+  const style = { "--away": ca, "--home": ch } as CSSProperties;
+  return (
+    <li className={`ic ${g.tier}`} style={style}>
+      {onOpen ? (
+        <button type="button" className="ic-inner" onClick={onOpen} aria-label={`${g.matchup}, insanity ${g.insanity}. Open Game Center`}>
+          {body}
+        </button>
+      ) : (
+        <div className="ic-inner">{body}</div>
+      )}
+    </li>
   );
 }

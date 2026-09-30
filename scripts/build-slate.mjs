@@ -16,7 +16,7 @@
 //   Finished games go to src/data/results.json; the last pregame forecast of
 //   each game is kept in src/data/forecasts.json.
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
-import { fromResult, mergeLedger } from "./season-ledger.mjs";
+import { fromResult, mergeLedger, mvpOf } from "./season-ledger.mjs";
 import { forecastScore, actualScore, readout, tierFor, BASE, projectScore, scoreCheck } from "./score.mjs";
 
 const root = new URL("..", import.meta.url);
@@ -1056,6 +1056,7 @@ for (const g of built) {
     actual: { score: act.score, tier: tierFor(act.score)[0], base: act.base, parts: act.parts },
     delta: act.score - forecast.score,
     scoreCheck: sc,
+    mvp: mvpOf(g.summary, g.final.away > g.final.home ? "away" : g.final.home > g.final.away ? "home" : null),
     readout: ro,
     wp: thin(g.summary?.winprobability),
   });

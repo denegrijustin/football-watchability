@@ -5,6 +5,10 @@ name: Backfill insanity ledger
 # include). It merges into src/data/season.json on slate-data and copies that
 # one file to main, which Cloudflare Pages deploys. Safe to re-run.
 on:
+  # Or push data-raw/backfill-request.json ({"start":"YYYYMMDD","end":"YYYYMMDD"}) to slate-data.
+  push:
+    branches: [slate-data]
+    paths: [data-raw/backfill-request.json]
   workflow_dispatch:
     inputs:
       start:
@@ -34,7 +38,12 @@ jobs:
         env:
           START: ${{ inputs.start }}
           END: ${{ inputs.end }}
-        run: node scripts/backfill-insanity.mjs
+        run: |
+          if [ -z "$START" ]; then
+            START=$(node -p "require('./data-raw/backfill-request.json').start")
+            END=$(node -p "require('./data-raw/backfill-request.json').end")
+          fi
+          START=$START END=$END node scripts/backfill-insanity.mjs
       - name: Commit to slate-data
         run: |
           git config user.name "github-actions[bot]"

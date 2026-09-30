@@ -3946,3 +3946,202 @@ details.proj summary strong {
   background: var(--surface-3);
   color: var(--text-2);
 }
+
+/* ---------- Insanity: compact game cards ---------- */
+.ib-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ic {
+  min-width: 0;
+}
+.ic-inner {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  height: 100%;
+  padding: 14px 16px 12px;
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-top: 3px solid var(--ins);
+  border-radius: 14px;
+  background:
+    linear-gradient(115deg, color-mix(in srgb, var(--away) 88%, #0b1117) 0%, color-mix(in srgb, var(--away) 35%, #111a22) 42%, color-mix(in srgb, var(--home) 35%, #111a22) 58%, color-mix(in srgb, var(--home) 88%, #0b1117) 100%);
+  color: var(--text);
+  text-align: left;
+  font: inherit;
+}
+button.ic-inner {
+  cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+button.ic-inner:hover,
+button.ic-inner:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgb(0 0 0 / 40%);
+}
+.ic-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+}
+.ic-rank {
+  font-weight: 800;
+  color: rgb(234 240 244 / 70%);
+}
+.ic-ins {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 99px;
+  background: rgb(0 0 0 / 40%);
+  color: var(--ins);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  font-size: 11px;
+}
+.ic-ins strong {
+  font-size: 18px;
+  letter-spacing: 0;
+}
+.ic-week {
+  margin-left: auto;
+  color: rgb(234 240 244 / 70%);
+}
+.ic-teams {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+.ic-team {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: rgb(234 240 244 / 72%);
+}
+.ic-team.home {
+  flex-direction: row-reverse;
+}
+.ic-team img,
+.ic-nologo {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 2px rgb(0 0 0 / 50%));
+}
+.ic-abbr {
+  font-size: 14px;
+  font-weight: 700;
+}
+.ic-team b {
+  font-size: 26px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.ic-team.away b {
+  margin-left: auto;
+}
+.ic-team.home b {
+  margin-right: auto;
+}
+.ic-team.won {
+  color: #fff;
+}
+.ic-ot {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 1px 6px;
+  border-radius: 6px;
+  font-size: 10.5px;
+  font-weight: 800;
+  background: rgb(0 0 0 / 45%);
+}
+.ic-story {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: rgb(234 240 244 / 88%);
+}
+.ic-mvp {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  background: rgb(0 0 0 / 32%);
+}
+.ic-mvp > img,
+.ic-nohead {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: rgb(255 255 255 / 12%);
+}
+.ic-mvp > span {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 6px;
+  min-width: 0;
+  font-size: 13px;
+}
+.ic-mvp-label {
+  padding: 0 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 16px;
+  background: var(--gold);
+  color: #1b1405;
+}
+.ic-pos {
+  padding: 0 5px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 16px;
+  background: rgb(255 255 255 / 16%);
+}
+.ic-mvp-logo {
+  object-fit: contain;
+}
+.ic-mvp small {
+  flex-basis: 100%;
+  font-size: 12px;
+  color: rgb(234 240 244 / 75%);
+}
+.ic-more {
+  justify-self: end;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--lime);
+}
+@media (max-width: 1250px) {
+  .ib-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 760px) {
+  .ib-cards {
+    grid-template-columns: 1fr;
+  }
+}
+.ic-teams {
+  grid-template-columns: 1fr auto 1fr;
+}
+.ic-sep {
+  font-size: 13px;
+  font-weight: 800;
+  color: rgb(234 240 244 / 60%);
+}

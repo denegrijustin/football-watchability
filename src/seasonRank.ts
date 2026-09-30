@@ -4,8 +4,8 @@ export type LedgerGame = {
   week: string;
   date: string;
   matchup: string;
-  away: { abbr: string; logoId: string; score: number };
-  home: { abbr: string; logoId: string; score: number };
+  away: { abbr: string; logoId: string; score: number; color?: string | null };
+  home: { abbr: string; logoId: string; score: number; color?: string | null };
   insanity: number;
   tier: "calm" | "restless" | "wild" | "unhinged" | "witching";
   flips: number;
@@ -13,6 +13,16 @@ export type LedgerGame = {
   comebackFrom: number | null;
   overtime: boolean;
   witchingPeriod: number | null;
+  mvp?: {
+    name: string;
+    short: string;
+    pos: string | null;
+    jersey: string | null;
+    headshot: string | null;
+    side: "away" | "home" | null;
+    line: string;
+    category: string;
+  } | null;
 };
 
 /** Most insane first; ties go to the bigger swing, then the later game. */
