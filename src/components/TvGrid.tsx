@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { logos, networkLogo, rankLine, rankTitle, results, slate, tierLabel, type League } from "../data";
-import { gridDays, gridGames, netRank, slot, type GridGame } from "../data/grid";
+import { gridDays, gridGames, GRID_SLOT, layoutGrid, slot, type GridGame, type PlacedGame } from "../data/grid";
+import { downloadGridJpg } from "../exportJpg";
 import { useLive } from "../live";
 import { dateOf, tzLabel, useTz } from "../tz";
 import { GameCard } from "./GameCard";
 import { ResultCard } from "./ResultCard";
 
-const SLOT = 30; // minutes per time step
+const SLOT = GRID_SLOT;
 const fmt = (min: number) => {
   const h = Math.floor(min / 60) % 24,
     m = min % 60;
@@ -14,8 +15,6 @@ const fmt = (min: number) => {
 };
 const kick = (min: number) => fmt(min).replace(":00 ", " ");
 const ENTERTAINING = new Set(["elite", "vgood", "good"]);
-
-type Placed = GridGame & { minute: number; lane: number };
 
 /** Desktop lays time left to right; phones keep it top to bottom. */
 function useWide() {
@@ -49,6 +48,7 @@ export function TvGrid() {
   const [league, setLeague] = useState<"all" | League>("all");
   const [onlyGood, setOnlyGood] = useState(false);
   const [open, setOpen] = useState<GridGame | null>(null);
+  const [busy, setBusy] = useState(false);
 
   const games = all.filter(
     (g) =>
@@ -57,34 +57,7 @@ export function TvGrid() {
       (!onlyGood || ENTERTAINING.has(g.tier)),
   );
 
-  // Lanes: one per network, plus extra lanes when a network (ESPN+, say)
-  // carries overlapping games.
-  const nets = [...new Set(games.map((g) => g.network))].sort((a, b) => netRank(a) - netRank(b) || a.localeCompare(b));
-  const lanes: { network: string; label: string }[] = [];
-  const placed: Placed[] = [];
-  for (const net of nets) {
-    const ends: number[] = [];
-    const first = lanes.length;
-    const gs = games
-      .filter((g) => g.network === net)
-      .map((g) => ({ ...g, minute: slot(g.start).minute }))
-      .sort((a, b) => a.minute - b.minute);
-    for (const g of gs) {
-      let lane = ends.findIndex((end) => end <= g.minute);
-      if (lane < 0) {
-        lane = ends.length;
-        ends.push(0);
-        lanes.push({ network: net, label: g.netLabel });
-      }
-      ends[lane] = g.minute + g.minutes;
-      placed.push({ ...g, lane: first + lane });
-    }
-  }
-  const startMin = placed.length ? Math.floor(Math.min(...placed.map((g) => g.minute)) / SLOT) * SLOT : 12 * 60;
-  const endMin = placed.length
-    ? Math.ceil(Math.max(...placed.map((g) => g.minute + g.minutes)) / SLOT) * SLOT
-    : startMin + 4 * 60;
-  const steps = (endMin - startMin) / SLOT;
+  const { lanes, placed, startMin, steps } = layoutGrid(games);
   const dayName = days.find((d) => d.date === day);
   const dateLabel = new Date(`${day}T12:00:00Z`).toLocaleDateString("en-US", {
     weekday: "long",
@@ -126,6 +99,24 @@ export function TvGrid() {
         </div>
         <button className="tv-toggle" aria-pressed={onlyGood} onClick={() => setOnlyGood((v) => !v)}>
           Entertaining only
+        </button>
+        <button
+          type="button"
+          className="export-jpg"
+          disabled={busy || !placed.length}
+          onClick={async () => {
+            setBusy(true);
+            try {
+              await downloadGridJpg({ games, dateLabel, day: dayName?.day ?? "", period: slate.period });
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+            <path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          {busy ? "Making image…" : "Download JPG"}
         </button>
         <ul className="tv-key" aria-label="Key">
           <li className="k-hl">Entertaining (74+)</li>
@@ -204,7 +195,7 @@ export function TvGrid() {
   );
 }
 
-function Block({ g, pos, onOpen }: { g: Placed; pos: CSSProperties; onOpen: () => void }) {
+function Block({ g, pos, onOpen }: { g: PlacedGame; pos: CSSProperties; onOpen: () => void }) {
   const live = useLive(g.espnId);
   const cls = ENTERTAINING.has(g.tier) ? "hl" : g.tier === "bg" ? "dim" : "mid";
   const [a, h] = g.sides;
