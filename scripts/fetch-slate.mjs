@@ -33,6 +33,24 @@ function trimSummary(sum) {
       Math.round((w.homeWinPercentage ?? 0) * 1000) / 1000,
       periodByPlay.get(w.playId) ?? null,
     ]),
+    // Team injury reports (NFL; ESPN rarely has college reports).
+    injuries: (sum.injuries ?? []).map((t) => ({
+      team: t.team?.id,
+      players: (t.injuries ?? []).map((i) => ({
+        name: i.athlete?.displayName,
+        short: i.athlete?.shortName,
+        pos: i.athlete?.position?.abbreviation ?? null,
+        jersey: i.athlete?.jersey ?? null,
+        headshot: i.athlete?.headshot?.href ?? null,
+        status: i.status ?? i.type?.description ?? "",
+        code: i.type?.abbreviation ?? "",
+        type: i.details?.type ?? i.details?.location ?? null,
+        detail: i.details?.detail && i.details.detail !== "Not Specified" ? i.details.detail : null,
+        side: i.details?.side && i.details.side !== "Not Specified" ? i.details.side : null,
+        returnDate: i.details?.returnDate ?? null,
+        date: i.date ?? null,
+      })),
+    })),
     scoringPlays: (sum.scoringPlays ?? []).map((p) => ({
       period: p.period?.number,
       clock: p.clock?.displayValue,
