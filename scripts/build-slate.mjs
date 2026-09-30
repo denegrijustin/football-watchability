@@ -570,6 +570,35 @@ function trendFor(league, id) {
   };
 }
 
+// ---------- conference and overall rank ----------
+// Conference rank: ESPN's conference standings order (NFL: the AFC/NFC seed
+// order, 1–16). Overall rank: FPI rank across the league (NFL 1–32, FBS 1–136).
+const confRanks = new Map();
+for (const [key, league] of [["nfl", "NFL"], ["cfb", "CFB"]]) {
+  const f = optRaw(`${key}-standings.json`);
+  for (const c of f?.children ?? []) {
+    const entries = c.standings?.entries ?? [];
+    const seeded = entries.map((e, i) => ({
+      e,
+      seed: Number(e.stats?.find((x) => x.name === "playoffSeed")?.value ?? e.stats?.find((x) => x.name === "playoffSeed")?.displayValue) || i + 1,
+    }));
+    for (const { e, seed } of seeded)
+      confRanks.set(`${league}:${e.team.id}`, { conf: seed, confSize: entries.length, confName: c.abbreviation ?? c.shortName ?? c.name });
+  }
+}
+function ranksFor(league, id, confShort) {
+  const c = confRanks.get(`${league}:${id}`);
+  const overall = FPI[league].get(id)?.rank ?? null;
+  const indep = league === "CFB" && !confShort;
+  return {
+    conf: indep ? null : c?.conf ?? null,
+    confSize: indep ? null : c?.confSize ?? null,
+    confName: indep ? null : league === "NFL" ? c?.confName ?? null : confShort,
+    overall,
+    overallOf: league === "NFL" ? 32 : nFbs,
+  };
+}
+
 // ---------- team card color ----------
 // The darker of a team's two ESPN colors (a hue before black/grey), deepened until light text and the
 // site's muted text stay readable on it (relative luminance <= 0.03).
@@ -710,6 +739,7 @@ for (const [key, league] of [
         espnId: t.id,
         abbr: t.abbreviation,
         color: darkColor(t),
+        ranks: ranksFor(league, t.id, conf?.[0] === "independent" ? null : conf?.[1]),
         record,
         rankings: league === "NFL" ? nflRanks(t, opp.team) : cfbRanks(t, opp.team, pWin),
         trend: trendFor(league, t.id),
@@ -938,6 +968,7 @@ for (const g of built) {
       abbr: t.abbr,
       color: t.color ?? null,
       record: t.record.split(" · ")[0],
+      ranks: t.ranks ?? null,
       score: i ? g.final.home : g.final.away,
       linescores: g.final.linescores[i],
     })),

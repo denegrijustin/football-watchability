@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import { logos, networkLogo, tierLabel, type Result } from "../data";
+import { logos, networkLogo, rankLine, rankTitle, tierLabel, type Result } from "../data";
 import { ScoreBreakdown } from "./ScoreBreakdown";
 import { WinProb } from "./WinProb";
 
@@ -68,6 +68,11 @@ export function ResultCard({ result: r }: { result: Result }) {
                     <span className="ls-name">
                       {t.name}
                       <span className="ls-rec">{t.record}</span>
+                      {rankLine(t.ranks) && (
+                        <span className="ls-rec rank-line" title={rankTitle(t.ranks)}>
+                          {rankLine(t.ranks)}
+                        </span>
+                      )}
                     </span>
                   </span>
                 </th>
