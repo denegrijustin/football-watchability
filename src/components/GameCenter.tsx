@@ -6,6 +6,7 @@ import { AdvancedStats, type Advanced } from "./AdvancedStats";
 import { PregameWinProb, type WinProbData } from "./PregameWinProb";
 import { ProjectedScore, type Projection } from "./ProjectedScore";
 import { InsanityMeter } from "./InsanityMeter";
+import { Headshot } from "./Headshot";
 
 // ---------- open/close from anywhere ----------
 /** A game the board doesn't carry any more (earlier weeks), described just enough to open. */
@@ -317,7 +318,7 @@ function GameCenter({ espnId, stub, onClose }: { espnId: string | null; stub?: G
                 <h3 className="micro-label">Live view</h3>
                 <p>
                   {state === "pre"
-                    ? `The live win-probability chart, momentum, field tilt, drive chart and player tracker start at kickoff (${dayOf(date)} ${timeOf(date, undefined, true)} ${tzAbbr()}).`
+                    ? `Top 3 / bottom 3 players, the live win-probability chart, momentum, field tilt, drive chart and player tracker start at kickoff (${dayOf(date)} ${timeOf(date, undefined, true)} ${tzAbbr()}).`
                     : "Loading live data…"}
                 </p>
               </section>
@@ -325,12 +326,12 @@ function GameCenter({ espnId, stub, onClose }: { espnId: string | null; stub?: G
 
             {game && state !== "pre" && (
               <>
+                <TopBottom game={game} teams={[away, home]} />
                 <Momentum game={game} away={abbr(away)} home={abbr(home)} />
                 <Tilt game={game} away={abbr(away)} home={abbr(home)} />
                 <TeamCompare game={game} away={abbr(away)} home={abbr(home)} />
                 <Feed game={game} away={abbr(away)} home={abbr(home)} />
                 <Drives game={game} away={abbr(away)} home={abbr(home)} />
-                <TopBottom game={game} teams={[away, home]} />
                 <Tracker game={game} teams={[away, home]} />
               </>
             )}
@@ -697,7 +698,7 @@ function PlayerLine({
   return (
     <li className="gc-pcard" style={{ "--team": color } as CSSProperties}>
       <span className="gc-ph">
-        {x.p.headshot ? <img src={x.p.headshot} alt="" width="40" height="40" loading="lazy" /> : <span className="gc-nohead" />}
+        <Headshot src={x.p.headshot} name={x.p.name} size={40} />
         <img className="gc-plogo" src={logos[team.logoId]} alt="" width="20" height="20" />
       </span>
       <span className="gc-pl">
