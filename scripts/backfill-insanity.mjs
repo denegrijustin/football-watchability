@@ -84,9 +84,14 @@ for (let a = parse(START); a <= parse(END); a = new Date(a.getTime() + 7 * 864e5
   console.log(`Week ${ymd(a)}–${ymd(b)}`);
   const week = [];
   for (const [league, path] of Object.entries(PATHS)) {
-    const qs = `dates=${ymd(a)}-${ymd(b)}&limit=400${league === "CFB" ? "&groups=80" : ""}`;
-    const board = await get(`${ESPN}/apis/site/v2/sports/football/${path}/scoreboard?${qs}`);
-    for (const ev of board?.events ?? []) {
+    // ESPN rejects date ranges on the scoreboard (HTTP 400), so fetch day by day.
+    const events = [];
+    for (let d = a; d <= b; d = new Date(d.getTime() + 864e5)) {
+      const qs = `dates=${ymd(d)}&limit=400${league === "CFB" ? "&groups=80" : ""}`;
+      const board = await get(`${ESPN}/apis/site/v2/sports/football/${path}/scoreboard?${qs}`);
+      for (const e of board?.events ?? []) if (!events.some((x) => x.id === e.id)) events.push(e);
+    }
+    for (const ev of events) {
       const c = ev.competitions?.[0];
       if (c?.status?.type?.state !== "post") continue;
       const [away, home] = ["away", "home"].map((s) => c.competitors?.find((x) => x.homeAway === s));
