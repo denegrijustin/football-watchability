@@ -340,8 +340,62 @@ test("Game Center overlay opens from a card with projection, momentum, field til
     await expect(gc.locator(".gc-drives li")).toHaveCount(22);
     await expect(gc.locator(".gc-top li")).toHaveCount(6);
     await expect(gc.locator(".gc-tracker li").first()).toBeVisible();
+    // Win-probability panel carries the insanity meter, with the witching hour shaded.
+    await expect(gc.locator(".insanity [role=meter]")).toBeVisible();
     const w = await gc.locator(".gc-body").evaluate((el) => el.scrollWidth - el.clientWidth);
     expect(w).toBeLessThanOrEqual(1);
   }
   expect(errors).toEqual([]);
+});
+
+test("insanity meter looks back on every final and ranks wild games above blowouts", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: /^Final/ }).click();
+  const cards = page.locator(".result-card");
+  const n = await cards.count();
+  expect(n).toBeGreaterThan(0);
+  const scores: number[] = [];
+  for (let i = 0; i < n; i++) {
+    const meter = cards.nth(i).locator(".insanity");
+    await expect(meter).toHaveCount(1);
+    const now = Number(await meter.locator("[role=meter]").getAttribute("aria-valuenow"));
+    expect(now).toBeGreaterThanOrEqual(0);
+    expect(now).toBeLessThanOrEqual(100);
+    await expect(meter.locator(".ins-score")).toHaveText(String(now));
+    scores.push(now);
+  }
+  // Not every game reads the same: some calm, some not.
+  expect(Math.max(...scores)).toBeGreaterThan(Math.min(...scores) + 20);
+  // Overtime finals are never Calm.
+  for (let i = 0; i < n; i++) {
+    const card = cards.nth(i);
+    if ((await card.locator("text=went to overtime").count()) > 0) {
+      await expect(card.locator(".insanity")).not.toHaveClass(/calm/);
+    }
+  }
+});
+
+test("insanity meter updates live from the flow feed", async ({ page }) => {
+  const games = slate.games.filter((g: any) => g.league === "NFL");
+  const start = Math.min(...games.map((g: any) => new Date(g.date).getTime()));
+  await page.clock.install({ time: start + 90 * 60e3 });
+  await page.route("**/api/scores**", (route) =>
+    route.fulfill({
+      json: games.map((g: any) => ({ id: g.espnId, state: "in", detail: "Q3 5:12", away: 14, home: 17 })),
+    }),
+  );
+  // A wild game: lead changes, big swings, tight late.
+  const wp = Array.from({ length: 120 }, (_, i) => [50 + 40 * Math.sin(i / 6) * (i < 100 ? 1 : 0.1), Math.min(4, 1 + Math.floor(i / 30))]);
+  let flowCalls = 0;
+  await page.route("**/api/flow**", (route) => {
+    flowCalls++;
+    return route.fulfill({ json: { wp } });
+  });
+  await page.goto("/");
+  const meter = page.locator(".game-card .insanity.live").first();
+  await expect(meter).toBeVisible();
+  await expect(meter).toContainText("Insanity meter · live");
+  const val = Number(await meter.locator("[role=meter]").getAttribute("aria-valuenow"));
+  expect(val).toBeGreaterThan(40);
+  expect(flowCalls).toBeGreaterThan(0);
 });

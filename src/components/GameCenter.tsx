@@ -5,7 +5,7 @@ import { dayOf, timeOf, tzAbbr } from "../tz";
 import { AdvancedStats, type Advanced } from "./AdvancedStats";
 import { PregameWinProb, type WinProbData } from "./PregameWinProb";
 import { ProjectedScore, type Projection } from "./ProjectedScore";
-import { WinProb } from "./WinProb";
+import { InsanityMeter } from "./InsanityMeter";
 
 // ---------- open/close from anywhere ----------
 const Ctx = createContext<(espnId: string) => void>(() => {});
@@ -283,7 +283,13 @@ function GameCenter({ espnId, onClose }: { espnId: string | null; onClose: () =>
 
             {game && game.wp.length > 8 ? (
               <section className="gc-panel">
-                <WinProb wp={game.wp.map(([p, q]) => [Math.round(p), q])} away={abbr(away)} home={abbr(home)} />
+                <InsanityMeter
+                  wp={game.wp.map(([p, q]) => [Math.round(p), q])}
+                  final={state === "post"}
+                  overtime={game.status.period > 4}
+                  away={abbr(away)}
+                  home={abbr(home)}
+                />
               </section>
             ) : (
               <section className="gc-panel gc-wait">

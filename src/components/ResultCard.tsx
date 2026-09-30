@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 import { logos, networkLogo, rankLine, rankTitle, teamColor, tierLabel, type Result } from "../data";
 import { ScoreBreakdown } from "./ScoreBreakdown";
-import { WinProb } from "./WinProb";
+import { InsanityMeter } from "./InsanityMeter";
 import { AdvancedStats } from "./AdvancedStats";
 import { useOpenGame } from "./GameCenter";
 import { dayOf, timeOf, tzAbbr } from "../tz";
@@ -159,7 +159,7 @@ export function ResultCard({ result: r }: { result: Result }) {
           ))}
         </ul>
       )}
-      <WinProb wp={r.wp} away={short(r, 0)} home={short(r, 1)} />
+      <InsanityMeter wp={r.wp} final overtime={r.final.overtime} away={short(r, 0)} home={short(r, 1)} />
 
       <button type="button" className="gc-open" onClick={() => openGame(r.espnId)}>
         <span>
