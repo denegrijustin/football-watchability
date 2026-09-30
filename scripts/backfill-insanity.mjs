@@ -10,7 +10,7 @@
 // id, so re-running a range is safe. ESPN_BASE and SEASON_FILE override the
 // ESPN host and the output file (used by the tests).
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
-import { ledgerEntry, mergeLedger, periodLabel, thinForArchive } from "./season-ledger.mjs";
+import { ledgerEntry, mergeLedger, mvpOf, periodLabel, thinForArchive } from "./season-ledger.mjs";
 
 const ESPN = process.env.ESPN_BASE ?? "https://site.api.espn.com";
 const OUT = process.env.SEASON_FILE ?? new URL("../src/data/season.json", import.meta.url).pathname;
@@ -57,6 +57,19 @@ const slug = (s) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "");
 
+/** A team's darker ESPN color, deepened for light text (same rule as the builder). */
+function darkColor(t) {
+  const rgbOf = (h) => (/^[0-9a-f]{6}$/i.test(h ?? "") ? [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16)) : null);
+  const lum = (c) =>
+    c.map((v) => v / 255).map((x) => (x <= 0.03928 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4)).reduce((a, x, i) => a + x * [0.2126, 0.7152, 0.0722][i], 0);
+  const cands = [t?.color, t?.alternateColor].map(rgbOf).filter(Boolean);
+  if (!cands.length) return null;
+  const hued = cands.filter((c) => Math.max(...c) - Math.min(...c) >= 40);
+  let c = (hued.length ? hued : cands).sort((a, b) => lum(a) - lum(b))[0];
+  while (lum(c) > 0.03) c = c.map((v) => Math.round(v * 0.9));
+  return `#${c.map((v) => v.toString(16).padStart(2, "0")).join("")}`;
+}
+
 /** [home %, period] from a summary, like the archive: ints, thinned. */
 function flowOf(sum) {
   const periodByPlay = new Map();
@@ -84,7 +97,10 @@ for (let a = parse(START); a <= parse(END); a = new Date(a.getTime() + 7 * 864e5
         abbr: t.team?.abbreviation ?? t.team?.shortDisplayName ?? "?",
         logoId: logoOf.get(`${league}:${t.team?.id}`) ?? slug(t.team?.displayName ?? t.team?.abbreviation ?? "team"),
         score: Number(t.score ?? 0),
+        color: darkColor(t.team),
       });
+      const as = Number(away.score ?? 0),
+        hs = Number(home.score ?? 0);
       week.push({
         id: String(ev.id),
         league,
@@ -94,6 +110,7 @@ for (let a = parse(START); a <= parse(END); a = new Date(a.getTime() + 7 * 864e5
         home: side(home),
         wp: flowOf(sum),
         overtime: (c.status?.period ?? 4) > 4,
+        mvp: mvpOf(sum, as > hs ? "away" : hs > as ? "home" : null),
       });
       await sleep(120);
     }

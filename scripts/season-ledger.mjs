@@ -41,7 +41,67 @@ export function ledgerEntry(g) {
     comebackFrom: ins.comebackFrom,
     overtime: !!g.overtime,
     witchingPeriod: ins.witching.period,
+    ...(g.mvp ? { mvp: g.mvp } : {}),
   };
+}
+
+/**
+ * Player of the game from ESPN's game leaders (passing, rushing, receiving,
+ * sacks, tackles for each team): yards, touchdowns, catches, sacks and
+ * tackles score up, interceptions down, and the winning side gets a 25% edge.
+ * Returns { name, short, pos, jersey, headshot, side, line, category } or null.
+ */
+export function mvpOf(summary, winner) {
+  const num = (re, s) => Number((re.exec(s) ?? [])[1] ?? 0);
+  const comps = summary?.header?.competitions?.[0]?.competitors ?? [];
+  const sideOf = (teamId) => comps.find((c) => c.team?.id === teamId)?.homeAway ?? null;
+  let best = null;
+  for (const t of summary?.leaders ?? []) {
+    const side = sideOf(t.team?.id);
+    for (const cat of t.leaders ?? []) {
+      const l = cat.leaders?.[0];
+      if (!l?.athlete) continue;
+      const s = String(l.displayValue ?? "");
+      let v = 0;
+      switch (cat.name) {
+        case "passingYards":
+          v = num(/(\d+) YDS/, s) * 0.04 + num(/(\d+) TD/, s) * 4 - num(/(\d+) INT/, s) * 4;
+          break;
+        case "rushingYards":
+          v = num(/(\d+) YDS/, s) * 0.1 + num(/(\d+) TD/, s) * 6;
+          break;
+        case "receivingYards":
+          v = num(/(\d+) YDS/, s) * 0.1 + num(/(\d+) REC/, s) * 0.5 + num(/(\d+) TD/, s) * 6;
+          break;
+        case "sacks":
+          v = Number(l.value ?? s) * 4;
+          break;
+        case "totalTackles":
+          v = Number(l.value ?? s) * 0.6;
+          break;
+        default:
+          continue;
+      }
+      if (winner && side === winner) v *= 1.25;
+      const unit = cat.name === "sacks" ? " sacks" : cat.name === "totalTackles" ? " tackles" : "";
+      if (!best || v > best.v)
+        best = {
+          v,
+          name: l.athlete.displayName,
+          short: l.athlete.shortName ?? l.athlete.displayName,
+          pos: l.athlete.position?.abbreviation ?? null,
+          jersey: l.athlete.jersey ?? null,
+          headshot: l.athlete.headshot?.href ?? null,
+          side,
+          line: `${s}${unit}`,
+          category: cat.name,
+        };
+    }
+  }
+  if (!best) return null;
+  const { v, ...rest } = best;
+  void v;
+  return rest;
 }
 
 /** A results.json game as a ledger row (null without a usable win-probability line). */
@@ -52,10 +112,11 @@ export const fromResult = (r) =>
     week: r.week,
     date: r.date,
     matchup: r.matchup,
-    away: { abbr: r.teams[0].abbr, logoId: r.teams[0].logoId, score: r.teams[0].score },
-    home: { abbr: r.teams[1].abbr, logoId: r.teams[1].logoId, score: r.teams[1].score },
+    away: { abbr: r.teams[0].abbr, logoId: r.teams[0].logoId, score: r.teams[0].score, color: r.teams[0].color ?? null },
+    home: { abbr: r.teams[1].abbr, logoId: r.teams[1].logoId, score: r.teams[1].score, color: r.teams[1].color ?? null },
     wp: r.wp,
     overtime: r.final?.overtime,
+    mvp: r.mvp ?? null,
   });
 
 /** Adds or replaces rows by game id, newest first. */
