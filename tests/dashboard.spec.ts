@@ -220,10 +220,37 @@ test("TV grid lays out every game by network and time, lighting good games and d
       if (score < 64) expect(cls).toContain("dim");
     }
   }
-  // Clicking a block opens that game's card.
+  // A block opens the same card as the main board, in a dialog.
+  await dayButtons.first().click();
   await page.locator(".tv-game").first().click();
-  await expect(page.locator(".game-card, .result-card").first()).toBeVisible();
+  const dialog = page.locator("dialog.tv-dialog");
+  await expect(dialog).toBeVisible();
+  await expect(dialog.locator(".game-card, .result-card")).toHaveCount(1);
+  await expect(dialog.locator(".game-details summary").first()).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await expect(page.locator(".tv-key")).toContainText("Entertaining");
+  await expect(page.locator(".tv-key")).not.toContainText("Lit");
   const width = await page.evaluate(() => document.documentElement.scrollWidth);
   expect(width).toBeLessThanOrEqual((page.viewportSize()?.width ?? 0) + 1);
   expect(errors).toEqual([]);
+});
+
+test("weekend export files and advanced stats are available", async ({ page, request }) => {
+  const csv = await (await request.get("/exports/watch-slate.csv")).text();
+  const lines = csv.trim().split(/\r?\n/);
+  expect(lines[0]).toContain("Watchability");
+  expect(lines.length - 1).toBe(slate.games.length + results.games.filter((r: any) => r.week === slate.period).length);
+  const ics = await (await request.get("/exports/entertaining.ics")).text();
+  expect(ics).toContain("BEGIN:VCALENDAR");
+  expect((ics.match(/BEGIN:VEVENT/g) ?? []).length).toBe(slate.games.filter((g: any) => g.score >= 74).length);
+  await page.goto("/");
+  await page.getByText("Export weekend").click();
+  await expect(page.locator(".export-menu a[href='/exports/watch-slate.csv']")).toBeVisible();
+  const card = page.locator(".game-card").first();
+  const adv = card.locator("summary").filter({ hasText: "Advanced stats" });
+  if (await adv.count()) {
+    await adv.click();
+    await expect(card.locator(".adv-table tbody tr").first()).toBeVisible();
+  }
 });

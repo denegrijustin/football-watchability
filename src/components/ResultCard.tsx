@@ -2,6 +2,7 @@ import type { CSSProperties } from "react";
 import { logos, networkLogo, rankLine, rankTitle, tierLabel, type Result } from "../data";
 import { ScoreBreakdown } from "./ScoreBreakdown";
 import { WinProb } from "./WinProb";
+import { AdvancedStats } from "./AdvancedStats";
 
 const short = (r: Result, i: number) =>
   r.league === "NFL" ? r.teams[i].name.split(" ").pop()! : r.teams[i].abbr;
@@ -168,6 +169,18 @@ export function ResultCard({ result: r }: { result: Result }) {
             />
           </div>
         </details>
+        {(away.advanced || home.advanced) && (
+          <details>
+            <summary>
+              Advanced stats + rankings<span aria-hidden="true">+</span>
+            </summary>
+            <AdvancedStats
+              league={r.league}
+              away={{ abbr: away.abbr, adv: away.advanced ?? null }}
+              home={{ abbr: home.abbr, adv: home.advanced ?? null }}
+            />
+          </details>
+        )}
         <details>
           <summary>
             The forecast ({r.forecast.score})<span aria-hidden="true">+</span>

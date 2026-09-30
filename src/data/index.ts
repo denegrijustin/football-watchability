@@ -90,6 +90,7 @@ export type ResultTeam = {
   color: string | null;
   record: string;
   ranks?: Ranks;
+  advanced?: import("../components/AdvancedStats").Advanced;
   score: number;
   linescores: number[];
 };
