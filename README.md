@@ -57,7 +57,7 @@ The **TV grid** view (`src/components/TvGrid.tsx`, data in `src/data/grid.ts`) l
 
 ### Weekend export
 
-`scripts/export-slate.mjs` (run in the refresh after the notes) writes `public/exports/watch-slate.csv` (every game Thursday–Monday by kickoff: TV, watchability, tier, projected score, win probability, line, venue, weather, take, and finals with actual watchability) and `public/exports/entertaining.ics` (a calendar of the 74+ games). The site's **Download weekend JPG** button draws the whole Thursday–Monday slate as one image in the browser (`src/exportJpg.ts`): days in order, three games per row with kickoff time, network, logos, AP ranks, tier and score, Entertaining games outlined and Background games dimmed, in the viewer's time zone. **More** adds an Entertaining-only JPG, the spreadsheet and the calendar.
+`scripts/export-slate.mjs` (run in the refresh after the notes) writes `public/exports/watch-slate.csv` (every game Thursday–Monday by kickoff: TV, watchability, tier, projected score, win probability, line, venue, weather, take, and finals with actual watchability) and `public/exports/entertaining.ics` (a calendar of the 74+ games). The site's **Download weekend JPG** button draws the whole Thursday–Monday slate as one image in the browser (`src/exportJpg.ts`) as a timeline: one shared time axis across the top, so the same kickoff time lines up in the same column on every day, and one band per day with overlapping games stacked in lanes. Each block spans the broadcast window and shows logos, AP ranks, kickoff, network and score; Entertaining games are outlined and Background games dimmed, in the viewer's time zone. **More** adds an Entertaining-only JPG, the spreadsheet and the calendar.
 
 ### Time zone
 
