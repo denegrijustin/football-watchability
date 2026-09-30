@@ -4,6 +4,7 @@ import { logos, results, slate, teamColor } from "../data";
 import { rankGames, mostInsaneWeek, weekSummaries, type LedgerGame } from "../seasonRank";
 import { INSANITY_TIERS } from "../insanity";
 import { useOpenGame, type GameStub } from "./GameCenter";
+import { Headshot } from "./Headshot";
 
 type Scope = "week" | "season";
 const tierLabel = (id: string) => INSANITY_TIERS.find((t) => t.id === id)?.label ?? id;
@@ -230,7 +231,7 @@ function InsanityCard({ g, rank, showWeek, onOpen }: { g: LedgerGame; rank: numb
       <p className="ic-story">{insanityStory(g)}</p>
       {g.mvp && (
         <div className="ic-mvp">
-          {g.mvp.headshot ? <img src={g.mvp.headshot} alt="" width="34" height="34" loading="lazy" /> : <i className="ic-nohead" />}
+          <Headshot src={g.mvp.headshot} name={g.mvp.name} size={34} className="ic-head" />
           <span>
             <span className="ic-mvp-label">MVP</span>
             <strong>{g.mvp.short}</strong>
