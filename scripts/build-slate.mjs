@@ -557,6 +557,32 @@ function leadersFor(summary, teamId) {
   return out;
 }
 
+/** Season leaders with photo and position, for the Key players box. */
+const LEADER_CATS = { passingYards: "Passing", rushingYards: "Rushing", receivingYards: "Receiving", sacks: "Sacks", totalTackles: "Tackles" };
+function leaderCards(summary, teamId) {
+  const block = (summary?.leaders ?? []).find((l) => l.team?.id === teamId);
+  const out = [];
+  for (const cat of block?.leaders ?? []) {
+    if (!LEADER_CATS[cat.name]) continue;
+    const top = cat.leaders?.[0];
+    const a = top?.athlete;
+    if (!a?.displayName) continue;
+    // One defender per team: whoever leads in sacks, else tackles.
+    if (cat.name === "totalTackles" && out.some((p) => p.category === "Sacks")) continue;
+    const unit = cat.name === "sacks" ? " sacks" : cat.name === "totalTackles" ? " tackles" : "";
+    out.push({
+      name: a.displayName,
+      short: a.shortName ?? a.displayName,
+      pos: a.position?.abbreviation ?? null,
+      jersey: a.jersey ?? null,
+      headshot: a.headshot?.href ?? null,
+      category: LEADER_CATS[cat.name],
+      line: `${top.displayValue ?? ""}${unit}`,
+    });
+  }
+  return out;
+}
+
 // ---------- season trends ----------
 const trendsFile = optRaw("trends.json") ?? { teams: {} };
 function trendFor(league, id) {
@@ -815,6 +841,7 @@ for (const [key, league] of [
         playoffOdds,
         _conf: conf,
         _leaders: leadersFor(summary, t.id),
+        _leaderCards: leaderCards(summary, t.id),
       };
     };
     const tA = team(away, at, aName, home, pAway);
@@ -884,6 +911,11 @@ for (const [key, league] of [
       label: "Key players / units",
       value: "",
       items: players.length ? players : [`${aName} offense`, `${hName} offense`],
+      // Season leaders for each team, with photo, position and stat line.
+      players: [
+        ...tA._leaderCards.map((p) => ({ ...p, team: at.abbreviation, logoId: tA.logoId, side: "away" })),
+        ...tH._leaderCards.map((p) => ({ ...p, team: ht.abbreviation, logoId: tH.logoId, side: "home" })),
+      ],
     });
 
     built.push({
@@ -909,7 +941,7 @@ for (const [key, league] of [
       matchup: `${aName} @ ${hName}`,
       broadcast: (comp.broadcasts ?? []).flatMap((b) => b.names).map((n) => TV[n] ?? n)[0] ?? "TBA",
       weather,
-      teams: [tA, tH].map(({ _conf, _leaders, ...t }) => t),
+      teams: [tA, tH].map(({ _conf, _leaders, _leaderCards, ...t }) => t),
       history: {
         ...hist,
         source: league === "NFL" ? `Series: FiveThirtyEight NFL game data (1920–2003) and ESPN (${HISTORY_FROM}–present), playoffs included. Key players: ESPN season leaders.` : `Series: Winsipedia game-by-game results, plus ESPN for the latest seasons. Key players: ESPN season leaders.`,

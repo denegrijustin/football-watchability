@@ -443,3 +443,22 @@ test("Insanity tab ranks the week and season for NFL and college", async ({ page
   expect(width).toBeLessThanOrEqual((page.viewportSize()?.width ?? 0) + 1);
   expect(errors).toEqual([]);
 });
+
+test("Key players show photo, name, position and team for every upcoming game", async ({ page }) => {
+  for (const g of slate.games) {
+    const players = g.history.boxes.find((b: any) => /Key players/.test(b.label))?.players ?? [];
+    expect(players.length, g.matchup).toBeGreaterThan(0);
+    for (const p of players) {
+      expect(p.name, g.matchup).toBeTruthy();
+      expect(p.logoId, g.matchup).toBeTruthy();
+    }
+  }
+  await page.goto("/");
+  const card = page.locator(".game-card").first();
+  await card.locator("summary").filter({ hasText: "History + key players" }).click();
+  const kp = card.locator(".kp-card");
+  await expect(kp.first()).toBeVisible();
+  await expect(kp.first().locator(".kp-pos")).not.toBeEmpty();
+  await expect(kp.first().locator(".kp-logo")).toBeVisible();
+  await expect(kp.first().locator("img, .headshot-fallback").first()).toBeVisible();
+});
