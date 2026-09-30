@@ -57,7 +57,7 @@ The **TV grid** view (`src/components/TvGrid.tsx`, data in `src/data/grid.ts`) l
 
 ### Weekend export
 
-`scripts/export-slate.mjs` (run in the refresh after the notes) writes `public/exports/watch-slate.csv` (every game Thursday–Monday by kickoff: TV, watchability, tier, projected score, win probability, line, venue, weather, take, and finals with actual watchability) and `public/exports/entertaining.ics` (a calendar of the 74+ games). The site's **Download weekend JPG** button draws the whole Thursday–Monday slate as one image in the browser (`src/exportJpg.ts`) as a timeline: one shared time axis across the top, so the same kickoff time lines up in the same column on every day, and one band per day with overlapping games stacked in lanes. Each block spans the broadcast window and shows logos, AP ranks, kickoff, network and score; Entertaining games are outlined and Background games dimmed, in the viewer's time zone. **More** adds an Entertaining-only JPG, the spreadsheet and the calendar.
+`scripts/export-slate.mjs` (run in the refresh after the notes) writes `public/exports/watch-slate.csv` (every game Thursday–Monday by kickoff: TV, watchability, tier, projected score, win probability, line, venue, weather, take, and finals with actual watchability) and `public/exports/entertaining.ics` (a calendar of the 74+ games). On the **TV grid**, **Download JPG** saves the current day, or the **Full weekend**, as an image of the grid itself (`src/exportJpg.ts`), following the grid's league and "Entertaining only" filters and the viewer's time zone. The weekend image uses one time axis for every day, so a given kickoff time is the same column on Thursday through Monday (8 PM Saturday sits directly above 8 PM Sunday).
 
 ### Time zone
 
