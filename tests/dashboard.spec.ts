@@ -1,6 +1,15 @@
 import { test, expect } from "@playwright/test";
 import { readFileSync } from "node:fs";
 const slate = JSON.parse(readFileSync("src/data/slate.json", "utf8"));
+// Upcoming cards open compact; these open them to the full card.
+const expand = async (card: import("@playwright/test").Locator) => {
+  const t = card.locator('.card-toggle[aria-expanded="false"]');
+  if (await t.count()) await t.click();
+};
+const expandAll = async (page: import("@playwright/test").Page) => {
+  const closed = page.locator('.game-card .card-toggle[aria-expanded="false"]');
+  while (await closed.count()) await closed.first().click();
+};
 test("all games, conferences, history and logos remain available", async ({
   page,
 }) => {
@@ -26,6 +35,7 @@ test("all games, conferences, history and logos remain available", async ({
     );
   }
   await page.getByRole("button", { name: "All FBS", exact: true }).click();
+  await expandAll(page);
   const first = page.locator(".game-card").first();
   await first
     .locator("summary")
@@ -87,6 +97,8 @@ test("search, empty state, league switch and responsive layout", async ({
     expect(
       Math.round((await page.locator(".filter-dock").boundingBox())!.y),
     ).toBe(0);
+    expect((await page.locator(".card-toggle").first().boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    await expand(page.locator(".game-card").first());
     expect(
       (await page.locator(".game-details summary").first().boundingBox())!
         .height,
@@ -133,6 +145,7 @@ test("season form chart, trends panel and network logos render", async ({ page }
   await page.goto("/");
   await page.getByRole("button", { name: /College football/ }).click();
   const card = page.locator(".game-card").first();
+  await expand(card);
   await expect(card.locator(".form-row")).toHaveCount(2);
   await card.locator(".form .mb-svg rect").first().focus();
   await expect(card.locator(".mb-tip")).toBeVisible();
@@ -183,6 +196,7 @@ test("final view compares forecast with actual and explains the score", async ({
   expect(width).toBeLessThanOrEqual((page.viewportSize()?.width ?? 0) + 1);
   // Back to upcoming: every card explains its forecast.
   await page.getByRole("button", { name: /^Upcoming/ }).click();
+  await expandAll(page);
   const g = page.locator(".game-card").first();
   await expect(page.locator(".game-card .proj")).toHaveCount(
     slate.games.filter((x: any) => x.league === league && x.projected).length,
@@ -249,6 +263,7 @@ test("weekend export files and advanced stats are available", async ({ page, req
   await expect(page.locator(".export-menu a[href='/exports/watch-slate.csv']")).toBeVisible();
   await expect(page.getByRole("button", { name: /Download.*JPG/ })).toHaveCount(0);
   const card = page.locator(".game-card").first();
+  await expand(card);
   const adv = card.locator("summary").filter({ hasText: "Advanced stats" });
   if (await adv.count()) {
     await adv.click();
@@ -320,7 +335,12 @@ test("Game Center overlay opens from a card with projection, momentum, field til
   await page.route("https://site.api.espn.com/**", (r) => r.abort());
   await page.goto("/");
   // Upcoming game: pregame view
-  await page.locator(".game-card .gc-open").first().click();
+  // Compact card: first click expands it, a click on the matchup opens the Game Center.
+  const first = page.locator(".game-card").first();
+  await expect(first.locator(".card-more")).toHaveCount(0);
+  await first.locator(".matchup").click();
+  await expect(first.locator(".card-more .take")).toBeVisible();
+  await first.locator(".matchup").click();
   const gc = page.locator("dialog.gc");
   await expect(gc).toBeVisible();
   await expect(gc.locator(".gc-proj")).toContainText("Projected score");
@@ -455,6 +475,7 @@ test("Key players show photo, name, position and team for every upcoming game", 
   }
   await page.goto("/");
   const card = page.locator(".game-card").first();
+  await expand(card);
   await card.locator("summary").filter({ hasText: "History + key players" }).click();
   const kp = card.locator(".kp-card");
   await expect(kp.first()).toBeVisible();
@@ -468,6 +489,7 @@ test("NFL cards carry an injury report with Out / Doubtful / Questionable and th
   test.skip(!nfl.length, "no injury data in this build");
   for (const g of nfl) for (const t of g.teams) for (const i of t.injuries ?? []) expect(i.status).toBeTruthy();
   await page.goto("/");
+  await expandAll(page);
   const card = page.locator(".game-card").filter({ has: page.locator("summary", { hasText: "Injury report" }) }).first();
   await card.locator("summary").filter({ hasText: "Injury report" }).click();
   await expect(card.locator(".inj-team")).toHaveCount(2);
@@ -487,6 +509,7 @@ test("college conference games carry the conference availability report", async 
   const g = games.find((x: any) => !x.availability.pending) ?? games[0];
   await page.goto("/");
   await page.getByRole("button", { name: /^College football/ }).click();
+  await expandAll(page);
   const card = page
     .locator(".game-card")
     .filter({ hasText: g.teams[0].name })
