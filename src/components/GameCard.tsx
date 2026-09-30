@@ -13,7 +13,8 @@ import { TeamForm } from "./Trends";
 import { networkLogo, rankLine, rankTitle, recordLine, teamColor, type Ranks } from "../data";
 import { PregameWinProb, type WinProbData } from "./PregameWinProb";
 import { ProjectedScore, type Projection } from "./ProjectedScore";
-import { LiveStrip, useLive } from "../live";
+import { LiveStrip, useFlow, useLive } from "../live";
+import { InsanityMeter } from "./InsanityMeter";
 import { EdgeLine, type Advanced } from "./AdvancedStats";
 import { dayOf, timeOf, tzAbbr } from "../tz";
 
@@ -31,6 +32,7 @@ export function GameCard({ game }: { game: Game }) {
   const awayAbbr = (away as { abbr?: string }).abbr ?? away.name;
   const homeAbbr = (home as { abbr?: string }).abbr ?? home.name;
   const live = useLive(game.espnId);
+  const flow = useFlow(game.espnId, game.league, live);
   const homeColor = teamColor((home as { color?: string | null }).color);
   return (
     <article
@@ -58,6 +60,7 @@ export function GameCard({ game }: { game: Game }) {
         </div>
       </header>
       <LiveStrip live={live} away={awayAbbr} home={homeAbbr} />
+      {flow && <InsanityMeter wp={flow} final={live?.state === "post"} away={awayAbbr} home={homeAbbr} />}
 
       <div className="matchup">
         <h3 id={`${game.id}-title`} className="sr-only">

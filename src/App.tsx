@@ -1,3 +1,4 @@
+import { insanity } from "./insanity";
 import { useState } from "react";
 import {
   dayName,
@@ -190,6 +191,10 @@ export default function App() {
               weeks.map((w) => {
                 const rs = finals.filter((r) => r.week === w);
                 const best = [...rs].sort((a, b) => b.delta - a.delta)[0];
+                const wild = rs
+                  .map((r) => ({ r, i: insanity(r.wp, { final: true, overtime: r.final.overtime }) }))
+                  .filter((x) => x.i)
+                  .sort((a, b) => b.i!.score - a.i!.score)[0];
                 return (
                   <section key={w} className="week-block" aria-label={`Results, ${w}`}>
                     <div className="week-head">
@@ -207,6 +212,12 @@ export default function App() {
                               (rs.filter((r) => r.scoreCheck).length || 1)
                             ).toFixed(1)}{" "}
                             on average
+                          </>
+                        )}
+                        {wild && wild.i!.score >= 58 && (
+                          <>
+                            {" "}
+                            · wildest: {wild.r.matchup} (insanity {wild.i!.score})
                           </>
                         )}
                         {best && best.delta > 4 && (
