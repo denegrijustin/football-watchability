@@ -6,6 +6,10 @@ name: Scheduled refresh
 #   Fri  Thursday games move to Final with forecast vs actual
 #   Sun  Saturday college games move to Final
 #   Mon  Sunday NFL games move to Final
+# Plus an hourly check: when a game kicked off 3–9 hours ago and isn't final
+# on the site yet, it rebuilds and deploys so finals (and their forecast vs
+# actual readouts) land within the hour. Live scores in between come from
+# /api/scores in the browser.
 #
 # GitHub runs schedules from the default branch (main) in UTC, so there are two
 # crons and the gate below keeps whichever one is 8am in Chicago right now
@@ -16,6 +20,7 @@ on:
   schedule:
     - cron: "2 13 * * 0,1,2,4,5"
     - cron: "2 14 * * 0,1,2,4,5"
+    - cron: "37 * * * *"
   workflow_dispatch:
     inputs:
       today:
@@ -40,40 +45,49 @@ jobs:
         run: |
           offset=$(TZ=America/Chicago date +%z)
           sched="${{ github.event.schedule }}"
-          run=no
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then run=yes
-          elif [ "$sched" = "2 13 * * 0,1,2,4,5" ] && [ "$offset" = "-0500" ]; then run=yes
-          elif [ "$sched" = "2 14 * * 0,1,2,4,5" ] && [ "$offset" = "-0600" ]; then run=yes
+          mode=no
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then mode=daily
+          elif [ "$sched" = "2 13 * * 0,1,2,4,5" ] && [ "$offset" = "-0500" ]; then mode=daily
+          elif [ "$sched" = "2 14 * * 0,1,2,4,5" ] && [ "$offset" = "-0600" ]; then mode=daily
+          elif [ "$sched" = "37 * * * *" ]; then mode=check
           fi
-          echo "Chicago offset $offset, schedule '$sched' -> run=$run"
-          echo "run=$run" >> "$GITHUB_OUTPUT"
+          echo "Chicago offset $offset, schedule '$sched' -> mode=$mode"
+          echo "mode=$mode" >> "$GITHUB_OUTPUT"
 
-      - if: steps.gate.outputs.run == 'yes'
+      - if: steps.gate.outputs.mode != 'no'
         uses: actions/checkout@v4
         with:
           ref: slate-data
           fetch-depth: 0
-      - if: steps.gate.outputs.run == 'yes'
+
+      - name: Anything to do?
+        id: go
+        if: steps.gate.outputs.mode != 'no'
+        run: |
+          if [ "${{ steps.gate.outputs.mode }}" = "daily" ]; then echo "go=yes" >> "$GITHUB_OUTPUT"
+          else node scripts/finals-due.mjs | sed 's/^due=/go=/' >> "$GITHUB_OUTPUT"; fi
+
+      - if: steps.go.outputs.go == 'yes'
         uses: pnpm/action-setup@v4
         with:
           version: 11.19.0
-      - if: steps.gate.outputs.run == 'yes'
+      - if: steps.go.outputs.go == 'yes'
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: pnpm
-      - if: steps.gate.outputs.run == 'yes'
+      - if: steps.go.outputs.go == 'yes'
         run: pnpm install --frozen-lockfile
 
       - name: Work out the week
-        if: steps.gate.outputs.run == 'yes'
+        if: steps.go.outputs.go == 'yes'
         id: week
         env:
           TODAY: ${{ inputs.today }}
         run: node scripts/slate-window.mjs | tee -a "$GITHUB_OUTPUT"
 
       - name: Archive last week's late finals (Tuesdays)
-        if: steps.gate.outputs.run == 'yes' && steps.week.outputs.dow == '2'
+        if: steps.go.outputs.go == 'yes' && steps.gate.outputs.mode == 'daily' && steps.week.outputs.dow == '2'
         env:
           RAW_DIR: data-raw-prev
           START: ${{ steps.week.outputs.prev_start }}
@@ -84,7 +98,7 @@ jobs:
           rm -rf data-raw-prev
 
       - name: Fetch this week
-        if: steps.gate.outputs.run == 'yes'
+        if: steps.go.outputs.go == 'yes'
         env:
           START: ${{ steps.week.outputs.start }}
           END: ${{ steps.week.outputs.end }}
@@ -93,10 +107,11 @@ jobs:
           node scripts/fetch-slate.mjs
           node scripts/fetch-weather.mjs || echo "weather failed; building without it"
           node scripts/fetch-trends.mjs || echo "trends failed; building without them"
+          node scripts/fetch-advanced.mjs || echo "advanced stats failed; building without them"
           node scripts/fetch-history.mjs || echo "history failed; using what we have"
 
       - name: Build
-        if: steps.gate.outputs.run == 'yes'
+        if: steps.go.outputs.go == 'yes'
         run: |
           node scripts/build-slate.mjs
           # New matchups: all-time series pages, then rebuild with them.
@@ -104,16 +119,17 @@ jobs:
           node scripts/build-slate.mjs
           node scripts/upgrade-logos.mjs || echo "logo fetch failed; validation will catch missing logos"
           node scripts/write-narratives.mjs
+          node scripts/export-slate.mjs
           pnpm build
 
       - name: Browser checks
-        if: steps.gate.outputs.run == 'yes'
+        if: steps.go.outputs.go == 'yes'
         run: |
           pnpm exec playwright install --with-deps chromium
           pnpm test
 
       - name: Commit data to slate-data
-        if: steps.gate.outputs.run == 'yes'
+        if: steps.go.outputs.go == 'yes'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898699+github-actions[bot]@users.noreply.github.com"
@@ -123,7 +139,7 @@ jobs:
           git push origin HEAD:slate-data
 
       - name: Deploy to main
-        if: steps.gate.outputs.run == 'yes' && (github.event_name == 'schedule' || inputs.deploy)
+        if: steps.go.outputs.go == 'yes' && (github.event_name == 'schedule' || inputs.deploy)
         run: |
           src=$(git rev-parse HEAD)
           git fetch -q origin main

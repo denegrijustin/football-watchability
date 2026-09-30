@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
   push:
     branches: [slate-data]
-    paths: [scripts/fetch-weather.mjs, scripts/fetch-trends.mjs, .github/workflows/fetch-weather.yml, data-raw/weather-request.json]
+    paths: [scripts/fetch-weather.mjs, scripts/fetch-trends.mjs, scripts/fetch-advanced.mjs, .github/workflows/fetch-weather.yml, data-raw/weather-request.json]
 permissions:
   contents: write
 # Data jobs write to the same branch: run one at a time.
@@ -22,11 +22,12 @@ jobs:
           node-version: 22
       - run: node scripts/fetch-weather.mjs
       - run: node scripts/fetch-trends.mjs
+      - run: node scripts/fetch-advanced.mjs || echo 'advanced stats failed'
       - name: Commit weather
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898699+github-actions[bot]@users.noreply.github.com"
-          git add data-raw/weather.json data-raw/weather-errors.json data-raw/trends.json data-raw/trends-errors.json
+          git add data-raw/weather.json data-raw/weather-errors.json data-raw/trends.json data-raw/trends-errors.json data-raw/advanced.json
           git diff --cached --quiet || git commit -q -m "Weather refresh $(date -u +%FT%H:%MZ)"
           git pull -q --rebase -X theirs origin "${GITHUB_REF_NAME}"
           git push

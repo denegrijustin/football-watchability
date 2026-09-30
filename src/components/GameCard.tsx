@@ -13,6 +13,8 @@ import { TeamForm } from "./Trends";
 import { networkLogo, rankLine, rankTitle, recordLine, type Ranks } from "../data";
 import { PregameWinProb, type WinProbData } from "./PregameWinProb";
 import { ProjectedScore, type Projection } from "./ProjectedScore";
+import { LiveStrip, useLive } from "../live";
+import { EdgeLine, type Advanced } from "./AdvancedStats";
 
 const impactLevel = (impact: string) =>
   impact.replace(/\s*impact$/i, "").toLowerCase();
@@ -26,6 +28,7 @@ export function GameCard({ game }: { game: Game }) {
   // Card background: the home team's dark color (deepened for contrast at build time).
   const awayAbbr = (away as { abbr?: string }).abbr ?? away.name;
   const homeAbbr = (home as { abbr?: string }).abbr ?? home.name;
+  const live = useLive(game.espnId);
   const homeColor = (home as { color?: string | null }).color ?? null;
   return (
     <article
@@ -52,6 +55,7 @@ export function GameCard({ game }: { game: Game }) {
           {game.broadcast}
         </div>
       </header>
+      <LiveStrip live={live} away={awayAbbr} home={homeAbbr} />
 
       <div className="matchup">
         <h3 id={`${game.id}-title`} className="sr-only">
@@ -139,6 +143,10 @@ export function GameCard({ game }: { game: Game }) {
           home={(home as { abbr?: string }).abbr ?? home.name}
         />
       )}
+      <EdgeLine
+        away={{ abbr: awayAbbr, adv: (away as { advanced?: Advanced }).advanced ?? null }}
+        home={{ abbr: homeAbbr, adv: (home as { advanced?: Advanced }).advanced ?? null }}
+      />
       <Stakes game={game} />
       <TeamForm game={game} />
       <GameDetails game={game} />

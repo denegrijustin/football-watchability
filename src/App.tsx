@@ -14,7 +14,6 @@ import { Filters } from "./components/Filters";
 import { GameCard } from "./components/GameCard";
 import { ResultCard } from "./components/ResultCard";
 import { TvGrid } from "./components/TvGrid";
-import type { GridGame } from "./data/grid";
 
 const upcomingCount = (l: League) => slate.games.filter((g) => g.league === l).length;
 const finalCount = (l: League) => results.filter((r) => r.league === l).length;
@@ -45,11 +44,6 @@ export default function App() {
   const weeks = [...new Set(finals.map((r) => r.week))];
   const total = view === "final" ? finalCount(league) : upcomingCount(league);
   const shown = view === "final" ? finals.length : games.length;
-  const openFromGrid = (g: GridGame) => {
-    setFilters({ ...initial, league: g.league, query: g.sides[1].name });
-    setView(g.final ? "final" : "upcoming");
-    requestAnimationFrame(() => document.getElementById("games")?.scrollIntoView({ block: "start" }));
-  };
   const switchView = (v: View) => {
     setView(v);
     setFilters((f) => ({ ...f, day: "all" }));
@@ -126,6 +120,7 @@ export default function App() {
         {view !== "grid" && <Filters {...filters} view={view} onChange={update} />}
 
         <section id="games" tabIndex={-1} aria-label="Game dashboard">
+          <div className="view-row">
           <div className="view-switch segmented" role="group" aria-label="Games to show">
             <button aria-pressed={view === "upcoming"} onClick={() => switchView("upcoming")}>
               Upcoming<span className="count">{upcomingCount(league)}</span>
@@ -137,8 +132,26 @@ export default function App() {
               Final<span className="vs-extra"> · forecast vs actual</span><span className="count">{finalCount(league)}</span>
             </button>
           </div>
+          <details className="export">
+            <summary>Export weekend</summary>
+            <div className="export-menu">
+              <a href="/exports/watch-slate.csv" download={`watch-slate-${slate.period.replace(/[^\w]+/g, "-")}.csv`}>
+                <strong>Spreadsheet</strong>
+                <span>Every game Thu–Mon: time, TV, watchability, projected score, odds, weather, take, finals</span>
+              </a>
+              <a href="/exports/entertaining.ics" download="entertaining-games.ics">
+                <strong>Calendar</strong>
+                <span>Entertaining games (74+) as calendar events with the channel</span>
+              </a>
+              <button type="button" onClick={() => window.print()}>
+                <strong>Print this view</strong>
+                <span>The board or TV grid as it looks now</span>
+              </button>
+            </div>
+          </details>
+          </div>
           {view === "grid" ? (
-            <TvGrid onOpen={openFromGrid} />
+            <TvGrid />
           ) : (
             <>
           <div className="board-heading">

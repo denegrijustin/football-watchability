@@ -3,6 +3,7 @@ import { results, slate, cleanRank, type League, type Ranks, type Tier } from ".
 /** One game placed on the TV grid (upcoming or already final). */
 export type GridGame = {
   key: string;
+  espnId: string;
   league: League;
   start: Date;
   minutes: number;
@@ -59,6 +60,7 @@ export function gridGames(): GridGame[] {
     }[];
     return {
       key: g.id,
+      espnId: g.espnId,
       league: g.league as League,
       start: new Date((g as { date?: string }).date ?? ""),
       minutes: g.league === "NFL" ? 195 : 210,
@@ -85,6 +87,7 @@ export function gridGames(): GridGame[] {
     .filter((r) => r.week === slate.period)
     .map((r) => ({
       key: `r-${r.espnId}`,
+      espnId: r.espnId,
       league: r.league,
       start: new Date(r.date),
       minutes: r.league === "NFL" ? 195 : 210,

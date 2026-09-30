@@ -27,7 +27,7 @@ const raw = (n) => readJson(new URL(`${RAW}/${n}`, root));
 const optRaw = (n) =>
   existsSync(new URL(`${RAW}/${n}`, root))
     ? raw(n)
-    : existsSync(new URL(`data-raw/${n}`, root)) && ["history.json"].includes(n)
+    : existsSync(new URL(`data-raw/${n}`, root)) && ["history.json", "advanced.json"].includes(n)
       ? readJson(new URL(`data-raw/${n}`, root))
       : null;
 const src = (n) => JSON.parse(readFileSync(new URL(`src/data/${n}`, root), "utf8"));
@@ -68,7 +68,27 @@ function fpiMap(file) {
     };
     const fpi = cat("fpi");
     const proj = { ...fpi, ...cat("projections") };
-    m.set(t.team.id, { fpi: fpi.fpi, rank: fpi.fpirank, playoffs: proj.probmakeplayoffs });
+    const eff = cat("efficiencies");
+    const res = { ...fpi, ...cat("resume") };
+    const n = (v) => (v == null || v === "" || Number.isNaN(Number(v)) ? null : Number(v));
+    m.set(t.team.id, {
+      fpi: fpi.fpi,
+      rank: fpi.fpirank,
+      playoffs: proj.probmakeplayoffs,
+      eff: {
+        tot: n(eff.totefficiency),
+        totRank: n(eff.totefficiencyrank),
+        off: n(eff.offefficiency),
+        offRank: n(eff.offefficiencyrank),
+        def: n(eff.defefficiency),
+        defRank: n(eff.defefficiencyrank),
+        st: n(eff.stefficiency),
+        stRank: n(eff.stefficiencyrank),
+      },
+      epa: fpi.epaoffense != null ? { off: n(fpi.epaoffense), def: n(fpi.epadefense), st: n(fpi.epaspecialteams) } : null,
+      sosRank: n(res.avgsosrank) || null,
+      controlRank: n(res.gamecontrolrank) || null,
+    });
   }
   return m;
 }
@@ -599,6 +619,51 @@ function ranksFor(league, id, confShort) {
   };
 }
 
+// ---------- advanced stats ----------
+// NFL Next Gen Stats (QB, lead rusher, lead receiver), ESPN QBR (NFL and FBS)
+// and FPI efficiencies, EPA and schedule ranks.
+const advanced = optRaw("advanced.json");
+const NGS_TEAM = {
+  3800: "ARI", "0200": "ATL", "0325": "BAL", "0610": "BUF", "0750": "CAR", "0810": "CHI", "0920": "CIN", 1050: "CLE",
+  1200: "DAL", 1400: "DEN", 1540: "DET", 1800: "GB", 2120: "HOU", 2200: "IND", 2250: "JAX", 2310: "KC", 4400: "LAC",
+  2510: "LAR", 2520: "LV", 2700: "MIA", 3000: "MIN", 3200: "NE", 3300: "NO", 3410: "NYG", 3430: "NYJ", 3700: "PHI",
+  3900: "PIT", 4600: "SEA", 4500: "SF", 4900: "TB", 2100: "TEN", 5110: "WSH",
+};
+const r1a = (x) => (x == null || !Number.isFinite(x) ? null : Math.round(x * 10) / 10);
+function qbrTable(key, minPlays) {
+  const rows = (advanced?.qbr?.[key] ?? []).filter((q) => Number.isFinite(q.schedAdjQBR));
+  const ranked = rows.filter((q) => q.actionPlays >= minPlays).sort((a, b) => b.schedAdjQBR - a.schedAdjQBR);
+  const rank = new Map(ranked.map((q, i) => [q.id, i + 1]));
+  return { rows, rank, of: ranked.length };
+}
+const QBR = { NFL: qbrTable("nfl", 60), CFB: qbrTable("cfb", 60) };
+function advancedFor(league, t) {
+  const f = FPI[league].get(t.id);
+  const out = {
+    eff: f?.eff ?? null,
+    epa: f?.epa ?? null,
+    sosRank: f?.sosRank ?? null,
+    controlRank: f?.controlRank ?? null,
+    qbr: null,
+    ngs: null,
+  };
+  const q = QBR[league].rows.filter((x) => String(x.teamId) === String(t.id)).sort((a, b) => b.actionPlays - a.actionPlays)[0];
+  if (q) out.qbr = { name: q.name, value: r1a(q.schedAdjQBR), rank: QBR[league].rank.get(q.id) ?? null, of: QBR[league].of, epa: r1a(q.cwepaTotal) };
+  if (league === "NFL" && advanced?.ngs) {
+    const mine = (rows) => rows.filter((x) => NGS_TEAM[x.teamId] === t.abbreviation);
+    const top = (rows, k) => mine(rows).sort((a, b) => (b[k] ?? 0) - (a[k] ?? 0))[0];
+    const qb = top(advanced.ngs.passing ?? [], "attempts");
+    const rb = top(advanced.ngs.rushing ?? [], "rushAttempts");
+    const wr = top(advanced.ngs.receiving ?? [], "targets");
+    out.ngs = {
+      qb: qb && { name: qb.name, cpoe: r1a(qb.completionPercentageAboveExpectation), ttt: r1a(qb.avgTimeToThrow * 1) && Math.round(qb.avgTimeToThrow * 100) / 100, aggr: r1a(qb.aggressiveness), air: r1a(qb.avgIntendedAirYards) },
+      rush: rb && { name: rb.name, ryoe: r1a(rb.rushYardsOverExpectedPerAtt), ryoeTotal: Math.round(rb.rushYardsOverExpected ?? 0), eight: r1a(rb.percentAttemptsGteEightDefenders) },
+      rec: wr && { name: wr.name, sep: r1a(wr.avgSeparation), yacoe: r1a(wr.avgYACAboveExpectation), share: r1a(wr.percentShareOfIntendedAirYards) },
+    };
+  }
+  return out;
+}
+
 // ---------- team card color ----------
 // The darker of a team's two ESPN colors (a hue before black/grey), deepened until light text and the
 // site's muted text stay readable on it (relative luminance <= 0.03).
@@ -740,6 +805,7 @@ for (const [key, league] of [
         abbr: t.abbreviation,
         color: darkColor(t),
         ranks: ranksFor(league, t.id, conf?.[0] === "independent" ? null : conf?.[1]),
+        advanced: advancedFor(league, t),
         record,
         rankings: league === "NFL" ? nflRanks(t, opp.team) : cfbRanks(t, opp.team, pWin),
         trend: trendFor(league, t.id),
@@ -969,6 +1035,7 @@ for (const g of built) {
       color: t.color ?? null,
       record: t.record.split(" · ")[0],
       ranks: t.ranks ?? null,
+      advanced: t.advanced ?? null,
       score: i ? g.final.home : g.final.away,
       linescores: g.final.linescores[i],
     })),

@@ -45,7 +45,19 @@ Every team shows a small rank line, such as "SEC #3 · #7 overall", on game card
 
 ### TV grid
 
-The **TV grid** view (`src/components/TvGrid.tsx`, data in `src/data/grid.ts`) lays out the week Thursday to Monday, one day at a time. Networks run across the top (broadcast, then ESPN, FOX cable, conference networks, other cable, then streaming), with half-hour rows in Eastern time. Each game is a block spanning its broadcast window (3¼ hours for NFL, 3½ for college), with the away and home team on their team colors. Games rated Good or better (74+) get a ring in their tier color and a filled score; Background games (below 64) are dimmed. A network with overlapping games (ESPN+) gets extra lanes. Finished games from the current week stay on the grid with the final score. Tapping a block opens that game's card.
+The **TV grid** view (`src/components/TvGrid.tsx`, data in `src/data/grid.ts`) lays out the week Thursday to Monday, one day at a time. On desktop, networks run down the side and time runs left to right; on phones, networks run across and time runs down. Networks go broadcast first, then ESPN, FOX cable, conference networks, other cable, then streaming, in half-hour steps (Eastern time). Each game is a block spanning its broadcast window (3¼ hours for NFL, 3½ for college), with the away and home team on their team colors. Entertaining games (74+) get a ring in their tier color and a filled score; Background games (below 64) are dimmed. A network with overlapping games (ESPN+) gets extra lanes. Finished games from the current week stay on the grid with the final score, and live games show the score and clock. Tapping a block opens the full game card (the same one as the main board) in a dialog.
+
+### Live scores
+
+`functions/api/scores.js` is a Cloudflare Pages Function: `/api/scores?league=nfl|cfb&date=YYYYMMDD` returns trimmed ESPN scores, cached at the edge for 30 seconds while games are live. `src/live.tsx` polls it every minute once a game on the board has kicked off (falling back to ESPN directly, which allows cross-origin requests) and stops when everything that has started is final. Cards show a Live or Final strip, and grid blocks show the score. The hourly check in **Scheduled refresh** then rebuilds within the hour of a final, moving the game to **Final** with its forecast vs actual readout.
+
+### Advanced stats
+
+`scripts/fetch-advanced.mjs` saves NFL Next Gen Stats (passing, rushing and receiving statboards) and ESPN QBR for the NFL and FBS to `data-raw/advanced.json`. The builder adds each team's FPI efficiencies (overall, offense, defense, special teams, each with a rank), NFL EPA per game, strength-of-schedule and game-control ranks, the starting QB's QBR and rank, and for the NFL the QB's completion % over expected, time to throw and aggressiveness, the lead rusher's rush yards over expected, and the lead receiver's separation. Cards show a one-line **Matchup** (each offense's rank against the other defense's) and an **Advanced stats + rankings** panel, with the better side highlighted; final cards have the panel too. College has no public tracking data, so QBR and FPI efficiencies stand in for Next Gen Stats.
+
+### Weekend export
+
+`scripts/export-slate.mjs` (run in the refresh after the notes) writes `public/exports/watch-slate.csv` (every game Thursday–Monday by kickoff: TV, watchability, tier, projected score, win probability, line, venue, weather, take, and finals with actual watchability) and `public/exports/entertaining.ics` (a calendar of the 74+ games). **Export weekend** on the site offers both, plus printing the current view.
 
 ### Forecast vs actual
 

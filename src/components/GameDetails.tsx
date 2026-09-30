@@ -2,6 +2,7 @@ import type { Game } from "../data";
 import type { Breakdown } from "../data";
 import { SeasonTrends } from "./Trends";
 import { ScoreBreakdown } from "./ScoreBreakdown";
+import { AdvancedStats, type Advanced } from "./AdvancedStats";
 export function GameDetails({ game }: { game: Game }) {
   return (
     <div className="game-details">
@@ -20,6 +21,22 @@ export function GameDetails({ game }: { game: Game }) {
           </div>
         </details>
       )}
+      {(() => {
+        const [a, h] = game.teams as unknown as { abbr?: string; name: string; advanced?: Advanced }[];
+        if (!a.advanced && !h.advanced) return null;
+        return (
+          <details>
+            <summary>
+              Advanced stats + rankings<span aria-hidden="true">+</span>
+            </summary>
+            <AdvancedStats
+              league={game.league}
+              away={{ abbr: a.abbr ?? a.name, adv: a.advanced ?? null }}
+              home={{ abbr: h.abbr ?? h.name, adv: h.advanced ?? null }}
+            />
+          </details>
+        );
+      })()}
       <details>
         <summary>
           Why watch / skip<span aria-hidden="true">+</span>
