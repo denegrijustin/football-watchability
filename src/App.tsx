@@ -15,7 +15,6 @@ import { GameCard } from "./components/GameCard";
 import { ResultCard } from "./components/ResultCard";
 import { TvGrid } from "./components/TvGrid";
 import { setTz, tzLabel, useTz, ZONES } from "./tz";
-import { downloadSlateJpg } from "./exportJpg";
 
 const upcomingCount = (l: League) => slate.games.filter((g) => g.league === l).length;
 const finalCount = (l: League) => results.filter((r) => r.league === l).length;
@@ -31,7 +30,6 @@ const initial: FilterState = {
 
 export default function App() {
   const tz = useTz();
-  const [busy, setBusy] = useState(false);
   const [filters, setFilters] = useState<FilterState>(initial);
   const [view, setView] = useState<View>(upcomingCount("NFL") ? "upcoming" : "final");
   const update = (patch: Partial<FilterState>) => {
@@ -151,47 +149,9 @@ export default function App() {
             </button>
           </div>
           <div className="export-btns">
-            <button
-              type="button"
-              className="export-jpg"
-              disabled={busy}
-              onClick={async () => {
-                setBusy(true);
-                try {
-                  await downloadSlateJpg();
-                } finally {
-                  setBusy(false);
-                }
-              }}
-            >
-              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-                <path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              {busy ? (
-                "Making image…"
-              ) : (
-                <>
-                  Download<span className="dl-extra"> weekend</span> JPG
-                </>
-              )}
-            </button>
             <details className="export">
-              <summary aria-label="More export options">More</summary>
+              <summary aria-label="Export options">Export</summary>
               <div className="export-menu">
-                <button
-                  type="button"
-                  onClick={async () => {
-                    setBusy(true);
-                    try {
-                      await downloadSlateJpg({ onlyEntertaining: true });
-                    } finally {
-                      setBusy(false);
-                    }
-                  }}
-                >
-                  <strong>Entertaining games only (JPG)</strong>
-                  <span>Just the 74+ games, Thursday to Monday</span>
-                </button>
                 <a href="/exports/watch-slate.csv" download={`watch-slate-${slate.period.replace(/[^\w]+/g, "-")}.csv`}>
                   <strong>Spreadsheet (CSV)</strong>
                   <span>Every game with all the numbers, times Central</span>

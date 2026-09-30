@@ -116,3 +116,40 @@ export const gridDays = (games: GridGame[]) => {
   }
   return [...seen].map(([date, day]) => ({ date, day }));
 };
+
+export const GRID_SLOT = 30; // minutes per time step
+export type PlacedGame = GridGame & { minute: number; lane: number };
+
+/**
+ * Lays one day's games out as a TV grid: a lane per network (extra lanes when a
+ * network carries overlapping games) and the time range they cover. Shared by
+ * the on-screen grid and the JPG export so both always match.
+ */
+export function layoutGrid(games: GridGame[]) {
+  const nets = [...new Set(games.map((g) => g.network))].sort((a, b) => netRank(a) - netRank(b) || a.localeCompare(b));
+  const lanes: { network: string; label: string }[] = [];
+  const placed: PlacedGame[] = [];
+  for (const net of nets) {
+    const ends: number[] = [];
+    const first = lanes.length;
+    const gs = games
+      .filter((g) => g.network === net)
+      .map((g) => ({ ...g, minute: slot(g.start).minute }))
+      .sort((a, b) => a.minute - b.minute);
+    for (const g of gs) {
+      let lane = ends.findIndex((end) => end <= g.minute);
+      if (lane < 0) {
+        lane = ends.length;
+        ends.push(0);
+        lanes.push({ network: net, label: g.netLabel });
+      }
+      ends[lane] = g.minute + g.minutes;
+      placed.push({ ...g, lane: first + lane });
+    }
+  }
+  const startMin = placed.length ? Math.floor(Math.min(...placed.map((g) => g.minute)) / GRID_SLOT) * GRID_SLOT : 12 * 60;
+  const endMin = placed.length
+    ? Math.ceil(Math.max(...placed.map((g) => g.minute + g.minutes)) / GRID_SLOT) * GRID_SLOT
+    : startMin + 4 * 60;
+  return { lanes, placed, startMin, endMin, steps: (endMin - startMin) / GRID_SLOT };
+}

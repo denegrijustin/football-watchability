@@ -247,6 +247,7 @@ test("weekend export files and advanced stats are available", async ({ page, req
   await page.goto("/");
   await page.locator(".export summary").click();
   await expect(page.locator(".export-menu a[href='/exports/watch-slate.csv']")).toBeVisible();
+  await expect(page.getByRole("button", { name: /Download.*JPG/ })).toHaveCount(0);
   const card = page.locator(".game-card").first();
   const adv = card.locator("summary").filter({ hasText: "Advanced stats" });
   if (await adv.count()) {
@@ -255,18 +256,19 @@ test("weekend export files and advanced stats are available", async ({ page, req
   }
 });
 
-test("times default to Central, follow the chosen zone, and the weekend JPG downloads", async ({ page }) => {
+test("times default to Central, follow the chosen zone, and the TV grid JPG downloads", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator(".kickoff").first()).toContainText("CT");
-  const [download] = await Promise.all([
-    page.waitForEvent("download"),
-    page.getByRole("button", { name: /Download.*JPG/ }).click(),
-  ]);
-  expect(download.suggestedFilename()).toMatch(/\.jpg$/);
   await page.selectOption(".tz-pick select", "America/New_York");
   await expect(page.locator(".kickoff").first()).toContainText("ET");
   await page.reload();
   await expect(page.locator(".kickoff").first()).toContainText("ET");
   const width = await page.evaluate(() => document.documentElement.scrollWidth);
   expect(width).toBeLessThanOrEqual((page.viewportSize()?.width ?? 0) + 1);
+  await page.getByRole("button", { name: "TV grid" }).click();
+  const [download] = await Promise.all([
+    page.waitForEvent("download"),
+    page.getByRole("button", { name: /Download.*JPG/ }).click(),
+  ]);
+  expect(download.suggestedFilename()).toMatch(/^tv-grid-.*\.jpg$/);
 });
