@@ -3,6 +3,59 @@ import type { Breakdown } from "../data";
 import { SeasonTrends } from "./Trends";
 import { ScoreBreakdown } from "./ScoreBreakdown";
 import { AdvancedStats, type Advanced } from "./AdvancedStats";
+import type { CSSProperties } from "react";
+import { logos, teamColor } from "../data";
+import { Headshot } from "./Headshot";
+
+type KeyPlayer = {
+  name: string;
+  short: string;
+  pos: string | null;
+  jersey: string | null;
+  headshot: string | null;
+  category: string;
+  line: string;
+  team: string;
+  logoId: string;
+  side: "away" | "home";
+};
+
+/** Season leaders for both teams: photo, name, position, team and stat line, in team colors. */
+function KeyPlayers({ game, players }: { game: Game; players: KeyPlayer[] }) {
+  const teams = game.teams as unknown as { color?: string | null }[];
+  return (
+    <div className="kp">
+      {(["away", "home"] as const).map((side, i) => {
+        const ps = players.filter((p) => p.side === side);
+        if (!ps.length) return null;
+        const color = teamColor(teams[i]?.color ?? null) ?? "#1d2a35";
+        return (
+          <ul key={side} className="kp-team" style={{ "--team": color } as CSSProperties}>
+            {ps.map((p) => (
+              <li key={`${p.category}-${p.name}`} className="kp-card">
+                <span className="kp-photo">
+                  <Headshot src={p.headshot} name={p.name} size={44} />
+                  {logos[p.logoId] && <img className="kp-logo" src={logos[p.logoId]} alt="" width="18" height="18" />}
+                </span>
+                <span className="kp-text">
+                  <strong>
+                    {p.name}
+                    {p.pos && <span className="kp-pos">{p.pos}</span>}
+                  </strong>
+                  <span className="kp-team-line">
+                    {p.team}
+                    {p.jersey ? ` · #${p.jersey}` : ""} · {p.category}
+                  </span>
+                  <small>{p.line}</small>
+                </span>
+              </li>
+            ))}
+          </ul>
+        );
+      })}
+    </div>
+  );
+}
 export function GameDetails({ game }: { game: Game }) {
   return (
     <div className="game-details">
@@ -82,12 +135,16 @@ export function GameDetails({ game }: { game: Game }) {
             <div key={i}>
               <h4 className="micro-label">{box.label}</h4>
               {box.value && <p className="series-value">{box.value}</p>}
-              {box.items.length > 0 && (
-                <ul>
-                  {box.items.map((item, j) => (
-                    <li key={j}>{item}</li>
-                  ))}
-                </ul>
+              {(box as { players?: KeyPlayer[] }).players?.length ? (
+                <KeyPlayers game={game} players={(box as { players: KeyPlayer[] }).players} />
+              ) : (
+                box.items.length > 0 && (
+                  <ul>
+                    {box.items.map((item, j) => (
+                      <li key={j}>{item}</li>
+                    ))}
+                  </ul>
+                )
               )}
             </div>
           ))}
