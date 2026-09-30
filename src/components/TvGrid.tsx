@@ -306,7 +306,7 @@ function GameDialog({ game, onClose }: { game: GridGame | null; onClose: () => v
             ×
           </button>
           {result && <ResultCard result={result} />}
-          {upcoming && <GameCard game={upcoming} />}
+          {upcoming && <GameCard game={upcoming} defaultExpanded />}
         </div>
       )}
     </dialog>

@@ -4417,3 +4417,48 @@ button.ic-inner:focus-visible {
 .inj-title {
   min-width: 0;
 }
+
+/* ---------- Compact / expanded game cards ---------- */
+.game-card.compact {
+  cursor: pointer;
+}
+.game-card.compact .facts {
+  margin-bottom: 0;
+}
+.card-more {
+  display: contents;
+}
+.card-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  margin: 6px 0 0;
+  padding: 6px 10px;
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: 8px;
+  background: rgb(0 0 0 / 18%);
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+}
+@media (max-width: 640px) {
+  .card-toggle {
+    min-height: 44px;
+  }
+}
+.card-toggle:hover {
+  background: rgb(0 0 0 / 30%);
+}
+.game-card.compact {
+  padding-bottom: 12px;
+}
+.game-card.expanded .card-toggle {
+  margin: 4px 0 12px;
+}
+.tv-dialog .game-card .card-toggle {
+  display: none;
+}

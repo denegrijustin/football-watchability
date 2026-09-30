@@ -62,6 +62,10 @@ The **TV grid** view (`src/components/TvGrid.tsx`, data in `src/data/grid.ts`) l
 
 Each upcoming card's **History + key players** section lists both teams' season leaders (passing, rushing, receiving and a pass rusher or tackler) as player cards in team colors: photo, name, position, team logo and abbreviation, jersey number and stat line. They come from ESPN's season leaders in each game summary (`leaderCards` in `build-slate.mjs`), stored as `players` on the Key players box.
 
+### Compact cards
+
+Upcoming game cards open compact: kickoff and TV, both teams with record and ranks, the watchability score, venue, line and weather. A click anywhere on the card (or **Details ▾**) expands it in place to the full card: quarter-by-quarter weather, the take, projected score, win probability, edges, form, and the detail dropdowns. On an expanded card, a click on the matchup opens the Game Center overlay; **Less ▴** collapses it. Cards opened from the TV grid start expanded.
+
 ### Injury report
 
 NFL cards have an **Injury report** section (header shows counts per team) listing each team's players who are Out, Doubtful or Questionable with photo, position and injury (for example "Questionable · Josh Allen QB · Left Knee"), plus a line of players on IR or PUP. When a key player (a season leader) is on the report, an **Injury watch** chip appears on the card face. Data comes from each ESPN game summary's injury report, trimmed in `fetch-slate.mjs` and built by `injuriesFor` in `build-slate.mjs`. ESPN doesn't carry college injury reports; college cards use the conference availability reports below.
