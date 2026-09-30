@@ -3859,3 +3859,90 @@ details.proj summary strong {
     font-size: 26px;
   }
 }
+
+/* Top 3 / bottom 3: player cards in team color */
+.gc-tbl {
+  margin: 10px 0 6px;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.gc-tbl.top {
+  color: var(--green);
+}
+.gc-tbl.bottom {
+  color: var(--red);
+}
+.gc-top li.gc-pcard,
+.gc-bottom li.gc-pcard {
+  grid-template-columns: 44px 1fr auto;
+  padding: 8px 10px;
+  border-left: 4px solid var(--team);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--team) 55%, #0f171e), color-mix(in srgb, var(--team) 18%, #121b23) 70%);
+  border-radius: 12px;
+}
+.gc-ph {
+  position: relative;
+  width: 40px;
+  height: 40px;
+}
+.gc-ph > img:first-child,
+.gc-ph .gc-nohead {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: rgb(255 255 255 / 12%);
+}
+.gc-top .gc-ph img.gc-plogo,
+.gc-bottom .gc-ph img.gc-plogo {
+  position: absolute;
+  right: -6px;
+  bottom: -4px;
+  width: 20px;
+  height: 20px;
+  padding: 2px;
+  border-radius: 50%;
+  object-fit: contain;
+  background: #0b1117;
+  box-shadow: 0 0 0 1.5px var(--team);
+}
+.gc-pos {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 5px;
+  font-size: 10.5px;
+  font-weight: 800;
+  line-height: 17px;
+  letter-spacing: 0.3px;
+  vertical-align: 1px;
+  background: rgb(255 255 255 / 16%);
+  color: #fff;
+}
+.gc-pteam {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: rgb(234 240 244 / 80%);
+}
+.gc-pcard .gc-pl small {
+  color: rgb(234 240 244 / 72%);
+}
+.gc-pcard .gc-imp {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 8px;
+  border-radius: 99px;
+  background: rgb(0 0 0 / 38%);
+}
+.gc-pcard .gc-imp span {
+  font-size: 10px;
+}
+.gc-tracker .gc-pos {
+  font-size: 10px;
+  line-height: 15px;
+  background: var(--surface-3);
+  color: var(--text-2);
+}
