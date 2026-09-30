@@ -79,6 +79,7 @@ function flowOf(sum) {
 }
 
 const found = [];
+const preseason = new Set();
 for (let a = parse(START); a <= parse(END); a = new Date(a.getTime() + 7 * 864e5)) {
   const b = new Date(Math.min(a.getTime() + 6 * 864e5, parse(END).getTime()));
   console.log(`Week ${ymd(a)}–${ymd(b)}`);
@@ -92,6 +93,11 @@ for (let a = parse(START); a <= parse(END); a = new Date(a.getTime() + 7 * 864e5
       for (const e of board?.events ?? []) if (!events.some((x) => x.id === e.id)) events.push(e);
     }
     for (const ev of events) {
+      // Regular season and postseason only (NFL preseason games are on the same scoreboard).
+      if (ev.season?.type != null && ![2, 3].includes(Number(ev.season.type))) {
+        preseason.add(String(ev.id));
+        continue;
+      }
       const c = ev.competitions?.[0];
       if (c?.status?.type?.state !== "post") continue;
       const [away, home] = ["away", "home"].map((s) => c.competitors?.find((x) => x.homeAway === s));
@@ -128,6 +134,7 @@ for (let a = parse(START); a <= parse(END); a = new Date(a.getTime() + 7 * 864e5
 const entries = found.filter(Boolean);
 const dropped = found.length - entries.length;
 const existing = existsSync(OUT) ? JSON.parse(readFileSync(OUT, "utf8")) : { games: [] };
+existing.games = (existing.games ?? []).filter((g) => !preseason.has(g.id));
 const merged = mergeLedger(existing, entries, new Date().toISOString().slice(0, 10));
 writeFileSync(OUT, JSON.stringify(merged, null, 1) + "\n");
 console.log(`Scored ${entries.length} games${dropped ? ` (${dropped} had no win-probability line)` : ""}; ledger now has ${merged.games.length}.`);
