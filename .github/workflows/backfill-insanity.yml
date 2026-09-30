@@ -1,0 +1,55 @@
+name: Backfill insanity ledger
+# Scores earlier weeks of the season for the Insanity rankings. The normal
+# refresh only sees the last two weeks; run this once for the weeks before
+# that (START = the Tuesday that opens the first week, END = the last day to
+# include). It merges into src/data/season.json on slate-data and copies that
+# one file to main, which Cloudflare Pages deploys. Safe to re-run.
+on:
+  workflow_dispatch:
+    inputs:
+      start:
+        description: "First Tuesday to include (YYYYMMDD), e.g. 20260908"
+        required: true
+      end:
+        description: "Last day to include (YYYYMMDD), e.g. 20260923"
+        required: true
+permissions:
+  contents: write
+concurrency:
+  group: slate-data-writes
+  cancel-in-progress: false
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: slate-data
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Score the weeks
+        env:
+          START: ${{ inputs.start }}
+          END: ${{ inputs.end }}
+        run: node scripts/backfill-insanity.mjs
+      - name: Commit to slate-data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898699+github-actions[bot]@users.noreply.github.com"
+          git add src/data/season.json
+          git diff --cached --quiet && { echo "Nothing new"; exit 0; }
+          git commit -q -m "Backfill insanity ledger ${{ inputs.start }}-${{ inputs.end }}"
+          git pull -q --rebase -X theirs origin slate-data
+          git push origin HEAD:slate-data
+      - name: Copy the ledger to main
+        run: |
+          src=$(git rev-parse HEAD)
+          git fetch -q origin main
+          git checkout -q -B main origin/main
+          git checkout "$src" -- src/data/season.json
+          git diff --cached --quiet && { echo "Main already has it"; exit 0; }
+          git commit -q -m "Backfill insanity ledger ${{ inputs.start }}-${{ inputs.end }}"
+          git push origin main
