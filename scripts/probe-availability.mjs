@@ -1,4 +1,4 @@
-// One-off: learn the formats of the conference availability reports (round 2).
+// One-off: learn the formats of the conference availability reports (round 3).
 import { writeFileSync, mkdirSync } from "node:fs";
 const dir = new URL("../data-raw/avail-probe/", import.meta.url);
 mkdirSync(dir, { recursive: true });
@@ -16,25 +16,15 @@ async function get(name, url, opts = {}) {
     return "";
   }
 }
-const base = "https://app.hdintelligence.com/assets/";
-const chunks = ["PublishScreen-BYgWGkq4.js", "SummaryScreen-Db6czLWK.js", "ArchiveScreen-8d4x-yvg.js", "index-CD_u9Jsu.js", "WindowScreen-BpxqUnD4.js"];
-const eps = {};
-for (const c of chunks) {
-  const js = await get(`chunk-${c}`, base + c);
-  eps[c] = [...new Set([...js.matchAll(/["'`](\/api\/[^"'`\s]{2,120})["'`]/g)].map((m) => m[1]))];
-}
-writeFileSync(new URL("chunk-endpoints.json", dir), JSON.stringify(eps, null, 1));
 const post = (name, path, body) =>
   get(name, "https://app.hdintelligence.com" + path, {
     method: "POST",
     headers: { "content-type": "application/json", origin: "https://app.hdintelligence.com", referer: "https://www.secsports.com/" },
     body: JSON.stringify(body),
   });
-for (const c of ["SEC", "ACC", "B12", "B10"]) {
-  await post(`pl-${c}.json`, "/api/public-load", { conference_param: c, sport_param: "Football", type_param: "report", referrer: "", source: c });
-  await post(`teams-${c}.json`, "/api/get-conference-teams", { conference: c, sport: "Football" });
+for (const c of ["SEC", "ACC", "B12", "B10", "B1G"]) {
+  await post(`pub-${c}.json`, "/api/get-publish-public", { sport: "Football", organization: c, conference: c });
+  await post(`arch-${c}.json`, "/api/get-archive-public", { sport: "Football", organization: c, conference: c });
 }
-// Big Ten: current news listing
-await get("b10-home.html", "https://bigten.org/");
-await get("b10-news.html", "https://bigten.org/news/");
-writeFileSync(new URL("log2.json", dir), JSON.stringify(log, null, 1));
+await get("b10-2026.html", "https://bigten.org/fb/article/blt376070b4270ab9d7/");
+writeFileSync(new URL("log3.json", dir), JSON.stringify(log, null, 1));
