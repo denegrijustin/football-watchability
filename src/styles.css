@@ -2117,3 +2117,236 @@ details.proj .proj-src {
 details.proj summary strong {
   white-space: nowrap;
 }
+
+/* ---------- TV grid ---------- */
+.tvgrid {
+  --tv-row: 26px;
+}
+.tv-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+}
+.tv-toggle {
+  min-height: 42px;
+  padding: 0 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--surface);
+  color: var(--text-2);
+}
+.tv-toggle[aria-pressed="true"] {
+  background: #25361f;
+  color: #d8f3b4;
+  border-color: #86a95c;
+}
+.tv-key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin: 0 0 0 auto;
+  padding: 0;
+  list-style: none;
+  font-size: 12px;
+  color: var(--muted);
+}
+.tv-key li::before {
+  content: "";
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 6px;
+  vertical-align: -2px;
+  border-radius: 3px;
+  background: #3a5064;
+}
+.tv-key .k-hl::before {
+  background: #3a5064;
+  box-shadow: 0 0 0 2px var(--lime);
+}
+.tv-key .k-dim::before {
+  opacity: 0.3;
+}
+.tv-heading {
+  margin-top: 16px;
+}
+.tv-scroll {
+  overflow: auto;
+  max-height: calc(100vh - 120px);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  overscroll-behavior-x: contain;
+}
+.tv-table {
+  display: grid;
+  position: relative;
+  min-width: min-content;
+}
+.tv-corner,
+.tv-net {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--line-strong);
+  grid-row: 1;
+  font-size: 12px;
+  font-weight: 700;
+}
+.tv-net {
+  background: #17222c;
+  border-left: 1px solid var(--line);
+}
+.tv-corner {
+  left: 0;
+  z-index: 4;
+  grid-column: 1;
+  background: #17222c;
+  color: var(--text-2);
+}
+.tv-net-text {
+  font-size: 12px;
+  color: var(--text);
+  text-align: center;
+  padding: 0 6px;
+  line-height: 1.1;
+}
+.tv-time {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  grid-column: 1;
+  padding: 3px 6px 0 0;
+  text-align: right;
+  font-size: 10.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-2);
+  background: #17222c;
+  border-top: 1px solid var(--line);
+}
+.tv-time.odd {
+  color: transparent;
+  border-top-style: dashed;
+}
+.tv-stripe {
+  border-top: 1px solid var(--line);
+  background: rgb(255 255 255 / 1.5%);
+}
+.tv-stripe.odd {
+  border-top: 1px dashed rgb(255 255 255 / 6%);
+  background: transparent;
+}
+.tv-game {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-rows: 1fr auto 1fr;
+  margin: 2px 3px;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: 8px;
+  background: #0f171e;
+  color: var(--text);
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.12s, opacity 0.12s, filter 0.12s;
+}
+.tv-game:hover,
+.tv-game:focus-visible {
+  transform: translateY(-1px);
+  opacity: 1;
+  filter: none;
+  z-index: 2;
+}
+.tv-game:focus-visible {
+  outline: 2px solid var(--lime);
+  outline-offset: 1px;
+}
+.tv-side {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-height: 0;
+}
+.tv-side img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 1px rgb(0 0 0 / 40%));
+}
+.tv-tag {
+  position: absolute;
+  top: 3px;
+  left: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  color: rgb(255 255 255 / 85%);
+}
+.tv-side.home .tv-tag {
+  top: auto;
+  bottom: 3px;
+}
+.tv-label {
+  display: grid;
+  gap: 1px;
+  padding: 4px 4px;
+  background: #eef2f5;
+  color: #10181f;
+  font-size: 11px;
+  line-height: 1.2;
+}
+.tv-label strong {
+  font-size: 11.5px;
+}
+.tv-label span {
+  color: #43525e;
+}
+.tv-score {
+  position: absolute;
+  top: 3px;
+  right: 4px;
+  min-width: 26px;
+  padding: 1px 5px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  background: rgb(0 0 0 / 45%);
+  color: var(--score-color);
+}
+/* Worth watching: lit ring in the tier color */
+.tv-game.hl {
+  border: 2px solid var(--score-color);
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 50%), 0 0 14px color-mix(in srgb, var(--score-color) 45%, transparent);
+}
+.tv-game.hl .tv-score {
+  background: var(--score-color);
+  color: #10181f;
+}
+/* Skip: diluted */
+.tv-game.dim {
+  opacity: 0.32;
+  filter: saturate(0.25);
+}
+.tv-game.dim .tv-label {
+  background: #aeb8c0;
+}
+@media (max-width: 760px) {
+  .tvgrid {
+    --tv-row: 22px;
+  }
+  .tv-key {
+    margin-left: 0;
+  }
+  .tv-side img {
+    width: 32px;
+    height: 32px;
+  }
+}

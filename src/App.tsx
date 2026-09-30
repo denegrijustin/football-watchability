@@ -13,6 +13,8 @@ import {
 import { Filters } from "./components/Filters";
 import { GameCard } from "./components/GameCard";
 import { ResultCard } from "./components/ResultCard";
+import { TvGrid } from "./components/TvGrid";
+import type { GridGame } from "./data/grid";
 
 const upcomingCount = (l: League) => slate.games.filter((g) => g.league === l).length;
 const finalCount = (l: League) => results.filter((r) => r.league === l).length;
@@ -43,6 +45,11 @@ export default function App() {
   const weeks = [...new Set(finals.map((r) => r.week))];
   const total = view === "final" ? finalCount(league) : upcomingCount(league);
   const shown = view === "final" ? finals.length : games.length;
+  const openFromGrid = (g: GridGame) => {
+    setFilters({ ...initial, league: g.league, query: g.sides[1].name });
+    setView(g.final ? "final" : "upcoming");
+    requestAnimationFrame(() => document.getElementById("games")?.scrollIntoView({ block: "start" }));
+  };
   const switchView = (v: View) => {
     setView(v);
     setFilters((f) => ({ ...f, day: "all" }));
@@ -116,17 +123,24 @@ export default function App() {
           </ul>
         </details>
 
-        <Filters {...filters} view={view} onChange={update} />
+        {view !== "grid" && <Filters {...filters} view={view} onChange={update} />}
 
         <section id="games" tabIndex={-1} aria-label="Game dashboard">
           <div className="view-switch segmented" role="group" aria-label="Games to show">
             <button aria-pressed={view === "upcoming"} onClick={() => switchView("upcoming")}>
               Upcoming<span className="count">{upcomingCount(league)}</span>
             </button>
+            <button aria-pressed={view === "grid"} onClick={() => switchView("grid")}>
+              TV grid
+            </button>
             <button aria-pressed={view === "final"} onClick={() => switchView("final")}>
               Final<span className="vs-extra"> · forecast vs actual</span><span className="count">{finalCount(league)}</span>
             </button>
           </div>
+          {view === "grid" ? (
+            <TvGrid onOpen={openFromGrid} />
+          ) : (
+            <>
           <div className="board-heading">
             <h2>{heading}</h2>
             <span role="status">
@@ -211,6 +225,8 @@ export default function App() {
               </p>
               {filtered && <button onClick={() => setFilters({ ...initial, league })}>Clear filters</button>}
             </div>
+          )}
+            </>
           )}
         </section>
         <footer>

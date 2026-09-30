@@ -80,7 +80,7 @@ export function daysFor(league: League, view: View = "upcoming") {
 }
 
 // ---------- finished games ----------
-export type View = "upcoming" | "final";
+export type View = "upcoming" | "final" | "grid";
 export type Part = { id: string; label: string; max: number; pts: number; note: string };
 export type Breakdown = { base: number; parts: Part[] };
 export type ResultTeam = {

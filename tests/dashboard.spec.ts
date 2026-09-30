@@ -194,3 +194,36 @@ test("final view compares forecast with actual and explains the score", async ({
   await expect(g.locator(".breakdown .bd-total td")).toHaveText(await g.locator(".score strong").innerText());
   expect(errors).toEqual([]);
 });
+
+test("TV grid lays out every game by network and time, lighting good games and dimming bad ones", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (err) => errors.push(err.message));
+  await page.goto("/");
+  await page.getByRole("button", { name: "TV grid" }).click();
+  const dayButtons = page.locator(".tv-toolbar [aria-label='Day'] button");
+  const days = await dayButtons.count();
+  let total = 0;
+  for (let i = 0; i < days; i++) {
+    await dayButtons.nth(i).click();
+    total += await page.locator(".tv-game").count();
+  }
+  const live = slate.games.length;
+  const finals = results.games.filter((r: any) => r.week === slate.period).length;
+  expect(total).toBe(live + finals);
+  // Tier styling matches scores.
+  for (let i = 0; i < days; i++) {
+    await dayButtons.nth(i).click();
+    for (const g of await page.locator(".tv-game").all()) {
+      const score = Number(await g.locator(".tv-score").innerText());
+      const cls = (await g.getAttribute("class")) ?? "";
+      if (score >= 74) expect(cls).toContain("hl");
+      if (score < 64) expect(cls).toContain("dim");
+    }
+  }
+  // Clicking a block opens that game's card.
+  await page.locator(".tv-game").first().click();
+  await expect(page.locator(".game-card, .result-card").first()).toBeVisible();
+  const width = await page.evaluate(() => document.documentElement.scrollWidth);
+  expect(width).toBeLessThanOrEqual((page.viewportSize()?.width ?? 0) + 1);
+  expect(errors).toEqual([]);
+});
