@@ -51,6 +51,22 @@ The **TV grid** view (`src/components/TvGrid.tsx`, data in `src/data/grid.ts`) l
 
 `functions/api/scores.js` is a Cloudflare Pages Function: `/api/scores?league=nfl|cfb&date=YYYYMMDD` returns trimmed ESPN scores, cached at the edge for 30 seconds while games are live. `src/live.tsx` polls it every minute once a game on the board has kicked off (falling back to ESPN directly, which allows cross-origin requests) and stops when everything that has started is final. Cards show a Live or Final strip, and grid blocks show the score. The hourly check in **Scheduled refresh** then rebuilds within the hour of a final, moving the game to **Final** with its forecast vs actual readout.
 
+### Game Center
+
+Clicking a game card's matchup (or its **Game Center** button) opens a full overlay for that game (`src/components/GameCenter.tsx`). Before kickoff it shows the projected score and winner with how the projection is built, both win-probability sources, and the season's advanced stats. From kickoff it loads the live game every 15 seconds from `functions/api/game.js` (a Cloudflare Pages Function that trims ESPN's game summary with `src/gameTrim.js`, cached 15 seconds at the edge, with ESPN directly as a fallback) and adds:
+
+- **Scoreboard**: score, clock, down and distance, who has the ball, and the linescore.
+- **Win probability** chart, play by play.
+- **Momentum**: the win-probability swing over the last 12 plays and points over the last 6 drives.
+- **Who's tilting the field**: each offense's share of snaps in enemy territory, overall and by quarter, plus time of possession (time on the field).
+- **Team stats**: yards, yards per play, passing, rushing, first downs, turnovers, 3rd down, red zone, penalties.
+- **Drive chart**: every drive as a bar from start to finish on the field, with its result.
+- **Top 3 / bottom 3** per team by a box-score impact score (yards, touchdowns and takeaways add; interceptions, fumbles, sacks taken and missed targets or kicks subtract; bottom 3 only counts involved players).
+- **Player tracker**: passing, rushing, receiving and defense lines for each team.
+- **Play-by-play** and scoring summary.
+
+The NFL doesn't publish snap counts live, so time of possession stands in for time on the field. Finished games open the same view with the final data.
+
 ### Advanced stats
 
 `scripts/fetch-advanced.mjs` saves NFL Next Gen Stats (passing, rushing and receiving statboards) and ESPN QBR for the NFL and FBS to `data-raw/advanced.json`. The builder adds each team's FPI efficiencies (overall, offense, defense, special teams, each with a rank), NFL EPA per game, strength-of-schedule and game-control ranks, the starting QB's QBR and rank, and for the NFL the QB's completion % over expected, time to throw and aggressiveness, the lead rusher's rush yards over expected, and the lead receiver's separation. Cards show a one-line **Matchup** (each offense's rank against the other defense's) and an **Advanced stats + rankings** panel, with the better side highlighted; final cards have the panel too. College has no public tracking data, so QBR and FPI efficiencies stand in for Next Gen Stats.
