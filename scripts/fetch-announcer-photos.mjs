@@ -14,11 +14,11 @@
 // Each photo is resized to a 120px square-ish thumbnail in public/announcers/.
 // Results (with credit) are cached in data-raw/announcer-photos.json; misses
 // are retried after two weeks, or when the lookup logic version changes.
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync } from "node:fs";
 
 const RAW = new URL(`../${process.env.RAW_DIR ?? "data-raw"}/`, import.meta.url);
 const PUB = new URL("../public/announcers/", import.meta.url);
-const VERSION = 6;
+const VERSION = 7;
 const diag = {};
 const note = (name, msg) => (diag[name] ??= []).push(msg);
 const UA = "fbwatch/1.0 (https://fbwatch.elskatemm.com; github.com/denegrijustin/football-watchability)";
@@ -113,6 +113,7 @@ async function commonsFile(file) {
 }
 
 // ---------- 2. Commons ----------
+const COMMONS_OK = /broadcast|sportscaster|sports commentator|announcer|American football|NFL|college football|ESPN|CBS Sports|Fox Sports|NBC Sports|sideline reporter/i;
 async function commonsPhoto(name, page) {
   const qid = page?.pageprops?.wikibase_item;
   if (qid) {
@@ -128,8 +129,16 @@ async function commonsPhoto(name, page) {
   const s = await api("commons.wikimedia.org", { action: "query", list: "search", srnamespace: "6", srsearch: `intitle:"${name}"`, srlimit: "10" });
   // Only files named for the person alone: "Kristina Pink (36317080144).jpg", "Name 2019.jpg", "Name (cropped).jpg".
   const re = new RegExp(`^File:${esc(name)}(\\s*\\((\\d+|cropped)\\))?(\\s*(19|20)\\d\\d)?(\\s*\\(cropped\\))?\\.(jpe?g|png)$`, "i");
-  const hit = (s?.query?.search ?? []).map((x) => x.title).find((t) => re.test(t));
-  return hit ? commonsFile(hit.replace(/^File:/, "")) : null;
+  // A bare filename match isn't enough for common names ("Taylor Davis" the
+  // baseball player): the file must sit in the person's own category or a
+  // broadcasting / football category.
+  for (const t of (s?.query?.search ?? []).map((x) => x.title).filter((t) => re.test(t))) {
+    const c = await api("commons.wikimedia.org", { action: "query", titles: t, prop: "categories", cllimit: "50", clshow: "!hidden" });
+    const cats = (c?.query?.pages?.[0]?.categories ?? []).map((x) => x.title.replace(/^Category:/, ""));
+    if (cats.some((k) => norm(k) === norm(name) || COMMONS_OK.test(k))) return commonsFile(t.replace(/^File:/, ""));
+    note(name, `commons: skipped ${t} (categories: ${cats.slice(0, 5).join("; ")})`);
+  }
+  return null;
 }
 
 // ---------- 3. Network press rooms ----------
@@ -227,7 +236,9 @@ async function main() {
   let looked = 0;
   for (const name of networks.keys()) {
     const hit = cache[name];
-    if (hit?.file && existsSync(new URL(hit.file.replace(/^\/announcers\//, ""), PUB))) continue;
+    // Commons picks from before the category check get looked up again.
+    const recheck = hit?.source === "commons" && (hit.v ?? 0) < 7;
+    if (!recheck && hit?.file && existsSync(new URL(hit.file.replace(/^\/announcers\//, ""), PUB))) continue;
     if (hit && !hit.file && hit.v === VERSION && Date.now() - Date.parse(hit.checkedAt) < RETRY_MS) continue;
     looked++;
     let found = null,
@@ -247,6 +258,7 @@ async function main() {
       via = "press";
     }
     if (!found) {
+      if (hit?.file) rmSync(new URL(hit.file.replace(/^\/announcers\//, ""), PUB), { force: true });
       cache[name] = { file: null, v: VERSION, checkedAt: new Date().toISOString() };
       continue;
     }
