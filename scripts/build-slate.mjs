@@ -592,14 +592,14 @@ function injuriesFor(summary, teamId) {
 // Broadcast crew from scripts/fetch-announcers.mjs (Awful Announcing's
 // weekly schedules): [{ name, role }] in booth order.
 const announcerFile = optRaw("announcers.json")?.games ?? {};
-// Photos from scripts/fetch-announcer-photos.mjs (Wikimedia, free licenses).
+// Photos from scripts/fetch-announcer-photos.mjs (Wikimedia, else network press rooms).
 const announcerPhotos = optRaw("announcer-photos.json") ?? {};
 const announcersFor = (eventId) => {
   const crew = (announcerFile[eventId]?.crew ?? []).map((c) => {
     const p = announcerPhotos[c.name];
     if (!p?.file || !existsSync(new URL(`public${p.file}`, root))) return c;
-    const credit = [p.author, p.license].filter(Boolean).join(", ");
-    return { ...c, photo: p.file, photoCredit: `Photo: ${credit ? `${credit}, ` : ""}via Wikimedia Commons` };
+    const old = [p.author, p.license].filter(Boolean).join(", ");
+    return { ...c, photo: p.file, photoCredit: p.credit ?? `Photo: ${old ? `${old}, ` : ""}via Wikimedia Commons` };
   });
   return crew.length ? crew : null;
 };

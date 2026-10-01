@@ -5,6 +5,10 @@
 // game is one paragraph:
 //   <p><strong>Away at Home (8:15 p.m., Prime Video): </strong>Al Michaels
 //   (play-by-play), Kirk Herbstreit (analyst), Kaylee Hartung (reporter)</p>
+// ESPN's press room also keeps a college commentator schedule for every
+// ESPN-family game (ABC, ESPN, ESPN2, ESPNU, SEC Network, ACC Network), posted
+// earlier in the week: a table row per game with the matchup in bold and the
+// crew on the next line in booth order (play-by-play, analyst(s), reporter).
 // This reads the recent NFL and college articles, matches each game to the
 // ESPN event by both team names (within the week), and writes
 // data-raw/announcers.json keyed by ESPN event id. Crews listed as TBD are
@@ -13,6 +17,7 @@ import { readFileSync, writeFileSync, existsSync } from "node:fs";
 
 const RAW = new URL(`../${process.env.RAW_DIR ?? "data-raw"}/`, import.meta.url);
 const FEED = "https://awfulannouncing.com/category/schedules/feed";
+const ESPN_CFB = "https://espnpressroom.com/2026-27-espn-college-football-commentators-schedule/";
 const UA = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36";
 const read = (n) => (existsSync(new URL(n, RAW)) ? JSON.parse(readFileSync(new URL(n, RAW), "utf8")) : null);
 
@@ -72,6 +77,37 @@ export function parseArticle(html) {
   return games;
 }
 
+/** ESPN press room table rows: { date: "Sat, Oct 3", away, home, network, crew }. */
+export function parseEspnSchedule(html) {
+  const games = [];
+  let date = null;
+  for (const row of html.match(/<tr[\s\S]*?<\/tr>/g) ?? []) {
+    const cells = [...row.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map((m) => m[1]);
+    if (cells.length < 4) continue;
+    const d = text(cells[0]);
+    if (/^[A-Z][a-z]{2}, [A-Z][a-z]{2,4}\.? \d{1,2}$/.test(d)) date = d;
+    const [head, ...rest] = cells[2].split(/<br\s*\/?>/i);
+    const teams = splitMatchup(text(head).replace(/\*/g, ""));
+    const names = text(rest.join(" ")).split(/\s*,\s*/).filter((n) => n && !/^tbd$/i.test(n));
+    if (!date || !teams || names.length < 2) continue;
+    const crew = names.map((name, i) => ({
+      name,
+      role: i === 0 ? "play-by-play" : names.length >= 3 && i === names.length - 1 ? "reporter" : "analyst",
+    }));
+    games.push({ date, away: teams[0], home: teams[1], network: text(cells[3]), crew });
+  }
+  return games;
+}
+
+async function page(url) {
+  try {
+    const res = await fetch(url, { headers: { "user-agent": UA } });
+    return res.ok ? await res.text() : null;
+  } catch {
+    return null;
+  }
+}
+
 async function feed() {
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
@@ -88,11 +124,8 @@ async function feed() {
 
 async function main() {
   const prev = read("announcers.json") ?? { games: {} };
-  const xml = await feed();
-  if (!xml) {
-    console.log("announcers: feed unavailable; keeping what we have");
-    return;
-  }
+  const xml = (await feed()) ?? "";
+  if (!xml) console.log("announcers: Awful Announcing feed unavailable");
   const events = [];
   for (const [league, file] of [["NFL", "nfl-scoreboard.json"], ["CFB", "cfb-scoreboard.json"]]) {
     for (const ev of read(file)?.events ?? []) {
@@ -117,6 +150,23 @@ async function main() {
   let parsed = 0,
     matched = 0;
   const unmatched = [];
+  const sameGame = (e, g) => (has(e.away, g.away) && has(e.home, g.home)) || (has(e.away, g.home) && has(e.home, g.away));
+
+  // ESPN press room: college games on ESPN networks. Awful Announcing (below)
+  // replaces these when it lists the same game, since it labels each role.
+  const espn = await page(ESPN_CFB);
+  let espnMatched = 0;
+  const year = new Date().getUTCFullYear();
+  for (const g of espn ? parseEspnSchedule(espn) : []) {
+    const day = Date.parse(`${g.date.replace(/^\w+,\s*/, "").replace(".", "")} ${year} 17:00:00 GMT`);
+    const ev = events.find((e) => e.league === "CFB" && Math.abs(e.date - day) < 20 * 3600e3 && sameGame(e, g));
+    if (!ev) continue;
+    espnMatched++;
+    const old = games[ev.id];
+    if (old && old.source !== ESPN_CFB) continue;
+    games[ev.id] = { league: "CFB", network: g.network, crew: g.crew, source: ESPN_CFB, title: "ESPN college football commentator schedule", published: new Date().toISOString() };
+  }
+  console.log(`ESPN press room: ${espnMatched} college games matched`);
   for (const item of xml.match(/<item>[\s\S]*?<\/item>/g) ?? []) {
     const title = text(/<title>([\s\S]*?)<\/title>/.exec(item)?.[1]);
     const link = /<link>([\s\S]*?)<\/link>/.exec(item)?.[1]?.trim() ?? "";
@@ -134,7 +184,7 @@ async function main() {
           e.league === league &&
           e.date >= pub - 86400e3 &&
           e.date <= pub + 9 * 86400e3 &&
-          ((has(e.away, g.away) && has(e.home, g.home)) || (has(e.away, g.home) && has(e.home, g.away))),
+          sameGame(e, g),
       );
       if (!ev) {
         unmatched.push(`${league}: ${g.away} at ${g.home}`);
