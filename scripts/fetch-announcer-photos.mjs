@@ -18,7 +18,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 
 const RAW = new URL(`../${process.env.RAW_DIR ?? "data-raw"}/`, import.meta.url);
 const PUB = new URL("../public/announcers/", import.meta.url);
-const VERSION = 3;
+const VERSION = 4;
 const diag = {};
 const note = (name, msg) => (diag[name] ??= []).push(msg);
 const UA = "fbwatch/1.0 (https://fbwatch.elskatemm.com; github.com/denegrijustin/football-watchability)";
