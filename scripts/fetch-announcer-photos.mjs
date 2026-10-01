@@ -18,7 +18,9 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 
 const RAW = new URL(`../${process.env.RAW_DIR ?? "data-raw"}/`, import.meta.url);
 const PUB = new URL("../public/announcers/", import.meta.url);
-const VERSION = 2;
+const VERSION = 3;
+const diag = {};
+const note = (name, msg) => (diag[name] ??= []).push(msg);
 const UA = "fbwatch/1.0 (https://fbwatch.elskatemm.com; github.com/denegrijustin/football-watchability)";
 const BROWSER = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126 Safari/537.36";
 const SPORTS =
@@ -44,11 +46,14 @@ const strip = (h) =>
     .trim();
 const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
+const httpLog = [];
 async function getText(url, ua = BROWSER) {
   try {
     const res = await fetch(url, { headers: { "user-agent": ua }, redirect: "follow" });
+    if (!res.ok) httpLog.push(`${res.status} ${url}`);
     return res.ok ? await res.text() : null;
-  } catch {
+  } catch (e) {
+    httpLog.push(`${e} ${url}`);
     return null;
   }
 }
@@ -122,16 +127,23 @@ const startsWithName = (t, name) => norm(t).startsWith(norm(name));
 const PRESS = {
   espn: async (name) => {
     const [first, ...rest] = name.split(" ");
-    const h = await getText(`https://espnpressroom.com/bio/${norm(rest.join(""))}_${norm(first)}/`);
-    if (!h || !startsWithName(titleOf(h), name)) return null;
-    const img = og(h);
-    return img && !/ESPN-CFB-cam|default|logo/i.test(img) ? { url: img, credit: "Photo: ESPN Press Room" } : null;
+    // Bio URLs come in two shapes: /bio/pasch_dave/ and /bio/mike-monaco/.
+    for (const path of [`${norm(rest.join(""))}_${norm(first)}`, slug(name), `${slug(rest.join(" "))}_${slug(first)}`]) {
+      const h = await getText(`https://espnpressroom.com/bio/${path}/`);
+      if (!h || !startsWithName(titleOf(h), name)) continue;
+      const img = og(h);
+      if (img && !/ESPN-CFB-cam|default|logo/i.test(img)) return { url: img, credit: "Photo: ESPN Press Room" };
+      note(name, `espn: page ${path} has no headshot (${img})`);
+    }
+    return null;
   },
   cbs: async (name) => {
     const h = await getText(`https://www.paramountpressexpress.com/cbs-sports/talent/?view=${slug(name)}`);
     const shown = strip(/class="photo-name">([^<]*)</.exec(h ?? "")?.[1]);
+    note(name, `cbs: page ${h ? h.length : "failed"}, photo-name "${shown}"`);
     if (!h || norm(shown) !== norm(name)) return null;
     const img = /<img[^>]+src="(https:\/\/private-assets-pressexpress\.s3\.amazonaws\.com\/assets\/photos\/[^"]+)"/.exec(h)?.[1];
+    note(name, `cbs: img ${img ? img.slice(0, 120) : "none"}`);
     return img ? { url: img.replace(/&amp;/g, "&"), credit: "Photo: CBS Sports (Paramount Press Express)" } : null;
   },
   fox: async (name) => {
@@ -232,11 +244,13 @@ async function main() {
       tally[via]++;
     } catch (e) {
       console.error(`${name}: ${e}`);
+      note(name, `save failed (${via}): ${e} ${String(found.url).slice(0, 120)}`);
       cache[name] = { file: null, v: VERSION, checkedAt: new Date().toISOString() };
     }
     await sleep(200);
   }
   writeFileSync(new URL("announcer-photos.json", RAW), JSON.stringify(cache, null, 1));
+  writeFileSync(new URL("announcer-photos-log.json", RAW), JSON.stringify({ diag, http: httpLog.filter((l) => !/^404 /.test(l)).slice(0, 80) }, null, 1));
   const names = [...networks.keys()];
   const have = names.filter((n) => cache[n]?.file).length;
   console.log(
