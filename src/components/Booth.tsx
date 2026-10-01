@@ -1,29 +1,47 @@
-/** Broadcast crew for a game: play-by-play and analysts in the booth, then sideline and rules. */
-export type CrewMember = { name: string; role: string };
+import { Headshot } from "./Headshot";
 
-const BOOTH = /play-by-play|analyst/;
-const join = (names: string[]) =>
-  names.length <= 2 ? names.join(" & ") : `${names.slice(0, -1).join(", ")} & ${names[names.length - 1]}`;
+/** Broadcast crew for a game: play-by-play and analysts in the booth, then sideline. */
+export type CrewMember = { name: string; role: string; photo?: string; photoCredit?: string };
 
-export function boothText(crew: CrewMember[]) {
-  const booth = crew.filter((c) => BOOTH.test(c.role) && !/rules/.test(c.role)).map((c) => c.name);
-  const side = crew.filter((c) => /reporter|sideline/.test(c.role)).map((c) => c.name);
-  return { booth: join(booth), side: side.length ? join(side) : null };
+const inBooth = (c: CrewMember) => /play-by-play|analyst/.test(c.role) && !/rules/.test(c.role);
+const onSide = (c: CrewMember) => /reporter|sideline/.test(c.role);
+const sep = (i: number, n: number) => (i === n - 1 ? "" : i === n - 2 ? " & " : ", ");
+
+function People({ list }: { list: CrewMember[] }) {
+  return (
+    <>
+      {list.map((c, i) => (
+        <span key={c.name}>
+          <span className="booth-person" title={`${c.name} (${c.role})${c.photoCredit ? `\n${c.photoCredit}` : ""}`}>
+            <Headshot src={c.photo} name={c.name} size={20} className="booth-head" />
+            {c.name}
+          </span>
+          {sep(i, list.length)}
+        </span>
+      ))}
+    </>
+  );
 }
 
-/** "Al Michaels & Kirk Herbstreit · sideline Kaylee Hartung" with roles on hover. */
+/** "🎙️ (photo) Al Michaels & (photo) Kirk Herbstreit · sideline (photo) Kaylee Hartung" */
 export function Booth({ crew, as: Tag = "li" }: { crew?: CrewMember[] | null; as?: "li" | "p" }) {
   if (!crew?.length) return null;
-  const { booth, side } = boothText(crew);
+  const booth = crew.filter(inBooth);
+  const side = crew.filter(onSide);
   return (
-    <Tag className="booth" title={crew.map((c) => `${c.name} (${c.role})`).join(", ")}>
+    <Tag className="booth">
       <span className="fact-icon" aria-hidden="true">
         🎙️
       </span>
-      <span>
+      <span className="booth-people">
         <span className="sr-only">Announcers: </span>
-        {booth || crew.map((c) => c.name).join(", ")}
-        {booth && side && <span className="booth-side"> · sideline {side}</span>}
+        <People list={booth.length ? booth : crew} />
+        {booth.length > 0 && side.length > 0 && (
+          <span className="booth-side">
+            {" "}
+            · sideline <People list={side} />
+          </span>
+        )}
       </span>
     </Tag>
   );

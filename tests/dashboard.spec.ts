@@ -537,4 +537,8 @@ test("cards show the broadcast crew when the announcing schedule lists the game"
   const card = page.locator(".game-card").filter({ hasText: g.teams[0].name }).filter({ hasText: g.teams[1].name }).first();
   // Visible on the compact card, with play-by-play first.
   await expect(card.locator(".booth")).toContainText(g.announcers[0].name);
+  // Each announcer has a small photo, or initials when there's no free one.
+  await expect(card.locator(".booth-person").first().locator("img, .headshot-fallback")).toBeVisible();
+  const box = await card.locator(".booth-person").first().locator("img, .headshot-fallback").boundingBox();
+  expect(box!.height).toBeLessThanOrEqual(22);
 });
