@@ -18,7 +18,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 
 const RAW = new URL(`../${process.env.RAW_DIR ?? "data-raw"}/`, import.meta.url);
 const PUB = new URL("../public/announcers/", import.meta.url);
-const VERSION = 4;
+const VERSION = 5;
 const diag = {};
 const note = (name, msg) => (diag[name] ??= []).push(msg);
 const UA = "fbwatch/1.0 (https://fbwatch.elskatemm.com; github.com/denegrijustin/football-watchability)";
@@ -157,7 +157,11 @@ const PRESS = {
     const h = await getText(`https://www.paramountpressexpress.com/cbs-sports/talent/?view=${slug(name)}`);
     const shown = strip(/class="photo-name">([^<]*)</.exec(h ?? "")?.[1]);
     note(name, `cbs: page ${h ? h.length : "failed"}, photo-name "${shown}"`);
-    if (h && !shown && cbsSaved++ < 1) writeFileSync(new URL("announcer-cbs-sample.html", RAW), h);
+    if (h && name === "Kevin Harlan" && !cbsSaved++) {
+      writeFileSync(new URL("announcer-cbs-sample.html", RAW), h);
+      const list = await getText("https://www.paramountpressexpress.com/cbs-sports/bios/");
+      if (list) writeFileSync(new URL("announcer-cbs-list.html", RAW), list);
+    }
     if (!h || norm(shown) !== norm(name)) return null;
     const img = /<img[^>]+src="(https:\/\/private-assets-pressexpress\.s3\.amazonaws\.com\/assets\/photos\/[^"]+)"/.exec(h)?.[1];
     note(name, `cbs: img ${img ? img.slice(0, 120) : "none"}`);
