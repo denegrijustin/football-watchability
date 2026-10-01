@@ -19,6 +19,7 @@ import { InsanityMeter } from "./InsanityMeter";
 import { useOpenGame } from "./GameCenter";
 import { EdgeLine, type Advanced } from "./AdvancedStats";
 import { InjuryWatch } from "./InjuryReport";
+import { Booth, type CrewMember } from "./Booth";
 import { dayOf, timeOf, tzAbbr } from "../tz";
 
 const impactLevel = (impact: string) =>
@@ -190,6 +191,7 @@ export function GameCard({
             {meta.line}
           </li>
         )}
+        <Booth crew={(game as { announcers?: CrewMember[] }).announcers} />
         <li className={`weather impact-${impact}`}>
           <span className="fact-icon" aria-hidden="true">
             {game.weather.icon}

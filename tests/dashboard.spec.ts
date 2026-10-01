@@ -527,3 +527,14 @@ test("college conference games carry the conference availability report", async 
     if (await status.count()) await expect(status).toHaveText(/Out|Doubtful|Questionable|Probable|Game-time/i);
   }
 });
+
+test("cards show the broadcast crew when the announcing schedule lists the game", async ({ page }) => {
+  const games = slate.games.filter((g: any) => g.league === "NFL" && g.announcers?.length);
+  test.skip(!games.length, "no announcer data in this build");
+  for (const g of games) for (const c of g.announcers) expect(c.name && c.role).toBeTruthy();
+  await page.goto("/");
+  const g = games[0];
+  const card = page.locator(".game-card").filter({ hasText: g.teams[0].name }).filter({ hasText: g.teams[1].name }).first();
+  // Visible on the compact card, with play-by-play first.
+  await expect(card.locator(".booth")).toContainText(g.announcers[0].name);
+});
