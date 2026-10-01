@@ -66,6 +66,10 @@ Each upcoming card's **History + key players** section lists both teams' season 
 
 Upcoming game cards open compact: kickoff and TV, both teams with record and ranks, the watchability score, venue, line and weather. A click anywhere on the card (or **Details ▾**) expands it in place to the full card: quarter-by-quarter weather, the take, projected score, win probability, edges, form, and the detail dropdowns. On an expanded card, a click on the matchup opens the Game Center overlay; **Less ▴** collapses it. Cards opened from the TV grid start expanded.
 
+### Announcers
+
+Cards show the broadcast crew on a 🎙️ line under the venue and line, on the compact card too: play-by-play and analysts, then the sideline reporter (hover for each role). Finals keep the crew that called the game. `scripts/fetch-announcers.mjs` reads Awful Announcing's weekly NFL and college football announcing schedules from its schedules RSS feed (`awfulannouncing.com/category/schedules/feed`, which carries each article's full text), parses each game paragraph ("**Away at Home (time, Network):** Name (play-by-play), Name (analyst), Name (reporter)"), matches it to the ESPN game by both team names within the week, and writes `data-raw/announcers.json`. The NFL list usually posts Wednesday and the college list Thursday, so they land with the Thursday and Friday refreshes (and the game-day rebuilds on Saturday). Games the schedule lists as TBD, or that it doesn't cover, show no crew line.
+
 ### Injury report
 
 NFL cards have an **Injury report** section (header shows counts per team) listing each team's players who are Out, Doubtful or Questionable with photo, position and injury (for example "Questionable · Josh Allen QB · Left Knee"), plus a line of players on IR or PUP. When a key player (a season leader) is on the report, an **Injury watch** chip appears on the card face. Data comes from each ESPN game summary's injury report, trimmed in `fetch-slate.mjs` and built by `injuriesFor` in `build-slate.mjs`. ESPN doesn't carry college injury reports; college cards use the conference availability reports below.

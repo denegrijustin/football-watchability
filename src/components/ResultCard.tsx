@@ -1,9 +1,18 @@
 import type { CSSProperties } from "react";
-import { logos, networkLogo, rankLine, rankTitle, teamColor, tierLabel, type Result } from "../data";
+import {
+  logos,
+  networkLogo,
+  rankLine,
+  rankTitle,
+  teamColor,
+  tierLabel,
+  type Result,
+} from "../data";
 import { ScoreBreakdown } from "./ScoreBreakdown";
 import { InsanityMeter } from "./InsanityMeter";
 import { AdvancedStats } from "./AdvancedStats";
 import { useOpenGame } from "./GameCenter";
+import { Booth, type CrewMember } from "./Booth";
 import { dayOf, timeOf, tzAbbr } from "../tz";
 
 const short = (r: Result, i: number) =>
@@ -27,14 +36,22 @@ export function ResultCard({ result: r }: { result: Result }) {
   return (
     <article
       className={`game-card result-card ${r.actual.tier}${teamColor(home.color) ? " team-tinted" : ""}`}
-      style={teamColor(home.color) ? ({ "--team-bg": teamColor(home.color) } as CSSProperties) : undefined}
+      style={
+        teamColor(home.color)
+          ? ({ "--team-bg": teamColor(home.color) } as CSSProperties)
+          : undefined
+      }
       aria-labelledby={`r-${r.espnId}`}
     >
       <header className="card-top">
         <div className="kickoff">
-          <strong>{r.final.detail}</strong> · {dayOf(r.date)} {timeOf(r.date)} {tzAbbr()}
+          <strong>{r.final.detail}</strong> · {dayOf(r.date)} {timeOf(r.date)}{" "}
+          {tzAbbr()}
         </div>
-        <div className={`tv ${netLogo ? "has-logo" : ""}`} title="Where it aired">
+        <div
+          className={`tv ${netLogo ? "has-logo" : ""}`}
+          title="Where it aired"
+        >
           {netLogo && (
             <span className="net-chip">
               <img src={netLogo} alt="" height="16" loading="lazy" />
@@ -72,12 +89,21 @@ export function ResultCard({ result: r }: { result: Result }) {
               <tr key={t.name} className={winner === i ? "won" : undefined}>
                 <th scope="row">
                   <span className="ls-team">
-                    <img src={logos[t.logoId]} alt="" width="26" height="26" loading="lazy" />
+                    <img
+                      src={logos[t.logoId]}
+                      alt=""
+                      width="26"
+                      height="26"
+                      loading="lazy"
+                    />
                     <span className="ls-name">
                       {t.name}
                       <span className="ls-rec">{t.record}</span>
                       {rankLine(t.ranks) && (
-                        <span className="ls-rec rank-line" title={rankTitle(t.ranks)}>
+                        <span
+                          className="ls-rec rank-line"
+                          title={rankTitle(t.ranks)}
+                        >
                           {rankLine(t.ranks)}
                         </span>
                       )}
@@ -96,8 +122,12 @@ export function ResultCard({ result: r }: { result: Result }) {
         </table>
       </div>
 
+      <Booth crew={(r as { announcers?: CrewMember[] }).announcers} as="p" />
       {sc && (
-        <section className={`score-call grade-${sc.grade}`} aria-label="Projected score versus final">
+        <section
+          className={`score-call grade-${sc.grade}`}
+          aria-label="Projected score versus final"
+        >
           <h4 className="micro-label">Score: projected vs final</h4>
           <div className="sc-row">
             <div className="sc-box">
@@ -107,9 +137,13 @@ export function ResultCard({ result: r }: { result: Result }) {
               </strong>
             </div>
             <span className={`sc-badge ${sc.winnerRight ? "right" : "wrong"}`}>
-              <span aria-hidden="true">{sc.winnerRight ? "✓" : "✗"}</span> {sc.winnerRight ? "Winner" : "Wrong winner"}
+              <span aria-hidden="true">{sc.winnerRight ? "✓" : "✗"}</span>{" "}
+              {sc.winnerRight ? "Winner" : "Wrong winner"}
               <span className="sc-miss">
-                Margin {sc.marginMiss === 0 ? "exact" : `off ${Math.abs(sc.marginMiss)}`}
+                Margin{" "}
+                {sc.marginMiss === 0
+                  ? "exact"
+                  : `off ${Math.abs(sc.marginMiss)}`}
               </span>
             </span>
             <div className="sc-box final">
@@ -133,14 +167,21 @@ export function ResultCard({ result: r }: { result: Result }) {
         </section>
       )}
 
-      <h4 className="micro-label fva-label">Watchability: forecast vs actual</h4>
-      <div className="fva" aria-label={`Forecast ${r.forecast.score}, actual ${r.actual.score}`}>
+      <h4 className="micro-label fva-label">
+        Watchability: forecast vs actual
+      </h4>
+      <div
+        className="fva"
+        aria-label={`Forecast ${r.forecast.score}, actual ${r.actual.score}`}
+      >
         <div className={`fva-box ${r.forecast.tier}`}>
           <span className="micro-label">Forecast</span>
           <strong>{r.forecast.score}</strong>
           <span className="fva-tier">{tierLabel(r.forecast.tier)}</span>
         </div>
-        <span className={`fva-delta ${d > 4 ? "up" : d < -4 ? "down" : "even"}`}>
+        <span
+          className={`fva-delta ${d > 4 ? "up" : d < -4 ? "down" : "even"}`}
+        >
           <span aria-hidden="true">{d > 0 ? "▲" : d < 0 ? "▼" : "="}</span>
           {d === 0 ? "Even" : `${d > 0 ? "+" : "−"}${Math.abs(d)}`}
         </span>
@@ -159,11 +200,22 @@ export function ResultCard({ result: r }: { result: Result }) {
           ))}
         </ul>
       )}
-      <InsanityMeter wp={r.wp} final overtime={r.final.overtime} away={short(r, 0)} home={short(r, 1)} />
+      <InsanityMeter
+        wp={r.wp}
+        final
+        overtime={r.final.overtime}
+        away={short(r, 0)}
+        home={short(r, 1)}
+      />
 
-      <button type="button" className="gc-open" onClick={() => openGame(r.espnId)}>
+      <button
+        type="button"
+        className="gc-open"
+        onClick={() => openGame(r.espnId)}
+      >
         <span>
-          <strong>Game Center</strong> · drive chart, momentum, field tilt, top 3 / bottom 3, player tracker
+          <strong>Game Center</strong> · drive chart, momentum, field tilt, top
+          3 / bottom 3, player tracker
         </span>
         <span aria-hidden="true">↗</span>
       </button>
@@ -199,8 +251,12 @@ export function ResultCard({ result: r }: { result: Result }) {
             The forecast ({r.forecast.score})<span aria-hidden="true">+</span>
           </summary>
           <div className="detail-content">
-            {r.forecast.take && <p className="forecast-take">“{r.forecast.take}”</p>}
-            {r.forecast.line && <p className="source-note">Pregame line: {r.forecast.line}</p>}
+            {r.forecast.take && (
+              <p className="forecast-take">“{r.forecast.take}”</p>
+            )}
+            {r.forecast.line && (
+              <p className="source-note">Pregame line: {r.forecast.line}</p>
+            )}
             {r.forecast.parts ? (
               <ScoreBreakdown
                 base={r.forecast.base}

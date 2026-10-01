@@ -38,6 +38,7 @@ jobs:
           END: ${{ steps.dates.outputs.end }}
       - run: node scripts/fetch-weather.mjs
       - run: node scripts/fetch-availability.mjs || echo "availability reports failed"
+      - run: node scripts/fetch-announcers.mjs || echo "announcer schedules failed"
       - run: node scripts/fetch-trends.mjs
       - run: node scripts/fetch-history.mjs
         timeout-minutes: 40

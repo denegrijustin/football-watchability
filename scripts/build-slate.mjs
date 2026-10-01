@@ -589,6 +589,14 @@ function injuriesFor(summary, teamId) {
   );
 }
 
+// Broadcast crew from scripts/fetch-announcers.mjs (Awful Announcing's
+// weekly schedules): [{ name, role }] in booth order.
+const announcerFile = optRaw("announcers.json")?.games ?? {};
+const announcersFor = (eventId) => {
+  const crew = announcerFile[eventId]?.crew ?? [];
+  return crew.length ? crew : null;
+};
+
 // College: conference availability reports (SEC, ACC, Big Ten, Big 12), from
 // scripts/fetch-availability.mjs. Statuses as the conferences publish them;
 // they don't disclose the injury.
@@ -1022,6 +1030,7 @@ for (const [key, league] of [
       broadcast: (comp.broadcasts ?? []).flatMap((b) => b.names).map((n) => TV[n] ?? n)[0] ?? "TBA",
       weather,
       availability: league === "CFB" ? availabilityMeta(ev.id) : null,
+      announcers: announcersFor(ev.id),
       teams: [tA, tH].map(({ _conf, _leaders, _leaderCards, ...t }) => t),
       history: {
         ...hist,
@@ -1156,6 +1165,7 @@ for (const g of built) {
       linescores: g.final.linescores[i],
     })),
     final: { detail: g.final.detail, overtime: g.final.overtime },
+    ...(g.announcers ? { announcers: g.announcers } : {}),
     forecast: {
       score: forecast.score,
       tier: forecast.tier,
@@ -1220,6 +1230,7 @@ const games = built
       network: overrides[g.espnId]?.network ?? g._network,
       weather: g.weather,
       ...(g.availability ? { availability: g.availability } : {}),
+      ...(g.announcers ? { announcers: g.announcers } : {}),
       teams: g.teams,
       breakdown: { base: g.breakdown.base, parts: g.breakdown.parts },
       winProb: { ...g.winProb, history: forecasts[g.espnId]?.wpHistory ?? [] },
