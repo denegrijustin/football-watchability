@@ -47,16 +47,32 @@ const strip = (h) =>
 const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const httpLog = [];
+// Press rooms rate-limit (ESPN answers 429): one request per host every 1.5s,
+// backing off and retrying on 429.
+const lastHit = new Map();
 async function getText(url, ua = BROWSER) {
-  try {
-    const res = await fetch(url, { headers: { "user-agent": ua }, redirect: "follow" });
-    if (!res.ok) httpLog.push(`${res.status} ${url}`);
-    return res.ok ? await res.text() : null;
-  } catch (e) {
-    httpLog.push(`${e} ${url}`);
-    return null;
+  const host = new URL(url).host;
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const wait = (lastHit.get(host) ?? 0) + 1500 - Date.now();
+    if (wait > 0) await sleep(wait);
+    lastHit.set(host, Date.now());
+    try {
+      const res = await fetch(url, { headers: { "user-agent": ua, accept: "text/html,application/xhtml+xml", "accept-language": "en-US,en;q=0.9" }, redirect: "follow" });
+      if (res.status === 429) {
+        httpLog.push(`429 ${url} (retrying)`);
+        await sleep(10000 * (attempt + 1));
+        continue;
+      }
+      if (!res.ok) httpLog.push(`${res.status} ${url}`);
+      return res.ok ? await res.text() : null;
+    } catch (e) {
+      httpLog.push(`${e} ${url}`);
+      return null;
+    }
   }
+  return null;
 }
+let cbsSaved = 0;
 async function api(host, params) {
   const url = `https://${host}/w/api.php?${new URLSearchParams({ format: "json", formatversion: "2", ...params })}`;
   for (let attempt = 0; attempt < 3; attempt++) {
@@ -141,6 +157,7 @@ const PRESS = {
     const h = await getText(`https://www.paramountpressexpress.com/cbs-sports/talent/?view=${slug(name)}`);
     const shown = strip(/class="photo-name">([^<]*)</.exec(h ?? "")?.[1]);
     note(name, `cbs: page ${h ? h.length : "failed"}, photo-name "${shown}"`);
+    if (h && !shown && cbsSaved++ < 1) writeFileSync(new URL("announcer-cbs-sample.html", RAW), h);
     if (!h || norm(shown) !== norm(name)) return null;
     const img = /<img[^>]+src="(https:\/\/private-assets-pressexpress\.s3\.amazonaws\.com\/assets\/photos\/[^"]+)"/.exec(h)?.[1];
     note(name, `cbs: img ${img ? img.slice(0, 120) : "none"}`);
