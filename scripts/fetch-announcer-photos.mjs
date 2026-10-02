@@ -4,13 +4,15 @@
 //  1. Wikipedia: the person's article (exact title, else a "<name>
 //     sportscaster" search), checked against its short description so a
 //     namesake isn't picked, and its lead image only if freely licensed.
-//  2. Wikimedia Commons: the Wikidata image (P18) for that article, else a
-//     Commons file titled with the person's name.
-//  3. The network's press-room headshot (ESPN Press Room, Paramount Press
+//  2. The network's press-room headshot (ESPN Press Room, Paramount Press
 //     Express for CBS, Fox Sports Press Pass, NBC Sports Pressbox), trying
 //     the network the person is working for this week first. These are the
 //     official talent photos the networks publish for media use; each is
 //     credited to the network.
+//  3. Wikimedia Commons: the Wikidata image (P18) for that article, else a
+//     Commons file titled with the person's name that sits in a broadcasting
+//     or football category (or the person's own, when an article confirmed
+//     who they are).
 // Each photo is resized to a 120px square-ish thumbnail in public/announcers/.
 // Results (with credit) are cached in data-raw/announcer-photos.json; misses
 // are retried after two weeks, or when the lookup logic version changes.
@@ -18,7 +20,7 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync } from "node
 
 const RAW = new URL(`../${process.env.RAW_DIR ?? "data-raw"}/`, import.meta.url);
 const PUB = new URL("../public/announcers/", import.meta.url);
-const VERSION = 7;
+const VERSION = 8;
 const diag = {};
 const note = (name, msg) => (diag[name] ??= []).push(msg);
 const UA = "fbwatch/1.0 (https://fbwatch.elskatemm.com; github.com/denegrijustin/football-watchability)";
@@ -135,7 +137,8 @@ async function commonsPhoto(name, page) {
   for (const t of (s?.query?.search ?? []).map((x) => x.title).filter((t) => re.test(t))) {
     const c = await api("commons.wikimedia.org", { action: "query", titles: t, prop: "categories", cllimit: "50", clshow: "!hidden" });
     const cats = (c?.query?.pages?.[0]?.categories ?? []).map((x) => x.title.replace(/^Category:/, ""));
-    if (cats.some((k) => norm(k) === norm(name) || COMMONS_OK.test(k))) return commonsFile(t.replace(/^File:/, ""));
+    // The person's own category counts only when a Wikipedia article confirmed who they are.
+    if (cats.some((k) => COMMONS_OK.test(k) || (page && norm(k) === norm(name)))) return commonsFile(t.replace(/^File:/, ""));
     note(name, `commons: skipped ${t} (categories: ${cats.slice(0, 5).join("; ")})`);
   }
   return null;
@@ -237,7 +240,7 @@ async function main() {
   for (const name of networks.keys()) {
     const hit = cache[name];
     // Commons picks from before the category check get looked up again.
-    const recheck = hit?.source === "commons" && (hit.v ?? 0) < 7;
+    const recheck = hit?.source === "commons" && (hit.v ?? 0) < 8;
     if (!recheck && hit?.file && existsSync(new URL(hit.file.replace(/^\/announcers\//, ""), PUB))) continue;
     if (hit && !hit.file && hit.v === VERSION && Date.now() - Date.parse(hit.checkedAt) < RETRY_MS) continue;
     looked++;
@@ -249,13 +252,15 @@ async function main() {
       found = await commonsFile(page.pageimage);
       via = "wikipedia";
     }
-    if (!found) {
-      found = await commonsPhoto(name, page);
-      via = "commons";
-    }
+    // Official network headshots before Commons: Commons photos are often
+    // candid crowd shots, and a bare name match there can be a namesake.
     if (!found) {
       found = await pressPhoto(name, networks.get(name));
       via = "press";
+    }
+    if (!found) {
+      found = await commonsPhoto(name, page);
+      via = "commons";
     }
     if (!found) {
       if (hit?.file) rmSync(new URL(hit.file.replace(/^\/announcers\//, ""), PUB), { force: true });
