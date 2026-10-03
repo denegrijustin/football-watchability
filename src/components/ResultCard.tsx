@@ -345,7 +345,7 @@ function Attendance({ attendance, venueId }: { attendance?: number | null; venue
         <span className="att-label">Attendance</span>
         <strong>{v.attendance.toLocaleString("en-US")}</strong>
         {v.pct != null && v.capacity != null && (
-          <span className="att-pct" title={venue?.source === "wikipedia" ? "Stadium capacity from Wikipedia" : undefined}>
+          <span className="att-pct" title={venue?.source === "wikipedia" ? "Stadium capacity from Wikipedia" : venue?.source === "seed" ? "Stadium capacity from published stadium guides" : undefined}>
             {Math.round(v.pct)}% of {v.capacity.toLocaleString("en-US")} capacity
           </span>
         )}

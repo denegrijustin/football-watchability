@@ -96,8 +96,10 @@ test("the attendance script fills attendance and stadium capacity, keeps what it
       ],
     }),
   );
+  const seedFile = join(dir, "seed.json");
+  writeFileSync(seedFile, JSON.stringify({ "5001": { capacity: 51500 }, "3679": { capacity: 1 } }));
   const exec = async () =>
-    (await run("node", ["scripts/attendance.mjs"], { env: { ...process.env, ESPN_BASE: base, ESPN_CORE_BASE: base, WIKI_BASE: base, RESULTS_FILE: results, VENUES_FILE: venues, RAW_DIR: join(dir, "none") } })).stdout;
+    (await run("node", ["scripts/attendance.mjs"], { env: { ...process.env, ESPN_BASE: base, ESPN_CORE_BASE: base, WIKI_BASE: base, RESULTS_FILE: results, VENUES_FILE: venues, RAW_DIR: join(dir, "none"), SEED_FILE: seedFile } })).stdout;
   try {
     const log = await exec();
     expect(log).toContain("Attendance: 5 added, 1 unavailable");
@@ -109,14 +111,16 @@ test("the attendance script fills attendance and stadium capacity, keeps what it
     expect(games["5"]).toMatchObject({ attendance: 70000, venueId: "9" });
     // ESPN gave names and places, no capacities; Wikipedia's lists supply them where the match is clear.
     const v = JSON.parse(readFileSync(venues, "utf8"));
-    expect(v["3679"]).toMatchObject({ name: "Huntington Bank Field", city: "Cleveland", state: "OH", capacity: 67431, source: "wikipedia" });
+    expect(v["3679"]).toMatchObject({ name: "Huntington Bank Field", city: "Cleveland", state: "OH" });
     expect(v["3953"]).toMatchObject({ capacity: 50805, source: "wikipedia" }); // footnote marker ignored
     expect(v["5002"]).toMatchObject({ capacity: 85458, source: "wikipedia" }); // two Memorial Stadiums: Nebraska picked by state
-    // Never guessed: Kansas's Memorial Stadium is not on the list, and an unlisted stadium has no capacity.
-    expect(v["5001"].capacity).toBeNull();
+    // The checked-in seed list (by venue id) wins over Wikipedia; it is what covers Kansas's Memorial Stadium.
+    expect(v["5001"]).toMatchObject({ capacity: 51500, source: "seed" });
+    expect(v["3679"]).toMatchObject({ source: "seed", capacity: 1 });
+    // Never guessed: an unlisted stadium has no capacity.
     expect(v["5003"].capacity).toBeNull();
-    expect(log).toContain("capacities from Wikipedia");
-    expect(log).toMatch(/No capacity found for 2 stadiums: .*Memorial Stadium \(KS\).*Some Other Field \(TX\)/);
+    expect(log).toContain("capacities from the seed list, 2 from Wikipedia");
+    expect(log).toMatch(/No capacity found for 1 stadiums: .*Some Other Field \(TX\)/);
     expect(wikiCalls).toEqual(["List of current NFL stadiums", "List of NCAA Division I FBS football stadiums", "List of NCAA Division I FCS football stadiums"]);
     expect(log).toContain("Wikipedia page unavailable: List of NCAA Division I FCS football stadiums"); // a missing page does not stop the run
     // Re-run: ESPN is not asked about stadiums we already know (only the unreachable one), Wikipedia is read again
