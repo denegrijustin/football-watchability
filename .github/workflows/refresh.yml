@@ -123,6 +123,8 @@ jobs:
           node scripts/upgrade-logos.mjs || echo "logo fetch failed; validation will catch missing logos"
           node scripts/write-narratives.mjs
           node scripts/export-slate.mjs
+          # Attendance for finals archived before it was recorded, and stadium capacities.
+          node scripts/attendance.mjs || echo "attendance fetch failed; building without it"
           pnpm build
 
       - name: Browser checks

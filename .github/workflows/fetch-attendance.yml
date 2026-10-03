@@ -1,0 +1,45 @@
+name: Fetch attendance and capacity
+# Fills attendance for archived finals and looks up stadium capacities (scripts/attendance.mjs),
+# so completed game cards can show attendance as a share of capacity. The scheduled refresh does this
+# too; run it by hand to get capacities onto the site right away. Commits src/data/results.json and
+# public/venues.json to slate-data and copies those two files to main, which Cloudflare Pages deploys.
+# Safe to re-run.
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: slate-data-writes
+  cancel-in-progress: false
+jobs:
+  attendance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: slate-data
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Look up attendance and capacity
+        run: node scripts/attendance.mjs
+      - name: Commit to slate-data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898699+github-actions[bot]@users.noreply.github.com"
+          git add src/data/results.json public/venues.json
+          git diff --cached --quiet && { echo "Nothing new"; exit 0; }
+          git commit -q -m "Attendance and stadium capacity"
+          git pull -q --rebase -X theirs origin slate-data
+          git push origin HEAD:slate-data
+      - name: Copy to main
+        run: |
+          src=$(git rev-parse HEAD)
+          git fetch -q origin main
+          git checkout -q -B main origin/main
+          git checkout "$src" -- src/data/results.json public/venues.json
+          git diff --cached --quiet && { echo "Main already has it"; exit 0; }
+          git commit -q -m "Attendance and stadium capacity"
+          git push origin main

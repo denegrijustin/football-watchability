@@ -803,3 +803,43 @@ test("Top 3 / bottom 3 numbers stay plain when the game feed has no play log", a
   await expect(gc.locator(".gc-imp").first()).toBeVisible();
   await expect(gc.locator(".gc-imp-btn")).toHaveCount(0);
 });
+
+test("completed cards show attendance at the top, with a capacity bar when the stadium's capacity is known", async ({ page }) => {
+  const g = results.games.find((r: any) => r.attendance > 0 && r.venueId);
+  test.skip(!g, "no finished game with attendance in this build");
+  const count = g.attendance.toLocaleString("en-US");
+  const cap = Math.round(g.attendance / 0.8); // a stadium this game filled to 80%
+  const open = async () => {
+    await page.goto("/");
+    if (g.league === "CFB") await page.getByRole("button", { name: /^College football/ }).click();
+    await completed(page);
+    return page.locator(".result-card").filter({ hasText: g.teams[0].name }).filter({ hasText: g.teams[1].name }).first();
+  };
+  // Capacity known: a bar, and the share of capacity.
+  await page.route("**/venues.json", (r) => r.fulfill({ json: { [g.venueId]: { name: "Test Stadium", capacity: cap } } }));
+  let card = await open();
+  const att = card.locator(".attendance");
+  await expect(att).toBeVisible();
+  await expect(att.locator(".att-line strong")).toHaveText(count);
+  await expect(att.locator(".att-pct")).toContainText(`80% of ${cap.toLocaleString("en-US")} capacity`);
+  const meter = att.locator("[role=meter]");
+  await expect(meter).toHaveAttribute("aria-valuenow", "80");
+  await expect(meter.locator("i")).toHaveAttribute("style", /width: 80%/);
+  // It sits at the very top of the card, right under the header and before the score.
+  const order = await card.locator(".card-top, .attendance, .game-status").evaluateAll((els) => els.map((e) => e.className.split(" ")[0]));
+  expect(order.slice(0, 3)).toEqual(["card-top", "attendance", "game-status"]);
+  // No capacity on file: the count still shows, with no bar and no made-up percentage.
+  await page.unroute("**/venues.json");
+  await page.route("**/venues.json", (r) => r.fulfill({ json: {} }));
+  card = await open();
+  await expect(card.locator(".attendance .att-line strong")).toHaveText(count);
+  await expect(card.locator(".attendance [role=meter]")).toHaveCount(0);
+  await expect(card.locator(".attendance .att-pct")).toHaveCount(0);
+  // Games without an attendance don't show the row at all.
+  const none = results.games.find((r: any) => !r.attendance);
+  if (none && none.league === g.league) {
+    await expect(page.locator(".result-card").filter({ hasText: none.teams[0].name }).filter({ hasText: none.teams[1].name }).first().locator(".attendance")).toHaveCount(0);
+  }
+  const width = await page.evaluate(() => document.documentElement.scrollWidth);
+  expect(width).toBeLessThanOrEqual((page.viewportSize()?.width ?? 0) + 1);
+});
