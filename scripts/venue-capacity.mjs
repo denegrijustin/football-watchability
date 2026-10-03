@@ -73,7 +73,7 @@ export function parseTables(html) {
   return tables;
 }
 
-const norm = (s) =>
+export const normName = (s) =>
   String(s ?? "")
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "")
@@ -106,7 +106,7 @@ export function stadiumRows(html) {
       const capacity = capacityOf(row[cap] ?? "");
       const stadium = (row[name] ?? "").trim();
       if (!capacity || !stadium) continue;
-      out.push({ name: stadium, key: norm(stadium), capacity, state: stateCode(state >= 0 ? row[state] : "") || stateCode(location >= 0 ? row[location] : "") });
+      out.push({ name: stadium, key: normName(stadium), capacity, state: stateCode(state >= 0 ? row[state] : "") || stateCode(location >= 0 ? row[location] : "") });
     }
   }
   return out;
@@ -124,11 +124,29 @@ export function buildIndex(rows) {
  * in them several times (Memorial Stadium, Tiger Stadium) needs its state to pick exactly one.
  */
 export function lookupCapacity(index, { name, state }) {
-  const rows = index.get(norm(name));
+  const rows = index.get(normName(name));
   if (!rows?.length) return null;
   const caps = new Set(rows.map((r) => r.capacity));
   if (rows.length === 1 || caps.size === 1) return rows[0].capacity;
   const code = stateCode(state);
   const inState = code ? rows.filter((r) => r.state === code) : [];
   return inState.length === 1 || new Set(inState.map((r) => r.capacity)).size === 1 ? (inState[0]?.capacity ?? null) : null;
+}
+
+/**
+ * Capacity from scripts/venue-capacity-alt-sites.json: overseas, neutral-site and alternate-home
+ * stadiums. A site matches by name or alias; a US site also needs the venue's state to agree, which
+ * keeps "War Memorial Stadium" in Little Rock apart from Wyoming's. Approximate entries (ranges,
+ * records, stale names) are kept for reference but never used.
+ */
+export function altSiteCapacity(sites, { name, state }) {
+  const key = normName(name);
+  const code = stateCode(state);
+  for (const s of sites) {
+    if (s.approximate || !s.capacity) continue;
+    if (![s.name, ...(s.aliases ?? [])].some((n) => normName(n) === key)) continue;
+    if (s.state && s.state !== code) continue;
+    return s.capacity;
+  }
+  return null;
 }
