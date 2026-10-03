@@ -4966,3 +4966,295 @@ html:has(dialog[open]) {
   border-radius: 4px;
   background: var(--att);
 }
+
+/* ---------- Slim chrome: header, persistent filter bar, view tabs ---------- */
+.site-header {
+  height: 44px;
+}
+.brand {
+  font-size: 14px;
+  gap: 9px;
+}
+.brand-mark {
+  width: 30px;
+  height: 25px;
+  font-size: 12.5px;
+}
+.tz-pick select,
+.edition-date {
+  min-height: 30px;
+}
+.how-to {
+  margin: 8px 0 0;
+}
+.how-to > summary {
+  min-height: 32px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+.filter-dock {
+  z-index: 30;
+  padding: 6px 24px;
+}
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.fmenu {
+  position: relative;
+  display: inline-flex;
+}
+.fmenu select {
+  appearance: none;
+  -webkit-appearance: none;
+  height: 34px;
+  padding: 0 26px 0 11px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%238d9eac' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 9px center;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+  text-overflow: ellipsis;
+}
+.fmenu select:hover,
+.fmenu select:focus-visible {
+  border-color: var(--line-strong);
+}
+.fmenu.live select {
+  border-color: #e5484d99;
+}
+.filter-bar .search {
+  flex: 1 1 120px;
+  min-width: 96px;
+  max-width: 340px;
+  height: 34px;
+  margin-left: auto;
+  padding: 0 4px 0 10px;
+  border-radius: 10px;
+}
+.filter-bar .search input {
+  font-size: 14px;
+}
+.filter-bar .search-clear {
+  min-height: 28px;
+  width: 28px;
+}
+.view-row {
+  margin-top: 8px;
+  gap: 8px;
+}
+.view-switch button {
+  min-height: 34px;
+}
+.export summary {
+  min-height: 34px;
+  padding: 0 12px;
+}
+.board-heading {
+  margin: 12px 0 6px;
+}
+.board-heading h2 {
+  font-size: 19px;
+}
+@media (max-width: 760px) {
+  .site-header {
+    height: 44px;
+  }
+  .filter-dock {
+    margin: 0 -16px;
+    padding: 6px 16px;
+  }
+  /* 16px stops iOS zooming the page when a menu or the search box is tapped. */
+  .fmenu select {
+    height: 36px;
+    padding: 0 24px 0 10px;
+    font-size: 16px;
+  }
+  .filter-bar .search {
+    height: 36px;
+  }
+  .filter-bar .search input {
+    font-size: 16px;
+  }
+  .view-row {
+    flex-wrap: nowrap;
+    align-items: center;
+  }
+  .view-row .view-switch {
+    flex: 1;
+    min-width: 0;
+    width: auto;
+  }
+  .view-row .export-btns {
+    width: auto;
+    flex: 0 0 auto;
+  }
+  .view-switch button {
+    min-height: 36px;
+    padding: 0 6px;
+  }
+}
+
+/* ---------- Compact game cards: logos, scores, rating; the rest opens ---------- */
+.game-card.compact {
+  padding: 10px 12px;
+}
+.cc {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 4px 10px;
+}
+.cc-main {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.cc-when {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--text-2);
+}
+.cc-when .game-status {
+  margin: 0;
+}
+.cc-time strong {
+  color: var(--text);
+}
+.cc-team {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+.cc-team img {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+.cc-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+}
+.cc-team .team-score,
+.cc-team .team-score.won {
+  margin-left: auto;
+  padding-left: 8px;
+  font-size: 22px;
+}
+.cc-rate {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  min-width: 58px;
+  padding: 6px 6px 5px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--score-color) 8%, #0c151b);
+  border: 1px solid color-mix(in srgb, var(--score-color) 30%, transparent);
+  color: var(--score-color);
+  line-height: 1.05;
+}
+.cc-rate strong {
+  font-size: 24px;
+  font-weight: 780;
+  letter-spacing: -0.8px;
+  font-variant-numeric: tabular-nums;
+}
+.cc-rate span {
+  margin-top: 2px;
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+  text-align: center;
+}
+.cc-rate em {
+  margin-top: 2px;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
+}
+.cc-rate em.up {
+  color: var(--green);
+}
+.cc-rate em.down {
+  color: var(--red);
+}
+.card-toggle.cc-chevron {
+  width: 30px;
+  height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: rgb(0 0 0 / 20%);
+  font-size: 14px;
+}
+@media (max-width: 640px) {
+  .card-toggle.cc-chevron {
+    min-height: 44px;
+  }
+}
+@media (max-width: 760px) {
+  .game-card.compact {
+    padding: 10px 12px;
+  }
+}
+
+/* Week stats: one short line, the rest behind "Week highlights". */
+.week-more > summary {
+  display: inline-block;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--muted);
+  list-style: none;
+}
+.week-more > summary::-webkit-details-marker {
+  display: none;
+}
+.week-more > summary::after {
+  content: " ▾";
+}
+.week-more[open] > summary::after {
+  content: " ▴";
+}
+.week-more p {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+@media (max-width: 760px) {
+  /* The menus already say which league and day this is; the counts line says the rest. */
+  .board-heading h2 {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .board-heading {
+    margin: 8px 0 4px;
+  }
+}
+@media (max-width: 520px) {
+  .cc-pre {
+    display: none;
+  }
+}

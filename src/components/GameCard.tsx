@@ -1,4 +1,5 @@
 import { useState, type CSSProperties } from "react";
+import { nameParts } from "../teamName";
 import { deltaValue, logos, parseMeta, tierLabel, type Game } from "../data";
 import { Stakes } from "./TeamImpact";
 import { GameDetails } from "./GameDetails";
@@ -63,6 +64,18 @@ export function GameCard({
       <span aria-hidden="true">{expanded ? "▴" : "▾"}</span>
     </button>
   );
+  const chevron = (
+    <button
+      type="button"
+      className="card-toggle cc-chevron"
+      aria-expanded={false}
+      aria-controls={`${game.id}-more`}
+      aria-label="Show game details"
+      onClick={() => setExpanded(true)}
+    >
+      <span aria-hidden="true">▾</span>
+    </button>
+  );
   return (
     <article
       className={`game-card ${game.tier}${homeColor ? " team-tinted" : ""}${expanded ? " expanded" : " compact"}`}
@@ -75,6 +88,38 @@ export function GameCard({
           setExpanded(true);
       }}
     >
+      {!expanded && (
+        <div className="cc">
+          <div className="cc-main">
+            <div className="cc-when">
+              {live && live.state !== "pre" ? (
+                <GameStatus live={live} />
+              ) : (
+                <span className="cc-time">
+                  <strong>{dayOf(date)}</strong> {timeOf(date)} {tzAbbr()}
+                </span>
+              )}
+            </div>
+            <h3 id={`${game.id}-title`} className="sr-only">
+              {game.matchup}
+            </h3>
+            {[away, home].map((team, i) => (
+              <div className="cc-team" key={team.name}>
+                <img src={logos[team.logoId]} alt="" width="28" height="28" loading="lazy" />
+                <span className="cc-name">{(([pre, nick]) => (<>{pre && <span className="cc-pre">{pre}</span>}{nick}</>))(nameParts(team.name, game.league))}</span>
+                <TeamScore live={live} side={i === 0 ? "away" : "home"} />
+              </div>
+            ))}
+          </div>
+          <div className="cc-rate" aria-label={`Watchability ${game.score} out of 100, ${tierLabel(game.tier)}`}>
+            <strong>{game.score}</strong>
+            <span>{tierLabel(game.tier)}</span>
+          </div>
+          {chevron}
+        </div>
+      )}
+      {expanded && (
+        <>
       <header className="card-top">
         <div className="kickoff">
           <strong>{dayOf(date)}</strong> {timeOf(date)} {tzAbbr()}
@@ -208,7 +253,8 @@ export function GameCard({
           )}
         </li>
       </ul>
-      {!expanded && toggle}
+        </>
+      )}
       {expanded && (
         <div className="card-more" id={`${game.id}-more`}>
           <WeatherLook game={game} />

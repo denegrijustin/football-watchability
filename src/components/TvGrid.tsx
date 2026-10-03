@@ -306,7 +306,7 @@ function GameDialog({ game, onClose }: { game: GridGame | null; onClose: () => v
           <button className="tv-dialog-close" onClick={onClose} aria-label="Close">
             ×
           </button>
-          {result && <ResultCard result={result} />}
+          {result && <ResultCard result={result} defaultExpanded />}
           {upcoming && <GameCard game={upcoming} defaultExpanded />}
         </div>
       )}

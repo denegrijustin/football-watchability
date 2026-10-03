@@ -1,4 +1,5 @@
-import type { CSSProperties } from "react";
+import { useState, type CSSProperties } from "react";
+import { nameParts } from "../teamName";
 import { attendanceView } from "../attendance";
 import { useVenues } from "../venues";
 import {
@@ -21,13 +22,15 @@ const short = (r: Result, i: number) =>
   r.league === "NFL" ? r.teams[i].name.split(" ").pop()! : r.teams[i].abbr;
 
 /** A finished game: final score, forecast vs actual watchability and why. */
-export function ResultCard({ result: r }: { result: Result }) {
+export function ResultCard({ result: r, defaultExpanded = false }: { result: Result; defaultExpanded?: boolean }) {
+  const [expanded, setExpanded] = useState(defaultExpanded);
   const netLogo = networkLogo(r.network);
   const [away, home] = r.teams;
   const winner = away.score > home.score ? 0 : home.score > away.score ? 1 : -1;
   const periods = Math.max(away.linescores.length, home.linescores.length);
   const d = r.delta;
   const sc = r.scoreCheck;
+  const extra = r.final.detail.replace(/^final\/?/i, "").trim();
   const openGame = useOpenGame();
   const sourceNote =
     r.forecast.source === "published"
@@ -37,14 +40,58 @@ export function ResultCard({ result: r }: { result: Result }) {
         : null;
   return (
     <article
-      className={`game-card result-card ${r.actual.tier}${teamColor(home.color) ? " team-tinted" : ""}`}
+      className={`game-card result-card ${r.actual.tier}${teamColor(home.color) ? " team-tinted" : ""}${expanded ? " expanded" : " compact"}`}
       style={
         teamColor(home.color)
           ? ({ "--team-bg": teamColor(home.color) } as CSSProperties)
           : undefined
       }
       aria-labelledby={`r-${r.espnId}`}
+      onClick={(e) => {
+        if (!expanded && !(e.target as HTMLElement).closest("a,button,summary")) setExpanded(true);
+      }}
     >
+      {!expanded && (
+        <div className="cc">
+          <div className="cc-main">
+            <div className="cc-when">
+              <span className="game-status post">
+                <span className="gs-pill">Final</span>
+                {extra && <span className="gs-period">{extra}</span>}
+              </span>
+              <span className="cc-time">
+                <strong>{dayOf(r.date)}</strong> {timeOf(r.date)} {tzAbbr()}
+              </span>
+            </div>
+            <h3 id={`r-${r.espnId}`} className="sr-only">
+              {r.matchup}, final {away.score}–{home.score}
+            </h3>
+            {[away, home].map((t, i) => (
+              <div className="cc-team" key={t.name}>
+                <img src={logos[t.logoId]} alt="" width="28" height="28" loading="lazy" />
+                <span className="cc-name">{(([pre, nick]) => (<>{pre && <span className="cc-pre">{pre}</span>}{nick}</>))(nameParts(t.name, r.league))}</span>
+                <span className={`team-score${winner === i ? " won" : winner >= 0 ? " lost" : ""}`}>{t.score}</span>
+              </div>
+            ))}
+          </div>
+          <div className="cc-rate" aria-label={`Actual watchability ${r.actual.score} out of 100, ${tierLabel(r.actual.tier)}`}>
+            <strong>{r.actual.score}</strong>
+            <span>{tierLabel(r.actual.tier)}</span>
+            {Math.abs(d) > 4 && <em className={d > 0 ? "up" : "down"}>{d > 0 ? "▲" : "▼"}{Math.abs(d)}</em>}
+          </div>
+          <button
+            type="button"
+            className="card-toggle cc-chevron"
+            aria-expanded={false}
+            aria-label="Show game details"
+            onClick={() => setExpanded(true)}
+          >
+            <span aria-hidden="true">▾</span>
+          </button>
+        </div>
+      )}
+      {expanded && (
+        <>
       <header className="card-top">
         <div className="kickoff">
           <strong>{dayOf(r.date)}</strong> {timeOf(r.date)} {tzAbbr()}
@@ -277,6 +324,11 @@ export function ResultCard({ result: r }: { result: Result }) {
           </div>
         </details>
       </div>
+      <button type="button" className="card-toggle" aria-expanded={true} onClick={() => setExpanded(false)}>
+        Less <span aria-hidden="true">▴</span>
+      </button>
+        </>
+      )}
     </article>
   );
 }
