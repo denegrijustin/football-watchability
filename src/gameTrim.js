@@ -183,6 +183,11 @@ export function trimGame(s, positions = {}) {
     wp,
     drives,
     plays: plays.slice(-40),
+    // Every play that can credit a player (see src/playImpact.ts), so Top 3 / Bottom 3 can show
+    // the plays behind each number. Timeouts, kicks off, punts and penalty-only plays never do.
+    log: plays
+      .filter((p) => !/^(Penalty|Timeout|Official Timeout|End |Two-minute|Coin|Kickoff|Punt)/i.test(p.kind))
+      .map((p) => ({ id: p.id, team: p.team, period: p.period, clock: p.clock, text: p.text, kind: p.kind, yards: p.yards, score: p.score, turnover: p.turnover })),
     allOffense: plays
       .filter((p) => p.offense && p.team && p.toGo != null)
       .map((p) => [p.team === teams[1]?.id ? 1 : 0, p.toGo, p.period ?? 0, p.yards]),

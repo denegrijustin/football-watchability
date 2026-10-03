@@ -1,4 +1,6 @@
-import { createContext, useContext, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { attributePlays, impact, type ImpactEvent, type PlayLog, type PlayerRow } from "../playImpact";
+import { ART_LABEL, PlayArt } from "./PlayArt";
 import { openModal } from "../modal";
 import { logos, networkLogo, rankLine, results, slate, teamColor, tierLabel, type Ranks } from "../data";
 import { trimGame } from "../gameTrim.js";
@@ -35,27 +37,14 @@ type Side = { id: string; abbr: string; name: string; homeAway: string; score: n
 type Drive = { team: string; period: number | null; clock: string; from: number | null; to: number | null; yards: number; plays: number; result: string; score: boolean; time: string; current: boolean };
 type Play = { id: string; team: string; period: number | null; clock: string; text: string; kind: string; yards: number; toGo: number | null; offense: boolean; score: boolean; turnover: boolean };
 type TeamStats = { yards: number; ypp: number; plays: number; firstDowns: number; third: string; redZone: string; turnovers: number; top: string; penalties: string; passYds: number; rushYds: number };
-type PlayerRow = {
-  id: string;
-  name: string;
-  short: string;
-  jersey: string;
-  pos?: string | null;
-  headshot: string | null;
-  passing?: { cmp: number; att: number; yds: number; td: number; int: number; sacks: number; qbr: number | null };
-  rushing?: { att: number; yds: number; td: number; long: number };
-  receiving?: { rec: number; yds: number; td: number; tgt: number; long: number };
-  fumbles?: { fum: number; lost: number };
-  defensive?: { tkl: number; sacks: number; tfl: number; pd: number; hits: number; td: number };
-  interceptions?: { int: number; yds: number; td: number };
-  kicking?: { fgm: number; fga: number; xpm: number; xpa: number; long: number };
-};
 export type LiveGame = {
   id: string;
   status: { state: "pre" | "in" | "post"; detail: string; period: number; clock: string };
   teams: Side[];
   situation: { text: string; possession: string | null; toGo: number | null; redZone: boolean; lastPlay: string } | null;
   wp: [number, number | null][];
+  /** Every play that can credit a player; older cached responses may not have it. */
+  log?: PlayLog[];
   drives: Drive[];
   plays: Play[];
   allOffense: [number, number, number, number][]; // [side 0 away/1 home, yards to end zone, quarter, yards gained]
@@ -108,61 +97,8 @@ function useLiveGame(league: string | null, id: string | null, started: boolean)
   return { game, updated };
 }
 
-// ---------- player impact ----------
-/**
- * A simple box-score impact score for ranking players within a game: yards,
- * touchdowns and takeaways count up; interceptions, fumbles lost, sacks taken
- * and incompletions on targets count down.
- */
-export function impact(p: PlayerRow) {
-  let v = 0;
-  const why: string[] = [];
-  const bad: string[] = [];
-  if (p.passing && p.passing.att) {
-    const x = p.passing;
-    v += x.yds * 0.04 + x.td * 4 - x.int * 4.5 - x.sacks * 0.7 - (x.att - x.cmp) * 0.15;
-    why.push(`${x.cmp}/${x.att}, ${x.yds} yds${x.td ? `, ${x.td} TD` : ""}${x.int ? `, ${x.int} INT` : ""}`);
-    if (x.int) bad.push(`${x.int} INT`);
-    if (x.sacks >= 3) bad.push(`sacked ${x.sacks}×`);
-  }
-  if (p.rushing && p.rushing.att) {
-    const x = p.rushing;
-    v += x.yds * 0.1 + x.td * 6 - (x.att >= 8 && x.yds / x.att < 3 ? 2 : 0);
-    why.push(`${x.att} car, ${x.yds} yds${x.td ? `, ${x.td} TD` : ""}`);
-    if (x.att >= 8 && x.yds / x.att < 3) bad.push(`${(x.yds / x.att).toFixed(1)} yds/car`);
-  }
-  if (p.receiving && (p.receiving.tgt || p.receiving.rec)) {
-    const x = p.receiving;
-    const miss = Math.max(0, x.tgt - x.rec);
-    v += x.yds * 0.1 + x.rec * 0.5 + x.td * 6 - miss * 0.4;
-    why.push(`${x.rec}/${x.tgt || x.rec} rec, ${x.yds} yds${x.td ? `, ${x.td} TD` : ""}`);
-    if (miss >= 4) bad.push(`${miss} targets not caught`);
-  }
-  if (p.fumbles?.lost) {
-    v -= p.fumbles.lost * 4;
-    bad.push(`${p.fumbles.lost} fumble${p.fumbles.lost > 1 ? "s" : ""} lost`);
-  }
-  if (p.defensive) {
-    const x = p.defensive;
-    v += x.tkl * 0.5 + x.sacks * 3 + x.tfl * 1 + x.pd * 1 + x.hits * 0.5 + x.td * 6;
-    if (x.tkl || x.sacks || x.pd)
-      why.push([x.tkl && `${x.tkl} tkl`, x.sacks && `${x.sacks} sk`, x.tfl && `${x.tfl} TFL`, x.pd && `${x.pd} PD`].filter(Boolean).join(", "));
-  }
-  if (p.interceptions?.int) {
-    v += p.interceptions.int * 4.5 + p.interceptions.td * 6;
-    why.push(`${p.interceptions.int} INT`);
-  }
-  if (p.kicking && (p.kicking.fga || p.kicking.xpa)) {
-    const x = p.kicking;
-    v += x.fgm * 2 - (x.fga - x.fgm) * 3 - (x.xpa - x.xpm) * 1.5;
-    why.push(`FG ${x.fgm}/${x.fga}, XP ${x.xpm}/${x.xpa}`);
-    if (x.fga - x.fgm) bad.push(`${x.fga - x.fgm} missed FG`);
-  }
-  // Involvement: enough touches that a bad day means something.
-  const touches =
-    (p.passing?.att ?? 0) + (p.rushing?.att ?? 0) + (p.receiving?.tgt ?? p.receiving?.rec ?? 0) + (p.kicking?.fga ?? 0) * 3;
-  return { value: Math.round(v * 10) / 10, line: why.join(" · "), bad, touches };
-}
+// ---------- player impact (formula and play attribution live in src/playImpact.ts) ----------
+export { impact };
 
 /** Position from the roster when we have it, otherwise a best guess from the box score. */
 export function positionOf(p: PlayerRow) {
@@ -667,13 +603,13 @@ function TopBottom({ game, teams }: { game: LiveGame; teams: TeamLike[] }) {
               <h5 className="gc-tbl top">Top 3</h5>
               <ol className="gc-top">
                 {top.map((x) => (
-                  <PlayerLine key={x.p.id} x={x} team={{ ...teams[i], abbr: t.abbr }} good />
+                  <PlayerLine key={x.p.id} x={x} team={{ ...teams[i], abbr: t.abbr }} game={game} good />
                 ))}
               </ol>
               <h5 className="gc-tbl bottom">Bottom 3</h5>
               <ol className="gc-bottom">
                 {bottom.map((x) => (
-                  <PlayerLine key={x.p.id} x={x} team={{ ...teams[i], abbr: t.abbr }} />
+                  <PlayerLine key={x.p.id} x={x} team={{ ...teams[i], abbr: t.abbr }} game={game} />
                 ))}
                 {!bottom.length && <li className="gc-none">No one struggling yet</li>}
               </ol>
@@ -685,19 +621,36 @@ function TopBottom({ game, teams }: { game: LiveGame; teams: TeamLike[] }) {
   );
 }
 
+const periodName = (q: number | null) => (q == null ? "" : q > 4 ? "OT" : `Q${q}`);
+/** "+1.1", "−0.15", "+6": sign always shown, at most two decimals. */
+const pts = (n: number) => `${n > 0 ? "+" : n < 0 ? "−" : ""}${Math.abs(Math.round(n * 100) / 100)}`;
+
 function PlayerLine({
   x,
   team,
   good,
+  game,
 }: {
   x: { p: PlayerRow; value: number; line: string; bad: string[] };
   team: TeamLike & { abbr: string };
   good?: boolean;
+  game: LiveGame;
 }) {
   const color = teamColor(team.color ?? null) ?? "#1d2a35";
   const pos = positionOf(x.p);
+  const [open, setOpen] = useState(false);
+  const canOpen = !!game.log?.length;
+  const detail = useMemo(() => (open ? attributePlays(x.p, game, x.value) : null), [open, game, x.p, x.value]);
+  const panel = `plays-${team.abbr}-${x.p.id}`;
+  const value = (
+    <>
+      <span aria-hidden="true">{good ? "▲" : "▼"}</span>
+      {x.value > 0 ? "+" : ""}
+      {x.value}
+    </>
+  );
   return (
-    <li className="gc-pcard" style={{ "--team": color } as CSSProperties}>
+    <li className={`gc-pcard${open ? " open" : ""}`} style={{ "--team": color } as CSSProperties}>
       <span className="gc-ph">
         <Headshot src={x.p.headshot} name={x.p.name} size={40} />
         <img className="gc-plogo" src={logos[team.logoId]} alt="" width="20" height="20" />
@@ -717,12 +670,81 @@ function PlayerLine({
         </span>
         <small>{good || !x.bad.length ? x.line : `${x.bad.join(", ")} · ${x.line}`}</small>
       </span>
-      <span className={`gc-imp ${good ? "pos" : "neg"}`} title="Impact score">
-        <span aria-hidden="true">{good ? "▲" : "▼"}</span>
-        {x.value > 0 ? "+" : ""}
-        {x.value}
-      </span>
+      {canOpen ? (
+        <button
+          type="button"
+          className={`gc-imp gc-imp-btn ${good ? "pos" : "neg"}`}
+          aria-expanded={open}
+          aria-controls={panel}
+          title="Impact score. Click to see the plays behind it"
+          onClick={() => setOpen((v) => !v)}
+        >
+          {value}
+          <span className="gc-imp-more" aria-hidden="true">
+            {open ? "Hide plays ▴" : "Plays ▾"}
+          </span>
+        </button>
+      ) : (
+        <span className={`gc-imp ${good ? "pos" : "neg"}`} title="Impact score">
+          {value}
+        </span>
+      )}
+      {open && detail && <PlayList id={panel} detail={detail} value={x.value} name={x.p.short} />}
     </li>
+  );
+}
+
+/** The plays that add up to a player's impact number, each with its art and points. */
+function PlayList({ id, detail, value, name }: { id: string; detail: { events: ImpactEvent[]; other: number }; value: number; name: string }) {
+  const { events, other } = detail;
+  const shown = Math.abs(other) >= 0.05;
+  return (
+    <div className="gc-plays" id={id}>
+      <p className="gc-plays-head">
+        <strong>{name}'s plays</strong>
+        <span>
+          {events.length} play{events.length === 1 ? "" : "s"} {pts(Math.round((value - other) * 100) / 100)}
+          {shown ? ` · other ${pts(other)}` : ""} = <b>{pts(value)}</b>
+        </span>
+      </p>
+      <ol className="gc-playlist">
+        {events.map((e, i) => (
+          <li key={`${e.id}-${i}`} className={e.points >= 0 ? "pos" : "neg"}>
+            <span className="gc-pa" title={ART_LABEL[e.art]}>
+              <PlayArt kind={e.art} size={24} />
+            </span>
+            <span className="gc-pw">
+              <strong>{e.role.charAt(0).toUpperCase() + e.role.slice(1)}</strong>
+              {(e.period != null || e.clock) && (
+                <em>
+                  {periodName(e.period)} {e.clock}
+                </em>
+              )}
+              <small>{e.text}</small>
+            </span>
+            <span className="gc-ppts">
+              {e.yards != null && <i>{e.yards > 0 ? "+" : ""}{e.yards} yd</i>}
+              <b>{pts(e.points)}</b>
+            </span>
+          </li>
+        ))}
+        {shown && (
+          <li className="other" title="Credit from the box score that the play log doesn't tie to a single play, such as tackles on special teams.">
+            <span className="gc-pa">
+              <PlayArt kind="other" size={24} />
+            </span>
+            <span className="gc-pw">
+              <strong>Other box-score credit</strong>
+              <small>Not tied to a listed play (special teams, assists, stats the play text doesn't name).</small>
+            </span>
+            <span className="gc-ppts">
+              <b>{pts(other)}</b>
+            </span>
+          </li>
+        )}
+        {!events.length && !shown && <li className="none"><span className="gc-pw"><small>No plays credited yet.</small></span></li>}
+      </ol>
+    </div>
   );
 }
 
