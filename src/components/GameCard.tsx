@@ -14,7 +14,7 @@ import {
 } from "../data";
 import { PregameWinProb, type WinProbData } from "./PregameWinProb";
 import { ProjectedScore, type Projection } from "./ProjectedScore";
-import { LiveStrip, useFlow, useLive } from "../live";
+import { GameStatus, TeamScore, useFlow, useLive } from "../live";
 import { InsanityMeter } from "./InsanityMeter";
 import { useOpenGame } from "./GameCenter";
 import { EdgeLine, type Advanced } from "./AdvancedStats";
@@ -106,7 +106,6 @@ export function GameCard({
           {game.broadcast}
         </div>
       </header>
-      <LiveStrip live={live} away={awayAbbr} home={homeAbbr} />
       {flow && (
         <InsanityMeter
           wp={flow}
@@ -131,6 +130,7 @@ export function GameCard({
           {game.matchup}
         </h3>
         <div className="matchup-teams">
+          <GameStatus live={live} />
           {[away, home].map((team, i) => (
             <div className="team-heading" key={team.name}>
               <img
@@ -155,6 +155,7 @@ export function GameCard({
                   </p>
                 )}
               </div>
+              <TeamScore live={live} side={i === 0 ? "away" : "home"} />
             </div>
           ))}
         </div>

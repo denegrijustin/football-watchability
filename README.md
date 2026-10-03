@@ -55,7 +55,7 @@ Overlays (Game Center and the TV grid's game detail) open fixed to the screen, s
 
 ### Live scores
 
-`functions/api/scores.js` is a Cloudflare Pages Function: `/api/scores?league=nfl|cfb&date=YYYYMMDD` returns trimmed ESPN scores, cached at the edge for 30 seconds while games are live. `src/live.tsx` polls it every minute once a game on the board has kicked off (falling back to ESPN directly, which allows cross-origin requests) and stops when everything that has started is final. Cards show a Live or Final strip, and grid blocks show the score. The hourly check in **Scheduled refresh** then rebuilds within the hour of a final, moving the game to **Completed** with its forecast vs actual readout.
+`functions/api/scores.js` is a Cloudflare Pages Function: `/api/scores?league=nfl|cfb&date=YYYYMMDD` returns trimmed ESPN scores, cached at the edge for 30 seconds while games are live. `src/live.tsx` polls it every minute once a game on the board has kicked off (falling back to ESPN directly, which allows cross-origin requests) and stops when everything that has started is final. Live and just-finished cards show a status row above the team names (a red LIVE pill with the quarter and clock, or FINAL, parsed from ESPN's status text by `src/liveStatus.ts`) and each team's score beside its logo and name; archived completed cards put the final score beside each team name too, followed by the quarter-by-quarter line. Grid blocks show the score. The hourly check in **Scheduled refresh** then rebuilds within the hour of a final, moving the game to **Completed** with its forecast vs actual readout.
 
 ### Insanity meter
 

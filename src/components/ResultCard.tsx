@@ -45,8 +45,7 @@ export function ResultCard({ result: r }: { result: Result }) {
     >
       <header className="card-top">
         <div className="kickoff">
-          <strong>{r.final.detail}</strong> · {dayOf(r.date)} {timeOf(r.date)}{" "}
-          {tzAbbr()}
+          <strong>{dayOf(r.date)}</strong> {timeOf(r.date)} {tzAbbr()}
         </div>
         <div
           className={`tv ${netLogo ? "has-logo" : ""}`}
@@ -70,6 +69,12 @@ export function ResultCard({ result: r }: { result: Result }) {
         onClick={() => openGame(r.espnId)}
         title="Open Game Center"
       >
+        <div className="game-status post">
+          <span className="gs-pill">Final</span>
+          {r.final.detail.replace(/^final\/?/i, "").trim() && (
+            <span className="gs-period">{r.final.detail.replace(/^final\/?/i, "").trim()}</span>
+          )}
+        </div>
         <table className="linescore">
           <thead>
             <tr>
@@ -81,7 +86,6 @@ export function ResultCard({ result: r }: { result: Result }) {
                   {i < 4 ? i + 1 : periods > 5 ? `OT${i - 3}` : "OT"}
                 </th>
               ))}
-              <th scope="col">T</th>
             </tr>
           </thead>
           <tbody>
@@ -108,6 +112,7 @@ export function ResultCard({ result: r }: { result: Result }) {
                         </span>
                       )}
                     </span>
+                    <span className="ls-total team-score">{t.score}</span>
                   </span>
                 </th>
                 {Array.from({ length: periods }, (_, q) => (
@@ -115,7 +120,6 @@ export function ResultCard({ result: r }: { result: Result }) {
                     {t.linescores[q] ?? "–"}
                   </td>
                 ))}
-                <td className="ls-total">{t.score}</td>
               </tr>
             ))}
           </tbody>

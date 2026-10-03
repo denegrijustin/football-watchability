@@ -580,7 +580,7 @@ test("board lists in progress first, then completed, then upcoming, and the Stat
   await expect(sections.first()).toHaveAttribute("aria-label", "In progress");
   expect(await sections.evaluateAll((els) => els.map((e) => e.getAttribute("aria-label")))).toEqual(["In progress", "Completed", "Upcoming"]);
   await expect(page.locator(".board-section.live .game-card")).toHaveCount(1);
-  await expect(page.locator(".board-section.live .live-strip")).toContainText("Live");
+  await expect(page.locator(".board-section.live .game-status")).toContainText("Live");
   // Completed holds the just-finished game plus the archived finals; Upcoming holds the rest.
   await expect(page.locator(".board-section.final .section-head .count")).toHaveText(String(archived + 1));
   await expect(page.locator(".board-section.upcoming .game-card")).toHaveCount(games.length - 2);
@@ -661,4 +661,58 @@ test("game details open fixed to the screen, keep the page still, and scroll ins
   await page.keyboard.press("Escape");
   await expect(tv).toBeHidden();
   expect(await y()).toBe(gridY);
+});
+
+test("live and completed cards show the status above the teams and the score beside each team", async ({ page }, testInfo) => {
+  const errors: string[] = [];
+  page.on("pageerror", (err) => errors.push(err.message));
+  const games = slate.games.filter((g: any) => g.league === "NFL");
+  const start = Math.min(...games.map((g: any) => new Date(g.date).getTime()));
+  await page.clock.install({ time: start + 90 * 60e3 });
+  // Game 0 is live (Q3 5:12, 14-17), game 1 just finished (27-24).
+  await page.route("**/api/scores**", (route) =>
+    route.fulfill({
+      json: games.map((g: any, i: number) => ({
+        id: g.espnId,
+        state: i === 0 ? "in" : i === 1 ? "post" : "pre",
+        detail: i === 0 ? "5:12 - 3rd" : "Final",
+        away: i === 0 ? 14 : 27,
+        home: i === 0 ? 17 : 24,
+      })),
+    }),
+  );
+  await page.goto("/");
+  const live = page.locator(".board-section.live .game-card").first();
+  await expect(live.locator(".game-status.in")).toBeVisible();
+  // The old single line is gone.
+  await expect(page.locator(".live-strip")).toHaveCount(0);
+  // Quarter and clock, above the team names.
+  await expect(live.locator(".game-status")).toContainText("Q3");
+  await expect(live.locator(".game-status")).toContainText("5:12");
+  const order = await live.locator(".game-status, .team-heading").evaluateAll((els) => els.map((e) => e.className.split(" ")[0]));
+  expect(order).toEqual(["game-status", "team-heading", "team-heading"]);
+  // One score per team, inside that team's row (beside its logo and name).
+  const rows = live.locator(".team-heading");
+  await expect(rows.nth(0).locator(".team-score")).toHaveText("14");
+  await expect(rows.nth(1).locator(".team-score")).toHaveText("17");
+  await expect(rows.nth(0).locator("img")).toBeVisible();
+  // On the same row as the team name, not on a line of its own.
+  const [nameBox, scoreBox] = await Promise.all([rows.nth(0).locator("h4").boundingBox(), rows.nth(0).locator(".team-score").boundingBox()]);
+  expect(Math.abs((nameBox!.y + nameBox!.height / 2) - (scoreBox!.y + scoreBox!.height / 2))).toBeLessThan(60);
+  expect(scoreBox!.x).toBeGreaterThan(nameBox!.x);
+  // A game that just finished: FINAL, winner's score emphasized.
+  const post = page.locator(".just-final .game-card").first();
+  await expect(post.locator(".game-status.post")).toContainText("Final");
+  await expect(post.locator(".team-score.won")).toHaveText("27");
+  await expect(post.locator(".team-score.lost")).toHaveText("24");
+  // Archived completed cards: FINAL above the teams, score beside each name, no separate T column.
+  await page.locator(".status-filter button", { hasText: "Completed" }).click();
+  const done = page.locator(".result-card").first();
+  await expect(done.locator(".game-status.post")).toContainText("Final");
+  await expect(done.locator(".ls-team .ls-total")).toHaveCount(2);
+  await expect(done.locator("thead th", { hasText: /^T$/ })).toHaveCount(0);
+  const width = await page.evaluate(() => document.documentElement.scrollWidth);
+  expect(width).toBeLessThanOrEqual((page.viewportSize()?.width ?? 0) + 1);
+  expect(errors).toEqual([]);
+  void testInfo;
 });
