@@ -16,6 +16,33 @@ export const useLive = (espnId?: string | null) => {
   const map = useContext(LiveContext);
   return espnId ? map[espnId] : undefined;
 };
+export const useLiveMap = () => useContext(LiveContext);
+
+/** Where a game is in its life, for the board's sections and Status filter. */
+export type GameStatus = "live" | "final" | "upcoming";
+/** NFL games run about 3.5 hours and college up to 4; past this a game with no feed is treated as over. */
+const LIVE_WINDOW_MS = 4.5 * 3600e3;
+/**
+ * The live feed decides when it has the game. Without it (feed down, or not
+ * polled yet) fall back to the clock: started within the last 4.5 hours means
+ * in progress, longer ago means finished, otherwise upcoming.
+ */
+export function gameStatus(startIso: string, live: LiveScore | undefined, now: number): GameStatus {
+  if (live) return live.state === "in" ? "live" : live.state === "post" ? "final" : "upcoming";
+  const start = Date.parse(startIso);
+  if (Number.isNaN(start) || start > now) return "upcoming";
+  return now - start < LIVE_WINDOW_MS ? "live" : "final";
+}
+
+/** Re-renders on an interval so games move between sections as kickoffs pass. */
+export function useNow(ms = 30_000) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), ms);
+    return () => clearInterval(t);
+  }, [ms]);
+  return now;
+}
 
 const POLL_MS = 60_000;
 const PATHS: Record<string, string> = { nfl: "nfl", cfb: "college-football" };

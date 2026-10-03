@@ -6,11 +6,20 @@ import {
   results,
   type FilterState,
   type League,
-  type View,
+  type StatusFilter,
 } from "../data";
 
+/** Games per status for the current league and filters, shown on the Status buttons. */
+export type StatusCounts = Record<StatusFilter, number>;
+const STATUSES: { id: StatusFilter; label: string }[] = [
+  { id: "all", label: "All" },
+  { id: "live", label: "In progress" },
+  { id: "final", label: "Completed" },
+  { id: "upcoming", label: "Upcoming" },
+];
+
 type Props = FilterState & {
-  view: View;
+  counts: StatusCounts;
   onChange: (patch: Partial<FilterState>) => void;
 };
 
@@ -20,16 +29,17 @@ export function Filters({
   query,
   day,
   minScore,
-  view,
+  status,
+  counts,
   onChange,
 }: Props) {
-  const days = daysFor(league, view);
+  const days = daysFor(league);
   return (
     <div className="filter-dock">
       <div className="filter-main">
         <div className="league-switch" role="group" aria-label="League">
           {(["NFL", "CFB"] as League[]).map((l) => {
-            const n = (view === "final" ? results : slate.games).filter((g) => g.league === l).length;
+            const n = slate.games.filter((g) => g.league === l).length + results.filter((r) => r.league === l).length;
             const name = l === "NFL" ? "NFL" : "College football";
             return (
               <button
@@ -84,6 +94,21 @@ export function Filters({
             </button>
           )}
         </label>
+      </div>
+      <div className="status-row">
+        <div className="segmented status-filter" role="group" aria-label="Status">
+            {STATUSES.map((st) => (
+              <button
+                key={st.id}
+                aria-pressed={status === st.id}
+                onClick={() => onChange({ status: st.id })}
+                className={st.id === "live" ? "is-live-filter" : undefined}
+              >
+                {st.label}
+                <span className="count">{counts[st.id]}</span>
+              </button>
+            ))}
+          </div>
       </div>
       <div className="filter-row">
         <div className="segmented" role="group" aria-label="Day">

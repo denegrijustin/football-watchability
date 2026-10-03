@@ -1,6 +1,12 @@
 import { test, expect } from "@playwright/test";
 import { readFileSync } from "node:fs";
 const slate = JSON.parse(readFileSync("src/data/slate.json", "utf8"));
+// Slate cards (not archived result cards, which also carry .game-card). The board lists every
+// slate game whatever its status, so these counts hold at any time of day.
+const CARD = ".game-card:not(.result-card)";
+// The old Final tab is now the Completed status on the main board.
+const completed = (page: import("@playwright/test").Page) =>
+  page.locator(".status-filter button", { hasText: "Completed" }).click();
 // Upcoming cards open compact; these open them to the full card.
 const expand = async (card: import("@playwright/test").Locator) => {
   const t = card.locator('.card-toggle[aria-expanded="false"]');
@@ -16,17 +22,17 @@ test("all games, conferences, history and logos remain available", async ({
   const errors: string[] = [];
   page.on("pageerror", (err) => errors.push(err.message));
   await page.goto("/");
-  await expect(page.locator(".game-card")).toHaveCount(
+  await expect(page.locator(CARD)).toHaveCount(
     slate.games.filter((g: any) => g.league === "NFL").length,
   );
   await expect(page.locator(".game-details details[open]")).toHaveCount(0);
   await page.getByRole("button", { name: "College football" }).click();
-  await expect(page.locator(".game-card")).toHaveCount(
+  await expect(page.locator(CARD)).toHaveCount(
     slate.games.filter((g: any) => g.league === "CFB").length,
   );
   for (const conf of slate.conferences) {
     await page.getByRole("button", { name: conf.label, exact: true }).click();
-    await expect(page.locator(".game-card")).toHaveCount(
+    await expect(page.locator(CARD)).toHaveCount(
       slate.games.filter(
         (g: any) =>
           g.league === "CFB" &&
@@ -36,7 +42,7 @@ test("all games, conferences, history and logos remain available", async ({
   }
   await page.getByRole("button", { name: "All FBS", exact: true }).click();
   await expandAll(page);
-  const first = page.locator(".game-card").first();
+  const first = page.locator(CARD).first();
   await first
     .locator("summary")
     .filter({ hasText: "History + key players" })
@@ -51,7 +57,7 @@ test("all games, conferences, history and logos remain available", async ({
   await page.screenshot({
     path: `test-results/expanded-${test.info().project.name}.png`,
   });
-  await page.locator(".game-card").last().scrollIntoViewIfNeeded();
+  await page.locator(CARD).last().scrollIntoViewIfNeeded();
   const loaded = await page
     .locator(".team-heading img")
     .evaluateAll(async (imgs) => {
@@ -76,15 +82,16 @@ test("search, empty state, league switch and responsive layout", async ({
   await page.goto("/");
   const search = page.getByRole("searchbox");
   await search.fill("Ravens");
-  await expect(page.locator(".game-card")).toHaveCount(1);
+  await expect(page.locator(CARD)).toHaveCount(1);
   await search.fill("definitely-no-such-team");
-  await expect(page.getByText("No matchups found.")).toBeVisible();
+  await expect(page.getByText("No games found.")).toBeVisible();
   await page.getByRole("button", { name: "Clear filters" }).click();
-  await expect(page.locator(".game-card")).toHaveCount(
+  await expect(page.locator(CARD)).toHaveCount(
     slate.games.filter((g: any) => g.league === "NFL").length,
   );
   const columns = await page
     .locator(".game-grid")
+    .first()
     .evaluate((e) => getComputedStyle(e).gridTemplateColumns.split(" ").length);
   expect(columns).toBe(testInfo.project.name === "mobile" ? 1 : 3);
   expect(
@@ -98,7 +105,7 @@ test("search, empty state, league switch and responsive layout", async ({
       Math.round((await page.locator(".filter-dock").boundingBox())!.y),
     ).toBe(0);
     expect((await page.locator(".card-toggle").first().boundingBox())!.height).toBeGreaterThanOrEqual(44);
-    await expand(page.locator(".game-card").first());
+    await expand(page.locator(CARD).first());
     expect(
       (await page.locator(".game-details summary").first().boundingBox())!
         .height,
@@ -127,14 +134,14 @@ test("day and watchability filters narrow the board", async ({ page }) => {
   const nfl = slate.games.filter((g: any) => g.league === "NFL");
   const sunday = nfl.filter((g: any) => g.meta.startsWith("Sun ")).length;
   await page.getByRole("button", { name: "Sunday", exact: true }).click();
-  await expect(page.locator(".game-card")).toHaveCount(sunday);
+  await expect(page.locator(CARD)).toHaveCount(sunday);
   await page.getByRole("button", { name: "All days", exact: true }).click();
   await page.getByRole("button", { name: "Must watch", exact: true }).click();
-  await expect(page.locator(".game-card")).toHaveCount(
+  await expect(page.locator(CARD)).toHaveCount(
     nfl.filter((g: any) => g.score >= 90).length,
   );
   await page.getByRole("button", { name: "Reset filters" }).click();
-  await expect(page.locator(".game-card")).toHaveCount(nfl.length);
+  await expect(page.locator(CARD)).toHaveCount(nfl.length);
   const scores = await page
     .locator(".score strong")
     .evaluateAll((els) => els.map((e) => Number(e.textContent)));
@@ -144,7 +151,7 @@ test("day and watchability filters narrow the board", async ({ page }) => {
 test("season form chart, trends panel and network logos render", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: /College football/ }).click();
-  const card = page.locator(".game-card").first();
+  const card = page.locator(CARD).first();
   await expand(card);
   await expect(card.locator(".form-row")).toHaveCount(2);
   await card.locator(".form .mb-svg rect").first().focus();
@@ -171,10 +178,12 @@ test("final view compares forecast with actual and explains the score", async ({
   await page.goto("/");
   const league = results.games.some((r: any) => r.league === "NFL") ? "NFL" : "CFB";
   if (league === "CFB") await page.getByRole("button", { name: /^College football/ }).click();
-  await page.getByRole("button", { name: /^Final/ }).click();
+  await completed(page);
   const expected = results.games.filter((r: any) => r.league === league);
   await expect(page.locator(".result-card")).toHaveCount(expected.length);
-  const top = [...expected].sort((a: any, b: any) => b.actual.score - a.actual.score)[0];
+  // Cards group by week, newest week first, best game first within a week.
+  const newest = expected[0].week;
+  const top = expected.filter((r: any) => r.week === newest).sort((a: any, b: any) => b.actual.score - a.actual.score)[0];
   const card = page.locator(".result-card").first();
   await expect(card.locator(".fva-box.actual strong")).toHaveText(String(top.actual.score));
   await expect(card.locator(".fva-box").first().locator("strong")).toHaveText(String(top.forecast.score));
@@ -185,7 +194,11 @@ test("final view compares forecast with actual and explains the score", async ({
     await expect(card.locator(".sc-box").first()).toContainText(`${top.scoreCheck.projected.away}–${top.scoreCheck.projected.home}`);
   }
   await card.locator("summary").filter({ hasText: "Why it scored" }).click();
-  const rows = card.locator(".breakdown tbody tr");
+  // Only the actual-score breakdown: a card with forecast parts carries a second table for the forecast.
+  const rows = card
+    .locator("details")
+    .filter({ has: page.locator("summary", { hasText: "Why it scored" }) })
+    .locator(".breakdown tbody tr");
   await expect(rows).toHaveCount(top.actual.parts.length + 2);
   if (top.wp.length >= 8) {
     await expect(card.locator(".wp svg")).toBeVisible();
@@ -194,15 +207,15 @@ test("final view compares forecast with actual and explains the score", async ({
   }
   const width = await page.evaluate(() => document.documentElement.scrollWidth);
   expect(width).toBeLessThanOrEqual((page.viewportSize()?.width ?? 0) + 1);
-  // Back to upcoming: every card explains its forecast.
-  await page.getByRole("button", { name: /^Upcoming/ }).click();
+  // Back to the whole board: every card explains its forecast.
+  await page.locator(".status-filter button", { hasText: "All" }).click();
   await expandAll(page);
-  const g = page.locator(".game-card").first();
-  await expect(page.locator(".game-card .proj")).toHaveCount(
+  const g = page.locator(CARD).first();
+  await expect(page.locator(`${CARD} .proj`)).toHaveCount(
     slate.games.filter((x: any) => x.league === league && x.projected).length,
   );
   const withWp = slate.games.filter((x: any) => x.league === league && x.winProb).length;
-  await expect(page.locator(".game-card .pwp")).toHaveCount(withWp);
+  await expect(page.locator(`${CARD} .pwp`)).toHaveCount(withWp);
   await expect(page.locator(".pwp-bar").first()).toBeVisible();
   await g.locator("summary").filter({ hasText: "Why it's a" }).click();
   await expect(g.locator(".breakdown .bd-total td")).toHaveText(await g.locator(".score strong").innerText());
@@ -262,7 +275,7 @@ test("weekend export files and advanced stats are available", async ({ page, req
   await page.locator(".export summary").click();
   await expect(page.locator(".export-menu a[href='/exports/watch-slate.csv']")).toBeVisible();
   await expect(page.getByRole("button", { name: /Download.*JPG/ })).toHaveCount(0);
-  const card = page.locator(".game-card").first();
+  const card = page.locator(CARD).first();
   await expand(card);
   const adv = card.locator("summary").filter({ hasText: "Advanced stats" });
   if (await adv.count()) {
@@ -336,7 +349,7 @@ test("Game Center overlay opens from a card with projection, momentum, field til
   await page.goto("/");
   // Upcoming game: pregame view
   // Compact card: first click expands it, a click on the matchup opens the Game Center.
-  const first = page.locator(".game-card").first();
+  const first = page.locator(CARD).first();
   await expect(first.locator(".card-more")).toHaveCount(0);
   await first.locator(".matchup").click();
   await expect(first.locator(".card-more .take")).toBeVisible();
@@ -351,7 +364,7 @@ test("Game Center overlay opens from a card with projection, momentum, field til
   const final = results.games.find((r: any) => r.espnId === "401872953");
   test.skip(!final, "fixture game not in results");
   if (final.league === "NFL") {
-    await page.getByRole("button", { name: /^Final/ }).click();
+    await completed(page);
     await page.getByPlaceholder("Search teams, TV…").fill("Bills");
     await page.locator(".result-card .gc-open").first().click();
     await expect(gc.locator(".gc-score").first()).toHaveText("16");
@@ -375,7 +388,7 @@ test("Game Center overlay opens from a card with projection, momentum, field til
 
 test("insanity meter looks back on every final and ranks wild games above blowouts", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: /^Final/ }).click();
+  await completed(page);
   const cards = page.locator(".result-card");
   const n = await cards.count();
   expect(n).toBeGreaterThan(0);
@@ -474,7 +487,7 @@ test("Key players show photo, name, position and team for every upcoming game", 
     }
   }
   await page.goto("/");
-  const card = page.locator(".game-card").first();
+  const card = page.locator(CARD).first();
   await expand(card);
   await card.locator("summary").filter({ hasText: "History + key players" }).click();
   const kp = card.locator(".kp-card");
@@ -541,4 +554,111 @@ test("cards show the broadcast crew when the announcing schedule lists the game"
   await expect(card.locator(".booth-person").first().locator("img, .headshot-fallback")).toBeVisible();
   const box = await card.locator(".booth-person").first().locator("img, .headshot-fallback").boundingBox();
   expect(box!.height).toBeLessThanOrEqual(22);
+});
+
+test("board lists in progress first, then completed, then upcoming, and the Status filter narrows it", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (err) => errors.push(err.message));
+  const games = slate.games.filter((g: any) => g.league === "NFL");
+  const start = Math.min(...games.map((g: any) => new Date(g.date).getTime()));
+  const archived = results.games.filter((r: any) => r.league === "NFL").length;
+  // Game 0 is in progress, game 1 just finished (not archived yet), everything else is still ahead.
+  await page.clock.install({ time: start + 90 * 60e3 });
+  await page.route("**/api/scores**", (route) =>
+    route.fulfill({
+      json: games.map((g: any, i: number) => ({
+        id: g.espnId,
+        state: i === 0 ? "in" : i === 1 ? "post" : "pre",
+        detail: i === 0 ? "Q3 5:12" : "Final",
+        away: 14,
+        home: 17,
+      })),
+    }),
+  );
+  await page.goto("/");
+  const sections = page.locator(".board-section");
+  await expect(sections.first()).toHaveAttribute("aria-label", "In progress");
+  expect(await sections.evaluateAll((els) => els.map((e) => e.getAttribute("aria-label")))).toEqual(["In progress", "Completed", "Upcoming"]);
+  await expect(page.locator(".board-section.live .game-card")).toHaveCount(1);
+  await expect(page.locator(".board-section.live .live-strip")).toContainText("Live");
+  // Completed holds the just-finished game plus the archived finals; Upcoming holds the rest.
+  await expect(page.locator(".board-section.final .section-head .count")).toHaveText(String(archived + 1));
+  await expect(page.locator(".board-section.upcoming .game-card")).toHaveCount(games.length - 2);
+  // The status buttons carry the same counts.
+  const btn = (name: string) => page.locator(".status-filter button", { hasText: name });
+  await expect(btn("In progress")).toContainText("1");
+  await expect(btn("Completed")).toContainText(String(archived + 1));
+  await expect(btn("Upcoming")).toContainText(String(games.length - 2));
+  await expect(btn("All")).toContainText(String(games.length + archived));
+  // Under All, a long Completed list is capped so Upcoming stays reachable.
+  if (archived + 1 > 12) {
+    await expect(page.getByRole("button", { name: /Show all \d+ completed games/ })).toBeVisible();
+    expect(await page.locator(".board-section.final .game-card").count()).toBe(12);
+  }
+  // Each status shows only its own section.
+  await btn("In progress").click();
+  await expect(page.locator(".board-section")).toHaveCount(1);
+  await expect(page.locator(".board-section.live")).toBeVisible();
+  await btn("Completed").click();
+  await expect(page.locator(".board-section")).toHaveCount(1);
+  await expect(page.locator(".board-section.final .result-card")).toHaveCount(archived);
+  await expect(page.locator(".board-section.final .game-card")).toHaveCount(archived + 1);
+  await btn("Upcoming").click();
+  await expect(page.locator(".board-section")).toHaveCount(1);
+  await expect(page.locator(".board-section.upcoming .game-card")).toHaveCount(games.length - 2);
+  await btn("All").click();
+  await expect(page.locator(".board-section")).toHaveCount(3);
+  // A status with nothing in it says so instead of showing a blank board.
+  await page.getByPlaceholder("Search teams, TV…").fill("zzzz-no-such-team");
+  await expect(page.locator(".empty-state")).toBeVisible();
+  const width = await page.evaluate(() => document.documentElement.scrollWidth);
+  expect(width).toBeLessThanOrEqual((page.viewportSize()?.width ?? 0) + 1);
+  expect(errors).toEqual([]);
+});
+
+test("game details open fixed to the screen, keep the page still, and scroll inside", async ({ page }) => {
+  const fx = readFileSync("tests/fixtures/game-nfl.json", "utf8");
+  await page.route("**/api/game**", (r) => r.fulfill({ status: 200, contentType: "application/json", body: fx }));
+  await page.route("https://site.api.espn.com/**", (r) => r.abort());
+  await page.goto("/");
+  const vh = page.viewportSize()!.height;
+  const y = () => page.evaluate(() => Math.round(window.scrollY));
+  const checkDialog = async (dialog: import("@playwright/test").Locator, body: import("@playwright/test").Locator) => {
+    await expect(dialog).toBeVisible();
+    // Fixed to the screen and inside it: not parked at the top of the page where it scrolls away.
+    expect(await dialog.evaluate((el) => getComputedStyle(el).position)).toBe("fixed");
+    const box = (await dialog.boundingBox())!;
+    expect(box.y).toBeGreaterThanOrEqual(-1);
+    expect(box.y + box.height).toBeLessThanOrEqual(vh + 1);
+    // Scrolling hard inside never moves the page behind it, and reaches the end of the content.
+    const opened = await y();
+    await page.mouse.move(page.viewportSize()!.width / 2, vh / 2);
+    for (let i = 0; i < 40; i++) await page.mouse.wheel(0, 500);
+    await page.waitForTimeout(150);
+    expect(await y()).toBe(opened);
+    const [top, max] = await body.evaluate((el) => [Math.round(el.scrollTop), el.scrollHeight - el.clientHeight]);
+    expect(top).toBeGreaterThanOrEqual(max - 2);
+    return opened;
+  };
+  // Game Center, opened from far down the board.
+  await page.locator(".game-card .card-toggle").first().click();
+  const open = page.locator(".game-card .gc-open").first();
+  await open.scrollIntoViewIfNeeded();
+  const before = await y();
+  await open.click();
+  const gc = page.locator("dialog.gc");
+  expect(await checkDialog(gc, gc.locator(".gc-body"))).toBe(before);
+  await page.keyboard.press("Escape");
+  await expect(gc).toBeHidden();
+  expect(await y()).toBe(before); // back where they were, not at the top
+  // The TV grid's game detail behaves the same.
+  await page.getByRole("button", { name: "TV grid" }).click();
+  await page.locator(".tv-game").first().scrollIntoViewIfNeeded();
+  const gridY = await y();
+  await page.locator(".tv-game").first().click();
+  const tv = page.locator("dialog.tv-dialog");
+  expect(await checkDialog(tv, tv.locator(".tv-dialog-body"))).toBe(gridY);
+  await page.keyboard.press("Escape");
+  await expect(tv).toBeHidden();
+  expect(await y()).toBe(gridY);
 });

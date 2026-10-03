@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { openModal } from "../modal";
 import { logos, networkLogo, rankLine, rankTitle, results, slate, tierLabel, type League } from "../data";
 import { gridDays, gridGames, GRID_SLOT, layoutGrid, slot, type GridGame, type PlacedGame } from "../data/grid";
 import { downloadGridJpg } from "../exportJpg";
@@ -287,7 +288,7 @@ function GameDialog({ game, onClose }: { game: GridGame | null; onClose: () => v
   useEffect(() => {
     const d = ref.current;
     if (!d) return;
-    if (game && !d.open) d.showModal();
+    if (game && !d.open) openModal(d);
     if (!game && d.open) d.close();
   }, [game]);
   const result = game?.final ? results.find((r) => r.espnId === game.espnId) : undefined;

@@ -69,19 +69,18 @@ export const cleanRank = (rank: string) =>
 export const deltaValue = (delta: string) =>
   Number(delta.replace(/[^\d+-]/g, "")) || 0;
 
-export function daysFor(league: League, view: View = "upcoming") {
-  const present = new Set(
-    view === "final"
-      ? results.filter((r) => r.league === league).map((r) => dayOf(r.date))
-      : slate.games
-          .filter((g) => g.league === league)
-          .map((g) => dayOf((g as { date?: string }).date ?? "")),
-  );
+/** Days with a game on the board for this league, upcoming or finished. */
+export function daysFor(league: League) {
+  const present = new Set([
+    ...results.filter((r) => r.league === league).map((r) => dayOf(r.date)),
+    ...slate.games.filter((g) => g.league === league).map((g) => dayOf((g as { date?: string }).date ?? "")),
+  ]);
   return DAY_ORDER.filter((d) => present.has(d));
 }
 
 // ---------- finished games ----------
-export type View = "upcoming" | "final" | "grid" | "insanity";
+export type View = "board" | "grid" | "insanity";
+export type StatusFilter = "all" | "live" | "final" | "upcoming";
 export type Part = { id: string; label: string; max: number; pts: number; note: string };
 export type Breakdown = { base: number; parts: Part[] };
 export type ResultTeam = {
@@ -167,6 +166,7 @@ export type FilterState = {
   query: string;
   day: string;
   minScore: number;
+  status: StatusFilter;
 };
 
 export function filterGames({
