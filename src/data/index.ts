@@ -106,6 +106,9 @@ export type Result = {
   broadcast: string;
   network: string | null;
   venue: string;
+  /** ESPN venue id and the announced attendance (scripts/attendance.mjs); null/missing when ESPN has none. */
+  venueId?: string | null;
+  attendance?: number | null;
   teams: ResultTeam[];
   final: { detail: string; overtime: boolean };
   forecast: {

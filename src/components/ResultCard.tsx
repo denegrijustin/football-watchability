@@ -1,4 +1,6 @@
 import type { CSSProperties } from "react";
+import { attendanceView } from "../attendance";
+import { useVenues } from "../venues";
 import {
   logos,
   networkLogo,
@@ -60,6 +62,8 @@ export function ResultCard({ result: r }: { result: Result }) {
           {r.broadcast}
         </div>
       </header>
+
+      <Attendance attendance={r.attendance} venueId={r.venueId} />
 
       <h3 id={`r-${r.espnId}`} className="sr-only">
         {r.matchup}, final {away.score}–{home.score}
@@ -274,5 +278,38 @@ export function ResultCard({ result: r }: { result: Result }) {
         </details>
       </div>
     </article>
+  );
+}
+
+/** Attendance at the top of a completed game's card: the count, and a bar for the share of capacity when known. */
+function Attendance({ attendance, venueId }: { attendance?: number | null; venueId?: string | null }) {
+  const venues = useVenues();
+  const v = attendanceView(attendance, venueId ? venues[venueId]?.capacity : null);
+  if (!v) return null;
+  return (
+    <div className={`attendance${v.level ? ` ${v.level}` : ""}`}>
+      <div className="att-line">
+        <span className="att-label">Attendance</span>
+        <strong>{v.attendance.toLocaleString("en-US")}</strong>
+        {v.pct != null && v.capacity != null && (
+          <span className="att-pct">
+            {Math.round(v.pct)}% of {v.capacity.toLocaleString("en-US")} capacity
+          </span>
+        )}
+      </div>
+      {v.fill != null && (
+        <div
+          className="att-bar"
+          role="meter"
+          aria-label="Attendance as a share of stadium capacity"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(v.fill)}
+          aria-valuetext={`${Math.round(v.pct!)} percent of capacity`}
+        >
+          <i style={{ width: `${v.fill}%` }} />
+        </div>
+      )}
+    </div>
   );
 }

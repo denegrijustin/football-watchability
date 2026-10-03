@@ -4913,3 +4913,56 @@ html:has(dialog[open]) {
 .gc-allplays:focus-visible {
   background: rgb(255 255 255 / 16%);
 }
+
+/* ---------- Attendance at the top of a completed game's card ---------- */
+.attendance {
+  --att: #8fa3b5;
+  margin: 10px 0 2px;
+}
+.attendance.low {
+  --att: #d0a273;
+}
+.attendance.mid {
+  --att: #c9b47c;
+}
+.attendance.high {
+  --att: #a3c96f;
+}
+.att-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.att-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.att-line strong {
+  font-size: 15px;
+  font-weight: 780;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.att-pct {
+  color: var(--att);
+  font-weight: 650;
+}
+.att-bar {
+  height: 8px;
+  margin-top: 6px;
+  border-radius: 4px;
+  background: rgb(255 255 255 / 14%);
+  overflow: hidden;
+}
+.att-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+  background: var(--att);
+}
