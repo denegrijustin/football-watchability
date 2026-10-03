@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
-import { buildIndex, lookupCapacity, parseTables, stadiumRows, stateCode } from "../scripts/venue-capacity.mjs";
+import { readFileSync } from "node:fs";
+import { altSiteCapacity, buildIndex, lookupCapacity, parseTables, stadiumRows, stateCode } from "../scripts/venue-capacity.mjs";
 
 // Shaped like the tables on Wikipedia's stadium lists: header cells, footnote markers, shared stadiums
 // (rowspan), en dashes, non-breaking spaces and entities.
@@ -79,4 +80,16 @@ test("state names and abbreviations both become codes", () => {
   expect(stateCode("New Mexico[b]")).toBe("NM");
   expect(stateCode("Ontario")).toBe("");
   expect(stateCode(undefined)).toBe("");
+});
+
+test("alternate-site stadiums match by name or alias, US ones also by state, approximate ones never", async () => {
+  const sites = JSON.parse(readFileSync("scripts/venue-capacity-alt-sites.json", "utf8"));
+  expect(sites.length).toBeGreaterThan(25);
+  expect(altSiteCapacity(sites, { name: "Aviva Stadium", state: null })).toBe(51700);
+  expect(altSiteCapacity(sites, { name: "Citrus Bowl", state: "FL" })).toBe(60219);
+  expect(altSiteCapacity(sites, { name: "War Memorial Stadium", state: "AR" })).toBe(54120);
+  expect(altSiteCapacity(sites, { name: "War Memorial Stadium", state: "WY" })).toBeNull(); // Wyoming's, not Little Rock's
+  expect(altSiteCapacity(sites, { name: "Yankee Stadium", state: "NJ" })).toBeNull();
+  expect(altSiteCapacity(sites, { name: "Wembley Stadium", state: null })).toBeNull(); // listed as a range
+  expect(altSiteCapacity(sites, { name: "Bristol Motor Speedway", state: "TN" })).toBeNull(); // record crowd, not seats
 });
