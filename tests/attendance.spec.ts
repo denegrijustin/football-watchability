@@ -26,7 +26,16 @@ test("attendance is a share of capacity, never guessed", () => {
 
 const game = (id: string, league: "NFL" | "CFB", date: string, extra: Record<string, unknown> = {}) => ({ espnId: id, league, date, matchup: `Game ${id}`, ...extra });
 
-test("the attendance script fills attendance and capacity, keeps what it has, and is safe to re-run", async () => {
+const WIKI_HTML = {
+  "List of current NFL stadiums": `<table class="wikitable"><tr><th>Stadium</th><th>Capacity</th><th>Location</th><th>Team(s)</th></tr>
+    <tr><td>Huntington Bank Field</td><td>67,431</td><td>Cleveland, Ohio</td><td>Browns</td></tr></table>`,
+  "List of NCAA Division I FBS football stadiums": `<table class="wikitable"><tr><th>Stadium</th><th>City</th><th>State</th><th>Team</th><th>Capacity</th></tr>
+    <tr><td>Huntington Bank Stadium</td><td>Minneapolis</td><td>Minnesota</td><td>Minnesota</td><td>50,805<sup>[1]</sup></td></tr>
+    <tr><td>Memorial Stadium</td><td>Lincoln</td><td>Nebraska</td><td>Nebraska</td><td>85,458</td></tr>
+    <tr><td>Memorial Stadium</td><td>Clemson</td><td>South Carolina</td><td>Clemson</td><td>81,500</td></tr></table>`,
+} as Record<string, string>;
+
+test("the attendance script fills attendance and stadium capacity, keeps what it has, and is safe to re-run", async () => {
   const old = new Date(Date.now() - 10 * 864e5).toISOString();
   const recent = new Date(Date.now() - 1 * 864e5).toISOString();
   const summaries: Record<string, unknown> = {
@@ -34,8 +43,12 @@ test("the attendance script fills attendance and capacity, keeps what it has, an
     "2": { gameInfo: { attendance: 51012, venue: { id: "3953" } } },
     "3": { gameInfo: { attendance: 0, venue: { id: "3799" } } }, // ESPN never published one, game is old
     "4": { gameInfo: { attendance: 0, venue: { id: "3800" } } }, // not published yet, game is recent: retry later
+    "6": { gameInfo: { attendance: 80000, venue: { id: "5001" } } }, // "Memorial Stadium" with no state we can use
+    "7": { gameInfo: { attendance: 85000, venue: { id: "5002" } } }, // "Memorial Stadium" in Nebraska
+    "8": { gameInfo: { attendance: 30000, venue: { id: "5003" } } }, // a stadium on no list
   };
   const venueCalls: string[] = [];
+  const wikiCalls: string[] = [];
   const server = createServer((req, res) => {
     const u = new URL(req.url ?? "", "http://x");
     res.setHeader("content-type", "application/json");
@@ -44,8 +57,20 @@ test("the attendance script fills attendance and capacity, keeps what it has, an
     const v = u.pathname.match(/\/venues\/(\d+)$/);
     if (v) {
       venueCalls.push(v[1]);
-      if (v[1] === "3679") return void res.end(JSON.stringify({ id: "3679", fullName: "Huntington Bank Field", capacity: 67431 }));
-      if (v[1] === "3953") return void res.end(JSON.stringify({ id: "3953", fullName: "Huntington Bank Stadium" })); // no capacity published
+      // ESPN names the stadium and says where it is, but publishes no capacity.
+      const known: Record<string, unknown> = {
+        "3679": { fullName: "Huntington Bank Field", address: { city: "Cleveland", state: "OH" } },
+        "3953": { fullName: "Huntington Bank Stadium", address: { city: "Minneapolis", state: "MN" } },
+        "5001": { fullName: "Memorial Stadium", address: { state: "KS" } },
+        "5002": { fullName: "Memorial Stadium", address: { city: "Lincoln", state: "NE" } },
+        "5003": { fullName: "Some Other Field", address: { city: "Anywhere", state: "TX" } },
+      };
+      if (known[v[1]]) return void res.end(JSON.stringify(known[v[1]]));
+    }
+    if (u.pathname === "/w/api.php") {
+      const page = u.searchParams.get("page") ?? "";
+      wikiCalls.push(page);
+      if (WIKI_HTML[page]) return void res.end(JSON.stringify({ parse: { title: page, text: WIKI_HTML[page] } }));
     }
     res.statusCode = 404;
     res.end("{}");
@@ -65,33 +90,43 @@ test("the attendance script fills attendance and capacity, keeps what it has, an
         game("3", "CFB", old),
         game("4", "CFB", recent),
         game("5", "NFL", old, { attendance: 70000, venueId: "9" }), // already has it: untouched, not refetched
+        game("6", "CFB", old),
+        game("7", "CFB", old),
+        game("8", "CFB", old),
       ],
     }),
   );
   const exec = async () =>
-    (await run("node", ["scripts/attendance.mjs"], { env: { ...process.env, ESPN_BASE: base, ESPN_CORE_BASE: base, RESULTS_FILE: results, VENUES_FILE: venues, RAW_DIR: join(dir, "none") } })).stdout;
+    (await run("node", ["scripts/attendance.mjs"], { env: { ...process.env, ESPN_BASE: base, ESPN_CORE_BASE: base, WIKI_BASE: base, RESULTS_FILE: results, VENUES_FILE: venues, RAW_DIR: join(dir, "none") } })).stdout;
   try {
     const log = await exec();
-    expect(log).toContain("Attendance: 2 added, 1 unavailable");
+    expect(log).toContain("Attendance: 5 added, 1 unavailable");
     const games = Object.fromEntries(JSON.parse(readFileSync(results, "utf8")).games.map((g: any) => [g.espnId, g]));
     expect(games["1"]).toMatchObject({ attendance: 68156, venueId: "3679" });
     expect(games["2"]).toMatchObject({ attendance: 51012, venueId: "3953" });
     expect(games["3"].attendance).toBeNull(); // asked once, nothing to show, stop asking
     expect(games["4"].attendance).toBeUndefined(); // recent: try again next run
     expect(games["5"]).toMatchObject({ attendance: 70000, venueId: "9" });
-    // Capacities for stadiums of games that have attendance; a missing capacity stays null (never guessed).
+    // ESPN gave names and places, no capacities; Wikipedia's lists supply them where the match is clear.
     const v = JSON.parse(readFileSync(venues, "utf8"));
-    expect(v["3679"]).toMatchObject({ name: "Huntington Bank Field", capacity: 67431 });
-    expect(v["3953"].capacity).toBeNull();
-    // A game that already had attendance still gets its stadium looked up; ESPN has no venue 9, so
-    // nothing is stored for it (no made-up entry) and it is asked about again next run.
-    expect(Object.keys(v)).not.toContain("9");
-    expect(venueCalls.sort()).toEqual(["3679", "3953", "9"]);
-    // Re-run: known stadiums (even one with no published capacity) are not fetched again.
+    expect(v["3679"]).toMatchObject({ name: "Huntington Bank Field", city: "Cleveland", state: "OH", capacity: 67431, source: "wikipedia" });
+    expect(v["3953"]).toMatchObject({ capacity: 50805, source: "wikipedia" }); // footnote marker ignored
+    expect(v["5002"]).toMatchObject({ capacity: 85458, source: "wikipedia" }); // two Memorial Stadiums: Nebraska picked by state
+    // Never guessed: Kansas's Memorial Stadium is not on the list, and an unlisted stadium has no capacity.
+    expect(v["5001"].capacity).toBeNull();
+    expect(v["5003"].capacity).toBeNull();
+    expect(log).toContain("capacities from Wikipedia");
+    expect(log).toMatch(/No capacity found for 2 stadiums: .*Memorial Stadium \(KS\).*Some Other Field \(TX\)/);
+    expect(wikiCalls).toEqual(["List of current NFL stadiums", "List of NCAA Division I FBS football stadiums", "List of NCAA Division I FCS football stadiums"]);
+    expect(log).toContain("Wikipedia page unavailable: List of NCAA Division I FCS football stadiums"); // a missing page does not stop the run
+    // Re-run: ESPN is not asked about stadiums we already know (only the unreachable one), Wikipedia is read again
+    // for the two still missing a capacity, and nothing changes.
     venueCalls.length = 0;
+    const before = readFileSync(venues, "utf8");
     await exec();
     expect(venueCalls).toEqual(["9"]);
-    expect(JSON.parse(readFileSync(results, "utf8")).games).toHaveLength(5);
+    expect(readFileSync(venues, "utf8")).toBe(before);
+    expect(JSON.parse(readFileSync(results, "utf8")).games).toHaveLength(8);
   } finally {
     server.close();
   }

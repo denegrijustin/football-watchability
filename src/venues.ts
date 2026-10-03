@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-export type Venue = { name?: string; capacity: number | null };
+export type Venue = { name?: string; city?: string | null; state?: string | null; capacity: number | null; source?: string };
 type Venues = Record<string, Venue>;
 
 let loaded: Promise<Venues> | null = null;
