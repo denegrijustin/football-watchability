@@ -1160,6 +1160,9 @@ for (const g of built) {
     broadcast: overrides[g.espnId]?.broadcast ?? g.broadcast,
     network: overrides[g.espnId]?.network ?? g._network,
     venue: g._venue,
+    // From ESPN's game info; capacity comes from public/venues.json (scripts/attendance.mjs).
+    venueId: g.summary?.gameInfo?.venue?.id ? String(g.summary.gameInfo.venue.id) : null,
+    attendance: Number(g.summary?.gameInfo?.attendance) > 0 ? Math.round(Number(g.summary.gameInfo.attendance)) : undefined,
     teams: g.teams.map((t, i) => ({
       name: t.name,
       logoId: t.logoId,
