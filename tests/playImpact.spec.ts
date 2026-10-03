@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { readFileSync } from "node:fs";
-import { attributePlays, impact, W, type ImpactEvent, type PlayerRow } from "../src/playImpact";
+import { ART_COUNT, attributePlays, impact, summarizeEvents, W, type ImpactEvent, type PlayerRow } from "../src/playImpact";
 
 const fixture = JSON.parse(readFileSync("tests/fixtures/game-nfl-log.json", "utf8"));
 const players: PlayerRow[] = Object.values(fixture.players).flat() as PlayerRow[];
@@ -117,4 +117,55 @@ test("the trimmed game keeps every play that can credit a player, not just the l
   expect(game.log.map((p) => p.id)).not.toContain("p103"); // penalty-only play
   expect(game.log.at(-1)).toMatchObject({ id: "p104", team: "24" });
   expect(Object.keys(game.log[0]).sort()).toEqual(["clock", "id", "kind", "period", "score", "team", "text", "turnover", "yards"]);
+});
+
+const ev = (id: string, art: ImpactEvent["art"], points: number): ImpactEvent => ({ id, art, period: 1, clock: "1:00", role: art, text: id, yards: null, points });
+
+test("the summary shows the three plays that moved the number most and rolls up the rest", () => {
+  const events = [
+    ev("a", "pass", 0.5),
+    ev("b", "td", 6.1),
+    ev("c", "incomplete", -0.15),
+    ev("d", "int", -4.5),
+    ev("e", "pass", 0.7),
+    ev("f", "sack", -0.7),
+    ev("g", "pass", 0.9),
+    ev("h", "incomplete", -0.15),
+    ev("adj", "adjust", -2),
+  ];
+  const s = summarizeEvents(events);
+  // Biggest swing either way; the efficiency adjustment is not a play, so it never makes the top.
+  expect(s.top.map((e) => e.id)).toEqual(["b", "d", "g"]);
+  expect(s.topPoints).toBeCloseTo(2.5, 5);
+  // Everything else is grouped by kind of play, biggest group first, with counts.
+  expect(s.rest.map((g) => [g.art, g.count, g.points])).toEqual([
+    ["adjust", 1, -2],
+    ["pass", 2, 1.2],
+    ["sack", 1, -0.7],
+    ["incomplete", 2, -0.3],
+  ]);
+  expect(s.restCount).toBe(6);
+  // Nothing is lost: top + rest is the whole list.
+  const total = events.reduce((a, e) => a + e.points, 0);
+  expect(Math.abs(s.topPoints + s.restPoints - total)).toBeLessThan(0.0001);
+  expect(ART_COUNT.pass).toEqual(["completion", "completions"]);
+});
+
+test("a short list needs no roll-up, and ties go to the earlier play", () => {
+  const few = summarizeEvents([ev("a", "run", 1), ev("b", "pass", 2)]);
+  expect(few.top.map((e) => e.id)).toEqual(["b", "a"]);
+  expect(few.rest).toEqual([]);
+  const tie = summarizeEvents([ev("x", "sack", -0.7), ev("y", "pass", 0.7), ev("z", "run", 0.7), ev("w", "run", 0.7)]);
+  expect(tie.top.map((e) => e.id)).toEqual(["x", "y", "z"]);
+  expect(summarizeEvents([])).toMatchObject({ top: [], rest: [], topPoints: 0, restPoints: 0, restCount: 0 });
+});
+
+test("for every player in the game the summary reconciles to the number on the card", () => {
+  for (const p of players) {
+    const v = impact(p).value;
+    const r = attributePlays(p, fixture, v)!;
+    const s = summarizeEvents(r.events);
+    expect(Math.abs(s.topPoints + s.restPoints + r.other - v), p.name).toBeLessThan(0.011);
+    expect(s.top.length).toBeLessThanOrEqual(3);
+  }
 });
