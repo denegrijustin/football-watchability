@@ -91,7 +91,20 @@ for (const [id, league] of wanted) {
   looked++;
 }
 
-// ---------- 3. capacity from Wikipedia's stadium lists ----------
+// ---------- 3a. capacity from the checked-in seed (roadtocfb.com and the NFL stadium guide), by venue id ----------
+const SEED = process.env.SEED_FILE ?? new URL("./venue-capacity-seed.json", import.meta.url).pathname;
+const seed = existsSync(SEED) ? JSON.parse(readFileSync(SEED, "utf8")) : {};
+let seeded = 0;
+for (const id of wanted.keys()) {
+  if (venues[id] && venues[id].capacity == null && seed[id]?.capacity) {
+    venues[id].capacity = seed[id].capacity;
+    venues[id].source = "seed";
+    venues[id].checked = today;
+    seeded++;
+  }
+}
+
+// ---------- 3b. whatever is still missing: Wikipedia's stadium lists ----------
 const needCapacity = [...wanted.keys()].filter((id) => venues[id] && venues[id].capacity == null);
 let matched = 0;
 const unmatched = [];
@@ -123,6 +136,6 @@ const withAtt = results.games.filter((g) => g.attendance).length;
 const withCap = results.games.filter((g) => g.attendance && venues[g.venueId]?.capacity).length;
 console.log(
   `Attendance: ${filled} added${gaveUp ? `, ${gaveUp} unavailable` : ""}; ${withAtt} of ${results.games.length} games have it. ` +
-    `Stadiums: ${looked} looked up on ESPN, ${matched} capacities from Wikipedia; ${withCap} of ${withAtt} games can show a share of capacity.`,
+    `Stadiums: ${looked} looked up on ESPN, ${seeded} capacities from the seed list, ${matched} from Wikipedia; ${withCap} of ${withAtt} games can show a share of capacity.`,
 );
 if (unmatched.length) console.log(`No capacity found for ${unmatched.length} stadiums: ${unmatched.slice(0, 40).join("; ")}`);
