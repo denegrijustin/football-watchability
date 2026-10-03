@@ -4725,3 +4725,137 @@ html:has(dialog[open]) {
 .team-score.lost {
   color: var(--muted);
 }
+
+/* ---------- Top 3 / bottom 3: the plays behind the impact number ---------- */
+.gc-imp-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+  padding: 4px 9px 3px;
+  border: 1px solid rgb(255 255 255 / 20%);
+  border-radius: 10px;
+  background: rgb(0 0 0 / 28%);
+  font: inherit;
+  font-weight: 800;
+  line-height: 1.15;
+  cursor: pointer;
+}
+.gc-imp-btn:hover,
+.gc-imp-btn:focus-visible,
+.gc-pcard.open .gc-imp-btn {
+  background: rgb(0 0 0 / 45%);
+  border-color: rgb(255 255 255 / 38%);
+}
+.gc-imp-more {
+  font-size: 10.5px;
+  font-weight: 650;
+  letter-spacing: 0.2px;
+  color: rgb(255 255 255 / 70%);
+  white-space: nowrap;
+}
+.gc-plays {
+  grid-column: 1 / -1;
+  margin-top: 4px;
+  padding: 10px;
+  border-radius: 10px;
+  background: rgb(0 0 0 / 30%);
+}
+.gc-plays-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px 12px;
+  margin: 0 0 8px;
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.gc-plays-head b {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.gc-playlist {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.gc-playlist li {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 9px;
+  border-radius: 9px;
+  border-left: 3px solid var(--green);
+  background: rgb(255 255 255 / 6%);
+}
+.gc-playlist li.neg {
+  border-left-color: var(--red);
+}
+.gc-playlist li.other,
+.gc-playlist li.none {
+  border-left: 3px dashed rgb(255 255 255 / 25%);
+}
+.gc-pa {
+  display: grid;
+  place-items: center;
+  color: var(--green);
+}
+.gc-playlist li.neg .gc-pa {
+  color: var(--red);
+}
+.gc-playlist li.other .gc-pa {
+  color: var(--muted);
+}
+.gc-pw {
+  display: grid;
+  min-width: 0;
+}
+.gc-pw strong {
+  font-size: 13px;
+}
+.gc-pw em {
+  margin-left: 8px;
+  font-size: 11.5px;
+  font-style: normal;
+  font-weight: 650;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.gc-pw small {
+  grid-column: 1 / -1;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--text-2);
+  overflow-wrap: anywhere;
+}
+.gc-pw strong,
+.gc-pw em {
+  display: inline;
+}
+.gc-ppts {
+  display: grid;
+  justify-items: end;
+  font-variant-numeric: tabular-nums;
+}
+.gc-ppts b {
+  font-size: 15px;
+  font-weight: 800;
+}
+.gc-playlist li.pos .gc-ppts b {
+  color: var(--green);
+}
+.gc-playlist li.neg .gc-ppts b {
+  color: var(--red);
+}
+.gc-ppts i {
+  font-size: 11px;
+  font-style: normal;
+  color: var(--muted);
+}
+.play-art {
+  display: block;
+}

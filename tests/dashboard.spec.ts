@@ -716,3 +716,72 @@ test("live and completed cards show the status above the teams and the score bes
   expect(errors).toEqual([]);
   void testInfo;
 });
+
+const openGameCenter = async (page: import("@playwright/test").Page, fixtureFile: string) => {
+  const fx = readFileSync(fixtureFile, "utf8");
+  // Every game has kicked off, so the Game Center loads the live feed whichever card is first.
+  const lastKickoff = Math.max(...slate.games.map((g: any) => new Date(g.date).getTime()));
+  await page.clock.install({ time: lastKickoff + 6 * 3600e3 });
+  await page.route("**/api/game**", (r) => r.fulfill({ status: 200, contentType: "application/json", body: fx }));
+  await page.route("https://site.api.espn.com/**", (r) => r.abort());
+  await page.goto("/");
+  await page.locator(`${CARD} .card-toggle`).first().click();
+  await page.locator(`${CARD} .gc-open`).first().click();
+  const gc = page.locator("dialog.gc");
+  await expect(gc.locator(".gc-top li").first()).toBeVisible();
+  return gc;
+};
+const num = (s: string) => Number(s.replace("−", "-").replace("+", ""));
+
+test("Top 3 / bottom 3: the impact number opens the plays behind it, with play art", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (err) => errors.push(err.message));
+  const gc = await openGameCenter(page, "tests/fixtures/game-nfl-log.json");
+  // Every number is a button, closed to start.
+  const buttons = gc.locator(".gc-imp-btn");
+  expect(await buttons.count()).toBeGreaterThanOrEqual(6);
+  await expect(buttons.first()).toHaveAttribute("aria-expanded", "false");
+  await expect(gc.locator(".gc-plays")).toHaveCount(0);
+  // Open one quarterback's number.
+  const card = gc.locator(".gc-pcard").filter({ hasText: "Josh Allen" });
+  const btn = card.locator(".gc-imp-btn");
+  const shown = num((await btn.innerText()).match(/[▲▼]\s*([+\-−]?\d+(?:\.\d+)?)/)![1]);
+  await btn.click();
+  await expect(btn).toHaveAttribute("aria-expanded", "true");
+  const panel = card.locator(".gc-plays");
+  await expect(panel).toBeVisible();
+  const rows = panel.locator(".gc-playlist li");
+  const n = await rows.count();
+  expect(n).toBeGreaterThanOrEqual(4);
+  // Each play has its art, the play text, and its points; the kinds of play show up as different art.
+  await expect(panel.locator(".gc-playlist li svg.play-art")).toHaveCount(n);
+  const arts = await panel.locator("svg.play-art").evaluateAll((els) => els.map((e) => e.getAttribute("class")!.replace("play-art art-", "")));
+  for (const kind of ["td", "sack", "run", "pass", "incomplete", "safety", "int", "fumble"]) {
+    // Allen's plays in this log cover these kinds (the fumble and the pass are other players', so check a subset).
+    if (["td", "sack", "run", "pass", "safety", "adjust"].includes(kind)) expect(arts, `art for ${kind}`).toContain(kind);
+  }
+  await expect(rows.filter({ hasText: "J.Allen left guard for 1 yard, TOUCHDOWN" }).first()).toContainText("+6.1");
+  await expect(rows.filter({ hasText: "sacked at LAC 26" }).first()).toContainText("−0.7");
+  await expect(rows.filter({ hasText: "sacked at LAC 26" }).first()).toContainText("Q4");
+  // The rows add up to the number on the card.
+  const points = (await panel.locator(".gc-ppts b").allInnerTexts()).map(num);
+  expect(Math.abs(points.reduce((a, b) => a + b, 0) - shown)).toBeLessThan(0.011);
+  await expect(panel.locator(".gc-plays-head")).toContainText(`= ${shown > 0 ? "+" : shown < 0 ? "−" : ""}${Math.abs(shown)}`);
+  // A defender's number opens too, and shows different play art.
+  const dcard = gc.locator(".gc-pcard").filter({ hasText: "Greg Rousseau" });
+  await dcard.locator(".gc-imp-btn").click();
+  await expect(dcard.locator(".gc-playlist li svg.art-sack")).toHaveCount(1);
+  // Nothing spills sideways inside the overlay, and the number closes the list again.
+  const overflow = await gc.locator(".gc-body").evaluate((el) => el.scrollWidth - el.clientWidth);
+  expect(overflow).toBeLessThanOrEqual(1);
+  await btn.click();
+  await expect(btn).toHaveAttribute("aria-expanded", "false");
+  await expect(panel).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+test("Top 3 / bottom 3 numbers stay plain when the game feed has no play log", async ({ page }) => {
+  const gc = await openGameCenter(page, "tests/fixtures/game-nfl.json");
+  await expect(gc.locator(".gc-imp").first()).toBeVisible();
+  await expect(gc.locator(".gc-imp-btn")).toHaveCount(0);
+});
