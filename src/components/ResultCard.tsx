@@ -336,7 +336,8 @@ export function ResultCard({ result: r, defaultExpanded = false }: { result: Res
 /** Attendance at the top of a completed game's card: the count, and a bar for the share of capacity when known. */
 function Attendance({ attendance, venueId }: { attendance?: number | null; venueId?: string | null }) {
   const venues = useVenues();
-  const v = attendanceView(attendance, venueId ? venues[venueId]?.capacity : null);
+  const venue = venueId ? venues[venueId] : undefined;
+  const v = attendanceView(attendance, venue?.capacity);
   if (!v) return null;
   return (
     <div className={`attendance${v.level ? ` ${v.level}` : ""}`}>
@@ -344,7 +345,7 @@ function Attendance({ attendance, venueId }: { attendance?: number | null; venue
         <span className="att-label">Attendance</span>
         <strong>{v.attendance.toLocaleString("en-US")}</strong>
         {v.pct != null && v.capacity != null && (
-          <span className="att-pct">
+          <span className="att-pct" title={venue?.source === "wikipedia" ? "Stadium capacity from Wikipedia" : undefined}>
             {Math.round(v.pct)}% of {v.capacity.toLocaleString("en-US")} capacity
           </span>
         )}
