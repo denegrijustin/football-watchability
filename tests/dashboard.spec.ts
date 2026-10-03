@@ -4,10 +4,14 @@ const slate = JSON.parse(readFileSync("src/data/slate.json", "utf8"));
 // Slate cards (not archived result cards, which also carry .game-card). The board lists every
 // slate game whatever its status, so these counts hold at any time of day.
 const CARD = ".game-card:not(.result-card)";
+// Filters are pop-down menus: choose an option by its label.
+const pick = (page: import("@playwright/test").Page, menu: string, option: string) =>
+  page.getByLabel(menu, { exact: true }).selectOption({ label: option });
+const league = (page: import("@playwright/test").Page, l: "NFL" | "CFB") => pick(page, "League", l === "CFB" ? "College" : "NFL");
 // The old Final tab is now the Completed status on the main board.
-const completed = (page: import("@playwright/test").Page) =>
-  page.locator(".status-filter button", { hasText: "Completed" }).click();
-// Upcoming cards open compact; these open them to the full card.
+const completed = (page: import("@playwright/test").Page) => pick(page, "Status", "Completed");
+const searchBox = (page: import("@playwright/test").Page) => page.getByLabel("Search teams, channels or locations");
+// Cards open as a compact strip (logos, scores, rating); these open them to the full card.
 const expand = async (card: import("@playwright/test").Locator) => {
   const t = card.locator('.card-toggle[aria-expanded="false"]');
   if (await t.count()) await t.click();
@@ -26,12 +30,12 @@ test("all games, conferences, history and logos remain available", async ({
     slate.games.filter((g: any) => g.league === "NFL").length,
   );
   await expect(page.locator(".game-details details[open]")).toHaveCount(0);
-  await page.getByRole("button", { name: "College football" }).click();
+  await league(page, "CFB");
   await expect(page.locator(CARD)).toHaveCount(
     slate.games.filter((g: any) => g.league === "CFB").length,
   );
   for (const conf of slate.conferences) {
-    await page.getByRole("button", { name: conf.label, exact: true }).click();
+    await pick(page, "Conference", conf.id === "all-fbs" ? "All conferences" : conf.label);
     await expect(page.locator(CARD)).toHaveCount(
       slate.games.filter(
         (g: any) =>
@@ -40,7 +44,7 @@ test("all games, conferences, history and logos remain available", async ({
       ).length,
     );
   }
-  await page.getByRole("button", { name: "All FBS", exact: true }).click();
+  await pick(page, "Conference", "All conferences");
   await expandAll(page);
   const first = page.locator(CARD).first();
   await first
@@ -59,7 +63,7 @@ test("all games, conferences, history and logos remain available", async ({
   });
   await page.locator(CARD).last().scrollIntoViewIfNeeded();
   const loaded = await page
-    .locator(".team-heading img")
+    .locator(".team-heading img, .cc-team img")
     .evaluateAll(async (imgs) => {
       return Promise.all(
         imgs.map(async (img) => {
@@ -121,7 +125,7 @@ test("search, empty state, league switch and responsive layout", async ({
 test("narrow phone has no page overflow", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 740 });
   await page.goto("/");
-  await page.getByRole("button", { name: "College football" }).click();
+  await league(page, "CFB");
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
@@ -133,24 +137,26 @@ test("day and watchability filters narrow the board", async ({ page }) => {
   await page.goto("/");
   const nfl = slate.games.filter((g: any) => g.league === "NFL");
   const sunday = nfl.filter((g: any) => g.meta.startsWith("Sun ")).length;
-  await page.getByRole("button", { name: "Sunday", exact: true }).click();
+  await pick(page, "Day", "Sunday");
   await expect(page.locator(CARD)).toHaveCount(sunday);
-  await page.getByRole("button", { name: "All days", exact: true }).click();
-  await page.getByRole("button", { name: "Must watch", exact: true }).click();
+  await pick(page, "Day", "All days");
+  await pick(page, "Watchability", "Must watch");
   await expect(page.locator(CARD)).toHaveCount(
     nfl.filter((g: any) => g.score >= 90).length,
   );
   await page.getByRole("button", { name: "Reset filters" }).click();
   await expect(page.locator(CARD)).toHaveCount(nfl.length);
-  const scores = await page
-    .locator(".score strong")
-    .evaluateAll((els) => els.map((e) => Number(e.textContent)));
-  expect(scores).toEqual([...scores].sort((a, b) => b - a));
+  // Within each section (in progress, just finished, upcoming) the strips run from most to least watchable.
+  const sections = await page
+    .locator(".board-section, .just-final")
+    .evaluateAll((els) => els.map((el) => [...el.querySelectorAll(":scope > .game-grid > .game-card:not(.result-card) .cc-rate strong, :scope.just-final > .game-card:not(.result-card) .cc-rate strong")].map((e) => Number(e.textContent))));
+  for (const scores of sections) expect(scores).toEqual([...scores].sort((a, b) => b - a));
+  expect(sections.flat().length).toBeGreaterThan(0);
 });
 
 test("season form chart, trends panel and network logos render", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: /College football/ }).click();
+  await league(page, "CFB");
   const card = page.locator(CARD).first();
   await expand(card);
   await expect(card.locator(".form-row")).toHaveCount(2);
@@ -177,8 +183,9 @@ test("final view compares forecast with actual and explains the score", async ({
   page.on("pageerror", (err) => errors.push(err.message));
   await page.goto("/");
   const league = results.games.some((r: any) => r.league === "NFL") ? "NFL" : "CFB";
-  if (league === "CFB") await page.getByRole("button", { name: /^College football/ }).click();
+  if (league === "CFB") await league(page, "CFB");
   await completed(page);
+  await expandAll(page);
   const expected = results.games.filter((r: any) => r.league === league);
   await expect(page.locator(".result-card")).toHaveCount(expected.length);
   // Cards group by week, newest week first, best game first within a week.
@@ -208,7 +215,7 @@ test("final view compares forecast with actual and explains the score", async ({
   const width = await page.evaluate(() => document.documentElement.scrollWidth);
   expect(width).toBeLessThanOrEqual((page.viewportSize()?.width ?? 0) + 1);
   // Back to the whole board: every card explains its forecast.
-  await page.locator(".status-filter button", { hasText: "All" }).click();
+  await pick(page, "Status", "All status");
   await expandAll(page);
   const g = page.locator(CARD).first();
   await expect(page.locator(`${CARD} .proj`)).toHaveCount(
@@ -286,11 +293,11 @@ test("weekend export files and advanced stats are available", async ({ page, req
 
 test("times default to Central, follow the chosen zone, and the TV grid JPG downloads", async ({ page }) => {
   await page.goto("/");
-  await expect(page.locator(".kickoff").first()).toContainText("CT");
+  await expect(page.locator(".cc-time").first()).toContainText("CT");
   await page.selectOption(".tz-pick select", "America/New_York");
-  await expect(page.locator(".kickoff").first()).toContainText("ET");
+  await expect(page.locator(".cc-time").first()).toContainText("ET");
   await page.reload();
-  await expect(page.locator(".kickoff").first()).toContainText("ET");
+  await expect(page.locator(".cc-time").first()).toContainText("ET");
   const width = await page.evaluate(() => document.documentElement.scrollWidth);
   expect(width).toBeLessThanOrEqual((page.viewportSize()?.width ?? 0) + 1);
   await page.getByRole("button", { name: "TV grid" }).click();
@@ -351,7 +358,8 @@ test("Game Center overlay opens from a card with projection, momentum, field til
   // Compact card: first click expands it, a click on the matchup opens the Game Center.
   const first = page.locator(CARD).first();
   await expect(first.locator(".card-more")).toHaveCount(0);
-  await first.locator(".matchup").click();
+  await expect(first.locator(".matchup")).toHaveCount(0); // just the strip until it is opened
+  await first.locator(".cc-main").click();
   await expect(first.locator(".card-more .take")).toBeVisible();
   await first.locator(".matchup").click();
   const gc = page.locator("dialog.gc");
@@ -365,7 +373,8 @@ test("Game Center overlay opens from a card with projection, momentum, field til
   test.skip(!final, "fixture game not in results");
   if (final.league === "NFL") {
     await completed(page);
-    await page.getByPlaceholder("Search teams, TV…").fill("Bills");
+    await searchBox(page).fill("Bills");
+    await expandAll(page);
     await page.locator(".result-card .gc-open").first().click();
     await expect(gc.locator(".gc-score").first()).toHaveText("16");
     await expect(gc.getByText("Who's tilting the field")).toBeVisible();
@@ -389,6 +398,7 @@ test("Game Center overlay opens from a card with projection, momentum, field til
 test("insanity meter looks back on every final and ranks wild games above blowouts", async ({ page }) => {
   await page.goto("/");
   await completed(page);
+  await expandAll(page);
   const cards = page.locator(".result-card");
   const n = await cards.count();
   expect(n).toBeGreaterThan(0);
@@ -430,6 +440,7 @@ test("insanity meter updates live from the flow feed", async ({ page }) => {
     return route.fulfill({ json: { wp } });
   });
   await page.goto("/");
+  await expand(page.locator(CARD).first()); // the meter lives in the expanded card
   const meter = page.locator(".game-card .insanity.live").first();
   await expect(meter).toBeVisible();
   await expect(meter).toContainText("Insanity meter · live");
@@ -521,7 +532,7 @@ test("college conference games carry the conference availability report", async 
   }
   const g = games.find((x: any) => !x.availability.pending) ?? games[0];
   await page.goto("/");
-  await page.getByRole("button", { name: /^College football/ }).click();
+  await league(page, "CFB");
   await expandAll(page);
   const card = page
     .locator(".game-card")
@@ -548,7 +559,8 @@ test("cards show the broadcast crew when the announcing schedule lists the game"
   await page.goto("/");
   const g = games[0];
   const card = page.locator(".game-card").filter({ hasText: g.teams[0].name }).filter({ hasText: g.teams[1].name }).first();
-  // Visible on the compact card, with play-by-play first.
+  // On the opened card, with play-by-play first.
+  await expand(card);
   await expect(card.locator(".booth")).toContainText(g.announcers[0].name);
   // Each announcer has a small photo, or initials when there's no free one.
   await expect(card.locator(".booth-person").first().locator("img, .headshot-fallback")).toBeVisible();
@@ -584,32 +596,31 @@ test("board lists in progress first, then completed, then upcoming, and the Stat
   // Completed holds the just-finished game plus the archived finals; Upcoming holds the rest.
   await expect(page.locator(".board-section.final .section-head .count")).toHaveText(String(archived + 1));
   await expect(page.locator(".board-section.upcoming .game-card")).toHaveCount(games.length - 2);
-  // The status buttons carry the same counts.
-  const btn = (name: string) => page.locator(".status-filter button", { hasText: name });
-  await expect(btn("In progress")).toContainText("1");
-  await expect(btn("Completed")).toContainText(String(archived + 1));
-  await expect(btn("Upcoming")).toContainText(String(games.length - 2));
-  await expect(btn("All")).toContainText(String(games.length + archived));
+  // The heading line carries the same counts, and the Status menu offers each status.
+  const counts = page.locator(".board-heading [role=status]");
+  await expect(counts).toContainText(`1 in progress · ${archived + 1} completed · ${games.length - 2} upcoming`);
+  const status = (name: string) => pick(page, "Status", name);
+  await expect(page.getByLabel("Status", { exact: true }).locator("option")).toHaveText(["All status", "In progress", "Completed", "Upcoming"]);
   // Under All, a long Completed list is capped so Upcoming stays reachable.
   if (archived + 1 > 12) {
     await expect(page.getByRole("button", { name: /Show all \d+ completed games/ })).toBeVisible();
     expect(await page.locator(".board-section.final .game-card").count()).toBe(12);
   }
   // Each status shows only its own section.
-  await btn("In progress").click();
+  await status("In progress");
   await expect(page.locator(".board-section")).toHaveCount(1);
   await expect(page.locator(".board-section.live")).toBeVisible();
-  await btn("Completed").click();
+  await status("Completed");
   await expect(page.locator(".board-section")).toHaveCount(1);
   await expect(page.locator(".board-section.final .result-card")).toHaveCount(archived);
   await expect(page.locator(".board-section.final .game-card")).toHaveCount(archived + 1);
-  await btn("Upcoming").click();
+  await status("Upcoming");
   await expect(page.locator(".board-section")).toHaveCount(1);
   await expect(page.locator(".board-section.upcoming .game-card")).toHaveCount(games.length - 2);
-  await btn("All").click();
+  await status("All status");
   await expect(page.locator(".board-section")).toHaveCount(3);
   // A status with nothing in it says so instead of showing a blank board.
-  await page.getByPlaceholder("Search teams, TV…").fill("zzzz-no-such-team");
+  await searchBox(page).fill("zzzz-no-such-team");
   await expect(page.locator(".empty-state")).toBeVisible();
   const width = await page.evaluate(() => document.documentElement.scrollWidth);
   expect(width).toBeLessThanOrEqual((page.viewportSize()?.width ?? 0) + 1);
@@ -686,28 +697,43 @@ test("live and completed cards show the status above the teams and the score bes
   await expect(live.locator(".game-status.in")).toBeVisible();
   // The old single line is gone.
   await expect(page.locator(".live-strip")).toHaveCount(0);
-  // Quarter and clock, above the team names.
-  await expect(live.locator(".game-status")).toContainText("Q3");
-  await expect(live.locator(".game-status")).toContainText("5:12");
+  // The compact strip: quarter and clock above the teams, a score beside each logo, and the rating. Nothing else.
+  await expect(live.locator(".cc-when .game-status")).toContainText("Q3");
+  await expect(live.locator(".cc-when .game-status")).toContainText("5:12");
+  const strip = await live.locator(".cc-when, .cc-team").evaluateAll((els) => els.map((e) => e.className.split(" ")[0]));
+  expect(strip).toEqual(["cc-when", "cc-team", "cc-team"]);
+  const teams = live.locator(".cc-team");
+  await expect(teams.nth(0).locator(".team-score")).toHaveText("14");
+  await expect(teams.nth(1).locator(".team-score")).toHaveText("17");
+  await expect(teams.nth(0).locator("img")).toBeVisible();
+  await expect(live.locator(".cc-rate strong")).toHaveText(String(games[0].score));
+  await expect(live.locator(".facts, .team-heading, .tv")).toHaveCount(0); // detail waits behind the toggle
+  expect((await live.boundingBox())!.height).toBeLessThan(130);
+  // Expanded: the status sits above the team names and each score is on its team's row.
+  await expand(live);
   const order = await live.locator(".game-status, .team-heading").evaluateAll((els) => els.map((e) => e.className.split(" ")[0]));
   expect(order).toEqual(["game-status", "team-heading", "team-heading"]);
-  // One score per team, inside that team's row (beside its logo and name).
   const rows = live.locator(".team-heading");
   await expect(rows.nth(0).locator(".team-score")).toHaveText("14");
   await expect(rows.nth(1).locator(".team-score")).toHaveText("17");
-  await expect(rows.nth(0).locator("img")).toBeVisible();
-  // On the same row as the team name, not on a line of its own.
   const [nameBox, scoreBox] = await Promise.all([rows.nth(0).locator("h4").boundingBox(), rows.nth(0).locator(".team-score").boundingBox()]);
   expect(Math.abs((nameBox!.y + nameBox!.height / 2) - (scoreBox!.y + scoreBox!.height / 2))).toBeLessThan(60);
   expect(scoreBox!.x).toBeGreaterThan(nameBox!.x);
   // A game that just finished: FINAL, winner's score emphasized.
   const post = page.locator(".just-final .game-card").first();
-  await expect(post.locator(".game-status.post")).toContainText("Final");
+  await expect(post.locator(".cc-when .game-status.post")).toContainText("Final");
   await expect(post.locator(".team-score.won")).toHaveText("27");
   await expect(post.locator(".team-score.lost")).toHaveText("24");
-  // Archived completed cards: FINAL above the teams, score beside each name, no separate T column.
-  await page.locator(".status-filter button", { hasText: "Completed" }).click();
+  // Archived completed cards: FINAL, both scores beside the logos and the rating in the strip.
+  await completed(page);
   const done = page.locator(".result-card").first();
+  await expect(done.locator(".cc-when .game-status.post")).toContainText("Final");
+  await expect(done.locator(".cc-team .team-score")).toHaveCount(2);
+  await expect(done.locator(".cc-team .team-score.won")).toHaveCount(1);
+  await expect(done.locator(".cc-rate strong")).toBeVisible();
+  expect((await done.boundingBox())!.height).toBeLessThan(130);
+  // Expanded: FINAL above the teams, score beside each name, no separate T column.
+  await expand(done);
   await expect(done.locator(".game-status.post")).toContainText("Final");
   await expect(done.locator(".ls-team .ls-total")).toHaveCount(2);
   await expect(done.locator("thead th", { hasText: /^T$/ })).toHaveCount(0);
@@ -811,13 +837,14 @@ test("completed cards show attendance at the top, with a capacity bar when the s
   const cap = Math.round(g.attendance / 0.8); // a stadium this game filled to 80%
   const open = async () => {
     await page.goto("/");
-    if (g.league === "CFB") await page.getByRole("button", { name: /^College football/ }).click();
+    if (g.league === "CFB") await league(page, "CFB");
     await completed(page);
     return page.locator(".result-card").filter({ hasText: g.teams[0].name }).filter({ hasText: g.teams[1].name }).first();
   };
   // Capacity known: a bar, and the share of capacity.
   await page.route("**/venues.json", (r) => r.fulfill({ json: { [g.venueId]: { name: "Test Stadium", capacity: cap } } }));
   let card = await open();
+  await expand(card);
   const att = card.locator(".attendance");
   await expect(att).toBeVisible();
   await expect(att.locator(".att-line strong")).toHaveText(count);
@@ -832,6 +859,7 @@ test("completed cards show attendance at the top, with a capacity bar when the s
   await page.unroute("**/venues.json");
   await page.route("**/venues.json", (r) => r.fulfill({ json: {} }));
   card = await open();
+  await expand(card);
   await expect(card.locator(".attendance .att-line strong")).toHaveText(count);
   await expect(card.locator(".attendance [role=meter]")).toHaveCount(0);
   await expect(card.locator(".attendance .att-pct")).toHaveCount(0);
@@ -842,4 +870,82 @@ test("completed cards show attendance at the top, with a capacity bar when the s
   }
   const width = await page.evaluate(() => document.documentElement.scrollWidth);
   expect(width).toBeLessThanOrEqual((page.viewportSize()?.width ?? 0) + 1);
+});
+
+test("the persistent bar is slim and every filter is a pop-down menu", async ({ page }, testInfo) => {
+  const errors: string[] = [];
+  page.on("pageerror", (err) => errors.push(err.message));
+  await page.goto("/");
+  const dock = page.locator(".filter-dock");
+  // Every filter is a pop-down (a select), not a row of buttons.
+  for (const menu of ["League", "Status", "Day", "Watchability"]) {
+    await expect(page.getByLabel(menu, { exact: true })).toHaveJSProperty("tagName", "SELECT");
+  }
+  await expect(dock.locator("button:not(.search-clear)")).toHaveCount(0);
+  await expect(page.getByLabel("Conference", { exact: true })).toHaveCount(0); // college only
+  // Slim: the old bar took 171px on a phone and 183px on a desktop.
+  const phone = testInfo.project.name === "mobile";
+  expect((await dock.boundingBox())!.height).toBeLessThan(phone ? 100 : 60);
+  // Still persistent: it stays at the top of the screen while the page scrolls.
+  await page.evaluate(() => scrollTo(0, 900));
+  expect(Math.round((await dock.boundingBox())!.y)).toBe(0);
+  await page.evaluate(() => scrollTo(0, 0));
+  // Each menu narrows the board.
+  const nfl = slate.games.filter((g: any) => g.league === "NFL");
+  await pick(page, "Watchability", "Must watch");
+  await expect(page.locator(CARD)).toHaveCount(nfl.filter((g: any) => g.score >= 90).length);
+  await pick(page, "Watchability", "Any rating");
+  await pick(page, "Status", "Upcoming");
+  await expect(page.locator(".board-section")).toHaveCount(1);
+  await pick(page, "Status", "All status");
+  // College adds a Conference menu, and the bar stays slim.
+  await league(page, "CFB");
+  await expect(page.getByLabel("Conference", { exact: true })).toHaveJSProperty("tagName", "SELECT");
+  expect((await dock.boundingBox())!.height).toBeLessThan(phone ? 140 : 60);
+  await pick(page, "Conference", "SEC");
+  await expect(page.locator(CARD)).toHaveCount(slate.games.filter((g: any) => g.league === "CFB" && g.conferences.includes("sec")).length);
+  // Nothing spills sideways.
+  const width = await page.evaluate(() => document.documentElement.scrollWidth);
+  expect(width).toBeLessThanOrEqual((page.viewportSize()?.width ?? 0) + 1);
+  expect(errors).toEqual([]);
+});
+
+test("game cards open as a minimal strip: logos, scores and the rating; the rest waits behind the toggle", async ({ page }) => {
+  await page.goto("/");
+  // An upcoming or live game.
+  const card = page.locator(CARD).first();
+  await expect(card).toHaveClass(/compact/);
+  expect((await card.boundingBox())!.height).toBeLessThan(130);
+  await expect(card.locator(".cc-team")).toHaveCount(2);
+  await expect(card.locator(".cc-team img")).toHaveCount(2);
+  const title = (await card.locator("h3.sr-only").innerText()).trim();
+  const game = slate.games.find((g: any) => g.matchup === title)!;
+  expect(game, title).toBeTruthy();
+  await expect(card.locator(".cc-rate strong")).toHaveText(String(game.score));
+  await expect(card.locator(".cc-when")).toBeVisible(); // kickoff time, or LIVE with the quarter and clock
+  // Everything else is hidden until it is opened.
+  await expect(card.locator(".facts, .team-heading, .tv, .card-more, .attendance, .insanity")).toHaveCount(0);
+  await card.locator(".card-toggle").click();
+  await expect(card).toHaveClass(/expanded/);
+  await expect(card.locator(".cc")).toHaveCount(0);
+  await expect(card.locator(".facts")).toBeVisible();
+  await expect(card.locator(".tv")).toBeVisible();
+  await expect(card.locator(".card-more .take")).toBeVisible();
+  // "Less" puts it back to the strip.
+  await card.locator(".card-toggle", { hasText: "Less" }).click();
+  await expect(card).toHaveClass(/compact/);
+  // A completed game is the same strip: both scores, the rating, and the detail behind the toggle.
+  await completed(page);
+  const done = page.locator(".result-card").first();
+  await expect(done).toHaveClass(/compact/);
+  expect((await done.boundingBox())!.height).toBeLessThan(130);
+  await expect(done.locator(".cc-team img")).toHaveCount(2);
+  await expect(done.locator(".cc-team .team-score")).toHaveCount(2);
+  await expect(done.locator(".cc-rate strong")).toBeVisible();
+  await expect(done.locator(".linescore, .attendance, .fva, .wp, .score-call")).toHaveCount(0);
+  await done.locator(".card-toggle").click();
+  await expect(done.locator(".linescore")).toBeVisible();
+  await expect(done.locator(".fva")).toBeVisible();
+  await done.locator(".card-toggle", { hasText: "Less" }).click();
+  await expect(done).toHaveClass(/compact/);
 });
