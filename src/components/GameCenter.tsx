@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { attributePlays, impact, type ImpactEvent, type PlayLog, type PlayerRow } from "../playImpact";
+import { ART_COUNT, attributePlays, impact, summarizeEvents, type ImpactEvent, type PlayLog, type PlayerRow } from "../playImpact";
 import { ART_LABEL, PlayArt } from "./PlayArt";
 import { openModal } from "../modal";
 import { logos, networkLogo, rankLine, results, slate, teamColor, tierLabel, type Ranks } from "../data";
@@ -694,42 +694,61 @@ function PlayerLine({
   );
 }
 
-/** The plays that add up to a player's impact number, each with its art and points. */
+/**
+ * The plays behind a player's impact number. Opens as a summary (the three plays that
+ * moved it most, everything else rolled up by kind of play); the full list is one click away.
+ */
 function PlayList({ id, detail, value, name }: { id: string; detail: { events: ImpactEvent[]; other: number }; value: number; name: string }) {
+  const [all, setAll] = useState(false);
   const { events, other } = detail;
-  const shown = Math.abs(other) >= 0.05;
+  const sum = useMemo(() => summarizeEvents(events), [events]);
+  const hasOther = Math.abs(other) >= 0.05;
+  const small = events.length <= 3; // nothing to roll up
+  const full = all || small;
+  const row = (e: ImpactEvent, i: number) => (
+    <li key={`${e.id}-${i}`} className={e.points >= 0 ? "pos" : "neg"}>
+      <span className="gc-pa" title={ART_LABEL[e.art]}>
+        <PlayArt kind={e.art} size={24} />
+      </span>
+      <span className="gc-pw">
+        <strong>{e.role.charAt(0).toUpperCase() + e.role.slice(1)}</strong>
+        {(e.period != null || e.clock) && (
+          <em>
+            {periodName(e.period)} {e.clock}
+          </em>
+        )}
+        <small>{e.text}</small>
+      </span>
+      <span className="gc-ppts">
+        {e.yards != null && (
+          <i>
+            {e.yards > 0 ? "+" : ""}
+            {e.yards} yd
+          </i>
+        )}
+        <b>{pts(e.points)}</b>
+      </span>
+    </li>
+  );
+  const otherNote = "Credit from the box score that the play log doesn't tie to a single play, such as tackles on special teams.";
+  const parts = full
+    ? [`${events.length} play${events.length === 1 ? "" : "s"} ${pts(Math.round((value - other) * 100) / 100)}`]
+    : [`top ${sum.top.length} ${pts(sum.topPoints)}`, sum.restCount ? `${sum.restCount} other plays ${pts(sum.restPoints)}` : ""];
+  if (hasOther) parts.push(`box-score credit ${pts(other)}`);
   return (
     <div className="gc-plays" id={id}>
       <p className="gc-plays-head">
-        <strong>{name}'s plays</strong>
+        <strong>
+          {name}'s {full ? "plays" : "biggest plays"}
+        </strong>
         <span>
-          {events.length} play{events.length === 1 ? "" : "s"} {pts(Math.round((value - other) * 100) / 100)}
-          {shown ? ` · other ${pts(other)}` : ""} = <b>{pts(value)}</b>
+          {parts.filter(Boolean).join(" · ")} = <b>{pts(value)}</b>
         </span>
       </p>
       <ol className="gc-playlist">
-        {events.map((e, i) => (
-          <li key={`${e.id}-${i}`} className={e.points >= 0 ? "pos" : "neg"}>
-            <span className="gc-pa" title={ART_LABEL[e.art]}>
-              <PlayArt kind={e.art} size={24} />
-            </span>
-            <span className="gc-pw">
-              <strong>{e.role.charAt(0).toUpperCase() + e.role.slice(1)}</strong>
-              {(e.period != null || e.clock) && (
-                <em>
-                  {periodName(e.period)} {e.clock}
-                </em>
-              )}
-              <small>{e.text}</small>
-            </span>
-            <span className="gc-ppts">
-              {e.yards != null && <i>{e.yards > 0 ? "+" : ""}{e.yards} yd</i>}
-              <b>{pts(e.points)}</b>
-            </span>
-          </li>
-        ))}
-        {shown && (
-          <li className="other" title="Credit from the box score that the play log doesn't tie to a single play, such as tackles on special teams.">
+        {(full ? events : sum.top).map(row)}
+        {full && hasOther && (
+          <li className="other" title={otherNote}>
             <span className="gc-pa">
               <PlayArt kind="other" size={24} />
             </span>
@@ -742,8 +761,39 @@ function PlayList({ id, detail, value, name }: { id: string; detail: { events: I
             </span>
           </li>
         )}
-        {!events.length && !shown && <li className="none"><span className="gc-pw"><small>No plays credited yet.</small></span></li>}
+        {!events.length && !hasOther && (
+          <li className="none">
+            <span className="gc-pw">
+              <small>No plays credited yet.</small>
+            </span>
+          </li>
+        )}
       </ol>
+      {!full && (sum.rest.length > 0 || hasOther) && (
+        <ul className="gc-rest" aria-label="Everything else">
+          {sum.rest.map((g) => (
+            <li key={g.art} className={`gc-chip ${g.points >= 0 ? "pos" : "neg"}`}>
+              <PlayArt kind={g.art} size={18} />
+              <span>
+                {g.count} {ART_COUNT[g.art][g.count === 1 ? 0 : 1]}
+              </span>
+              <b>{pts(g.points)}</b>
+            </li>
+          ))}
+          {hasOther && (
+            <li className="gc-chip other" title={otherNote}>
+              <PlayArt kind="other" size={18} />
+              <span>Other box-score credit</span>
+              <b>{pts(other)}</b>
+            </li>
+          )}
+        </ul>
+      )}
+      {!small && (
+        <button type="button" className="gc-allplays" aria-expanded={all} onClick={() => setAll((v) => !v)}>
+          {all ? "Show biggest plays only" : `See all ${events.length} plays`}
+        </button>
+      )}
     </div>
   );
 }

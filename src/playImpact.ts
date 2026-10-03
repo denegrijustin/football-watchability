@@ -374,3 +374,52 @@ export function attributePlays(
   const sum = events.reduce((a, e) => a + e.points, 0);
   return { events, other: Math.round((value - sum) * 100) / 100 };
 }
+
+/** How each kind of play reads in a count: "22 completions", "1 sack". */
+export const ART_COUNT: Record<PlayArtKind, [string, string]> = {
+  run: ["rush", "rushes"],
+  pass: ["completion", "completions"],
+  incomplete: ["incompletion", "incompletions"],
+  td: ["touchdown", "touchdowns"],
+  sack: ["sack", "sacks"],
+  safety: ["safety", "safeties"],
+  int: ["interception", "interceptions"],
+  fumble: ["fumble lost", "fumbles lost"],
+  fg: ["field goal", "field goals"],
+  fgMiss: ["missed kick", "missed kicks"],
+  xpMiss: ["missed extra point", "missed extra points"],
+  tackle: ["tackle", "tackles"],
+  tfl: ["tackle for loss", "tackles for loss"],
+  pd: ["pass breakup", "pass breakups"],
+  qbhit: ["QB hit", "QB hits"],
+  adjust: ["efficiency adjustment", "efficiency adjustments"],
+  other: ["other play", "other plays"],
+};
+
+/**
+ * A short version of a player's plays: the few plays that moved the number most
+ * (biggest swing either way), and everything else rolled up by kind of play.
+ * `top` + `rest` are exactly `events`, so with the other-credit line they still
+ * add up to the player's value.
+ */
+export function summarizeEvents(events: ImpactEvent[], topN = 3) {
+  const ranked = events
+    .map((e, i) => ({ e, i }))
+    // An efficiency adjustment is not a play; it stays in the roll-up.
+    .filter(({ e }) => e.points !== 0 && e.art !== "adjust")
+    .sort((a, b) => Math.abs(b.e.points) - Math.abs(a.e.points) || a.i - b.i);
+  const top = ranked.slice(0, topN).map((x) => x.e);
+  const chosen = new Set(top);
+  const groups = new Map<PlayArtKind, { art: PlayArtKind; count: number; points: number }>();
+  for (const e of events) {
+    if (chosen.has(e)) continue;
+    const g = groups.get(e.art) ?? { art: e.art, count: 0, points: 0 };
+    g.count++;
+    g.points = Math.round((g.points + e.points) * 100) / 100;
+    groups.set(e.art, g);
+  }
+  const rest = [...groups.values()].sort((a, b) => Math.abs(b.points) - Math.abs(a.points) || b.count - a.count);
+  const topPoints = Math.round(top.reduce((a, e) => a + e.points, 0) * 100) / 100;
+  const restPoints = Math.round(rest.reduce((a, g) => a + g.points, 0) * 100) / 100;
+  return { top, rest, topPoints, restPoints, restCount: rest.reduce((a, g) => a + g.count, 0) };
+}

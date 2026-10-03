@@ -750,23 +750,41 @@ test("Top 3 / bottom 3: the impact number opens the plays behind it, with play a
   await expect(btn).toHaveAttribute("aria-expanded", "true");
   const panel = card.locator(".gc-plays");
   await expect(panel).toBeVisible();
+  // It opens as a summary: the biggest plays, then everything else rolled up, not a play-by-play.
+  await expect(panel.locator(".gc-plays-head")).toContainText("biggest plays");
   const rows = panel.locator(".gc-playlist li");
+  await expect(rows).toHaveCount(3);
+  await expect(panel.locator(".gc-playlist li svg.play-art")).toHaveCount(3);
+  await expect(rows.first()).toContainText("J.Allen left guard for 1 yard, TOUCHDOWN"); // the biggest swing
+  await expect(rows.first()).toContainText("+6.1");
+  await expect(rows.nth(1)).toContainText("INTERCEPTED by G.Smith");
+  await expect(rows.nth(1)).toContainText("−4.5");
+  const chips = panel.locator(".gc-chip");
+  expect(await chips.count()).toBeGreaterThanOrEqual(3);
+  await expect(panel.locator(".gc-chip", { hasText: /\d+ (sack|incompletion|rush|completion)/ }).first()).toBeVisible();
+  await expect(panel.locator(".gc-chip.other")).toContainText("Other box-score credit");
+  // Summary adds up to the number on the card: top plays + rolled-up groups (+ other credit).
+  const sumOf = async () =>
+    [...(await panel.locator(".gc-ppts b").allInnerTexts()), ...(await panel.locator(".gc-chip b").allInnerTexts())].map(num).reduce((a, b) => a + b, 0);
+  expect(Math.abs((await sumOf()) - shown)).toBeLessThan(0.011);
+  await expect(panel.locator(".gc-plays-head")).toContainText(`= ${shown > 0 ? "+" : shown < 0 ? "−" : ""}${Math.abs(shown)}`);
+  // The full list is one click away: every play, in game order, with its art, quarter and points.
+  const seeAll = panel.getByRole("button", { name: /See all \d+ plays/ });
+  await expect(seeAll).toHaveAttribute("aria-expanded", "false");
+  await seeAll.click();
+  await expect(panel.locator(".gc-plays-head")).toContainText("plays");
+  await expect(panel.locator(".gc-chip")).toHaveCount(0);
   const n = await rows.count();
-  expect(n).toBeGreaterThanOrEqual(4);
-  // Each play has its art, the play text, and its points; the kinds of play show up as different art.
+  expect(n).toBeGreaterThanOrEqual(8);
   await expect(panel.locator(".gc-playlist li svg.play-art")).toHaveCount(n);
   const arts = await panel.locator("svg.play-art").evaluateAll((els) => els.map((e) => e.getAttribute("class")!.replace("play-art art-", "")));
-  for (const kind of ["td", "sack", "run", "pass", "incomplete", "safety", "int", "fumble"]) {
-    // Allen's plays in this log cover these kinds (the fumble and the pass are other players', so check a subset).
-    if (["td", "sack", "run", "pass", "safety", "adjust"].includes(kind)) expect(arts, `art for ${kind}`).toContain(kind);
-  }
-  await expect(rows.filter({ hasText: "J.Allen left guard for 1 yard, TOUCHDOWN" }).first()).toContainText("+6.1");
+  for (const kind of ["td", "sack", "run", "pass", "safety", "adjust", "int", "incomplete"]) expect(arts, `art for ${kind}`).toContain(kind);
   await expect(rows.filter({ hasText: "sacked at LAC 26" }).first()).toContainText("−0.7");
   await expect(rows.filter({ hasText: "sacked at LAC 26" }).first()).toContainText("Q4");
-  // The rows add up to the number on the card.
-  const points = (await panel.locator(".gc-ppts b").allInnerTexts()).map(num);
-  expect(Math.abs(points.reduce((a, b) => a + b, 0) - shown)).toBeLessThan(0.011);
-  await expect(panel.locator(".gc-plays-head")).toContainText(`= ${shown > 0 ? "+" : shown < 0 ? "−" : ""}${Math.abs(shown)}`);
+  expect(Math.abs((await sumOf()) - shown)).toBeLessThan(0.011); // still adds up in full
+  // And back to the summary.
+  await panel.getByRole("button", { name: /Show biggest plays only/ }).click();
+  await expect(rows).toHaveCount(3);
   // A defender's number opens too, and shows different play art.
   const dcard = gc.locator(".gc-pcard").filter({ hasText: "Greg Rousseau" });
   await dcard.locator(".gc-imp-btn").click();
