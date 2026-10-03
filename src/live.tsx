@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { results, slate } from "./data";
 import type { WpPoint } from "./insanity";
+import { liveStatusParts } from "./liveStatus";
 
 /** Live score for one game, from /api/scores (a Cloudflare Pages Function over ESPN). */
 export type LiveScore = {
@@ -143,19 +144,42 @@ export function LiveScores({ children }: { children: ReactNode }) {
   return <LiveContext.Provider value={map}>{children}</LiveContext.Provider>;
 }
 
-/** "Q3 5:12 · JAX 14–10 CIN" / "Final · JAX 24–27 CIN" */
-export function LiveStrip({ live, away, home }: { live?: LiveScore; away: string; home: string }) {
+/**
+ * Status line above the team names on live and just-finished cards: LIVE with the
+ * quarter and clock, or FINAL. The scores sit beside each team (see TeamScore).
+ */
+export function GameStatus({ live }: { live?: LiveScore }) {
   if (!live || live.state === "pre") return null;
+  if (live.state === "post") {
+    const extra = live.detail.replace(/^final\/?/i, "").trim();
+    return (
+      <div className="game-status post" role="status">
+        <span className="gs-pill">Final</span>
+        {extra && <span className="gs-period">{extra}</span>}
+      </div>
+    );
+  }
+  const { period, clock, text } = liveStatusParts(live.detail);
   return (
-    <div className={`live-strip ${live.state}`} role="status">
-      <span className="live-state">{live.state === "in" ? "Live" : "Final"}</span>
-      <strong>
-        {away} {live.away}–{live.home} {home}
-      </strong>
-      <span className="live-detail">
-        {live.state === "in" ? live.detail : "Full forecast vs actual after the next refresh"}
-      </span>
+    <div className="game-status in" role="status">
+      <span className="gs-pill">Live</span>
+      {period && <span className="gs-period">{period}</span>}
+      {clock && <span className="gs-clock">{clock}</span>}
+      {text && <span className="gs-period">{text}</span>}
     </div>
+  );
+}
+
+/** A team's score, shown beside its name and logo once the game has started. */
+export function TeamScore({ live, side }: { live?: LiveScore; side: "away" | "home" }) {
+  if (!live || live.state === "pre") return null;
+  const mine = live[side];
+  const theirs = live[side === "away" ? "home" : "away"];
+  const cls = live.state === "post" ? (mine > theirs ? " won" : mine < theirs ? " lost" : "") : mine > theirs ? " lead" : "";
+  return (
+    <span className={`team-score${cls}`} aria-label={`${side === "away" ? "Away" : "Home"} score`}>
+      {mine}
+    </span>
   );
 }
 
