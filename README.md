@@ -74,7 +74,11 @@ Each upcoming card's **History + key players** section lists both teams' season 
 
 ### Compact cards
 
-Upcoming game cards open compact: kickoff and TV, both teams with record and ranks, the watchability score, venue, line and weather. A click anywhere on the card (or **Details ▾**) expands it in place to the full card: quarter-by-quarter weather, the take, projected score, win probability, edges, form, and the detail dropdowns. On an expanded card, a click on the matchup opens the Game Center overlay; **Less ▴** collapses it. Cards opened from the TV grid start expanded.
+Every game card (upcoming, live and completed) opens as a minimal strip about 105px tall: both team logos and names, each team's score once the game has started, the watchability rating, and one small line (kickoff time, or LIVE with the quarter and clock, or FINAL). Everything else is behind the chevron: network, records and ranks, venue, line, weather, announcers, the take, projected score, win probability, injuries, form, the insanity meter, and on completed cards the attendance bar, the quarter-by-quarter line, projected vs final, forecast vs actual and why it scored. A tap anywhere on the strip (or the chevron) opens the card in place; **Less ▴** collapses it, and on an opened card a click on the matchup opens the Game Center. Cards opened from the TV grid start expanded. On narrow screens NFL names show just the nickname (`src/teamName.ts`).
+
+### Filter bar
+
+The persistent bar is one slim row of pop-down menus (league, status, day, watchability, and conference for college) plus search, about 47px on desktop and two short rows (about 91px) on a phone, down from about 180px. Menus are native selects, so they use the phone's own picker, and their text is 16px on phones so iOS doesn't zoom the page. Counts per status are in the heading line under the tabs.
 
 ### Announcers
 

@@ -147,31 +147,34 @@ export function GameBoard({
                   <p>
                     {rs.length} final{rs.length === 1 ? "" : "s"} · forecast avg {avg(rs.map((r) => r.forecast.score))} · actual avg{" "}
                     {avg(rs.map((r) => r.actual.score))}
-                    {rs.some((r) => r.scoreCheck) && (
-                      <>
-                        {" "}
-                        · winners picked {rs.filter((r) => r.scoreCheck?.winnerRight).length} of{" "}
-                        {rs.filter((r) => r.scoreCheck).length} · margin off by{" "}
-                        {(
-                          rs.reduce((a, r) => a + Math.abs(r.scoreCheck?.marginMiss ?? 0), 0) /
-                          (rs.filter((r) => r.scoreCheck).length || 1)
-                        ).toFixed(1)}{" "}
-                        on average
-                      </>
-                    )}
-                    {wild && wild.i!.score >= 58 && (
-                      <>
-                        {" "}
-                        · wildest: {wild.r.matchup} (insanity {wild.i!.score})
-                      </>
-                    )}
-                    {best && best.delta > 4 && (
-                      <>
-                        {" "}
-                        · biggest overachiever: {best.matchup} (+{best.delta})
-                      </>
-                    )}
                   </p>
+                  <details className="week-more">
+                    <summary>Week highlights</summary>
+                    <p>
+                      {rs.some((r) => r.scoreCheck) && (
+                        <>
+                          Winners picked {rs.filter((r) => r.scoreCheck?.winnerRight).length} of {rs.filter((r) => r.scoreCheck).length} · margin off by{" "}
+                          {(
+                            rs.reduce((a, r) => a + Math.abs(r.scoreCheck?.marginMiss ?? 0), 0) /
+                            (rs.filter((r) => r.scoreCheck).length || 1)
+                          ).toFixed(1)}{" "}
+                          on average
+                        </>
+                      )}
+                      {wild && wild.i!.score >= 58 && (
+                        <>
+                          {" "}
+                          · wildest: {wild.r.matchup} (insanity {wild.i!.score})
+                        </>
+                      )}
+                      {best && best.delta > 4 && (
+                        <>
+                          {" "}
+                          · biggest overachiever: {best.matchup} (+{best.delta})
+                        </>
+                      )}
+                    </p>
+                  </details>
                 </div>
                 <div className="game-grid">
                   {shown.map((r) => (
