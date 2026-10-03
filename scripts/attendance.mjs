@@ -15,7 +15,7 @@
 // Safe to re-run, and a failed fetch never fails the run. RESULTS_FILE, VENUES_FILE, RAW_DIR,
 // ESPN_BASE (site API), ESPN_CORE_BASE (core API) and WIKI_BASE override the defaults (the tests use them).
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { WIKI_PAGES, buildIndex, lookupCapacity, stadiumRows } from "./venue-capacity.mjs";
+import { WIKI_PAGES, altSiteCapacity, buildIndex, lookupCapacity, stadiumRows } from "./venue-capacity.mjs";
 
 const root = new URL("../", import.meta.url);
 const RESULTS = process.env.RESULTS_FILE ?? new URL("src/data/results.json", root).pathname;
@@ -94,10 +94,13 @@ for (const [id, league] of wanted) {
 // ---------- 3a. capacity from the checked-in seed (roadtocfb.com and the NFL stadium guide), by venue id ----------
 const SEED = process.env.SEED_FILE ?? new URL("./venue-capacity-seed.json", import.meta.url).pathname;
 const seed = existsSync(SEED) ? JSON.parse(readFileSync(SEED, "utf8")) : {};
+const ALT = process.env.ALT_SITES_FILE ?? new URL("./venue-capacity-alt-sites.json", import.meta.url).pathname;
+const altSites = existsSync(ALT) ? JSON.parse(readFileSync(ALT, "utf8")) : [];
 let seeded = 0;
 for (const id of wanted.keys()) {
-  if (venues[id] && venues[id].capacity == null && seed[id]?.capacity) {
-    venues[id].capacity = seed[id].capacity;
+  const cap = venues[id]?.capacity == null ? (seed[id]?.capacity ?? altSiteCapacity(altSites, venues[id] ?? {})) : null;
+  if (cap) {
+    venues[id].capacity = cap;
     venues[id].source = "seed";
     venues[id].checked = today;
     seeded++;
