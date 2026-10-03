@@ -1,26 +1,12 @@
-import { insanity } from "./insanity";
 import { useState } from "react";
-import {
-  dayName,
-  filterGames,
-  filterResults,
-  results,
-  slate,
-  tiers,
-  type FilterState,
-  type League,
-  type View,
-} from "./data";
+import { dayName, results, slate, tiers, type FilterState, type League, type View } from "./data";
 import { Filters } from "./components/Filters";
-import { GameCard } from "./components/GameCard";
-import { ResultCard } from "./components/ResultCard";
+import { GameBoard, useBoard } from "./components/GameBoard";
 import { InsanityBoard } from "./components/InsanityBoard";
 import { TvGrid } from "./components/TvGrid";
 import { setTz, tzLabel, useTz, ZONES } from "./tz";
 
-const upcomingCount = (l: League) => slate.games.filter((g) => g.league === l).length;
-const finalCount = (l: League) => results.filter((r) => r.league === l).length;
-const avg = (xs: number[]) => Math.round(xs.reduce((a, b) => a + b, 0) / (xs.length || 1));
+const gameCount = (l: League) => slate.games.filter((g) => g.league === l).length + results.filter((r) => r.league === l).length;
 
 const initial: FilterState = {
   league: "NFL",
@@ -28,26 +14,16 @@ const initial: FilterState = {
   query: "",
   day: "all",
   minScore: 0,
+  status: "all",
 };
 
 export default function App() {
   const tz = useTz();
   const [filters, setFilters] = useState<FilterState>(initial);
-  const [view, setView] = useState<View>(upcomingCount("NFL") ? "upcoming" : "final");
-  const update = (patch: Partial<FilterState>) => {
-    setFilters((f) => ({ ...f, ...patch }));
-    // Switching to a league with nothing in this view flips to the other one.
-    if (patch.league) {
-      if (view === "upcoming" && !upcomingCount(patch.league) && finalCount(patch.league)) setView("final");
-      if (view === "final" && !finalCount(patch.league) && upcomingCount(patch.league)) setView("upcoming");
-    }
-  };
+  const [view, setView] = useState<View>("board");
+  const update = (patch: Partial<FilterState>) => setFilters((f) => ({ ...f, ...patch }));
   const { league } = filters;
-  const games = filterGames(filters);
-  const finals = filterResults(filters);
-  const weeks = [...new Set(finals.map((r) => r.week))];
-  const total = view === "final" ? finalCount(league) : upcomingCount(league);
-  const shown = view === "final" ? finals.length : games.length;
+  const board = useBoard(filters);
   const switchView = (v: View) => {
     setView(v);
     setFilters((f) => ({ ...f, day: "all" }));
@@ -56,10 +32,9 @@ export default function App() {
     filters.query !== "" ||
     filters.day !== "all" ||
     filters.minScore !== 0 ||
+    filters.status !== "all" ||
     (league === "CFB" && filters.conference !== "all-fbs");
-  const heading =
-    (league === "NFL" ? "NFL" : "College") +
-    (filters.day === "all" ? (view === "final" ? " results" : " matchups") : ` · ${dayName(filters.day)}`);
+  const heading = (league === "NFL" ? "NFL" : "College") + (filters.day === "all" ? " games" : ` · ${dayName(filters.day)}`);
 
   return (
     <>
@@ -135,22 +110,19 @@ export default function App() {
           </ul>
         </details>
 
-        {view !== "grid" && view !== "insanity" && <Filters {...filters} view={view} onChange={update} />}
+        {view === "board" && <Filters {...filters} counts={board.counts} onChange={update} />}
 
         <section id="games" tabIndex={-1} aria-label="Game dashboard">
           <div className="view-row">
           <div className="view-switch segmented" role="group" aria-label="Games to show">
-            <button aria-pressed={view === "upcoming"} onClick={() => switchView("upcoming")}>
-              Upcoming<span className="count">{upcomingCount(league)}</span>
+            <button aria-pressed={view === "board"} onClick={() => switchView("board")}>
+              Games<span className="count">{gameCount(league)}</span>
             </button>
             <button aria-pressed={view === "grid"} onClick={() => switchView("grid")}>
               TV grid
             </button>
             <button aria-pressed={view === "insanity"} onClick={() => switchView("insanity")}>
               Insanity
-            </button>
-            <button aria-pressed={view === "final"} onClick={() => switchView("final")}>
-              Final<span className="vs-extra"> · forecast vs actual</span><span className="count">{finalCount(league)}</span>
             </button>
           </div>
           <div className="export-btns">
@@ -178,98 +150,21 @@ export default function App() {
           <div className="board-heading">
             <h2>{heading}</h2>
             <span role="status">
-              {shown} of {total} games
+              {board.counts.live} in progress · {board.counts.final} completed · {board.counts.upcoming} upcoming
             </span>
             {filtered && (
-              <button
-                className="reset"
-                onClick={() => setFilters({ ...initial, league })}
-              >
+              <button className="reset" onClick={() => setFilters({ ...initial, league })}>
                 Reset filters
               </button>
             )}
-            <span className="sort-label">
-              {view === "final" ? "Sorted by actual watchability" : "Sorted by watchability"}
-            </span>
+            <span className="sort-label">In progress first, then completed, then upcoming</span>
           </div>
-          {view === "final" ? (
-            finals.length ? (
-              weeks.map((w) => {
-                const rs = finals.filter((r) => r.week === w);
-                const best = [...rs].sort((a, b) => b.delta - a.delta)[0];
-                const wild = rs
-                  .map((r) => ({ r, i: insanity(r.wp, { final: true, overtime: r.final.overtime }) }))
-                  .filter((x) => x.i)
-                  .sort((a, b) => b.i!.score - a.i!.score)[0];
-                return (
-                  <section key={w} className="week-block" aria-label={`Results, ${w}`}>
-                    <div className="week-head">
-                      <h3>{w}</h3>
-                      <p>
-                        {rs.length} final{rs.length === 1 ? "" : "s"} · forecast avg {avg(rs.map((r) => r.forecast.score))} · actual avg{" "}
-                        {avg(rs.map((r) => r.actual.score))}
-                        {rs.some((r) => r.scoreCheck) && (
-                          <>
-                            {" "}
-                            · winners picked {rs.filter((r) => r.scoreCheck?.winnerRight).length} of{" "}
-                            {rs.filter((r) => r.scoreCheck).length} · margin off by{" "}
-                            {(
-                              rs.reduce((a, r) => a + Math.abs(r.scoreCheck?.marginMiss ?? 0), 0) /
-                              (rs.filter((r) => r.scoreCheck).length || 1)
-                            ).toFixed(1)}{" "}
-                            on average
-                          </>
-                        )}
-                        {wild && wild.i!.score >= 58 && (
-                          <>
-                            {" "}
-                            · wildest: {wild.r.matchup} (insanity {wild.i!.score})
-                          </>
-                        )}
-                        {best && best.delta > 4 && (
-                          <>
-                            {" "}
-                            · biggest overachiever: {best.matchup} (+{best.delta})
-                          </>
-                        )}
-                      </p>
-                    </div>
-                    <div className="game-grid">
-                      {rs.map((r) => (
-                        <ResultCard key={r.espnId} result={r} />
-                      ))}
-                    </div>
-                  </section>
-                );
-              })
-            ) : (
-              <div className="empty-state">
-                <h3>No finished games yet.</h3>
-                <p>
-                  {finalCount(league)
-                    ? "Try another team, channel, day or conference."
-                    : "Results appear here after the Friday, Sunday, Monday and Tuesday morning updates."}
-                </p>
-                {filtered && <button onClick={() => setFilters({ ...initial, league })}>Clear filters</button>}
-              </div>
-            )
-          ) : games.length ? (
-            <div className="game-grid">
-              {games.map((game) => (
-                <GameCard key={game.id} game={game} />
-              ))}
-            </div>
-          ) : (
-            <div className="empty-state">
-              <h3>{upcomingCount(league) ? "No matchups found." : "No games left this week."}</h3>
-              <p>
-                {upcomingCount(league)
-                  ? "Try another team, channel, day or conference."
-                  : "Switch to Final to see how each game played against its forecast."}
-              </p>
-              {filtered && <button onClick={() => setFilters({ ...initial, league })}>Clear filters</button>}
-            </div>
-          )}
+          <GameBoard
+            board={board}
+            status={filters.status}
+            filtered={filtered}
+            onReset={() => setFilters({ ...initial, league })}
+          />
             </>
           )}
         </section>

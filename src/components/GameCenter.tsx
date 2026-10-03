@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { openModal } from "../modal";
 import { logos, networkLogo, rankLine, results, slate, teamColor, tierLabel, type Ranks } from "../data";
 import { trimGame } from "../gameTrim.js";
 import { dayOf, timeOf, tzAbbr } from "../tz";
@@ -198,7 +199,7 @@ function GameCenter({ espnId, stub, onClose }: { espnId: string | null; stub?: G
   useEffect(() => {
     const d = ref.current;
     if (!d) return;
-    if (espnId && !d.open) d.showModal();
+    if (espnId && !d.open) openModal(d);
     if (!espnId && d.open) d.close();
   }, [espnId]);
 
