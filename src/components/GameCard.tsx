@@ -78,6 +78,7 @@ export function GameCard({
   );
   return (
     <article
+      data-game-id={game.id}
       className={`game-card ${game.tier}${homeColor ? " team-tinted" : ""}${expanded ? " expanded" : " compact"}`}
       style={
         homeColor ? ({ "--team-bg": homeColor } as CSSProperties) : undefined
