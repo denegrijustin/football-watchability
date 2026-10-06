@@ -95,6 +95,7 @@ jobs:
         run: node scripts/slate-window.mjs | tee -a "$GITHUB_OUTPUT"
 
       - name: Archive last week's late finals (Tuesdays)
+        timeout-minutes: 10
         if: steps.go.outputs.go == 'yes' && steps.gate.outputs.mode == 'daily' && steps.week.outputs.dow == '2'
         env:
           RAW_DIR: data-raw-prev
@@ -114,13 +115,13 @@ jobs:
         run: |
           echo "{\"start\":\"$START\",\"end\":\"$END\"}" > data-raw/request.json
           node scripts/fetch-slate.mjs
-          node scripts/fetch-weather.mjs || echo "weather failed; building without it"
-          node scripts/fetch-availability.mjs || echo "availability reports failed; building without them"
-          node scripts/fetch-announcers.mjs || echo "announcer schedules failed; building without them"
-          node scripts/fetch-announcer-photos.mjs || echo "announcer photos failed; initials instead"
-          node scripts/fetch-trends.mjs || echo "trends failed; building without them"
-          node scripts/fetch-advanced.mjs || echo "advanced stats failed; building without them"
-          node scripts/fetch-history.mjs || echo "history failed; using what we have"
+          timeout 120s node scripts/fetch-weather.mjs || echo "weather failed; building without it"
+          timeout 120s node scripts/fetch-availability.mjs || echo "availability reports failed; building without them"
+          timeout 120s node scripts/fetch-announcers.mjs || echo "announcer schedules failed; building without them"
+          timeout 120s node scripts/fetch-announcer-photos.mjs || echo "announcer photos failed or timed out; initials instead"
+          timeout 120s node scripts/fetch-trends.mjs || echo "trends failed; building without them"
+          timeout 120s node scripts/fetch-advanced.mjs || echo "advanced stats failed; building without them"
+          timeout 300s node scripts/fetch-history.mjs || echo "history failed or timed out; using what we have"
 
       - name: Build
         timeout-minutes: 25
@@ -128,13 +129,13 @@ jobs:
         run: |
           node scripts/build-slate.mjs
           # New matchups: all-time series pages, then rebuild with them.
-          node scripts/fetch-alltime.mjs > /dev/null || echo "all-time fetch failed"
+          timeout 180s node scripts/fetch-alltime.mjs > /dev/null || echo "all-time fetch failed or timed out"
           node scripts/build-slate.mjs
-          node scripts/upgrade-logos.mjs || echo "logo fetch failed; validation will catch missing logos"
+          timeout 180s node scripts/upgrade-logos.mjs || echo "logo fetch failed; validation will catch missing logos"
           node scripts/write-narratives.mjs
           node scripts/export-slate.mjs
           # Attendance for finals archived before it was recorded, and stadium capacities.
-          node scripts/attendance.mjs || echo "attendance fetch failed; building without it"
+          timeout 180s node scripts/attendance.mjs || echo "attendance fetch failed; building without it"
           pnpm build
 
       - name: Browser checks
