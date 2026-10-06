@@ -134,6 +134,8 @@ test("narrow phone has no page overflow", async ({ page }) => {
 });
 
 test("day and watchability filters narrow the board", async ({ page }) => {
+  await page.clock.install({ time: Math.min(...slate.games.map((g: any) => Date.parse(g.date))) - 3600e3 });
+  await page.route("**/api/scores**", (route) => route.fulfill({ json: [] }));
   await page.goto("/");
   const nfl = slate.games.filter((g: any) => g.league === "NFL");
   const sunday = nfl.filter((g: any) => g.meta.startsWith("Sun ")).length;
@@ -535,9 +537,7 @@ test("college conference games carry the conference availability report", async 
   await league(page, "CFB");
   await expandAll(page);
   const card = page
-    .locator(".game-card")
-    .filter({ hasText: g.teams[0].name })
-    .filter({ hasText: g.teams[1].name })
+    .locator(`${CARD}[data-game-id="${g.id}"]`)
     .filter({ has: page.locator("summary", { hasText: "Injury report" }) })
     .first();
   await card.scrollIntoViewIfNeeded();
@@ -873,6 +873,8 @@ test("completed cards show attendance at the top, with a capacity bar when the s
 });
 
 test("the persistent bar is slim and every filter is a pop-down menu", async ({ page }, testInfo) => {
+  await page.clock.install({ time: Math.min(...slate.games.map((g: any) => Date.parse(g.date))) - 3600e3 });
+  await page.route("**/api/scores**", (route) => route.fulfill({ json: [] }));
   const errors: string[] = [];
   page.on("pageerror", (err) => errors.push(err.message));
   await page.goto("/");
