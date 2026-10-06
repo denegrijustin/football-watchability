@@ -118,7 +118,9 @@ jobs:
           timeout 120s node scripts/fetch-weather.mjs || echo "weather failed; building without it"
           timeout 120s node scripts/fetch-availability.mjs || echo "availability reports failed; building without them"
           timeout 120s node scripts/fetch-announcers.mjs || echo "announcer schedules failed; building without them"
-          timeout 120s node scripts/fetch-announcer-photos.mjs || echo "announcer photos failed or timed out; initials instead"
+          # Photos are stored in public/announcers and reused from the cache.
+          # Discover missing photos with the manual Fetch slate data workflow,
+          # never on the critical path of a routine refresh.
           timeout 120s node scripts/fetch-trends.mjs || echo "trends failed; building without them"
           timeout 120s node scripts/fetch-advanced.mjs || echo "advanced stats failed; building without them"
           timeout 300s node scripts/fetch-history.mjs || echo "history failed or timed out; using what we have"
