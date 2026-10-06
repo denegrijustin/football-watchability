@@ -16,7 +16,7 @@
 // Each photo is resized to a 120px square-ish thumbnail in public/announcers/.
 // Results (with credit) are cached in data-raw/announcer-photos.json; misses
 // are retried after two weeks, or when the lookup logic version changes.
-import { readFileSync, writeFileSync, existsSync, mkdirSync, rmSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs";
 
 const RAW = new URL(`../${process.env.RAW_DIR ?? "data-raw"}/`, import.meta.url);
 const PUB = new URL("../public/announcers/", import.meta.url);
@@ -234,14 +234,15 @@ async function main() {
   const networks = new Map();
   for (const g of games) for (const c of g.crew ?? []) networks.set(c.name, [...(networks.get(c.name) ?? []), g.network]);
   const cache = read("announcer-photos.json") ?? {};
+  const checkpoint = () => writeFileSync(new URL("announcer-photos.json", RAW), JSON.stringify(cache, null, 1));
   mkdirSync(PUB, { recursive: true });
   const tally = { wikipedia: 0, commons: 0, press: 0 };
   let looked = 0;
   for (const name of networks.keys()) {
     const hit = cache[name];
-    // Commons picks from before the category check get looked up again.
-    const recheck = hit?.source === "commons" && (hit.v ?? 0) < 8;
-    if (!recheck && hit?.file && existsSync(new URL(hit.file.replace(/^\/announcers\//, ""), PUB))) continue;
+    // A saved image is permanent: changes to lookup logic must not repeatedly
+    // download or discard photos already shipped with the app.
+    if (hit?.file && existsSync(new URL(hit.file.replace(/^\/announcers\//, ""), PUB))) continue;
     if (hit && !hit.file && hit.v === VERSION && Date.now() - Date.parse(hit.checkedAt) < RETRY_MS) continue;
     looked++;
     let found = null,
@@ -263,8 +264,8 @@ async function main() {
       via = "commons";
     }
     if (!found) {
-      if (hit?.file) rmSync(new URL(hit.file.replace(/^\/announcers\//, ""), PUB), { force: true });
       cache[name] = { file: null, v: VERSION, checkedAt: new Date().toISOString() };
+      checkpoint();
       continue;
     }
     try {
@@ -282,6 +283,7 @@ async function main() {
       note(name, `save failed (${via}): ${e} ${String(found.url).slice(0, 120)}`);
       cache[name] = { file: null, v: VERSION, checkedAt: new Date().toISOString() };
     }
+    checkpoint();
     await sleep(200);
   }
   writeFileSync(new URL("announcer-photos.json", RAW), JSON.stringify(cache, null, 1));
