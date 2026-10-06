@@ -17,7 +17,7 @@ const expand = async (card: import("@playwright/test").Locator) => {
   if (await t.count()) await t.click();
 };
 const expandAll = async (page: import("@playwright/test").Page) => {
-  const closed = page.locator('.game-card .card-toggle[aria-expanded="false"]');
+  const closed = page.locator('.game-card:visible .card-toggle[aria-expanded="false"]');
   while (await closed.count()) await closed.first().click();
 };
 test("all games, conferences, history and logos remain available", async ({
@@ -568,7 +568,7 @@ test("cards show the broadcast crew when the announcing schedule lists the game"
   expect(box!.height).toBeLessThanOrEqual(22);
 });
 
-test("board lists in progress first, then completed, then upcoming, and the Status filter narrows it", async ({ page }) => {
+test("board shows upcoming first and collapses completed games below, with working status filters", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (err) => errors.push(err.message));
   const games = slate.games.filter((g: any) => g.league === "NFL");
@@ -589,8 +589,8 @@ test("board lists in progress first, then completed, then upcoming, and the Stat
   );
   await page.goto("/");
   const sections = page.locator(".board-section");
-  await expect(sections.first()).toHaveAttribute("aria-label", "In progress");
-  expect(await sections.evaluateAll((els) => els.map((e) => e.getAttribute("aria-label")))).toEqual(["In progress", "Completed", "Upcoming"]);
+  await expect(sections.first()).toHaveAttribute("aria-label", "Upcoming");
+  expect(await sections.evaluateAll((els) => els.map((e) => e.getAttribute("aria-label")))).toEqual(["Upcoming", "In progress", "Completed"]);
   await expect(page.locator(".board-section.live .game-card")).toHaveCount(1);
   await expect(page.locator(".board-section.live .game-status")).toContainText("Live");
   // Completed holds the just-finished game plus the archived finals; Upcoming holds the rest.
@@ -601,7 +601,13 @@ test("board lists in progress first, then completed, then upcoming, and the Stat
   await expect(counts).toContainText(`1 in progress · ${archived + 1} completed · ${games.length - 2} upcoming`);
   const status = (name: string) => pick(page, "Status", name);
   await expect(page.getByLabel("Status", { exact: true }).locator("option")).toHaveText(["All status", "In progress", "Completed", "Upcoming"]);
-  // Under All, a long Completed list is capped so Upcoming stays reachable.
+  // Completed games start collapsed below upcoming and live games.
+  const toggle = page.getByRole("button", { name: "Show completed games", exact: true });
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await expect(page.locator("#completed-games")).toBeHidden();
+  await toggle.click();
+  await expect(page.locator("#completed-games")).toBeVisible();
+  // Expanding preserves the completed preview and its show-all control.
   if (archived + 1 > 12) {
     await expect(page.getByRole("button", { name: /Show all \d+ completed games/ })).toBeVisible();
     expect(await page.locator(".board-section.final .game-card").count()).toBe(12);
@@ -751,6 +757,7 @@ const openGameCenter = async (page: import("@playwright/test").Page, fixtureFile
   await page.route("**/api/game**", (r) => r.fulfill({ status: 200, contentType: "application/json", body: fx }));
   await page.route("https://site.api.espn.com/**", (r) => r.abort());
   await page.goto("/");
+  await page.getByRole("button", { name: "Show completed games", exact: true }).click();
   await page.locator(`${CARD} .card-toggle`).first().click();
   await page.locator(`${CARD} .gc-open`).first().click();
   const gc = page.locator("dialog.gc");
