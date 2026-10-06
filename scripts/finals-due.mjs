@@ -1,13 +1,15 @@
 // Prints "due=yes" when a game on the live board has probably just ended
-// (kicked off 3–9 hours ago) and isn't archived yet, so the hourly check in
+// (kicked off at least 3 hours ago) and isn't archived yet, so the hourly check in
 // refresh.yml only rebuilds when there's a final to pick up.
+// Keep retrying overdue games after a failed refresh; a nine-hour cutoff
+// would silently abandon them until the next daily refresh.
 import { readFileSync } from "node:fs";
 const src = (n) => JSON.parse(readFileSync(new URL(`../src/data/${n}`, import.meta.url), "utf8"));
 const archived = new Set(src("results.json").games.map((r) => r.espnId));
 const now = Date.now();
 const due = src("slate.json").games.filter((g) => {
   const t = Date.parse(g.date);
-  return !archived.has(g.espnId) && now - t >= 3 * 3600e3 && now - t <= 9 * 3600e3;
+  return !archived.has(g.espnId) && now - t >= 3 * 3600e3;
 });
 // College conference games post a game-day availability report about two
 // hours before kickoff (90 minutes in the Big 12): rebuild once, 45–105
