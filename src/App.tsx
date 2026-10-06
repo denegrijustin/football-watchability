@@ -157,7 +157,7 @@ export default function App() {
                 Reset filters
               </button>
             )}
-            <span className="sort-label">In progress first, then completed, then upcoming</span>
+            <span className="sort-label">Upcoming first, then in progress; completed games below</span>
           </div>
           <GameBoard
             board={board}
