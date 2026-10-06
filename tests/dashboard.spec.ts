@@ -476,7 +476,7 @@ test("Insanity tab ranks the week and season for NFL and college", async ({ page
   expect(cfb).toEqual([...cfb].sort((a, b) => b - a));
   await page.locator(".ib [aria-label='Ranking'] button", { hasText: "Season" }).click();
   await expect(page.locator(".ib-heading, .tv-heading h2")).toContainText("season ranking");
-  await expect(page.locator(".ic").first()).toContainText("Sept.");
+  await expect(page.locator(".ic").first()).toContainText(/(Aug|Sept|Oct|Nov|Dec|Jan)\./); // a date range, whichever week holds the wildest game
   // A card opens the Game Center.
   await page.locator(".ic button.ic-inner").first().click();
   await expect(page.locator("dialog.gc")).toBeVisible();
