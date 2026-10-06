@@ -60,6 +60,14 @@ jobs:
           ref: slate-data
           fetch-depth: 0
 
+      - name: Use current application and refresh code
+        if: steps.gate.outputs.mode != 'no'
+        run: |
+          git fetch origin main
+          # Keep the data branch's inputs and generated assets, but always run
+          # the scripts, tests and application code maintained on main.
+          git checkout origin/main -- . ':!data-raw' ':!data-raw-test' ':!data-raw-prev' ':!src/data/*.json' ':!public'
+
       - name: Anything to do?
         id: go
         if: steps.gate.outputs.mode != 'no'
@@ -98,6 +106,7 @@ jobs:
           rm -rf data-raw-prev
 
       - name: Fetch this week
+        timeout-minutes: 25
         if: steps.go.outputs.go == 'yes'
         env:
           START: ${{ steps.week.outputs.start }}
@@ -114,6 +123,7 @@ jobs:
           node scripts/fetch-history.mjs || echo "history failed; using what we have"
 
       - name: Build
+        timeout-minutes: 25
         if: steps.go.outputs.go == 'yes'
         run: |
           node scripts/build-slate.mjs
@@ -128,6 +138,7 @@ jobs:
           pnpm build
 
       - name: Browser checks
+        timeout-minutes: 10
         if: steps.go.outputs.go == 'yes'
         run: |
           pnpm exec playwright install --with-deps chromium
@@ -138,7 +149,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898699+github-actions[bot]@users.noreply.github.com"
-          git add -A data-raw src public
+          git add -A
           git diff --cached --quiet || git commit -q -m "Scheduled refresh $(TZ=America/Chicago date +'%a %b %-d %H:%M %Z')"
           git pull -q --rebase -X theirs origin slate-data
           git push origin HEAD:slate-data
@@ -149,8 +160,9 @@ jobs:
           src=$(git rev-parse HEAD)
           git fetch -q origin main
           git checkout -q -B main origin/main
-          git checkout "$src" -- . ':!data-raw' ':!data-raw-test' ':!data-raw-prev'
-          git rm -r -q --cached --ignore-unmatch data-raw data-raw-test data-raw-prev
+          # Publish generated data/assets only; never replace main's code or
+          # workflows with a stale copy from the data branch.
+          git checkout "$src" -- 'src/data/*.json' public
           git diff --cached --quiet && { echo "Nothing to deploy"; exit 0; }
           git commit -q -m "Refresh board $(TZ=America/Chicago date +'%a %b %-d, %-I:%M %p %Z')"
           git push origin main
