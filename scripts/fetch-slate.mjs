@@ -68,7 +68,7 @@ async function get(url, { optional = false } = {}) {
   let last = "";
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      const res = await fetch(url, { headers: { "user-agent": "Mozilla/5.0 fbwatch-slate-builder" } });
+      const res = await fetch(url, { signal: AbortSignal.timeout(30_000), headers: { "user-agent": "Mozilla/5.0 fbwatch-slate-builder" } });
       if (res.ok) return await res.json();
       last = `HTTP ${res.status}`;
       if (res.status === 404) break;
