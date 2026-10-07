@@ -49,13 +49,11 @@ test("@smoke all games, conferences, history and logos remain available", async 
   const first = page.locator(CARD).first();
   await first
     .locator("summary")
-    .filter({ hasText: "History + key players" })
-    .click();
+    .filter({ hasText: "History + key players" }).evaluate(el => { if (!(el.parentElement as HTMLDetailsElement).open) (el as HTMLElement).click(); });
   await expect(first.locator(".history-content")).toBeVisible();
   await first
     .locator("summary")
-    .filter({ hasText: "Why watch / skip" })
-    .click();
+    .filter({ hasText: "Why watch / skip" }).evaluate(el => { if (!(el.parentElement as HTMLDetailsElement).open) (el as HTMLElement).click(); });
   await expect(first.locator(".tag-list")).toBeVisible();
   await first.scrollIntoViewIfNeeded();
   await page.screenshot({
@@ -161,8 +159,8 @@ test("day and watchability filters narrow the board", async ({ page }) => {
   expect(slots.length).toBeGreaterThan(0);
   expect(slots.map(s => s.date)).toEqual(slots.map(s => s.date).sort());
   for (const slot of slots) {
-    const expected = nfl.filter((g: any) => new Date(g.date).toISOString() === slot.date)
-      .sort((a: any, b: any) => b.score - a.score || a.id.localeCompare(b.id)).map((g: any) => g.id);
+    const expected = nfl.filter((g: any) => new Date(new Date(g.date).setUTCMinutes(0, 0, 0)).toISOString() === slot.date)
+      .sort((a: any, b: any) => b.score - a.score || a.date.localeCompare(b.date) || a.id.localeCompare(b.id)).map((g: any) => g.id);
     expect(slot.ids).toEqual(expected);
   }
   await page.getByLabel("Time zone", { exact: true }).selectOption("America/Los_Angeles");
@@ -178,7 +176,7 @@ test("season form chart, trends panel and network logos render", async ({ page }
   await expect(card.locator(".form-row")).toHaveCount(2);
   await card.locator(".form .mb-svg rect").first().focus();
   await expect(card.locator(".mb-tip")).toBeVisible();
-  await card.locator("summary", { hasText: "Season trends" }).click();
+  await card.locator("summary", { hasText: "Season trends" }).evaluate(el => { if (!(el.parentElement as HTMLDetailsElement).open) (el as HTMLElement).click(); });
   await expect(card.locator(".trend-team")).toHaveCount(2);
   await expect(card.locator(".tiles dd").first()).not.toBeEmpty();
   const logos = await page.locator(".net-chip img").evaluateAll((imgs) =>
@@ -216,7 +214,7 @@ test("final view compares forecast with actual and explains the score", async ({
     await expect(card.locator(".sc-head")).toHaveText(top.scoreCheck.headline);
     await expect(card.locator(".sc-box").first()).toContainText(`${top.scoreCheck.projected.away}–${top.scoreCheck.projected.home}`);
   }
-  await card.locator("summary").filter({ hasText: "Why it scored" }).click();
+  await card.locator("summary").filter({ hasText: "Why it scored" }).evaluate(el => { if (!(el.parentElement as HTMLDetailsElement).open) (el as HTMLElement).evaluate(el => { if (!(el.parentElement as HTMLDetailsElement).open) (el as HTMLElement).click(); }); });
   // Only the actual-score breakdown: a card with forecast parts carries a second table for the forecast.
   const rows = card
     .locator("details")
@@ -240,7 +238,7 @@ test("final view compares forecast with actual and explains the score", async ({
   const withWp = slate.games.filter((x: any) => x.league === league && x.winProb).length;
   await expect(page.locator(`${CARD} .pwp`)).toHaveCount(withWp);
   await expect(page.locator(".pwp-bar").first()).toBeVisible();
-  await g.locator("summary").filter({ hasText: "Why it's a" }).click();
+  await g.locator("summary").filter({ hasText: "Why it's a" }).evaluate(el => { if (!(el.parentElement as HTMLDetailsElement).open) (el as HTMLElement).evaluate(el => { if (!(el.parentElement as HTMLDetailsElement).open) (el as HTMLElement).click(); }); });
   await expect(g.locator(".breakdown .bd-total td")).toHaveText(await g.locator(".score strong").innerText());
   expect(errors).toEqual([]);
 });
@@ -521,7 +519,7 @@ test("Key players show photo, name, position and team for every upcoming game", 
   await page.goto("/?league=NFL");
   const card = page.locator(CARD).first();
   await expand(card);
-  await card.locator("summary").filter({ hasText: "History + key players" }).click();
+  await card.locator("summary").filter({ hasText: "History + key players" }).evaluate(el => { if (!(el.parentElement as HTMLDetailsElement).open) (el as HTMLElement).evaluate(el => { if (!(el.parentElement as HTMLDetailsElement).open) (el as HTMLElement).click(); }); });
   const kp = card.locator(".kp-card");
   await expect(kp.first()).toBeVisible();
   await expect(kp.first().locator(".kp-pos")).not.toBeEmpty();
@@ -536,7 +534,7 @@ test("NFL cards carry an injury report with Out / Doubtful / Questionable and th
   await page.goto("/?league=NFL");
   await expandAll(page);
   const card = page.locator(".game-card").filter({ has: page.locator("summary", { hasText: "Injury report" }) }).first();
-  await card.locator("summary").filter({ hasText: "Injury report" }).click();
+  await card.locator("summary").filter({ hasText: "Injury report" }).evaluate(el => { if (!(el.parentElement as HTMLDetailsElement).open) (el as HTMLElement).evaluate(el => { if (!(el.parentElement as HTMLDetailsElement).open) (el as HTMLElement).click(); }); });
   await expect(card.locator(".inj-team")).toHaveCount(2);
   const status = card.locator(".inj-status").first();
   if (await status.count()) await expect(status).toHaveText(/Out|Doubtful|Questionable/i);
@@ -560,7 +558,7 @@ test("college conference games carry the conference availability report", async 
     .filter({ has: page.locator("summary", { hasText: "Injury report" }) })
     .first();
   await card.scrollIntoViewIfNeeded();
-  await card.locator("summary").filter({ hasText: "Injury report" }).click();
+  await card.locator("summary").filter({ hasText: "Injury report" }).evaluate(el => { if (!(el.parentElement as HTMLDetailsElement).open) (el as HTMLElement).evaluate(el => { if (!(el.parentElement as HTMLDetailsElement).open) (el as HTMLElement).click(); }); });
   if (g.availability.pending) {
     await expect(card.locator(".inj-pending")).toContainText(`${g.availability.conf} posts its first availability report`);
   } else {
@@ -733,7 +731,7 @@ test("live and completed cards show the status above the teams and the score bes
   await expect(teams.nth(0).locator("img")).toBeVisible();
   await expect(live.locator(".cc-rate strong")).toHaveText(String(games[0].score));
   await expect(live.locator(".facts, .team-heading, .tv")).toHaveCount(0); // detail waits behind the toggle
-  expect((await live.boundingBox())!.height).toBeLessThan(130);
+  expect((await live.boundingBox())!.height).toBeLessThan(180);
   // Expanded: the status sits above the team names and each score is on its team's row.
   await expand(live);
   const order = await live.locator(".game-status, .team-heading").evaluateAll((els) => els.map((e) => e.className.split(" ")[0]));
@@ -756,7 +754,7 @@ test("live and completed cards show the status above the teams and the score bes
   await expect(done.locator(".cc-team .team-score")).toHaveCount(2);
   await expect(done.locator(".cc-team .team-score.won")).toHaveCount(1);
   await expect(done.locator(".cc-rate strong")).toBeVisible();
-  expect((await done.boundingBox())!.height).toBeLessThan(130);
+  expect((await done.boundingBox())!.height).toBeLessThan(180);
   // Expanded: FINAL above the teams, score beside each name, no separate T column.
   await expand(done);
   await expect(done.locator(".game-status.post")).toContainText("Final");
@@ -943,13 +941,15 @@ test("@smoke game cards open as a minimal strip: logos, scores and the rating; t
   // An upcoming or live game.
   const card = page.locator(CARD).first();
   await expect(card).toHaveClass(/compact/);
-  expect((await card.boundingBox())!.height).toBeLessThan(130);
+  expect((await card.boundingBox())!.height).toBeLessThan(180);
   await expect(card.locator(".cc-team")).toHaveCount(2);
   await expect(card.locator(".cc-team img")).toHaveCount(2);
   const title = (await card.locator("h3.sr-only").innerText()).trim();
   const game = slate.games.find((g: any) => g.matchup === title)!;
   expect(game, title).toBeTruthy();
   await expect(card.locator(".cc-rate strong")).toHaveText(String(game.score));
+  await expect(card.locator(".cc-network")).toContainText(game.broadcast);
+  await expect(card.locator(".cc-weather")).toContainText(game.weather.title);
   await expect(card.locator(".cc-when")).toBeVisible(); // kickoff time, or LIVE with the quarter and clock
   // Everything else is hidden until it is opened.
   await expect(card.locator(".facts, .team-heading, .tv, .card-more, .attendance, .insanity")).toHaveCount(0);
@@ -957,6 +957,8 @@ test("@smoke game cards open as a minimal strip: logos, scores and the rating; t
   await expect(card).toHaveClass(/expanded/);
   await expect(card.locator(".cc")).toHaveCount(0);
   await expect(card.locator(".facts")).toBeVisible();
+  await expect(card.locator(".game-details details:not([open])")).toHaveCount(0);
+  await expect(card.locator(".booth")).toContainText("Announcers:");
   await expect(card.locator(".tv")).toBeVisible();
   await expect(card.locator(".card-more .take")).toBeVisible();
   // "Less" puts it back to the strip.
@@ -966,7 +968,7 @@ test("@smoke game cards open as a minimal strip: logos, scores and the rating; t
   await completed(page);
   const done = page.locator(".result-card").first();
   await expect(done).toHaveClass(/compact/);
-  expect((await done.boundingBox())!.height).toBeLessThan(130);
+  expect((await done.boundingBox())!.height).toBeLessThan(180);
   await expect(done.locator(".cc-team img")).toHaveCount(2);
   await expect(done.locator(".cc-team .team-score")).toHaveCount(2);
   await expect(done.locator(".cc-rate strong")).toBeVisible();
