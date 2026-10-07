@@ -70,7 +70,7 @@ export function ResultCard({ result: r, defaultExpanded = false }: { result: Res
         if (!expanded && !(e.target as HTMLElement).closest("a,button,summary")) setExpanded(true);
       }}
     >
-      {!expanded && <CompactGame titleId={`r-${r.espnId}`} matchup={`${r.matchup}, final ${away.score}–${home.score}`} date={r.date} broadcast={r.broadcast} network={r.network} teams={r.teams} league={r.league} score={r.actual.score} tier={r.actual.tier} venue={r.venue} line={r.forecast.line} crew={(r as { announcers?: CrewMember[] }).announcers} status={<span className="game-status post">Final {extra}</span>} scores={[away, home].map((t, i) => <span className={`team-score${winner === i ? " won" : " lost"}`}>{t.score}</span>)} onExpand={() => setExpanded(true)} />}
+      {!expanded && <CompactGame titleId={`r-${r.espnId}`} matchup={`${r.matchup}, final ${away.score}–${home.score}`} date={r.date} broadcast={r.broadcast} network={r.network} espnId={r.espnId} teams={r.teams} league={r.league} score={r.actual.score} tier={r.actual.tier} venue={r.venue} line={r.forecast.line} crew={(r as { announcers?: CrewMember[] }).announcers} status={<span className="game-status post">Final {extra}</span>} scores={[away, home].map((t, i) => <span className={`team-score${winner === i ? " won" : " lost"}`}>{t.score}</span>)} onExpand={() => setExpanded(true)} />}
       {expanded && (
         <>
       <header className="card-top">

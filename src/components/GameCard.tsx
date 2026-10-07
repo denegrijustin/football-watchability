@@ -23,7 +23,7 @@ import { EdgeLine, type Advanced } from "./AdvancedStats";
 import { InjuryWatch } from "./InjuryReport";
 import { Booth, type CrewMember } from "./Booth";
 import { dayOf, timeOf, tzAbbr } from "../tz";
-import { directvChannel, directvTitle } from "../directv";
+import { NetChip } from "./NetChip";
 
 const impactLevel = (impact: string) =>
   impact.replace(/\s*impact$/i, "").toLowerCase();
@@ -110,7 +110,7 @@ export function GameCard({
           setExpanded(true);
       }}
     >
-      {!expanded && <CompactGame titleId={`${game.id}-title`} matchup={game.matchup} date={date} broadcast={game.broadcast} network={game.network} teams={game.teams} league={game.league} score={game.score} tier={game.tier} venue={meta.venue} line={meta.line} crew={(game as { announcers?: CrewMember[] }).announcers} weather={game.weather} status={<GameStatus live={live} />} scores={[<TeamScore live={live} side="away" />, <TeamScore live={live} side="home" />]} onExpand={() => setExpanded(true)} />}
+      {!expanded && <CompactGame titleId={`${game.id}-title`} matchup={game.matchup} date={date} broadcast={game.broadcast} network={game.network} espnId={game.espnId} teams={game.teams} league={game.league} score={game.score} tier={game.tier} venue={meta.venue} line={meta.line} crew={(game as { announcers?: CrewMember[] }).announcers} weather={game.weather} status={<GameStatus live={live} />} scores={[<TeamScore live={live} side="away" />, <TeamScore live={live} side="home" />]} onExpand={() => setExpanded(true)} />}
       {expanded && (
         <>
       <header className="card-top">
@@ -122,10 +122,7 @@ export function GameCard({
           title="Where to watch"
         >
           {netLogo ? (
-            <span className={`net-chip${directvChannel(net) ? " has-ch" : ""}`} title={directvTitle(net)}>
-              <img src={netLogo} alt="" height="16" loading="lazy" />
-              {directvChannel(net) && <b className="ch-num">{directvChannel(net)}</b>}
-            </span>
+            <NetChip network={net} logo={netLogo} game={{ league: game.league, espnId: game.espnId, broadcast: game.broadcast }} />
           ) : (
             <svg viewBox="0 0 24 24" aria-hidden="true" width="14" height="14">
               <rect

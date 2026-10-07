@@ -4,7 +4,7 @@ import { logos, networkLogo, rankLine, rankTitle, results, slate, tierLabel, typ
 import { gridDays, gridGames, GRID_SLOT, layoutGrid, slot, type GridGame, type PlacedGame } from "../data/grid";
 import { renderGridImage, type GridImage } from "../exportJpg";
 import { useLive } from "../live";
-import { directvChannel, directvTitle } from "../directv";
+import { NetChip } from "./NetChip";
 import { dateOf, tzLabel, useTz } from "../tz";
 import { GameCard } from "./GameCard";
 import { ResultCard } from "./ResultCard";
@@ -202,10 +202,7 @@ export function TvGrid() {
               return (
                 <div key={i} className="tv-net" style={laneCell(i)} title={c.label}>
                   {logo ? (
-                    <span className={`net-chip${directvChannel(c.network) ? " has-ch" : ""}`} title={directvTitle(c.network)}>
-                      <img src={logo} alt={c.label} height="16" />
-                      {directvChannel(c.network) && <b className="ch-num">{directvChannel(c.network)}</b>}
-                    </span>
+                    <NetChip network={c.network} logo={logo} alt={c.label} />
                   ) : (
                     <span className="tv-net-text">{c.label}</span>
                   )}
