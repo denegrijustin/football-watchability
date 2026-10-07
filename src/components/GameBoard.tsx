@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { filterGames, filterResults, results, type FilterState, type Result } from "../data";
 import { gameStatus, useLiveMap, useNow } from "../live";
+import { timeOf, tzAbbr, useTz } from "../tz";
 import { insanity } from "../insanity";
 import type { StatusCounts } from "./Filters";
 import { GameCard } from "./GameCard";
@@ -49,10 +50,27 @@ export function useBoard(filters: FilterState): Board {
 }
 
 const SECTION_HELP = {
-  live: "Kicked off and not final yet, most watchable first.",
+  live: "Kicked off and not final yet, kickoff slots in time order, best watchability first in each slot.",
   final: "Finished games with forecast vs actual, newest week first.",
-  upcoming: "Still to play, most watchable first.",
+  upcoming: "Still to play, kickoff slots in time order, best watchability first in each slot.",
 };
+
+function KickoffSlots({ games }: { games: Game[] }) {
+  const tz = useTz();
+  const slots = new Map<string, Game[]>();
+  for (const game of [...games].sort((a, b) => a.date.localeCompare(b.date) || b.score - a.score || a.id.localeCompare(b.id))) {
+    const date = new Date(game.date).toISOString();
+    const group = slots.get(date) ?? [];
+    group.push(game);
+    slots.set(date, group);
+  }
+  return <>{[...slots].map(([date, games]) => (
+    <section className="kickoff-slot" key={date} data-kickoff={date} aria-label={`Kickoff ${date}`}>
+      <h4>{new Date(date).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric", timeZone: tz })} · {timeOf(date, tz, true)} {tzAbbr(tz)}</h4>
+      <div className="game-grid">{games.map(game => <GameCard key={game.id} game={game} />)}</div>
+    </section>
+  ))}</>;
+}
 
 /** Main board: Upcoming first, then In progress, with Completed collapsed below. */
 export function GameBoard({
@@ -108,11 +126,7 @@ export function GameBoard({
             <span className="count">{upcoming.length}</span>
             <span className="section-note">{SECTION_HELP.upcoming}</span>
           </div>
-          <div className="game-grid">
-            {upcoming.map((game) => (
-              <GameCard key={game.id} game={game} />
-            ))}
-          </div>
+          <KickoffSlots games={upcoming} />
         </section>
       )}
 
@@ -125,11 +139,7 @@ export function GameBoard({
             <span className="count">{live.length}</span>
             <span className="section-note">{SECTION_HELP.live}</span>
           </div>
-          <div className="game-grid">
-            {[...live].map((game) => (
-              <GameCard key={game.id} game={game} />
-            ))}
-          </div>
+          <KickoffSlots games={live} />
         </section>
       )}
 
