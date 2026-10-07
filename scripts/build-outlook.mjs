@@ -6,7 +6,7 @@
 //   OUT_FILE  the snapshot (default src/data/outlook.json)
 //   NOW       pretend it is this ISO time; FORCE=1 rebuilds both parts regardless of the cycle
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { COMPOSITE_SIZE, FORMAT, NFL_FIELD, cfbBowls, cfbComposite, cfbPlayoff, cycleKey, nflPlayoff, parseFpi } from "./outlook-lib.mjs";
+import { FORMAT, NFL_FIELD, cfbBowls, cfbComposite, cfbPlayoff, cycleKey, hashSeed, nflPlayoff, parseFpi, simulateNfl } from "./outlook-lib.mjs";
 
 const root = new URL("../", import.meta.url);
 const RAW = process.env.RAW_DIR ?? "data-raw";
@@ -44,10 +44,12 @@ if (force || saved.cfb?.cycle !== cfbKey) {
     const logo = withLogo("CFB");
     const dress = (t) => logo(t);
     const playoff = cfbPlayoff(rows);
+    const seen = new Map();
+    const confRanks = new Map(rows.map((t) => [t.id, (seen.set(t.conf, (seen.get(t.conf) ?? 0) + 1), seen.get(t.conf))]));
     out.cfb = {
       ...stamp("cfb-fpi.json", cfbKey),
       sources,
-      composite: rows.slice(0, COMPOSITE_SIZE).map((t) => ({
+      composite: rows.map((t) => ({
         ...dress({ id: t.id, name: t.name, abbr: t.abbr }),
         rank: t.rank,
         conf: t.independent ? "Ind" : t.conf,
@@ -57,6 +59,8 @@ if (force || saved.cfb?.cycle !== cfbKey) {
         cfp: t.polls.cfp ?? null,
         fpiRank: t.fpiRank,
         composite: t.composite,
+        pConf: t.pConf,
+        confRank: confRanks.get(t.id),
       })),
       playoff: { ...playoff, field: playoff.field.map(dress), out: playoff.out.map(dress), rules: FORMAT },
       bowls: (({ eligible, conferences }) => ({
@@ -69,21 +73,45 @@ if (force || saved.cfb?.cycle !== cfbKey) {
 } else console.log(`College outlook is current (week of ${cfbKey}).`);
 
 // ---------- NFL: Tuesdays ----------
+// The seed simulation needs the rest of the schedule (fetch-nfl-schedule.mjs). A snapshot built without it is
+// rebuilt as soon as a schedule exists, rather than waiting for the next Tuesday.
 const nflKey = cycleKey(now, 2);
-if (force || saved.nfl?.cycle !== nflKey) {
+const schedule = feed("nfl-schedule.json");
+if (force || saved.nfl?.cycle !== nflKey || (!saved.nfl?.sim && schedule?.games?.length)) {
   const teams = parseFpi(feed("nfl-fpi.json"));
   if (teams.length < 30) console.log(`NFL outlook kept: only ${teams.length} teams in the FPI feed.`);
   else {
     const logo = withLogo("NFL");
     const po = nflPlayoff(teams);
+    const sim = schedule?.games?.length ? simulateNfl(teams, schedule.games, { seed: hashSeed(nflKey) }) : null;
+    if (schedule?.games?.length && !sim) console.log("NFL seed simulation skipped: the schedule does not cover the rest of the season.");
+    const rating = (t) => ({ ...t, ...logo(t) });
     out.nfl = {
       ...stamp("nfl-fpi.json", nflKey),
       rules: NFL_FIELD,
+      sim: sim ? { sims: sim.sims, games: schedule.games.length } : null,
       conferences: Object.fromEntries(
-        Object.entries(po).map(([c, v]) => [c, { field: v.field.map(logo), out: v.out.map(logo) }]),
+        Object.entries(po).map(([c, v]) => [
+          c,
+          {
+            field: v.field.map(logo),
+            out: v.out.map(logo),
+            grid: sim
+              ? teams
+                  .filter((t) => t.conf === c)
+                  .map((t) => ({
+                    ...rating({ id: t.id, name: t.name, abbr: t.abbr }),
+                    division: t.division,
+                    record: `${t.wins}-${t.losses}${t.ties ? `-${t.ties}` : ""}`,
+                    ...sim.byId.get(t.id),
+                  }))
+                  .sort((x, y) => y.pPlayoffs - x.pPlayoffs || y.pSeed[0] - x.pSeed[0] || y.expW - x.expW)
+              : null,
+          },
+        ]),
       ),
     };
-    console.log(`NFL outlook rebuilt for the week of ${nflKey}.`);
+    console.log(`NFL outlook rebuilt for the week of ${nflKey}${sim ? ` with ${sim.sims} simulated seasons` : " (no simulation)"}.`);
   }
 } else console.log(`NFL outlook is current (week of ${nflKey}).`);
 
