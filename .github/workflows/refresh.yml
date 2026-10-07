@@ -128,6 +128,7 @@ jobs:
           # decides whether this run is a new Sunday (college) or Tuesday (NFL) cycle and otherwise keeps the snapshot.
           # The rest of the NFL schedule feeds the seed-odds grid; without it the Outlook falls back to ESPN's odds.
           timeout 120s node scripts/fetch-nfl-schedule.mjs || echo "NFL schedule failed; seed odds will wait"
+          timeout 180s node scripts/fetch-cfb-schedule.mjs || echo "college schedule failed; playoff odds will wait"
           timeout 60s node scripts/build-outlook.mjs || echo "outlook failed; keeping the saved snapshot"
 
       - name: Build
