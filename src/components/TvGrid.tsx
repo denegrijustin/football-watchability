@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import { openModal } from "../modal";
 import { logos, networkLogo, rankLine, rankTitle, results, slate, tierLabel, type League } from "../data";
 import { gridDays, gridGames, GRID_SLOT, layoutGrid, slot, type GridGame, type PlacedGame } from "../data/grid";
-import { downloadGridJpg } from "../exportJpg";
+import { renderGridImage, type GridImage } from "../exportJpg";
 import { useLive } from "../live";
 import { dateOf, tzLabel, useTz } from "../tz";
 import { GameCard } from "./GameCard";
@@ -51,6 +51,7 @@ export function TvGrid() {
   const [onlyGood, setOnlyGood] = useState(false);
   const [open, setOpen] = useState<GridGame | null>(null);
   const [busy, setBusy] = useState(false);
+  const [image, setImage] = useState<(GridImage & { url: string }) | null>(null);
   const menu = useRef<HTMLDetailsElement>(null);
 
   // Conference only narrows college games, so it applies when College is picked.
@@ -74,13 +75,16 @@ export function TvGrid() {
     try {
       const label = (date: string) =>
         new Date(`${date}T12:00:00Z`).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric", timeZone: "UTC" });
-      await downloadGridJpg({
+      const made = await renderGridImage({
         period: slate.period,
         scope,
         days: days
           .filter((d) => scope === "weekend" || d.date === day)
           .map((d) => ({ ...d, label: label(d.date), games: all.filter((g) => slot(g.start).date === d.date && keep(g)) })),
       });
+      // Show it first: saving to Photos needs a fresh tap (phones only allow the share sheet right after one), and
+      // touching and holding the preview saves it on iOS and Android too.
+      if (made) setImage({ ...made, url: URL.createObjectURL(made.blob) });
     } finally {
       setBusy(false);
     }
@@ -144,7 +148,7 @@ export function TvGrid() {
             <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
               <path d="M12 4v11m0 0-4.5-4.5M12 15l4.5-4.5M5 19h14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            {busy ? "Making image…" : "Download JPG"}
+            {busy ? "Making image…" : "Save image"}
           </summary>
           <div className="export-menu">
             <button type="button" disabled={busy || !placed.length} onClick={() => exportJpg("day")}>
@@ -233,6 +237,13 @@ export function TvGrid() {
         </div>
       )}
       <GameDialog game={open} onClose={() => setOpen(null)} />
+      <ImageDialog
+        image={image}
+        onClose={() => {
+          if (image) URL.revokeObjectURL(image.url);
+          setImage(null);
+        }}
+      />
     </section>
   );
 }
@@ -282,6 +293,60 @@ function Side({ t, cls }: { t: GridGame["sides"][number]; cls: string }) {
       )}
       <img src={logos[t.logoId]} alt="" loading="lazy" />
     </span>
+  );
+}
+
+/**
+ * The finished image: a preview, a share button that opens the phone's share sheet ("Save Image" puts it in Photos),
+ * and a plain download. Touching and holding the preview also saves it from iOS and Android browsers.
+ */
+function ImageDialog({ image, onClose }: { image: (GridImage & { url: string }) | null; onClose: () => void }) {
+  const ref = useRef<HTMLDialogElement>(null);
+  const [note, setNote] = useState("");
+  useEffect(() => {
+    const d = ref.current;
+    if (!d) return;
+    setNote("");
+    if (image && !d.open) openModal(d);
+    if (!image && d.open) d.close();
+  }, [image]);
+  const file = image ? new File([image.blob], image.filename, { type: "image/png" }) : null;
+  const canShare = !!file && typeof navigator !== "undefined" && typeof navigator.canShare === "function" && navigator.canShare({ files: [file] });
+  const touch = typeof matchMedia === "function" && matchMedia("(pointer: coarse)").matches;
+  const share = async () => {
+    if (!file) return;
+    try {
+      await navigator.share({ files: [file], title: "TV grid" });
+    } catch (e) {
+      if ((e as Error).name !== "AbortError") setNote("Couldn't open the share sheet. Use Download, or touch and hold the image.");
+    }
+  };
+  return (
+    <dialog ref={ref} className="img-dialog" aria-label="TV grid image" onClose={onClose} onClick={(e) => e.target === ref.current && ref.current?.close()}>
+      {image && (
+        <div className="img-dialog-body">
+          <img src={image.url} alt="Preview of the exported TV grid" width={image.width} height={image.height} />
+          <p className="img-meta">
+            {image.width.toLocaleString()} × {image.height.toLocaleString()} px PNG · {(image.blob.size / 1e6).toFixed(1)} MB · {image.scale.toFixed(1)}× resolution, sharp when you zoom in
+          </p>
+          {touch && <p className="img-meta">Touch and hold the image to save it to Photos.</p>}
+          {note && <p className="img-meta" role="alert">{note}</p>}
+          <div className="img-actions">
+            {canShare && (
+              <button type="button" className="img-primary" onClick={share}>
+                Save to Photos / Share
+              </button>
+            )}
+            <a className={canShare ? "" : "img-primary"} href={image.url} download={image.filename}>
+              Download PNG
+            </a>
+            <button type="button" onClick={() => ref.current?.close()}>
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+    </dialog>
   );
 }
 
