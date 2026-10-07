@@ -996,7 +996,7 @@ test("compact Details button fits and outside click collapses expanded games", a
   await expect(card).toHaveClass(/expanded/);
   await card.locator(".facts").click();
   await expect(card).toHaveClass(/expanded/);
-  await page.getByRole("heading", { name: "NFL games", exact: true }).click();
+  await page.getByLabel("Search teams, channels or locations").click();
   await expect(card).toHaveClass(/compact/);
   await button.click();
   await page.keyboard.press("Escape");
