@@ -5310,3 +5310,36 @@ html:has(dialog[open]) {
   .ol-odds { grid-column: 2 / -1; justify-content: flex-start; }
   .ol-odds span { text-align: left; }
 }
+
+/* Four views plus Export no longer fit on one phone row: the views take the full row, Export drops below. */
+@media (max-width: 520px) {
+  .view-row {
+    flex-wrap: wrap;
+  }
+  .view-row .view-switch {
+    flex: 1 1 100%;
+    width: 100%;
+    min-width: 0;
+  }
+  .view-row .view-switch button {
+    min-width: 0;
+    white-space: nowrap;
+  }
+  .view-row .export-btns {
+    margin-left: auto;
+  }
+}
+
+/* Outlook: conference picker and NFL seed grid */
+.ol-pick { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 0.84rem; }
+.ol-pick select { min-height: 36px; padding: 0 28px 0 10px; border-radius: 10px; border: 1px solid var(--line-strong); background: var(--surface-2); color: var(--text); font: inherit; font-size: 16px; }
+.ol-cols:has(.ol-wide) { grid-template-columns: minmax(0, 1fr); }
+.ol-gridwrap { overflow-x: auto; max-width: 100%; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); -webkit-overflow-scrolling: touch; }
+.ol-grid { width: 100%; min-width: 640px; border-collapse: collapse; font-size: 0.84rem; }
+.ol-grid th, .ol-grid td { padding: 6px 7px; border-bottom: 1px solid var(--line); text-align: center; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ol-grid thead th { color: var(--muted); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; position: sticky; top: 0; background: var(--surface); }
+.ol-grid tbody th { text-align: left; position: sticky; left: 0; background: var(--surface); z-index: 1; min-width: 168px; font-weight: 600; }
+.ol-grid .one { border-left: 1px solid var(--line-strong); border-right: 1px solid var(--line-strong); font-weight: 700; }
+.ol-grid .cell { color: var(--text); }
+.ol-grid .tot { font-weight: 700; }
+.ol-grid tbody tr:last-child th, .ol-grid tbody tr:last-child td { border-bottom: 0; }

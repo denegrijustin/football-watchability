@@ -126,6 +126,8 @@ jobs:
           timeout 300s node scripts/fetch-history.mjs || echo "history failed or timed out; using what we have"
           # Rankings and playoff projections from the FPI feeds already fetched above; the script itself
           # decides whether this run is a new Sunday (college) or Tuesday (NFL) cycle and otherwise keeps the snapshot.
+          # The rest of the NFL schedule feeds the seed-odds grid; without it the Outlook falls back to ESPN's odds.
+          timeout 120s node scripts/fetch-nfl-schedule.mjs || echo "NFL schedule failed; seed odds will wait"
           timeout 60s node scripts/build-outlook.mjs || echo "outlook failed; keeping the saved snapshot"
 
       - name: Build
