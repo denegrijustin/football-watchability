@@ -18,7 +18,8 @@ const expand = async (card: import("@playwright/test").Locator) => {
 };
 const expandAll = async (page: import("@playwright/test").Page) => {
   const closed = page.locator('.game-card:visible .card-toggle[aria-expanded="false"]');
-  while (await closed.count()) await closed.first().click();
+  // Expand fixtures without an outside pointer event collapsing the previous card.
+  while (await closed.count()) await closed.first().evaluate(el => (el as HTMLElement).click());
 };
 test("@smoke all games, conferences, history and logos remain available", async ({
   page,
@@ -980,4 +981,24 @@ test("@smoke game cards show a full compact overview and expand to all analysis"
   await expect(done.locator(".fva")).toBeVisible();
   await done.locator(".card-toggle", { hasText: "Less" }).click();
   await expect(done).toHaveClass(/compact/);
+});
+
+
+test("compact Details button fits and outside click collapses expanded games", async ({ page }) => {
+  await page.goto("/?league=NFL");
+  const card = page.locator(".upcoming .game-card").first();
+  const button = card.getByRole("button", { name: "Show game details", exact: true });
+  await expect(button).toBeVisible();
+  const sizes = await button.evaluate(el => ({ width: el.clientWidth, scroll: el.scrollWidth, parent: el.parentElement!.clientWidth }));
+  expect(sizes.scroll).toBeLessThanOrEqual(sizes.width);
+  expect(sizes.width).toBeGreaterThan(sizes.parent * .95);
+  await button.click();
+  await expect(card).toHaveClass(/expanded/);
+  await card.locator(".facts").click();
+  await expect(card).toHaveClass(/expanded/);
+  await page.getByRole("heading", { name: "NFL games", exact: true }).click();
+  await expect(card).toHaveClass(/compact/);
+  await button.click();
+  await page.keyboard.press("Escape");
+  await expect(card).toHaveClass(/compact/);
 });
