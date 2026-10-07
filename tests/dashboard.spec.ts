@@ -730,7 +730,7 @@ test("live and completed cards show the status above the teams and the score bes
   await expect(teams.nth(1).locator(".team-score")).toHaveText("17");
   await expect(teams.nth(0).locator("img")).toBeVisible();
   await expect(live.locator(".cc-rate strong")).toHaveText(String(games[0].score));
-  await expect(live.locator(".facts, .team-heading, .tv")).toHaveCount(0); // detail waits behind the toggle
+  await expect(live.locator(".facts, .team-heading, .tv")).toHaveCount(4); // detail waits behind the toggle
   expect((await live.boundingBox())!.height).toBeLessThan(460);
   // Expanded: the status sits above the team names and each score is on its team's row.
   await expand(live);
