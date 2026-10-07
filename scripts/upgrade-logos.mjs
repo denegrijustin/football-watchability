@@ -98,9 +98,12 @@ let previous = { logos: [] };
 try {
   previous = JSON.parse(readFileSync(new URL("src/data/logo-sources.json", root), "utf8"));
 } catch {}
-const sources = ALL ? [] : previous.logos.filter((l) => !teams.has(l.logoId) || String(logos[l.logoId]).startsWith("/logos/"));
+// Logos supplied by hand (source "custom", e.g. Oklahoma) are never replaced, even with ALL=1.
+const custom = new Set(previous.logos.filter((l) => l.source === "custom").map((l) => l.logoId));
+const sources = ALL ? previous.logos.filter((l) => custom.has(l.logoId)) : previous.logos.filter((l) => !teams.has(l.logoId) || String(logos[l.logoId]).startsWith("/logos/"));
 const problems = [];
 for (const [logoId, { name, league }] of teams) {
+  if (custom.has(logoId)) continue;
   if (!ALL && String(logos[logoId] ?? "").startsWith("/logos/")) continue;
   const team = find(logoId, name, league);
   if (!team || team.ambiguous) {
