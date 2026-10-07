@@ -111,6 +111,10 @@ export function GameCard({
                 <TeamScore live={live} side={i === 0 ? "away" : "home"} />
               </div>
             ))}
+            <div className="cc-outlook">
+              <span className="cc-network" title="Where to watch">{game.broadcast}</span>
+              <span className="cc-weather" title={`${game.weather.title} · ${game.weather.detail} · ${game.weather.impact}`}>{game.weather.icon} {game.weather.title} · {game.weather.detail}</span>
+            </div>
           </div>
           <div className="cc-rate" aria-label={`Watchability ${game.score} out of 100, ${tierLabel(game.tier)}`}>
             <strong>{game.score}</strong>
