@@ -22,6 +22,7 @@ import { forecastScore, actualScore, readout, tierFor, BASE, projectScore, score
 const root = new URL("..", import.meta.url);
 // RAW_DIR lets a past week (e.g. data-raw-test/) be built; shared files such
 // as history.json fall back to data-raw/.
+import { fpiConfRanks } from "./ranks.mjs";
 const RAW = process.env.RAW_DIR ?? "data-raw";
 const readJson = (u) => JSON.parse(readFileSync(u, "utf8"));
 const raw = (n) => readJson(new URL(`${RAW}/${n}`, root));
@@ -714,26 +715,19 @@ function trendFor(league, id) {
 }
 
 // ---------- conference and overall rank ----------
-// Conference rank: ESPN's conference standings order (NFL: the AFC/NFC seed
-// order, 1–16). Overall rank: FPI rank across the league (NFL 1–32, FBS 1–136).
+// Both ranks are ESPN FPI: overall across the league (NFL 1–32, FBS 1–136), and
+// conference among that conference's teams (scripts/ranks.mjs).
 const confRanks = new Map();
 for (const [key, league] of [["nfl", "NFL"], ["cfb", "CFB"]]) {
-  const f = optRaw(`${key}-standings.json`);
-  for (const c of f?.children ?? []) {
-    const entries = c.standings?.entries ?? [];
-    const seeded = entries.map((e, i) => ({
-      e,
-      seed: Number(e.stats?.find((x) => x.name === "playoffSeed")?.value ?? e.stats?.find((x) => x.name === "playoffSeed")?.displayValue) || i + 1,
-    }));
-    for (const { e, seed } of seeded)
-      confRanks.set(`${league}:${e.team.id}`, { conf: seed, confSize: entries.length, confName: c.abbreviation ?? c.shortName ?? c.name });
-  }
+  const fpiRank = new Map([...FPI[league]].map(([id, v]) => [String(id), v.rank ?? null]));
+  for (const [k, v] of fpiConfRanks(league, optRaw(`${key}-standings.json`), fpiRank)) confRanks.set(k, v);
 }
 function ranksFor(league, id, confShort) {
   const c = confRanks.get(`${league}:${id}`);
   const overall = FPI[league].get(id)?.rank ?? null;
   const indep = league === "CFB" && !confShort;
   return {
+    confBasis: "fpi",
     conf: indep ? null : c?.conf ?? null,
     confSize: indep ? null : c?.confSize ?? null,
     confName: indep ? null : league === "NFL" ? c?.confName ?? null : confShort,

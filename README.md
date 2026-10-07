@@ -41,7 +41,7 @@ Each run fetches ESPN and Open-Meteo, runs every build step and the browser smok
 
 ### Conference and overall rank
 
-Every team shows a small rank line, such as "SEC #3 · #7 overall", on game cards and final cards, with a compact "SEC #3 · #7" on the TV grid. Conference rank is ESPN's conference standings order: the AFC/NFC seed order (1–16) for the NFL, the conference standings for college (independents show only the overall rank). Overall rank is the team's ESPN FPI rank (1–32 NFL, about 1–136 FBS). Hovering shows the full wording. For college, the record line drops its old conference place so the two don't disagree.
+Every team shows a small rank line, such as "SEC #3 · #7 overall", on game cards and final cards, with a compact "SEC #3 · #7" on the TV grid. Both numbers are ESPN FPI, so they never contradict each other: overall rank is the team's FPI rank (1–32 NFL, about 1–136 FBS) and conference rank is its place among its conference mates by that same FPI rank (`scripts/ranks.mjs`; independents show only the overall rank). They used to be the conference standings order next to the FPI rank, which put a 2-2 team 12th in its conference and 7th overall; the record on the card already tells the standings story. Games archived before the change keep their old standings-based number, and their hover text still says "standings". Hovering shows the full wording. `scripts/rerank-slate.mjs` re-applies the rule to the current board without a rebuild. For college, the record line drops its old conference place so the two don't disagree.
 
 ### TV grid
 

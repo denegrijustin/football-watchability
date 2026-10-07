@@ -1,3 +1,4 @@
+import type { Ranks } from "../rankLine";
 import slateData from "./slate.json";
 import logoData from "./logos.json";
 import networkData from "./networks.json";
@@ -202,31 +203,7 @@ const networks = networkData as Record<string, { src: string; name?: string }>;
 export const networkLogo = (slug?: string | null) => (slug ? networks[slug]?.src ?? null : null);
 
 // ---------- conference and overall rank ----------
-export type Ranks = {
-  conf: number | null;
-  confSize: number | null;
-  confName: string | null;
-  overall: number | null;
-  overallOf: number;
-} | null;
-const ord = (n: number) => `${n}${[, "st", "nd", "rd"][(n % 100 >> 3) ^ 1 && n % 10] || "th"}`;
-const SHORT_CONF: Record<string, string> = { "Mountain West": "MW", "Sun Belt": "Sun Belt", American: "AAC", "Conference USA": "C-USA" };
-/** "SEC #3 · #7 overall" */
-export function rankLine(r: Ranks | undefined, compact = false) {
-  if (!r) return "";
-  const name = r.confName ? SHORT_CONF[r.confName] ?? r.confName : "";
-  const conf = r.conf && name ? `${name} #${r.conf}` : "";
-  const all = r.overall ? (compact ? `#${r.overall}` : `#${r.overall} overall`) : "";
-  return [conf, all].filter(Boolean).join(" · ");
-}
-/** Tooltip: "3rd of 16 in the SEC · 7th of 138 overall (ESPN FPI)" */
-export function rankTitle(r: Ranks | undefined) {
-  if (!r) return undefined;
-  const bits = [];
-  if (r.conf && r.confName) bits.push(`${ord(r.conf)} of ${r.confSize} in the ${r.confName} standings`);
-  if (r.overall) bits.push(`${ord(r.overall)} of ${r.overallOf} overall (ESPN FPI)`);
-  return bits.join(" · ") || undefined;
-}
+export { rankLine, rankTitle, type Ranks } from "../rankLine";
 /** Record line without the college conference place, which the rank line covers. */
 export function recordLine(record: string, league: string) {
   if (league !== "CFB") return record;
