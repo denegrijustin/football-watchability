@@ -61,7 +61,7 @@ export function GameDetails({ game }: { game: Game }) {
   return (
     <div className="game-details">
       {"breakdown" in game && (
-        <details>
+        <details open>
           <summary>
             Why it's a {game.score}
             <span aria-hidden="true">+</span>
@@ -79,7 +79,7 @@ export function GameDetails({ game }: { game: Game }) {
         const [a, h] = game.teams as unknown as { abbr?: string; name: string; advanced?: Advanced }[];
         if (!a.advanced && !h.advanced) return null;
         return (
-          <details>
+          <details open>
             <summary>
               Advanced stats + rankings<span aria-hidden="true">+</span>
             </summary>
@@ -92,7 +92,7 @@ export function GameDetails({ game }: { game: Game }) {
         );
       })()}
       {hasInjuryData(game) && (
-        <details>
+        <details open>
           <summary>
             <div className="inj-title">
               Injury report <small className="inj-sum">{injurySummary(game)}</small>
@@ -102,7 +102,7 @@ export function GameDetails({ game }: { game: Game }) {
           <InjuryReport game={game} />
         </details>
       )}
-      <details>
+      <details open>
         <summary>
           Why watch / skip<span aria-hidden="true">+</span>
         </summary>
@@ -131,14 +131,14 @@ export function GameDetails({ game }: { game: Game }) {
         </div>
       </details>
       {(game.teams as { trend?: unknown }[]).some((t) => t.trend) && (
-        <details>
+        <details open>
           <summary>
             Season trends<span aria-hidden="true">+</span>
           </summary>
           <SeasonTrends game={game} />
         </details>
       )}
-      <details>
+      <details open>
         <summary>
           History + key players<span aria-hidden="true">+</span>
         </summary>
