@@ -25,8 +25,21 @@ test("conference rank is the team's place among its conference by the same FPI r
 
 test("the rank line and tooltip say what each number is", () => {
   const r = { conf: 3, confSize: 16, confName: "NFC", overall: 7, overallOf: 32, confBasis: "fpi" as const };
-  expect(rankLine(r)).toBe("NFC #3 · #7 overall");
+  expect(rankLine(r)).toBe("NFC #3 · #7 overall (FPI)"); // full lines name their source
+  expect(rankLine(r, true)).toBe("NFC #3 · #7"); // the TV grid explains it once in its key
   expect(rankTitle(r)).toBe("3rd of 16 in the NFC by ESPN FPI · 7th of 32 overall (ESPN FPI)");
   // Games archived before the change carry the old standings order and are still described as standings.
   expect(rankTitle({ ...r, confBasis: undefined })).toContain("in the NFC standings");
+});
+
+test("ranks are labeled where they appear: on the cards, in the TV grid key and in the how-to", async ({ page }) => {
+  await page.goto("/?league=NFL");
+  await page.getByRole("button", { name: "Show game details" }).first().click();
+  await expect(page.locator(".rank-line").first()).toContainText(/#\d+ overall \(FPI\)/);
+  await expect(page.locator(".how-to")).toContainText("Rank line");
+  await page.getByRole("button", { name: "TV grid" }).click();
+  await expect(page.locator(".tv-key .k-rank")).toContainText("conference rank · overall rank (ESPN FPI)");
+  const compact = await page.locator(".tv-rank").allInnerTexts(); // compact, no label of its own; independents show just the overall rank
+  expect(compact.length).toBeGreaterThan(0);
+  for (const t of compact) expect(t).toMatch(/^([^#]+ #\d+ · )?#\d+$/);
 });
