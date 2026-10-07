@@ -15,6 +15,7 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: python3 scripts/imperialism/test_engine.py
       - run: pnpm build
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm test

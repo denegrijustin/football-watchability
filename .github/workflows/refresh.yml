@@ -67,6 +67,8 @@ jobs:
           # Keep the data branch's inputs and generated assets, but always run
           # the scripts, tests and application code maintained on main.
           git checkout origin/main -- . ':!data-raw' ':!data-raw-test' ':!data-raw-prev' ':!src/data/*.json' ':!public'
+          # Keep the last published independent TV checks even if sources are down.
+          git checkout origin/main -- src/data/broadcast-checks.json
 
       - name: Anything to do?
         id: go
@@ -103,6 +105,7 @@ jobs:
           END: ${{ steps.week.outputs.prev_end }}
         run: |
           node scripts/fetch-slate.mjs
+          timeout 60s node scripts/fetch-broadcasts.mjs || echo "broadcast check failed; keeping saved listings"
           ARCHIVE_ONLY=1 node scripts/build-slate.mjs
           rm -rf data-raw-prev
 
@@ -115,6 +118,7 @@ jobs:
         run: |
           echo "{\"start\":\"$START\",\"end\":\"$END\"}" > data-raw/request.json
           node scripts/fetch-slate.mjs
+          timeout 60s node scripts/fetch-broadcasts.mjs || echo "broadcast check failed; keeping saved listings"
           timeout 120s node scripts/fetch-weather.mjs || echo "weather failed; building without it"
           timeout 120s node scripts/fetch-availability.mjs || echo "availability reports failed; building without them"
           timeout 120s node scripts/fetch-announcers.mjs || echo "announcer schedules failed; building without them"
@@ -130,6 +134,8 @@ jobs:
           timeout 120s node scripts/fetch-nfl-schedule.mjs || echo "NFL schedule failed; seed odds will wait"
           timeout 180s node scripts/fetch-cfb-schedule.mjs || echo "college schedule failed; playoff odds will wait"
           timeout 60s node scripts/build-outlook.mjs || echo "outlook failed; keeping the saved snapshot"
+          # Imperialism Map: replays every finished game from the finals the schedule fetches saved (Python, standard library only).
+          timeout 120s python3 scripts/imperialism/build.py || echo "imperialism map failed; keeping the saved map"
 
       - name: Build
         timeout-minutes: 25

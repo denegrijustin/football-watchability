@@ -1,5 +1,6 @@
 import type { Ranks } from "../rankLine";
 import slateData from "./slate.json";
+import broadcastChecks from "./broadcast-checks.json";
 import logoData from "./logos.json";
 import networkData from "./networks.json";
 import resultsData from "./results.json";
@@ -8,7 +9,18 @@ export type Game = (typeof slateData.games)[number];
 export type Team = Game["teams"][number];
 export type League = "NFL" | "CFB";
 export type Tier = "elite" | "vgood" | "good" | "watch" | "bg";
-export const slate = slateData;
+type BroadcastCheck = { date: string; broadcast: string; network: string | null; checkedAt: string; source: string };
+const checks = broadcastChecks as Record<string, BroadcastCheck>;
+export const slate = {
+  ...slateData,
+  broadcastNote: "TV/streaming uses ESPN listings, with missing or pending channels checked against FOX and CBS Sports. Final channel selections can remain pending; local NFL availability varies.",
+  games: slateData.games.map(game => {
+    const checked = checks[game.espnId];
+    const date = new Date(game.date).toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+    if (!checked || checked.date !== date || !Number.isFinite(Date.parse(checked.checkedAt)) || Date.now() - Date.parse(checked.checkedAt) > 7 * 864e5 || !/\b(TBA|TBD|pending)\b|\sor\s/i.test(game.broadcast)) return game;
+    return { ...game, broadcast: checked.broadcast, network: checked.network } as Game;
+  }),
+};
 export const logos: Record<string, string> = logoData;
 
 /** Display labels and score floors for each color tier, best first. */
@@ -80,7 +92,7 @@ export function daysFor(league: League) {
 }
 
 // ---------- finished games ----------
-export type View = "board" | "grid" | "insanity" | "outlook";
+export type View = "board" | "grid" | "insanity" | "outlook" | "empire";
 export type StatusFilter = "all" | "live" | "final" | "upcoming";
 export type Part = { id: string; label: string; max: number; pts: number; note: string };
 export type Breakdown = { base: number; parts: Part[] };

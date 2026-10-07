@@ -1,0 +1,418 @@
+/* Imperialism Map. All classes are prefixed imp-. Uses the app's theme variables. */
+.imp {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  max-width: 100%;
+}
+.imp-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.imp-controls .segmented {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.imp-controls .segmented button {
+  min-height: 40px;
+}
+.imp-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 10px;
+  font-size: 13px;
+  color: var(--text-2);
+  cursor: pointer;
+}
+.imp-check input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--lime);
+}
+.imp-select select {
+  min-height: 40px;
+  max-width: 100%;
+  padding: 0 10px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+/* time travel */
+.imp-time {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.imp-transport {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.imp-transport button {
+  min-height: 40px;
+  min-width: 44px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+.imp-transport button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.imp-weeklabel {
+  margin-left: auto;
+  font-weight: 650;
+  font-size: 14px;
+}
+.imp-weeklabel small {
+  color: var(--muted);
+  font-weight: 450;
+}
+.imp-slider {
+  width: 100%;
+  min-height: 40px;
+  margin: 0;
+  accent-color: var(--lime);
+}
+.imp-ends {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--muted);
+}
+.imp-note {
+  margin: 0;
+  color: var(--text-2);
+  font-size: 14px;
+}
+
+/* layout: stacked on mobile, map + side column on wide screens */
+.imp-body {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+@media (min-width: 960px) {
+  .imp-body {
+    grid-template-columns: minmax(0, 1fr) 340px;
+    align-items: start;
+  }
+}
+.imp-mapcol,
+.imp-side {
+  min-width: 0;
+}
+.imp-side {
+  display: grid;
+  gap: 12px;
+}
+.imp-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.imp-county {
+  stroke: var(--bg);
+  stroke-width: 0.25;
+  cursor: pointer;
+  transition:
+    fill 0.45s,
+    opacity 0.25s;
+}
+.imp-county:hover {
+  stroke: #fff;
+  stroke-width: 0.8;
+}
+.imp-county:focus-visible {
+  outline: none;
+  stroke: var(--lime);
+  stroke-width: 1.4;
+}
+.imp-dim {
+  opacity: 0.16;
+}
+.imp-flash {
+  animation: imp-flash 1.4s ease-out;
+}
+@keyframes imp-flash {
+  from {
+    fill-opacity: 0.2;
+    stroke: #fff;
+    stroke-width: 1;
+  }
+}
+.imp-states {
+  fill: none;
+  stroke: rgba(234, 240, 244, 0.45);
+  stroke-width: 0.5;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+.imp-nation {
+  fill: none;
+  stroke: rgba(234, 240, 244, 0.6);
+  stroke-width: 0.7;
+  pointer-events: none;
+}
+.imp-ring {
+  fill: none;
+  stroke: var(--lime);
+  stroke-width: 1.8;
+  pointer-events: none;
+}
+.imp-logo-bg {
+  fill: rgba(255, 255, 255, 0.82);
+  stroke: rgba(0, 0, 0, 0.35);
+  stroke-width: 0.6;
+}
+.imp-caption,
+.imp-legend {
+  margin: 8px 2px 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+.imp-legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.imp-swatch {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 1px solid var(--line-strong);
+  background: repeating-linear-gradient(45deg, #26313b 0 3px, #7d8f9e 3px 4.5px);
+}
+
+/* panels */
+.imp-panel,
+.imp-card {
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  min-width: 0;
+}
+.imp-panel h3,
+.imp-card h3 {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+.imp-card {
+  border-color: var(--line-strong);
+  background: var(--surface-2);
+}
+.imp-card header {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.imp-card h3 {
+  margin: 0;
+  font-size: 16px;
+}
+.imp-card h4 {
+  margin: 12px 0 6px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.imp-sub {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.imp-close {
+  flex: none;
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0;
+}
+.imp-facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 12px;
+  margin: 10px 0 0;
+  font-size: 13px;
+}
+.imp-facts dt {
+  color: var(--muted);
+}
+.imp-facts dd {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-weight: 600;
+}
+.imp-path {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+  max-height: 260px;
+  overflow-y: auto;
+  font-size: 13px;
+  color: var(--text-2);
+}
+.imp-path li {
+  padding-left: 10px;
+  border-left: 2px solid var(--line-strong);
+}
+.imp-path small {
+  color: var(--muted);
+}
+
+/* standings */
+.imp-rank {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.imp-rank li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  font-size: 13px;
+}
+.imp-pos {
+  flex: none;
+  width: 20px;
+  text-align: right;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.imp-tname {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.imp-num {
+  flex: none;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.imp-num small {
+  margin-left: 4px;
+  color: var(--muted);
+  font-weight: 450;
+}
+.imp-logo {
+  flex: none;
+  object-fit: contain;
+}
+.imp-chip {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 9px;
+  font-weight: 700;
+  color: #fff;
+}
+.imp-more {
+  width: 100%;
+  margin-top: 8px;
+  min-height: 40px;
+  font-size: 13px;
+}
+.imp-landless {
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+.imp-landless summary {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+}
+.imp-landless ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+}
+.imp-landless li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* conference table */
+.imp-tablewrap {
+  overflow-x: auto;
+}
+.imp-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+.imp-table th,
+.imp-table td {
+  padding: 5px 6px;
+  text-align: right;
+  border-bottom: 1px solid var(--line);
+}
+.imp-table th:first-child {
+  text-align: left;
+  font-weight: 550;
+}
+.imp-table thead th {
+  color: var(--muted);
+  font-weight: 500;
+  font-size: 11px;
+}
+.imp-row-sel {
+  background: var(--surface-3);
+}
+
+/* states */
+.imp-status {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 40px 16px;
+  color: var(--text-2);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.imp-status p {
+  margin: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .imp-county {
+    transition: none;
+  }
+  .imp-flash {
+    animation: none;
+    stroke: #fff;
+    stroke-width: 0.9;
+  }
+}

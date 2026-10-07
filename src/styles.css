@@ -2178,7 +2178,8 @@ details.proj summary strong {
   box-shadow: 0 0 0 2px var(--lime);
 }
 .tv-key .k-dim::before {
-  opacity: 0.3;
+  background: transparent;
+  border: 1px dashed #8d9eac;
 }
 .tv-heading {
   margin-top: 16px;
@@ -2379,13 +2380,10 @@ details.proj summary strong {
   background: var(--score-color);
   color: #10181f;
 }
-/* Skip: diluted */
+/* Lower priority: fully readable, with a dashed outline. */
 .tv-game.dim {
-  opacity: 0.32;
-  filter: saturate(0.25);
-}
-.tv-game.dim .tv-label {
-  background: #aeb8c0;
+  opacity: 1;
+  border: 1px dashed #8d9eac;
 }
 @media (max-width: 760px) {
   .tvgrid {
@@ -5347,3 +5345,47 @@ html:has(dialog[open]) {
 .ol-grid tbody tr:last-child th, .ol-grid tbody tr:last-child td { border-bottom: 0; }
 .tv-key .k-rank { margin-left: 4px; color: var(--muted); }
 .tv-key .k-rank::before { display: none; }
+
+.kickoff-slot { margin: 20px 0; }
+.kickoff-slot h4 { margin: 0 0 10px; padding-bottom: 8px; border-bottom: 1px solid var(--line); color: var(--text-2); }
+
+.cc-outlook { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 11px; line-height: 1.3; margin-top: 5px; color: var(--text-2); }
+.cc-network { font-weight: 700; }
+.cc-weather { overflow-wrap: anywhere; }
+.game-card.compact { min-height: 108px; }
+
+.compact-overview .card-top { margin-bottom: 12px; }
+.compact-overview .matchup { margin-bottom: 12px; }
+.compact-overview .cc-team { grid-template-columns: 36px minmax(0, 1fr) auto; }
+.compact-overview .cc-rate { padding: 10px; min-width: 76px; }
+.compact-overview .facts { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+.compact-overview .cc-chevron { width: 100%; margin-top: 8px; }
+.compact-overview .weather { flex-wrap: wrap; }
+
+.game-card .compact-overview .card-toggle.cc-chevron {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  min-width: 0;
+  height: auto;
+  min-height: 44px;
+  padding: 10px 14px;
+  margin: 8px 0 0;
+  overflow: visible;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+.game-report-export { margin: 14px 0 8px; }
+.game-report-export button { width: 100%; padding: 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: inherit; font: inherit; cursor: pointer; }
+.game-report-export button:disabled { opacity: .65; cursor: wait; }
+.game-report-export [role="alert"] { color: #ffb6b6; font-size: 13px; }
+
+/* Five view tabs: the Games count would collide with the next tab on a phone. */
+@media (max-width: 480px) {
+  .view-switch .count {
+    display: none;
+  }
+}

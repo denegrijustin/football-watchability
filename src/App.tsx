@@ -1,10 +1,13 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { dayName, results, slate, tiers, type FilterState, type League, type View } from "./data";
 import { Filters } from "./components/Filters";
 import { GameBoard, useBoard } from "./components/GameBoard";
 import { InsanityBoard } from "./components/InsanityBoard";
 import { Outlook } from "./components/Outlook";
 import { defaultLeague } from "./league";
+
+// The map and its shapes load only when the tab is opened.
+const ImperialismMap = lazy(() => import("./components/ImperialismMap").then((m) => ({ default: m.ImperialismMap })));
 import { TvGrid } from "./components/TvGrid";
 import { setTz, tzLabel, useTz, ZONES } from "./tz";
 
@@ -137,6 +140,9 @@ export default function App() {
             <button aria-pressed={view === "outlook"} onClick={() => switchView("outlook")}>
               Outlook
             </button>
+            <button aria-pressed={view === "empire"} onClick={() => switchView("empire")} title="Imperialism Map: territory changes hands as teams win">
+              Empire
+            </button>
           </div>
           <div className="export-btns">
             <details className="export">
@@ -154,7 +160,11 @@ export default function App() {
             </details>
           </div>
           </div>
-          {view === "outlook" ? (
+          {view === "empire" ? (
+            <Suspense fallback={<p className="ol-note" role="status">Loading the map…</p>}>
+              <ImperialismMap defaultLeague={league} />
+            </Suspense>
+          ) : view === "outlook" ? (
             <Outlook defaultLeague={league} />
           ) : view === "insanity" ? (
             <InsanityBoard defaultLeague={league === "CFB" ? "CFB" : "NFL"} />
@@ -172,7 +182,7 @@ export default function App() {
                 Reset filters
               </button>
             )}
-            <span className="sort-label">Upcoming first, then in progress; completed games below</span>
+            <span className="sort-label">Kickoff time slots · best watchability first in each slot</span>
           </div>
           <GameBoard
             board={board}
