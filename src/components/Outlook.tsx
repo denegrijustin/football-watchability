@@ -29,6 +29,16 @@ type Ranked = Team & {
   pConf?: number | null;
   confRank?: number;
 };
+type CfbGridRow = Team & {
+  conf: string;
+  record: string;
+  rank: number;
+  expW: number;
+  pSeed: number[];
+  pPlayoffs: number;
+  pBye: number;
+  pConfTitle: number;
+};
 type GridRow = Team & {
   division: string;
   record: string;
@@ -42,6 +52,8 @@ const TOP = 120;
 type Data = {
   cfb?: Stamp & {
     sources: string[];
+    sim: { sims: number; games: number } | null;
+    grid: CfbGridRow[] | null;
     composite: Ranked[];
     playoff: { field: Seed[]; out: Out[]; rules: { teams: number; autoBids: number; byes: number } };
     bowls: { eligible: number; conferences: { name: string; teams: number; eligible: (Out & { pBowl: number })[]; bubble: (Out & { pBowl: number })[] }[] };
@@ -83,23 +95,38 @@ function SeedRow({ s, odds, tag }: { s: Seed; odds: [string, number | null | und
   );
 }
 
-/** Every team in a conference against every seed: how often the season ends with it there. Seed 1 is the bye. */
-function SeedGrid({ conf, rows }: { conf: string; rows: GridRow[] }) {
-  const heat = (v: number) => (v >= 0.5 ? { background: `color-mix(in srgb, var(--lime) ${Math.min(70, Math.round(v * 0.9 + 6))}%, transparent)` } : undefined);
+const cell = (v: number) => (v >= 0.5 ? (v >= 99.5 ? "100" : v.toFixed(v < 10 ? 1 : 0)) : "–");
+const heat = (v: number) => (v >= 0.5 ? { background: `color-mix(in srgb, var(--lime) ${Math.min(70, Math.round(v * 0.9 + 6))}%, transparent)` } : undefined);
+
+/** Every team against every seed: how often the season ends with it there. The shaded columns are the first-round byes. */
+function SeedGrid({
+  label,
+  rows,
+  seeds,
+  byes,
+  extra,
+}: {
+  label: string;
+  rows: { id: string; name: string; abbr: string; logoId: string | null; sub: string; expW: number; pSeed: number[]; cols: number[] }[];
+  seeds: number;
+  byes: number;
+  extra: string[];
+}) {
   return (
-    <div className="ol-gridwrap" role="region" aria-label={`${conf} seed odds`} tabIndex={0}>
+    <div className="ol-gridwrap" role="region" aria-label={label} tabIndex={0}>
       <table className="ol-grid">
         <thead>
           <tr>
             <th scope="col">Team</th>
             <th scope="col" title="Expected wins">Exp W</th>
-            {[1, 2, 3, 4, 5, 6, 7].map((n) => (
-              <th scope="col" key={n} className={n === 1 ? "one" : undefined} title={n === 1 ? "Seed 1: the only first-round bye" : `Seed ${n}`}>
+            {Array.from({ length: seeds }, (_, i) => i + 1).map((n) => (
+              <th scope="col" key={n} className={n <= byes ? `bye${n === byes ? " edge" : ""}` : undefined} title={n <= byes ? `Seed ${n}: first-round bye` : `Seed ${n}`}>
                 #{n}
               </th>
             ))}
-            <th scope="col">Playoffs</th>
-            <th scope="col">Division</th>
+            {extra.map((c) => (
+              <th scope="col" key={c}>{c}</th>
+            ))}
           </tr>
         </thead>
         <tbody>
@@ -110,18 +137,19 @@ function SeedGrid({ conf, rows }: { conf: string; rows: GridRow[] }) {
                   <Logo t={r} />
                   <span>
                     <strong>{r.name}</strong>
-                    <small>{r.record} · {r.division.replace(/^(AFC|NFC) /, "")}</small>
+                    <small>{r.sub}</small>
                   </span>
                 </span>
               </th>
               <td>{r.expW.toFixed(1)}</td>
               {r.pSeed.map((v, i) => (
-                <td key={i} className={`cell${i === 0 ? " one" : ""}`} style={heat(v)}>
-                  {v >= 0.5 ? (v >= 99.5 ? "100" : v.toFixed(v < 10 ? 1 : 0)) : "–"}
+                <td key={i} className={`cell${i < byes ? ` bye${i === byes - 1 ? " edge" : ""}` : ""}`} style={heat(v)}>
+                  {cell(v)}
                 </td>
               ))}
-              <td className="tot">{pct(r.pPlayoffs)}</td>
-              <td>{pct(r.pDiv)}</td>
+              {r.cols.map((v, i) => (
+                <td key={i} className={i === 0 ? "tot" : undefined}>{pct(v)}</td>
+              ))}
             </tr>
           ))}
         </tbody>
@@ -270,7 +298,13 @@ export function Outlook({ defaultLeague }: { defaultLeague: League }) {
                 <div key={conf} className={c.grid ? "ol-wide" : undefined}>
                   <h3>{conf}</h3>
                   {c.grid ? (
-                    <SeedGrid conf={conf} rows={c.grid} />
+                    <SeedGrid
+                      label={`${conf} seed odds`}
+                      seeds={7}
+                      byes={1}
+                      extra={["Playoffs", "Division"]}
+                      rows={c.grid.map((r) => ({ ...r, sub: `${r.record} · ${r.division.replace(/^(AFC|NFC) /, "")}`, cols: [r.pPlayoffs, r.pDiv] }))}
+                    />
                   ) : (
                     <>
                       <ol className="ol-list" aria-label={`${conf} playoff seeds`}>
@@ -295,6 +329,23 @@ export function Outlook({ defaultLeague }: { defaultLeague: League }) {
             Projected {cfb.playoff.rules.teams}-team field as of the Sunday {dayText(cfb.cycle)} refresh; updates every Sunday morning. The {cfb.playoff.rules.autoBids} highest-ranked
             projected conference champions get in, plus the next best teams, seeded by composite rank. Seeds 1–{cfb.playoff.rules.byes} get a first-round bye.
           </p>
+          {cfb.grid && cfb.sim && (
+            <>
+              <p className="ol-note">
+                Odds come from playing out the rest of the regular season {cfb.sim.sims.toLocaleString()} times ({cfb.sim.games} games left), each won by the better ESPN FPI team with a home-field edge. A team's conference champion is whoever finishes with the best
+                conference record (the title games aren't played), the five best champions get in, and the field is ordered by FPI minus 6 points per loss, a stand-in for the selection committee. Each cell is the chance of that seed;
+                the shaded #1–#{cfb.playoff.rules.byes} columns are the first-round byes. Teams under 0.5% are left out.
+              </p>
+              <SeedGrid
+                label="Playoff seed odds"
+                seeds={cfb.playoff.rules.teams}
+                byes={cfb.playoff.rules.byes}
+                extra={["Playoffs", "Bye", "Conf title"]}
+                rows={cfb.grid.map((r) => ({ ...r, sub: `${r.record} · ${r.conf === "Ind" ? "Independent" : r.conf}`, cols: [r.pPlayoffs, r.pBye, r.pConfTitle] }))}
+              />
+              <p className="ol-sub">Field if the season ended on today's composite</p>
+            </>
+          )}
           <ol className="ol-list" aria-label="Projected playoff field">
             {cfb.playoff.field.map((s) => (
               <SeedRow key={s.id} s={s} tag={s.bid === "champion" ? "projected conference champion" : "at-large"} odds={[["playoffs", s.pPlayoffs], ["conf title", s.pConf], ["title", s.pTitle]]} />

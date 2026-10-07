@@ -4,7 +4,7 @@ import { promisify } from "node:util";
 import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { cfbBowls, cfbComposite, cfbPlayoff, cycleKey, hashSeed, nflPlayoff, parseFpi, simulateNfl } from "../scripts/outlook-lib.mjs";
+import { cfbBowls, cfbComposite, cfbPlayoff, cycleKey, hashSeed, nflPlayoff, parseConfRecords, parseFpi, simulateCfb, simulateNfl } from "../scripts/outlook-lib.mjs";
 import { createServer } from "node:http";
 import { defaultLeague } from "../src/league";
 
@@ -267,8 +267,8 @@ test("the NFL grid has a row per team, a column per seed, and the #1 seed column
   const afc = page.locator('[aria-label="AFC seed odds"] table');
   await expect(afc.locator("tbody tr")).toHaveCount(16);
   await expect(afc.locator("thead th")).toHaveText(["Team", "Exp W", "#1", "#2", "#3", "#4", "#5", "#6", "#7", "Playoffs", "Division"]);
-  await expect(afc.locator("thead th.one")).toHaveText("#1");
-  await expect(afc.locator("tbody tr").first().locator("td.cell.one")).toHaveText("38");
+  await expect(afc.locator("thead th.bye")).toHaveText("#1");
+  await expect(afc.locator("tbody tr").first().locator("td.cell.bye")).toHaveText("38");
   await expect(afc.locator("tbody tr").first().locator("td.tot")).toHaveText("91%");
   await expect(page.locator(".ol-note").nth(1)).toContainText("20,000 times");
   // The grid scrolls inside its own box; the page never scrolls sideways.
@@ -368,6 +368,7 @@ test("the schedule fetch keeps only games still to play and ignores a half-fetch
     expect(saved.games).toHaveLength(4 + 14 * 2);
     expect(saved.games[0]).toMatchObject({ week: 1, home: "3", away: "4" });
     expect(log).toContain("32 games left across 18 weeks");
+    expect(log).toContain("NFL schedule");
     // A fetch that only gets a few weeks leaves the saved file alone.
     const before = readFileSync(join(dir, "nfl-schedule.json"), "utf8");
     const dead = await run("node", ["scripts/fetch-nfl-schedule.mjs"], { env: { ...process.env, RAW_DIR: dir, ESPN_BASE: "http://127.0.0.1:1" } });
@@ -392,7 +393,130 @@ test("a snapshot built without the schedule is rebuilt with the simulation as so
   // A schedule that covers the season (each team has played 3 games, 14 left each: 224 games).
   const ids = (feed.teams as { team: { id: string } }[]).map((t) => t.team.id);
   const games = Array.from({ length: 224 }, (_, i) => ({ week: 5, home: ids[i % 32], away: ids[(i * 7 + 3) % 32 === i % 32 ? (i + 1) % 32 : (i * 7 + 3) % 32] }));
-  writeFileSync(join(raw, "nfl-schedule.json"), JSON.stringify({ season: 2026, games }));
+  writeFileSync(join(raw, "nfl-schedule.json"), JSON.stringify({ season: 2026, fetchedAt: "2026-10-07T00:00:00Z", games }));
   const log = await build("2026-10-07T14:00:00Z"); // same Tuesday-cycle, but now there is something to simulate
   expect(log).toMatch(/NFL outlook rebuilt for the week of 2026-10-06 with \d+ simulated seasons|simulation skipped/);
+});
+
+test("college seed odds: twelve seeds fill every simulated season, byes go to the top four, conference champions are one per conference", () => {
+  const teams = parseFpi(cfbFeed(make(130))).map((t, i) => ({ ...t, fpi: 30 - i * 0.3, wins: 3, losses: i % 7 === 0 ? 1 : 0 }));
+  // Each team has played 3-4; give everyone 8 more games, mostly in conference, from a fixed pseudo-random schedule.
+  let s = 7;
+  const r = () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
+  const need = new Map(teams.map((t) => [t.id, 8]));
+  const games: { home: string; away: string }[] = [];
+  for (let g = 0; g < 4000; g++) {
+    const open = teams.filter((t) => need.get(t.id)! > 0);
+    if (open.length < 2) break;
+    const a = open[Math.floor(r() * open.length)];
+    const pool = open.filter((t) => t.id !== a.id && (r() < 0.7 ? t.groupId === a.groupId : true));
+    if (!pool.length) continue;
+    const b = pool[Math.floor(r() * pool.length)];
+    games.push({ home: a.id, away: b.id });
+    need.set(a.id, need.get(a.id)! - 1);
+    need.set(b.id, need.get(b.id)! - 1);
+  }
+  games.push({ home: teams[0].id, away: "FCS-1" }); // an opponent outside the FPI list still counts
+  const sim = simulateCfb(teams, games, new Map(), { sims: 3000, seed: hashSeed("2026-10-04") })!;
+  expect(sim.sims).toBe(3000);
+  const rows = teams.map((t) => sim.byId.get(t.id)!);
+  for (let k = 0; k < 12; k++) expect(rows.reduce((n, x) => n + x.pSeed[k], 0)).toBeCloseTo(100, 0); // one team per seed, every season
+  expect(rows.reduce((n, x) => n + x.pPlayoffs, 0)).toBeCloseTo(1200, -1);
+  expect(rows.reduce((n, x) => n + x.pBye, 0)).toBeCloseTo(400, -1);
+  // Seven conferences have a group id; independents (group 18) never win one.
+  const confs = new Set(teams.filter((t) => !t.independent).map((t) => t.groupId));
+  expect(rows.reduce((n, x) => n + x.pConfTitle, 0)).toBeCloseTo(100 * confs.size, -1);
+  expect(sim.byId.get(teams.find((t) => t.independent)!.id)!.pConfTitle).toBe(0);
+  // The best team beats the worst, and the same seed gives the same answer.
+  expect(sim.byId.get(teams[0].id)!.pPlayoffs).toBeGreaterThan(sim.byId.get(teams[129].id)!.pPlayoffs);
+  expect(simulateCfb(teams, games, new Map(), { sims: 3000, seed: hashSeed("2026-10-04") })!.byId.get(teams[5].id)).toEqual(sim.byId.get(teams[5].id));
+  expect(simulateCfb(teams, games.slice(0, 5), new Map(), { sims: 10 })).toBeNull(); // nothing to play out
+});
+
+test("conference records are read from the standings' vs. Conf. split", () => {
+  const feed = { children: [{ standings: { entries: [{ team: { id: "1" }, stats: [{ name: "wins", displayValue: "4" }, { name: "vs. Conf.", displayValue: "3-1" }] }, { team: { id: "2" }, stats: [] }] } }] };
+  expect(parseConfRecords(feed).get("1")).toEqual({ w: 3, l: 1 });
+  expect(parseConfRecords(feed).has("2")).toBe(false);
+});
+
+test("the college schedule fetch asks for FBS games and keeps nothing if any week is missing", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "csched-"));
+  writeFileSync(join(dir, "index.json"), JSON.stringify({ season: 2026 }));
+  const ev = (state: string, home: string, away: string) => ({
+    date: "2026-10-17T17:00Z",
+    status: { type: { state, completed: state === "post" } },
+    competitions: [{ competitors: [{ homeAway: "home", team: { id: home } }, { homeAway: "away", team: { id: away } }] }],
+  });
+  const asked: string[] = [];
+  let failWeek = 0;
+  const server = createServer((req, res) => {
+    const u = new URL(req.url ?? "/", "http://x");
+    const week = Number(u.searchParams.get("week"));
+    asked.push(`${u.pathname}?groups=${u.searchParams.get("groups")}&limit=${u.searchParams.get("limit")}`);
+    if (week === failWeek) return void (res.statusCode = 404, res.end("{}"));
+    res.end(JSON.stringify({ events: [ev(week < 6 ? "post" : "pre", "10", "11"), ev("pre", "12", "999")] }));
+  });
+  await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
+  const base = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
+  const env = { ...process.env, RAW_DIR: dir, ESPN_BASE: base };
+  try {
+    let log = (await run("node", ["scripts/fetch-cfb-schedule.mjs"], { env })).stdout;
+    expect(asked[0]).toBe("/college-football/scoreboard?groups=80&limit=300");
+    expect(log).toContain("College schedule: 27 games left across 16 weeks"); // finished games dropped (weeks 1-5); every opponent kept, FCS ones included
+    const saved = JSON.parse(readFileSync(join(dir, "cfb-schedule.json"), "utf8"));
+    expect(saved.games.some((g: { away: string }) => g.away === "999")).toBe(true);
+    const before = readFileSync(join(dir, "cfb-schedule.json"), "utf8");
+    failWeek = 9;
+    log = (await run("node", ["scripts/fetch-cfb-schedule.mjs"], { env })).stdout;
+    expect(log).toContain("week 9 did not come back; keeping the saved file");
+    expect(readFileSync(join(dir, "cfb-schedule.json"), "utf8")).toBe(before);
+  } finally {
+    server.close();
+  }
+});
+
+test("the college grid reaches the page: a row per contender, twelve seed columns and the bye columns marked", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  const rows = Array.from({ length: 20 }, (_, i) => ({
+    id: `T${i}`, name: `Team ${i + 1}`, abbr: `T${i}`, logoId: null, conf: i === 3 ? "Ind" : "SEC", record: "5-0", rank: i + 1, expW: 11 - i * 0.2,
+    pSeed: Array.from({ length: 12 }, (_, k) => (k === i % 12 ? 40 : 3)), pPlayoffs: 95 - i * 3, pBye: 60 - i * 2, pConfTitle: 30 - i,
+  }));
+  await page.route("**/assets/outlook-*.js", async (route) => {
+    const res = await route.fetch();
+    const body = await res.text();
+    await route.fulfill({
+      response: res,
+      body: body.replace(/export\s*\{\s*(\w+)\s+as\s+default\s*\}/, (_m, v) => `export default { ...${v}, cfb: { ...${v}.cfb, sim: { sims: 10000, games: 497 }, grid: ${JSON.stringify(rows)} } }`),
+    });
+  });
+  await page.goto("/?league=CFB");
+  await page.getByRole("button", { name: /^Outlook/ }).click();
+  const grid = page.locator('[aria-label="Playoff seed odds"] table');
+  await expect(grid.locator("tbody tr")).toHaveCount(20);
+  await expect(grid.locator("thead th")).toHaveText(["Team", "Exp W", ...Array.from({ length: 12 }, (_, i) => `#${i + 1}`), "Playoffs", "Bye", "Conf title"]);
+  await expect(grid.locator("thead th.bye")).toHaveCount(4);
+  await expect(grid.locator("thead th.edge")).toHaveText("#4");
+  await expect(grid.locator("tbody tr").first().locator("td.tot")).toHaveText("95%");
+  await expect(page.locator(".ol-note").nth(1)).toContainText("10,000 times");
+  await expect(page.locator('ol[aria-label="Projected playoff field"] > li')).toHaveCount(12); // the composite-based field stays below
+  const width = await page.evaluate(() => document.documentElement.scrollWidth);
+  expect(width).toBeLessThanOrEqual((page.viewportSize()?.width ?? 0) + 1);
+  expect(errors).toEqual([]);
+});
+
+test("a schedule more than a week old is ignored rather than simulated from", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "outlook-stale-"));
+  const raw = join(dir, "raw");
+  mkdirSync(raw);
+  const feed = nflFeed();
+  writeFileSync(join(raw, "cfb-fpi.json"), JSON.stringify(cfbFeed(make(130))));
+  writeFileSync(join(raw, "nfl-fpi.json"), JSON.stringify(feed));
+  const ids = (feed.teams as { team: { id: string } }[]).map((t) => t.team.id);
+  const games = Array.from({ length: 224 }, (_, i) => ({ week: 5, home: ids[i % 32], away: ids[(i + 1) % 32] }));
+  writeFileSync(join(raw, "nfl-schedule.json"), JSON.stringify({ season: 2026, fetchedAt: "2026-09-20T00:00:00Z", games }));
+  const out = join(dir, "outlook.json");
+  const log = (await run("node", ["scripts/build-outlook.mjs"], { env: { ...process.env, RAW_DIR: raw, OUT_FILE: out, NOW: "2026-10-07T14:00:00Z" } })).stdout;
+  expect(log).toContain("no simulation");
+  expect(JSON.parse(readFileSync(out, "utf8")).nfl.sim).toBeNull();
 });

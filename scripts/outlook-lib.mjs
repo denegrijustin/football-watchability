@@ -268,6 +268,92 @@ export function simulateNfl(teams, games, { sims = 20000, seed = 1, hfa = 2, sd 
   };
 }
 
+/** Conference wins and losses by team id from a standings feed (the "vs. Conf." split, e.g. "3-0"). */
+export function parseConfRecords(feed) {
+  const out = new Map();
+  for (const c of feed?.children ?? [])
+    for (const e of c.standings?.entries ?? []) {
+      const m = /^(\d+)-(\d+)/.exec(e.stats?.find((x) => x.name === "vs. Conf.")?.displayValue ?? "");
+      if (m) out.set(String(e.team.id), { w: Number(m[1]), l: Number(m[2]) });
+    }
+  return out;
+}
+
+export const CFB_SEEDS = 12;
+/** How the simulation orders teams for the field: FPI rating minus this many points per loss. */
+export const LOSS_PENALTY = 6;
+/**
+ * Plays out the rest of the FBS regular season `sims` times and builds the 12-team field each time (FORMAT):
+ * a team's conference champion is whoever finishes with the best conference record (coin flip on ties; the
+ * conference title games are not played), the five best champions get in, then the next seven teams, all ordered
+ * by FPI rating minus LOSS_PENALTY points per loss and seeded straight in that order. That ordering is a stand-in
+ * for the selection committee, which will not match it exactly. A game a team plays against a team outside the
+ * FPI list (an FCS opponent) is won with probability 0.95. Returns null when there is no schedule to play out.
+ */
+export function simulateCfb(teams, games, confRecords, { sims = 10000, seed = 1, hfa = 2.5, sd = 17, rules = FORMAT } = {}) {
+  const byId = new Map(teams.map((t, i) => [t.id, i]));
+  const left = games.filter((g) => byId.has(g.home) || byId.has(g.away));
+  if (left.length < 20) return null;
+  const n = teams.length;
+  const fpi = teams.map((t) => t.fpi ?? 0);
+  const h = left.map((g) => (byId.has(g.home) ? byId.get(g.home) : -1));
+  const a = left.map((g) => (byId.has(g.away) ? byId.get(g.away) : -1));
+  const p = left.map((_, k) => (h[k] < 0 || a[k] < 0 ? 0.95 : phi((fpi[h[k]] - fpi[a[k]] + hfa) / sd)));
+  const sameConf = left.map((_, k) => h[k] >= 0 && a[k] >= 0 && !teams[h[k]].independent && teams[h[k]].groupId === teams[a[k]].groupId);
+  const confGroups = new Map();
+  teams.forEach((t, i) => {
+    if (!t.independent && t.groupId) confGroups.set(t.groupId, [...(confGroups.get(t.groupId) ?? []), i]);
+  });
+  const groups = [...confGroups.values()];
+  const baseW = teams.map((t) => t.wins);
+  const baseL = teams.map((t) => t.losses);
+  const baseCW = teams.map((t) => confRecords.get(t.id)?.w ?? 0);
+  const baseCL = teams.map((t) => confRecords.get(t.id)?.l ?? 0);
+  const seedHits = Array.from({ length: n }, () => new Array(rules.teams).fill(0));
+  const champHits = new Array(n).fill(0);
+  const winsSum = new Array(n).fill(0);
+  const rand = rng(seed);
+  const w = new Float64Array(n), l = new Float64Array(n), cw = new Float64Array(n), cl = new Float64Array(n), noise = new Float64Array(n), score = new Float64Array(n);
+  const order = Array.from({ length: n }, (_, i) => i);
+  for (let s = 0; s < sims; s++) {
+    for (let i = 0; i < n; i++) {
+      w[i] = baseW[i]; l[i] = baseL[i]; cw[i] = baseCW[i]; cl[i] = baseCL[i];
+      noise[i] = rand() * 0.01;
+    }
+    for (let g = 0; g < h.length; g++) {
+      const homeWon = rand() < p[g];
+      const win = homeWon ? h[g] : a[g];
+      const lose = homeWon ? a[g] : h[g];
+      if (win >= 0) w[win]++;
+      if (lose >= 0) l[lose]++;
+      if (sameConf[g]) { cw[win]++; cl[lose]++; }
+    }
+    for (let i = 0; i < n; i++) { winsSum[i] += w[i]; score[i] = fpi[i] - LOSS_PENALTY * l[i] + noise[i]; }
+    const champs = groups.map((m) => m.reduce((best, i) => (cw[i] - cl[i] + noise[i] > cw[best] - cl[best] + noise[best] ? i : best)));
+    for (const i of champs) champHits[i]++;
+    champs.sort((x, y) => score[y] - score[x]);
+    const auto = champs.slice(0, rules.autoBids);
+    const inAuto = new Set(auto);
+    order.sort((x, y) => score[y] - score[x]);
+    const field = [...auto];
+    for (const i of order) {
+      if (field.length >= rules.teams) break;
+      if (!inAuto.has(i)) field.push(i);
+    }
+    field.sort((x, y) => score[y] - score[x]).forEach((i, k) => seedHits[i][k]++);
+  }
+  const pc = (x) => Math.round((x / sims) * 1000) / 10;
+  return {
+    sims,
+    byId: new Map(
+      teams.map((t, i) => {
+        const pSeed = seedHits[i].map(pc);
+        return [t.id, { pSeed, pPlayoffs: pc(seedHits[i].reduce((x, y) => x + y, 0)), pBye: pc(seedHits[i].slice(0, rules.byes).reduce((x, y) => x + y, 0)), pConfTitle: pc(champHits[i]), expW: Math.round((winsSum[i] / sims) * 10) / 10 }];
+      }),
+    ),
+  };
+}
+
 // ---------- weekly cycle ----------
 const CT = "America/Chicago";
 const parts = (d) => {
