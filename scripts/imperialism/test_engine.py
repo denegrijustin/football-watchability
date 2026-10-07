@@ -94,8 +94,8 @@ class EngineTests(unittest.TestCase):
         self.assertEqual(layer["current"], layer["home"])
 
     def test_order_by_date_then_id(self):
-        # Given out of order: B beats A first (by date) then A (holding A+B? no: A is landless) ...
-        g_late = game("g1", 1, "2026-09-05", "A", "C", 3, 0)
+        # Given out of order: B beats A first (by date); the later C-over-A game then finds A landless
+        g_late = game("g1", 1, "2026-09-05", "C", "A", 3, 0)
         g_early = game("g2", 1, "2026-09-01", "B", "A", 3, 0)
         layer = run([g_late, g_early])
         self.assertEqual([e["game"] for e in layer["ledger"]], ["g2", "g1"])
@@ -181,7 +181,7 @@ class BuildCliTests(unittest.TestCase):
             for lg, teams in (("cfb", cfb), ("nfl", nfl)):
                 w("raw/%s-teams.json" % lg, {"sports": [{"leagues": [{"teams": [{"team": t} for t in teams]}]}]})
             confs = [("Southeastern Conference", "SEC"), ("Sun Belt - East", "Sun Belt - East"),
-                     ("Sun Belt - West", "Sun Belt - West"), ("FBS Independents", "FBS Indep.")]
+                     ("FBS Independents", "FBS Indep."), ("Sun Belt - West", "Sun Belt - West")]
             w("raw/cfb-fpi.json", {"teams": [{"team": dict(t, group={"name": c[0], "shortName": c[1]})}
                                               for t, c in zip(cfb, confs)]})
             divs = [("AFC East", "AFC"), ("AFC West", "AFC"), ("NFC East", "NFC"), ("NFC West", "NFC")]
