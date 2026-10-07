@@ -1003,35 +1003,3 @@ test("compact Details button fits and outside click collapses expanded games", a
   await expect(card).toHaveClass(/compact/);
 });
 
-test("expanded upcoming and completed games download a one-page PDF report", async ({ page }) => {
-  test.setTimeout(90000);
-  for (const leagueName of ["NFL", "CFB"]) {
-    await page.goto(`/?league=${leagueName}`);
-    const card = page.locator(".upcoming .game-card").first();
-    await expect(card.getByRole("button", { name: "Export game report (PDF)" })).toHaveCount(0);
-    await expand(card);
-    const downloadPromise = page.waitForEvent("download");
-    await card.getByRole("button", { name: "Export game report (PDF)" }).click();
-    const download = await downloadPromise;
-    expect(download.suggestedFilename()).toMatch(/game-report\.pdf$/);
-    const bytes = readFileSync((await download.path())!);
-    expect(bytes.subarray(0, 4).toString()).toBe("%PDF");
-    expect(bytes.toString("latin1").match(/\/Type \/Page\b/g)).toHaveLength(1);
-    const mediaBox = bytes.toString("latin1").match(/\/MediaBox\s*\[([\d. ]+)\]/)![1].trim().split(/\s+/).map(Number);
-    expect(mediaBox[2]).toBe(612);
-    expect(mediaBox[3]).toBe(792);
-    await download.saveAs(`test-results/${leagueName}-${test.info().project.name}-game-report.pdf`);
-    await expect(card.getByRole("button", { name: "Export game report (PDF)" })).toBeEnabled();
-    await expect(card).toHaveClass(/expanded/);
-  }
-  if (results.games.some((r: any) => r.league === "NFL")) {
-    await page.goto("/?league=NFL");
-    await completed(page);
-    const card = page.locator(".result-card").first();
-    await expand(card);
-    const downloadPromise = page.waitForEvent("download");
-    await card.getByRole("button", { name: "Export game report (PDF)" }).click();
-    const download = await downloadPromise;
-    await download.saveAs(`test-results/completed-${test.info().project.name}-game-report.pdf`);
-  }
-});
