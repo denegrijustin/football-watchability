@@ -161,6 +161,9 @@ export function TvGrid() {
           <li className="k-hl">Entertaining (74+)</li>
           <li className="k-mid">Watchable (64–73)</li>
           <li className="k-dim">Background (&lt;64)</li>
+          <li className="k-rank" title="Both ranks are ESPN FPI power ratings: conference rank is the team's place among its conference mates, overall rank is across the whole league.">
+            Under each logo: conference rank · overall rank (ESPN FPI)
+          </li>
         </ul>
       </div>
       <div className="board-heading tv-heading">

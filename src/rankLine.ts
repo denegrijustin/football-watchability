@@ -10,13 +10,15 @@ export type Ranks = {
 } | null;
 const ord = (n: number) => `${n}${[, "st", "nd", "rd"][(n % 100 >> 3) ^ 1 && n % 10] || "th"}`;
 const SHORT_CONF: Record<string, string> = { "Mountain West": "MW", "Sun Belt": "Sun Belt", American: "AAC", "Conference USA": "C-USA" };
-/** "SEC #3 · #7 overall" */
+/** "SEC #3 · #7 overall (FPI)", or "SEC #3 · #7" when compact */
 export function rankLine(r: Ranks | undefined, compact = false) {
   if (!r) return "";
   const name = r.confName ? SHORT_CONF[r.confName] ?? r.confName : "";
   const conf = r.conf && name ? `${name} #${r.conf}` : "";
   const all = r.overall ? (compact ? `#${r.overall}` : `#${r.overall} overall`) : "";
-  return [conf, all].filter(Boolean).join(" · ");
+  const line = [conf, all].filter(Boolean).join(" · ");
+  // Full lines name their source; the compact TV-grid one is explained by the grid's key.
+  return line && !compact ? `${line} (FPI)` : line;
 }
 /** Tooltip: "3rd of 16 in the SEC by ESPN FPI · 7th of 138 overall (ESPN FPI)" */
 export function rankTitle(r: Ranks | undefined) {

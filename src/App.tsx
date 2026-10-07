@@ -94,6 +94,14 @@ export default function App() {
               </p>
             </div>
             <div>
+              <strong>Rank line</strong>
+              <p>
+                “NFC #4 · #7 overall (FPI)” is the team's place in its conference and in the whole league, both by
+                ESPN's FPI power rating, not by record or the polls. The record sits beside it, and AP polls are
+                labeled AP.
+              </p>
+            </div>
+            <div>
               <strong>Snapshot</strong>
               <p>
                 Updated 8am Central Tue, Thu, Fri, Sun and Mon for{" "}
