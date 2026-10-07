@@ -1017,6 +1017,9 @@ test("expanded upcoming and completed games download a one-page PDF report", asy
     const bytes = readFileSync((await download.path())!);
     expect(bytes.subarray(0, 4).toString()).toBe("%PDF");
     expect(bytes.toString("latin1").match(/\/Type \/Page\b/g)).toHaveLength(1);
+    const mediaBox = bytes.toString("latin1").match(/\/MediaBox\s*\[([\d. ]+)\]/)![1].trim().split(/\s+/).map(Number);
+    expect(mediaBox[2]).toBe(612);
+    expect(mediaBox[3]).toBe(792);
     await download.saveAs(`test-results/${leagueName}-${test.info().project.name}-game-report.pdf`);
     await expect(card.getByRole("button", { name: "Export game report (PDF)" })).toBeEnabled();
     await expect(card).toHaveClass(/expanded/);
