@@ -305,7 +305,7 @@ test("weekend export files and advanced stats are available", async ({ page, req
   await expand(card);
   const adv = card.locator("summary").filter({ hasText: "Advanced stats" });
   if (await adv.count()) {
-    await adv.click();
+    if (!(await adv.locator("..").getAttribute("open") !== null)) await adv.click();
     await expect(card.locator(".adv-table tbody tr").first()).toBeVisible();
   }
 });
