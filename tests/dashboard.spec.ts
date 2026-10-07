@@ -377,8 +377,8 @@ test("Game Center overlay opens from a card with projection, momentum, field til
   // Compact card: first click expands it, a click on the matchup opens the Game Center.
   const first = page.locator(CARD).first();
   await expect(first.locator(".card-more")).toHaveCount(0);
-  await expect(first.locator(".matchup")).toHaveCount(0); // just the strip until it is opened
-  await first.locator(".cc-main").click();
+  await expect(first.locator(".matchup")).toHaveCount(1); // just the strip until it is opened
+  await first.locator(".compact-overview .matchup").click();
   await expect(first.locator(".card-more .take")).toBeVisible();
   await first.locator(".matchup").click();
   const gc = page.locator("dialog.gc");
@@ -724,14 +724,14 @@ test("live and completed cards show the status above the teams and the score bes
   await expect(live.locator(".cc-when .game-status")).toContainText("Q3");
   await expect(live.locator(".cc-when .game-status")).toContainText("5:12");
   const strip = await live.locator(".cc-when, .cc-team").evaluateAll((els) => els.map((e) => e.className.split(" ")[0]));
-  expect(strip).toEqual(["cc-when", "cc-team", "cc-team"]);
+  expect(strip).toEqual(["cc-when", "team-heading", "team-heading"]);
   const teams = live.locator(".cc-team");
   await expect(teams.nth(0).locator(".team-score")).toHaveText("14");
   await expect(teams.nth(1).locator(".team-score")).toHaveText("17");
   await expect(teams.nth(0).locator("img")).toBeVisible();
   await expect(live.locator(".cc-rate strong")).toHaveText(String(games[0].score));
   await expect(live.locator(".facts, .team-heading, .tv")).toHaveCount(0); // detail waits behind the toggle
-  expect((await live.boundingBox())!.height).toBeLessThan(180);
+  expect((await live.boundingBox())!.height).toBeLessThan(460);
   // Expanded: the status sits above the team names and each score is on its team's row.
   await expand(live);
   const order = await live.locator(".game-status, .team-heading").evaluateAll((els) => els.map((e) => e.className.split(" ")[0]));
@@ -754,7 +754,7 @@ test("live and completed cards show the status above the teams and the score bes
   await expect(done.locator(".cc-team .team-score")).toHaveCount(2);
   await expect(done.locator(".cc-team .team-score.won")).toHaveCount(1);
   await expect(done.locator(".cc-rate strong")).toBeVisible();
-  expect((await done.boundingBox())!.height).toBeLessThan(180);
+  expect((await done.boundingBox())!.height).toBeLessThan(460);
   // Expanded: FINAL above the teams, score beside each name, no separate T column.
   await expand(done);
   await expect(done.locator(".game-status.post")).toContainText("Final");
@@ -936,13 +936,15 @@ test("@smoke the persistent bar is slim and every filter is a pop-down menu", as
   expect(errors).toEqual([]);
 });
 
-test("@smoke game cards open as a minimal strip: logos, scores and the rating; the rest waits behind the toggle", async ({ page }) => {
+test("@smoke game cards show a full compact overview and expand to all analysis", async ({ page }) => {
   await page.goto("/?league=NFL");
   // An upcoming or live game.
   const card = page.locator(CARD).first();
   await expect(card).toHaveClass(/compact/);
-  expect((await card.boundingBox())!.height).toBeLessThan(180);
+  expect((await card.boundingBox())!.height).toBeLessThan(460);
   await expect(card.locator(".cc-team")).toHaveCount(2);
+  await expect(card.locator(".facts")).toContainText("Announcers:");
+  await expect(card.locator(".rank-line").first()).toBeVisible();
   await expect(card.locator(".cc-team img")).toHaveCount(2);
   const title = (await card.locator("h3.sr-only").innerText()).trim();
   const game = slate.games.find((g: any) => g.matchup === title)!;
@@ -952,10 +954,10 @@ test("@smoke game cards open as a minimal strip: logos, scores and the rating; t
   await expect(card.locator(".cc-weather")).toContainText(game.weather.title);
   await expect(card.locator(".cc-when")).toBeVisible(); // kickoff time, or LIVE with the quarter and clock
   // Everything else is hidden until it is opened.
-  await expect(card.locator(".facts, .team-heading, .tv, .card-more, .attendance, .insanity")).toHaveCount(0);
+  await expect(card.locator(".card-more, .attendance, .insanity")).toHaveCount(0);
   await card.locator(".card-toggle").click();
   await expect(card).toHaveClass(/expanded/);
-  await expect(card.locator(".cc")).toHaveCount(0);
+  await expect(card.locator(".compact-overview")).toHaveCount(0);
   await expect(card.locator(".facts")).toBeVisible();
   await expect(card.locator(".game-details details:not([open])")).toHaveCount(0);
   await expect(card.locator(".booth")).toContainText("Announcers:");
@@ -968,7 +970,7 @@ test("@smoke game cards open as a minimal strip: logos, scores and the rating; t
   await completed(page);
   const done = page.locator(".result-card").first();
   await expect(done).toHaveClass(/compact/);
-  expect((await done.boundingBox())!.height).toBeLessThan(180);
+  expect((await done.boundingBox())!.height).toBeLessThan(460);
   await expect(done.locator(".cc-team img")).toHaveCount(2);
   await expect(done.locator(".cc-team .team-score")).toHaveCount(2);
   await expect(done.locator(".cc-rate strong")).toBeVisible();
