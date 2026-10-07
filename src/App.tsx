@@ -172,7 +172,7 @@ export default function App() {
                 Reset filters
               </button>
             )}
-            <span className="sort-label">Upcoming first, then in progress; completed games below</span>
+            <span className="sort-label">Kickoff time slots · best watchability first in each slot</span>
           </div>
           <GameBoard
             board={board}
