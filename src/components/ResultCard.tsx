@@ -1,3 +1,4 @@
+import { GameReportButton } from "./GameReportButton";
 import { CompactGame } from "./CompactGame";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { nameParts } from "../teamName";
@@ -305,6 +306,7 @@ export function ResultCard({ result: r, defaultExpanded = false }: { result: Res
           </div>
         </details>
       </div>
+      <GameReportButton title={r.matchup} date={r.date} />
       <button type="button" className="card-toggle" aria-expanded={true} onClick={() => setExpanded(false)}>
         Less <span aria-hidden="true">▴</span>
       </button>
