@@ -101,7 +101,7 @@ export async function renderGridImage({
 }: {
   days: ExportDay[];
   period: string;
-  scope: "day" | "weekend";
+  scope: "day" | "weekend" | "week";
 }): Promise<GridImage | null> {
   const sections = days
     .map((d) => ({ ...d, layout: layoutGrid(d.games) }))
@@ -155,7 +155,7 @@ export async function renderGridImage({
   ctx.fillText("FW", PAD + 11, 60);
   ctx.fillStyle = "#eaf0f4";
   ctx.font = `800 36px ${FONT}`;
-  ctx.fillText(one ? `TV grid · ${sections[0].label}` : `TV grid · full weekend`, PAD + 76, 52);
+  ctx.fillText(one ? `TV grid · ${sections[0].label}` : scope === "week" ? `TV grid · full week · NFL + college` : `TV grid · full weekend`, PAD + 76, 52);
   const good = allPlaced.filter((g) => ENT.has(g.tier)).length;
   ctx.fillStyle = "#b9c6d0";
   ctx.font = `500 21px ${FONT}`;
@@ -269,7 +269,7 @@ export async function renderGridImage({
   const slug = (t: string) => t.toLowerCase().replace(/[^\w]+/g, "-");
   return {
     blob,
-    filename: `tv-grid-${one ? slug(sections[0].day || sections[0].label) : "weekend"}-${slug(period)}.png`,
+    filename: `tv-grid-${one ? slug(sections[0].day || sections[0].label) : scope === "week" ? "week" : "weekend"}-${slug(period)}.png`,
     width: canvas.width,
     height: canvas.height,
     scale,

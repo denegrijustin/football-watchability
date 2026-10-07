@@ -324,6 +324,7 @@ test("times default to Central, follow the chosen zone, and the TV grid saves a 
   for (const [item, name] of [
     [/This day/, /^tv-grid-(?!weekend).*\.png$/],
     [/Full weekend/, /^tv-grid-weekend-.*\.png$/],
+    [/Whole week/, /^tv-grid-week-.*\.png$/],
   ] as const) {
     await page.locator(".export-jpg-menu summary").click();
     await page.locator(".export-jpg-menu .export-menu button").filter({ hasText: item }).click();
@@ -1013,3 +1014,28 @@ test("compact Details button fits and outside click collapses expanded games", a
   await expect(card).toHaveClass(/compact/);
 });
 
+
+test("the whole-week TV grid image carries the NFL and college slate together, whatever league is picked", async ({ page }) => {
+  await page.goto("/?league=NFL");
+  await page.getByRole("button", { name: "TV grid" }).click();
+  const size = async (item: RegExp) => {
+    await page.locator(".export-jpg-menu summary").click();
+    await page.locator(".export-jpg-menu .export-menu button").filter({ hasText: item }).click();
+    const dialog = page.locator("dialog.img-dialog");
+    await expect(dialog).toBeVisible({ timeout: 30000 });
+    const [download] = await Promise.all([page.waitForEvent("download"), dialog.getByRole("link", { name: "Download PNG" }).click()]);
+    const bytes = readFileSync((await download.path())!);
+    await dialog.getByRole("button", { name: "Close" }).click();
+    await expect(dialog).toBeHidden();
+    return { w: bytes.readUInt32BE(16), h: bytes.readUInt32BE(20) };
+  };
+  // With only College picked, "Full weekend" follows the picker and "Whole week" does not.
+  await page.locator(".tv-toolbar [aria-label='League'] button", { hasText: "College" }).click();
+  const college = await size(/Full weekend/);
+  const week = await size(/Whole week/);
+  expect(week.h).toBeGreaterThan(college.h); // the NFL games add lanes and rows
+  // With everything picked the two are the same slate.
+  await page.locator(".tv-toolbar [aria-label='League'] button", { hasText: "All" }).click();
+  const everything = await size(/Full weekend/);
+  expect(everything).toEqual(week);
+});

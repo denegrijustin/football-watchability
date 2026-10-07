@@ -69,7 +69,7 @@ export function TvGrid() {
     day: "numeric",
     timeZone: "UTC",
   });
-  const exportJpg = async (scope: "day" | "weekend") => {
+  const exportJpg = async (scope: "day" | "weekend" | "week") => {
     if (menu.current) menu.current.open = false;
     setBusy(true);
     try {
@@ -79,8 +79,14 @@ export function TvGrid() {
         period: slate.period,
         scope,
         days: days
-          .filter((d) => scope === "weekend" || d.date === day)
-          .map((d) => ({ ...d, label: label(d.date), games: all.filter((g) => slot(g.start).date === d.date && keep(g)) })),
+          .filter((d) => scope !== "day" || d.date === day)
+          // The whole-week image is the full NFL + college slate: it ignores the league and conference pickers
+          // (but still honors "Entertaining only" if you have it on).
+          .map((d) => ({
+            ...d,
+            label: label(d.date),
+            games: all.filter((g) => slot(g.start).date === d.date && (scope === "week" ? !onlyGood || ENTERTAINING.has(g.tier) : keep(g))),
+          })),
       });
       // Show it first: saving to Photos needs a fresh tap (phones only allow the share sheet right after one), and
       // touching and holding the preview saves it on iOS and Android too.
@@ -157,7 +163,11 @@ export function TvGrid() {
             </button>
             <button type="button" disabled={busy} onClick={() => exportJpg("weekend")}>
               <strong>Full weekend</strong>
-              <span>Every day, stacked in one image</span>
+              <span>Every day, stacked in one image, with the filters above</span>
+            </button>
+            <button type="button" disabled={busy} onClick={() => exportJpg("week")}>
+              <strong>Whole week · NFL + college</strong>
+              <span>Every day, both leagues, one image (ignores the league and conference pickers)</span>
             </button>
           </div>
         </details>
