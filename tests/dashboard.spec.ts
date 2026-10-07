@@ -231,7 +231,7 @@ test("final view compares forecast with actual and explains the score", async ({
   expect(errors).toEqual([]);
 });
 
-test("TV grid lays out every game by network and time, lighting good games and dimming bad ones", async ({ page }) => {
+test("TV grid lays out every game by network and time, highlighting good games and marking lower-priority ones", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (err) => errors.push(err.message));
   await page.goto("/?league=NFL");
@@ -250,10 +250,15 @@ test("TV grid lays out every game by network and time, lighting good games and d
   for (let i = 0; i < days; i++) {
     await dayButtons.nth(i).click();
     for (const g of await page.locator(".tv-game").all()) {
-      const score = Number(await g.locator(".tv-score").innerText());
+      const score = Number((await g.locator(".tv-score").innerText()).replace("↓", "").trim());
       const cls = (await g.getAttribute("class")) ?? "";
       if (score >= 74) expect(cls).toContain("hl");
-      if (score < 64) expect(cls).toContain("dim");
+      if (score < 64) {
+        expect(cls).toContain("dim");
+        await expect(g.locator(".tv-score")).toContainText("↓");
+        await expect(g).toHaveCSS("opacity", "1");
+        await expect(g).toHaveCSS("border-top-style", "dashed");
+      }
     }
   }
   // A block opens the same card as the main board, in a dialog.
