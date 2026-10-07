@@ -23,6 +23,7 @@ import { EdgeLine, type Advanced } from "./AdvancedStats";
 import { InjuryWatch } from "./InjuryReport";
 import { Booth, type CrewMember } from "./Booth";
 import { dayOf, timeOf, tzAbbr } from "../tz";
+import { NetChip } from "./NetChip";
 
 const impactLevel = (impact: string) =>
   impact.replace(/\s*impact$/i, "").toLowerCase();
@@ -57,7 +58,8 @@ export function GameCard({
       document.removeEventListener("keydown", escape);
     };
   }, [expanded, defaultExpanded]);
-  const netLogo = networkLogo((game as { network?: string | null }).network);
+  const net = (game as { network?: string | null }).network;
+  const netLogo = networkLogo(net);
   const meta = parseMeta(game.meta);
   const date = (game as { date?: string }).date ?? "";
   const delta = deltaValue(game.delta);
@@ -108,7 +110,7 @@ export function GameCard({
           setExpanded(true);
       }}
     >
-      {!expanded && <CompactGame titleId={`${game.id}-title`} matchup={game.matchup} date={date} broadcast={game.broadcast} network={game.network} teams={game.teams} league={game.league} score={game.score} tier={game.tier} venue={meta.venue} line={meta.line} crew={(game as { announcers?: CrewMember[] }).announcers} weather={game.weather} status={<GameStatus live={live} />} scores={[<TeamScore live={live} side="away" />, <TeamScore live={live} side="home" />]} onExpand={() => setExpanded(true)} />}
+      {!expanded && <CompactGame titleId={`${game.id}-title`} matchup={game.matchup} date={date} broadcast={game.broadcast} network={game.network} espnId={game.espnId} teams={game.teams} league={game.league} score={game.score} tier={game.tier} venue={meta.venue} line={meta.line} crew={(game as { announcers?: CrewMember[] }).announcers} weather={game.weather} status={<GameStatus live={live} />} scores={[<TeamScore live={live} side="away" />, <TeamScore live={live} side="home" />]} onExpand={() => setExpanded(true)} />}
       {expanded && (
         <>
       <header className="card-top">
@@ -120,9 +122,7 @@ export function GameCard({
           title="Where to watch"
         >
           {netLogo ? (
-            <span className="net-chip">
-              <img src={netLogo} alt="" height="16" loading="lazy" />
-            </span>
+            <NetChip network={net} logo={netLogo} game={{ league: game.league, espnId: game.espnId, broadcast: game.broadcast }} />
           ) : (
             <svg viewBox="0 0 24 24" aria-hidden="true" width="14" height="14">
               <rect

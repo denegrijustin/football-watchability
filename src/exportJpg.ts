@@ -1,6 +1,7 @@
 import { logos, networkLogo, rankLine } from "./data";
 import { GRID_SLOT, layoutGrid, type GridGame, type PlacedGame } from "./data/grid";
 import { tzAbbr } from "./tz";
+import { directvChannel } from "./directv";
 
 /**
  * Draws one day of the TV grid, or every day of the weekend (the same lanes,
@@ -241,7 +242,17 @@ export async function renderGridImage({
         ctx.fillStyle = "#d5dbe0";
         roundRect(ctx, chipX, chipY, chipW, 32, 16);
         ctx.fill();
-        contain(ctx, img, chipX + 12, chipY + 6, chipW - 24, 20);
+        // The DIRECTV channel (Overland Park) sits to the right of the logo inside the same chip.
+        const ch = directvChannel(l.network);
+        contain(ctx, img, chipX + 12, chipY + 6, chipW - 24 - (ch ? 38 : 0), 20);
+        if (ch) {
+          ctx.fillStyle = "#1c2630";
+          ctx.font = `800 17px ${FONT}`;
+          ctx.textBaseline = "middle";
+          ctx.textAlign = "right";
+          ctx.fillText(String(ch), chipX + chipW - 12, chipY + 17);
+          ctx.textAlign = "left";
+        }
       } else {
         ctx.fillStyle = "#eaf0f4";
         ctx.font = `800 20px ${FONT}`;
@@ -258,7 +269,7 @@ export async function renderGridImage({
   ctx.fillStyle = "#8d9eac";
   ctx.font = `500 16px ${FONT}`;
   ctx.fillText(
-    "Watchability 0–100: team quality, competitiveness, stakes, matchup and TV window. Each block spans the game's broadcast window.",
+    "Watchability 0–100: team quality, competitiveness, stakes, matchup and TV window. Each block spans the game's broadcast window. Numbers beside network logos are DIRECTV channels (Overland Park, KS).",
     PAD,
     H - 22,
   );
