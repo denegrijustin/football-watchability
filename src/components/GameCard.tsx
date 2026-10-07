@@ -1,5 +1,5 @@
 import { CompactGame } from "./CompactGame";
-import { useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { nameParts } from "../teamName";
 import { deltaValue, logos, parseMeta, tierLabel, type Game } from "../data";
 import { Stakes } from "./TeamImpact";
@@ -40,6 +40,23 @@ export function GameCard({
   defaultExpanded?: boolean;
 }) {
   const [expanded, setExpanded] = useState(defaultExpanded);
+  const cardRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (!expanded || defaultExpanded) return;
+    const outside = (event: PointerEvent) => {
+      if (document.querySelector("dialog[open]")) return;
+      if (!cardRef.current?.contains(event.target as Node)) setExpanded(false);
+    };
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !document.querySelector("dialog[open]")) setExpanded(false);
+    };
+    document.addEventListener("pointerdown", outside);
+    document.addEventListener("keydown", escape);
+    return () => {
+      document.removeEventListener("pointerdown", outside);
+      document.removeEventListener("keydown", escape);
+    };
+  }, [expanded, defaultExpanded]);
   const netLogo = networkLogo((game as { network?: string | null }).network);
   const meta = parseMeta(game.meta);
   const date = (game as { date?: string }).date ?? "";
@@ -79,6 +96,7 @@ export function GameCard({
   );
   return (
     <article
+      ref={cardRef}
       data-game-id={game.id}
       className={`game-card ${game.tier}${homeColor ? " team-tinted" : ""}${expanded ? " expanded" : " compact"}`}
       style={
