@@ -1,4 +1,3 @@
-import { GameReportButton } from "./GameReportButton";
 import { CompactGame } from "./CompactGame";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { nameParts } from "../teamName";
@@ -293,7 +292,6 @@ export function GameCard({
           <GameDetails game={game} />
         </div>
       )}
-      {expanded && <GameReportButton title={game.matchup} date={date} />}
       {expanded && toggle}
     </article>
   );
