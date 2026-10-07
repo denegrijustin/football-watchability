@@ -1,3 +1,4 @@
+import { CompactGame } from "./CompactGame";
 import { useState, type CSSProperties } from "react";
 import { nameParts } from "../teamName";
 import { attendanceView } from "../attendance";
@@ -51,46 +52,7 @@ export function ResultCard({ result: r, defaultExpanded = false }: { result: Res
         if (!expanded && !(e.target as HTMLElement).closest("a,button,summary")) setExpanded(true);
       }}
     >
-      {!expanded && (
-        <div className="cc">
-          <div className="cc-main">
-            <div className="cc-when">
-              <span className="game-status post">
-                <span className="gs-pill">Final</span>
-                {extra && <span className="gs-period">{extra}</span>}
-              </span>
-              <span className="cc-time">
-                <strong>{dayOf(r.date)}</strong> {timeOf(r.date)} {tzAbbr()}
-              </span>
-            </div>
-            <h3 id={`r-${r.espnId}`} className="sr-only">
-              {r.matchup}, final {away.score}–{home.score}
-            </h3>
-            {[away, home].map((t, i) => (
-              <div className="cc-team" key={t.name}>
-                <img src={logos[t.logoId]} alt="" width="28" height="28" loading="lazy" />
-                <span className="cc-name">{(([pre, nick]) => (<>{pre && <span className="cc-pre">{pre}</span>}{nick}</>))(nameParts(t.name, r.league))}</span>
-                <span className={`team-score${winner === i ? " won" : winner >= 0 ? " lost" : ""}`}>{t.score}</span>
-              </div>
-            ))}
-            <div className="cc-outlook"><span className="cc-network" title="Where to watch">{r.broadcast}</span></div>
-          </div>
-          <div className="cc-rate" aria-label={`Actual watchability ${r.actual.score} out of 100, ${tierLabel(r.actual.tier)}`}>
-            <strong>{r.actual.score}</strong>
-            <span>{tierLabel(r.actual.tier)}</span>
-            {Math.abs(d) > 4 && <em className={d > 0 ? "up" : "down"}>{d > 0 ? "▲" : "▼"}{Math.abs(d)}</em>}
-          </div>
-          <button
-            type="button"
-            className="card-toggle cc-chevron"
-            aria-expanded={false}
-            aria-label="Show game details"
-            onClick={() => setExpanded(true)}
-          >
-            <span aria-hidden="true">▾</span>
-          </button>
-        </div>
-      )}
+      {!expanded && <CompactGame titleId={`r-${r.espnId}`} matchup={`${r.matchup}, final ${away.score}–${home.score}`} date={r.date} broadcast={r.broadcast} network={r.network} teams={r.teams} league={r.league} score={r.actual.score} tier={r.actual.tier} venue={r.venue} line={r.forecast.line} crew={(r as { announcers?: CrewMember[] }).announcers} status={<span className="game-status post">Final {extra}</span>} scores={[away, home].map((t, i) => <span className={`team-score${winner === i ? " won" : " lost"}`}>{t.score}</span>)} onExpand={() => setExpanded(true)} />}
       {expanded && (
         <>
       <header className="card-top">
