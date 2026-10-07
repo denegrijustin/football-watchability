@@ -1,3 +1,4 @@
+import { resolveBroadcast } from "./broadcasts.mjs";
 // Builds src/data/slate.json for a new week from data-raw/ (see
 // scripts/fetch-slate.mjs and scripts/fetch-history.mjs).
 //
@@ -55,6 +56,8 @@ const espnToLogo = new Map(
 );
 const oldSlate = src("slate.json");
 // Hand corrections keyed by ESPN event id (e.g. a network ESPN hasn't posted).
+const broadcastChecks = existsSync(new URL("src/data/broadcast-checks.json", root)) ? src("broadcast-checks.json") : {};
+const verifiedBroadcast = g => resolveBroadcast(g.broadcast, broadcastChecks[g.espnId], g.date);
 const overrides = existsSync(new URL("src/data/slate-overrides.json", root)) ? src("slate-overrides.json") : {};
 
 // ---------- FPI ----------
@@ -1151,8 +1154,8 @@ for (const g of built) {
     time: g._time,
     matchup: g.matchup,
     conferences: g.conferences,
-    broadcast: overrides[g.espnId]?.broadcast ?? g.broadcast,
-    network: overrides[g.espnId]?.network ?? g._network,
+    broadcast: overrides[g.espnId]?.broadcast ?? verifiedBroadcast(g)?.broadcast ?? g.broadcast,
+    network: overrides[g.espnId]?.network ?? (verifiedBroadcast(g) ? verifiedBroadcast(g).network : g._network),
     venue: g._venue,
     // From ESPN's game info; capacity comes from public/venues.json (scripts/attendance.mjs).
     venueId: g.summary?.gameInfo?.venue?.id ? String(g.summary.gameInfo.venue.id) : null,
@@ -1230,8 +1233,8 @@ const games = built
       matchup: g.matchup,
       meta,
       chips: [label, rankView],
-      broadcast: overrides[g.espnId]?.broadcast ?? g.broadcast,
-      network: overrides[g.espnId]?.network ?? g._network,
+      broadcast: overrides[g.espnId]?.broadcast ?? verifiedBroadcast(g)?.broadcast ?? g.broadcast,
+      network: overrides[g.espnId]?.network ?? (verifiedBroadcast(g) ? verifiedBroadcast(g).network : g._network),
       weather: g.weather,
       ...(g.availability ? { availability: g.availability } : {}),
       ...(g.announcers ? { announcers: g.announcers } : {}),
@@ -1253,7 +1256,7 @@ const slate = {
     file: "data-raw (ESPN, Open-Meteo)",
     note: `Built ${index.fetchedAt.slice(0, 10)} from ESPN schedules, lines, records, AP poll, FPI and matchup predictor, plus game-day forecasts. Lines and forecasts move during the week.`,
   },
-  broadcastNote: `TV/streaming reflects ESPN's listings for ${PERIOD}. Local NFL availability varies by market; subscription access may be required.`,
+  broadcastNote: `TV/streaming uses ESPN listings for ${PERIOD}, with missing or pending channels checked against FOX and CBS Sports. Final channel selections can remain pending; local NFL availability varies.`,
   footerNotes: [
     `Weather: Open-Meteo hourly forecast for each game window (about one reading per quarter), fetched ${weatherFetched.toISOString().slice(0, 16).replace("T", " ")} UTC. Impact ratings weigh wind, rain, storms, snow and heat or cold; forecasts sharpen as kickoff nears.`,
     `Playoff odds "now" are ESPN FPI. With-a-win / with-a-loss odds are estimates that keep FPI's number as the weighted average using ESPN's win probability. AP and NFL power-rank moves are rule-of-thumb estimates.`,

@@ -74,7 +74,7 @@ export function SeasonTrends({ game }: { game: Game }) {
               </div>
             </dl>
             <MarginBars games={tr.games} up={up} down={down} slots={slots} height={70} showWeeks label={`${t.name} scoring margin by game`} />
-            <details className="trend-table">
+            <details open className="trend-table">
               <summary>
                 Game-by-game<span aria-hidden="true">+</span>
               </summary>

@@ -25,7 +25,7 @@ function People({ list }: { list: CrewMember[] }) {
 
 /** "🎙️ (photo) Al Michaels & (photo) Kirk Herbstreit · sideline (photo) Kaylee Hartung" */
 export function Booth({ crew, as: Tag = "li" }: { crew?: CrewMember[] | null; as?: "li" | "p" }) {
-  if (!crew?.length) return null;
+  if (!crew?.length) return <Tag className="booth"><span aria-hidden="true">🎙️ </span><span>Announcers: schedule not yet available</span></Tag>;
   const booth = crew.filter(inBooth);
   const side = crew.filter(onSide);
   return (
@@ -34,7 +34,7 @@ export function Booth({ crew, as: Tag = "li" }: { crew?: CrewMember[] | null; as
         🎙️
       </span>
       <span className="booth-people">
-        <span className="sr-only">Announcers: </span>
+        <strong>Announcers: </strong>
         <People list={booth.length ? booth : crew} />
         {booth.length > 0 && side.length > 0 && (
           <span className="booth-side">
