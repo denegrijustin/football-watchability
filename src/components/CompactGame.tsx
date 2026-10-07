@@ -2,6 +2,7 @@ import { logos, networkLogo, rankLine, rankTitle, recordLine, tierLabel, type Ra
 import { Booth, type CrewMember } from "./Booth";
 import type { ReactNode } from "react";
 import { dayOf, timeOf, tzAbbr } from "../tz";
+import { directvChannel, directvTitle } from "../directv";
 
 type Team = { name: string; logoId: string; record: string; ranks?: unknown };
 export function CompactGame({ titleId, matchup, date, broadcast, network, teams, league, score, tier, venue, line, crew, weather, status, scores, onExpand }: {
@@ -15,7 +16,7 @@ export function CompactGame({ titleId, matchup, date, broadcast, network, teams,
   return <div className="compact-overview">
     <header className="card-top">
       <div className="cc-when kickoff"><span className="cc-time"><strong>{dayOf(date)}</strong> {timeOf(date)} {tzAbbr()}</span>{status}</div>
-      <div className="tv cc-network">{logo && <span className="net-chip"><img src={logo} alt="" height="16" /></span>}{broadcast}</div>
+      <div className="tv cc-network">{logo && <span className={`net-chip${directvChannel(network) ? " has-ch" : ""}`} title={directvTitle(network)}><img src={logo} alt="" height="16" />{directvChannel(network) && <b className="ch-num">{directvChannel(network)}</b>}</span>}{broadcast}</div>
     </header>
     <h3 className="sr-only" id={titleId}>{matchup}</h3>
     <div className="matchup">

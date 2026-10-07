@@ -23,6 +23,7 @@ import { EdgeLine, type Advanced } from "./AdvancedStats";
 import { InjuryWatch } from "./InjuryReport";
 import { Booth, type CrewMember } from "./Booth";
 import { dayOf, timeOf, tzAbbr } from "../tz";
+import { directvChannel, directvTitle } from "../directv";
 
 const impactLevel = (impact: string) =>
   impact.replace(/\s*impact$/i, "").toLowerCase();
@@ -57,7 +58,8 @@ export function GameCard({
       document.removeEventListener("keydown", escape);
     };
   }, [expanded, defaultExpanded]);
-  const netLogo = networkLogo((game as { network?: string | null }).network);
+  const net = (game as { network?: string | null }).network;
+  const netLogo = networkLogo(net);
   const meta = parseMeta(game.meta);
   const date = (game as { date?: string }).date ?? "";
   const delta = deltaValue(game.delta);
@@ -120,8 +122,9 @@ export function GameCard({
           title="Where to watch"
         >
           {netLogo ? (
-            <span className="net-chip">
+            <span className={`net-chip${directvChannel(net) ? " has-ch" : ""}`} title={directvTitle(net)}>
               <img src={netLogo} alt="" height="16" loading="lazy" />
+              {directvChannel(net) && <b className="ch-num">{directvChannel(net)}</b>}
             </span>
           ) : (
             <svg viewBox="0 0 24 24" aria-hidden="true" width="14" height="14">
