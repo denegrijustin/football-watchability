@@ -1,5 +1,5 @@
 import { CompactGame } from "./CompactGame";
-import { useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { nameParts } from "../teamName";
 import { attendanceView } from "../attendance";
 import { useVenues } from "../venues";
@@ -25,6 +25,23 @@ const short = (r: Result, i: number) =>
 /** A finished game: final score, forecast vs actual watchability and why. */
 export function ResultCard({ result: r, defaultExpanded = false }: { result: Result; defaultExpanded?: boolean }) {
   const [expanded, setExpanded] = useState(defaultExpanded);
+  const cardRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (!expanded || defaultExpanded) return;
+    const outside = (event: PointerEvent) => {
+      if (document.querySelector("dialog[open]")) return;
+      if (!cardRef.current?.contains(event.target as Node)) setExpanded(false);
+    };
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !document.querySelector("dialog[open]")) setExpanded(false);
+    };
+    document.addEventListener("pointerdown", outside);
+    document.addEventListener("keydown", escape);
+    return () => {
+      document.removeEventListener("pointerdown", outside);
+      document.removeEventListener("keydown", escape);
+    };
+  }, [expanded, defaultExpanded]);
   const netLogo = networkLogo(r.network);
   const [away, home] = r.teams;
   const winner = away.score > home.score ? 0 : home.score > away.score ? 1 : -1;
@@ -41,6 +58,7 @@ export function ResultCard({ result: r, defaultExpanded = false }: { result: Res
         : null;
   return (
     <article
+      ref={cardRef}
       className={`game-card result-card ${r.actual.tier}${teamColor(home.color) ? " team-tinted" : ""}${expanded ? " expanded" : " compact"}`}
       style={
         teamColor(home.color)
