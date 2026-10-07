@@ -11,6 +11,8 @@ const hex = (c: string) => {
   return `rgb(${n >> 16}, ${(n >> 8) & 255}, ${n & 255})`;
 };
 const colorOf = (league: "CFB" | "NFL", id: string) => hex(data.teams[league].find((t) => t.id === id)!.color);
+/** The team a county is painted for: its fill is a pattern named after the owner (imp-t-<team> plain, imp-c-<team> captured). */
+const ruler = (el: Element) => /imp-[tcs]-([^"')]+)/.exec((el as SVGElement).style.fill)?.[1] ?? null;
 
 async function open(page: Page, league: "CFB" | "NFL" = "CFB") {
   const errors: string[] = [];
@@ -95,9 +97,9 @@ test("the Empire tab draws every county, time-travels with the slider and opens 
   const idx = moved.transferred[0];
   const fips = data.counties[idx];
   const cell = page.getByTestId(`imp-county-${fips}`);
-  await expect(cell).toHaveCSS("fill", colorOf("CFB", cfb.current[idx]));
+  await expect.poll(() => cell.evaluate(ruler)).toBe(cfb.current[idx]);
   await slider.fill("0");
-  await expect(cell).toHaveCSS("fill", colorOf("CFB", cfb.home[idx]));
+  await expect.poll(() => cell.evaluate(ruler)).toBe(cfb.home[idx]);
   // Step forward a week with the button.
   await page.getByRole("button", { name: "Next week" }).click();
   await expect(slider).toHaveValue("1");
@@ -125,8 +127,8 @@ test("conference map hatches captured land and counts it; logos can be switched 
   const errors = await open(page);
   await page.getByRole("button", { name: "Conference" }).click();
   await expect(page.locator(".imp-table, .imp-conf-table, table").first()).toContainText("SEC");
-  // Captured land is painted with the hatch pattern instead of a team color.
-  const hatched = await page.locator('[data-testid^="imp-county-"]').evaluateAll((els) => els.filter((e) => (e as SVGElement).style.fill.includes("url(")).length);
+  // Captured land keeps its owner's color and gets the striped tile.
+  const hatched = await page.locator('[data-testid^="imp-county-"]').evaluateAll((els) => els.filter((e) => (e as SVGElement).style.fill.includes("imp-c-")).length);
   const teamConf = new Map(data.teams.CFB.map((t) => [t.id, t.conf]));
   const expected = cfb.current.filter((o, i) => teamConf.get(o) !== data.maps.CFB.conference.native[i]).length;
   expect(expected).toBeGreaterThan(0);
@@ -134,9 +136,9 @@ test("conference map hatches captured land and counts it; logos can be switched 
   await page.getByLabel("Highlight conference").selectOption("SEC");
   await page.getByRole("button", { name: "National" }).click();
   // Logos: one per empire with land at this week.
-  await expect(page.getByTestId("imp-map").locator("image")).toHaveCount(0);
+  await expect(page.getByTestId("imp-map").locator(".imp-logos image")).toHaveCount(0);
   await page.getByLabel(/Team logos/i).check();
-  expect(await page.getByTestId("imp-map").locator("image").count()).toBeGreaterThan(3);
+  expect(await page.getByTestId("imp-map").locator(".imp-logos image").count()).toBeGreaterThan(3);
   // NFL.
   await page.getByRole("button", { name: "NFL", exact: true }).click();
   await page.getByRole("button", { name: "AFC", exact: true }).click();
@@ -164,4 +166,50 @@ test("with no games yet the map shows the starting split and says results are co
   await page.getByRole("button", { name: /^Empire/ }).click();
   await expect(page.getByTestId("imp-map")).toBeVisible();
   await expect(page.locator(".imp")).toContainText(/Results appear here as games are played/i);
+});
+
+test("every county on the map is owned and painted in its owner's color, with a faint logo texture that can be switched off", async ({ page }) => {
+  const errors = await open(page);
+  const fills = await page.locator('[data-testid^="imp-county-"]').evaluateAll((els) => els.map((e) => (e as SVGElement).style.fill));
+  expect(fills).toHaveLength(data.counties.length);
+  const gray = "rgb(91, 107, 120)"; // the "nobody owns this" fallback
+  expect(fills.filter((f) => !f || f.includes(gray) || f.includes("#5b6b78"))).toHaveLength(0);
+  // Each fill is a tile named for the county's real owner, whose pattern exists and carries the owner's color and logo.
+  const owners = cfb.current;
+  const ok = await page.evaluate(
+    ({ owners, ids }) => {
+      const bad: string[] = [];
+      const index = new Map(ids.map((id, i) => [id, i]));
+      document.querySelectorAll('[data-testid^="imp-county-"]').forEach((el) => {
+        const fips = el.getAttribute("data-testid")!.slice("imp-county-".length);
+        const m = /imp-[tc]-([^"')]+)/.exec((el as SVGElement).style.fill);
+        const pat = m && document.getElementById(`imp-t-${m[1]}`);
+        if (!m || m[1] !== owners[index.get(fips)!] || !pat || !pat.querySelector("rect") || !pat.querySelector("image")) bad.push(fips);
+      });
+      return bad;
+    },
+    { owners, ids: data.counties },
+  );
+  expect(ok).toEqual([]);
+  // The logo is faint, not loud.
+  const opacity = await page.evaluate(() => document.querySelector('pattern[id^="imp-t-"] image')?.getAttribute("opacity"));
+  expect(Number(opacity)).toBeLessThanOrEqual(0.3);
+  // Off: plain team colors, no patterns for owners.
+  await page.getByLabel("Logo texture").uncheck();
+  const plain = await page.locator('[data-testid^="imp-county-"]').first().evaluate((e) => (e as SVGElement).style.fill);
+  expect(plain).toMatch(/^rgb|^#/);
+  expect(errors).toEqual([]);
+});
+
+test("the engine leaves no county unowned at any week, in any layer", () => {
+  for (const league of Object.values(data.maps))
+    for (const layer of Object.values(league)) {
+      if (!("ledger" in layer)) continue;
+      const cache = buildWeekCache(layer);
+      for (const w of layer.weeks) {
+        const owners = cache.at(w.n);
+        expect(owners).toHaveLength(data.counties.length);
+        expect(owners.every((o) => !!o && layer.teams.includes(o))).toBe(true);
+      }
+    }
 });

@@ -135,7 +135,7 @@ const CAPTIONS: Record<string, string> = {
   national:
     "Every county starts with the team whose stadium is nearest. When a team loses, all of its land goes to the winner; a landless team that wins takes all of its opponent's land.",
   conference:
-    "The national run, coloured by conference. Hatched counties have been captured by a team from outside the conference they started in; solid counties are still held in-conference.",
+    "The national run, coloured by conference. Striped counties have been captured by a team from outside the conference they started in (still painted in their new owner's colors); plain ones are still held in-conference.",
   full: "All 32 teams. Every county starts with the nearest stadium's team; the loser's land goes to the winner.",
   AFC: "AFC only: counties go to the nearest AFC stadium, and only AFC-vs-AFC games move land.",
   NFC: "NFC only: counties go to the nearest NFC stadium, and only NFC-vs-NFC games move land.",
@@ -155,6 +155,7 @@ export function ImperialismMap({ defaultLeague }: { defaultLeague: "NFL" | "CFB"
   const [pick, setPick] = useState<Record<string, number>>({}); // week index per layer; unset = latest
   const [playing, setPlaying] = useState(false);
   const [showLogos, setShowLogos] = useState(false);
+  const [texture, setTexture] = useState(true); // a faint copy of the owner's logo tiled across its counties
   const [confSel, setConfSel] = useState("all");
   const [selected, setSelected] = useState<number | null>(null); // feature index
   const [showAll, setShowAll] = useState(false);
@@ -256,10 +257,17 @@ export function ImperialismMap({ defaultLeague }: { defaultLeague: "NFL" | "CFB"
       if (f.li < 0) return FALLBACK;
       const o = teamById.get(owners[f.li]);
       if (!o) return FALLBACK;
-      if (native && conferenceStatus(native[f.li], o.conf) === "captured") return "url(#imp-hatch)";
-      return o.color || FALLBACK;
+      // Every county is painted in its current owner's color; land held by a team from another conference than its
+      // home team's is also striped, so it still reads as owned by that team.
+      const captured = !!native && conferenceStatus(native[f.li], o.conf) === "captured";
+      if (!o.color) return FALLBACK;
+      if (texture && logoSrc(o)) return `url(#${captured ? "imp-c-" : "imp-t-"}${o.id})`;
+      return captured ? `url(#imp-s-${o.id})` : o.color;
     });
-  }, [geo, owners, teamById, native]);
+  }, [geo, owners, teamById, native, texture]);
+
+  /* ---- fill patterns for the teams that hold land this week ---- */
+  const patternTeams = useMemo(() => [...new Set(owners)].map((id) => teamById.get(id)).filter((t): t is ImpTeam => !!t && !!t.color), [owners, teamById]);
 
   /* ---- standings ---- */
   const stand = useMemo(() => (view ? standings(view.ledgerLayer, owners) : null), [view, owners]);
@@ -367,9 +375,29 @@ export function ImperialismMap({ defaultLeague }: { defaultLeague: "NFL" | "CFB"
             onKeyDown={onKeyDown}
           >
             <defs>
-              <pattern id="imp-hatch" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-                <rect width="4" height="4" fill="#26313b" />
-                <line x1="0" y1="0" x2="0" y2="4" stroke="#7d8f9e" strokeWidth="1.6" />
+              {patternTeams.map((t) => {
+                const src = logoSrc(t);
+                // A 34-unit tile: the team color, the logo at low opacity, and (captured land) diagonal stripes on top.
+                const tile = (id: string, stripes: boolean) => (
+                  <pattern key={id} id={id} width="34" height="34" patternUnits="userSpaceOnUse">
+                    <rect width="34" height="34" fill={t.color} />
+                    {src && <image href={src} x="6" y="6" width="22" height="22" opacity="0.2" preserveAspectRatio="xMidYMid meet" />}
+                    {stripes && <rect width="34" height="34" fill="url(#imp-stripes)" />}
+                  </pattern>
+                );
+                return (
+                  <g key={t.id}>
+                    {tile(`imp-t-${t.id}`, false)}
+                    {tile(`imp-c-${t.id}`, true)}
+                    <pattern id={`imp-s-${t.id}`} width="4" height="4" patternUnits="userSpaceOnUse">
+                      <rect width="4" height="4" fill={t.color} />
+                      <rect width="4" height="4" fill="url(#imp-stripes)" />
+                    </pattern>
+                  </g>
+                );
+              })}
+              <pattern id="imp-stripes" width="5" height="5" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+                <line x1="0" y1="0" x2="0" y2="5" stroke="#ffffff" strokeOpacity="0.38" strokeWidth="1.5" />
               </pattern>
             </defs>
             <g>
@@ -400,7 +428,7 @@ export function ImperialismMap({ defaultLeague }: { defaultLeague: "NFL" | "CFB"
               </g>
             )}
           </svg>
-          {native && <p className="imp-legend"><span className="imp-swatch" /> Captured by a team from another conference</p>}
+          {native && <p className="imp-legend"><span className="imp-swatch" /> Striped: held by a team from a different conference than its home team</p>}
           <p className="imp-caption">{CAPTIONS[mapKey]}</p>
         </div>
 
@@ -527,6 +555,10 @@ export function ImperialismMap({ defaultLeague }: { defaultLeague: "NFL" | "CFB"
         <label className="imp-check">
           <input type="checkbox" checked={showLogos} onChange={(e) => setShowLogos(e.target.checked)} />
           Team logos
+        </label>
+        <label className="imp-check">
+          <input type="checkbox" checked={texture} onChange={(e) => setTexture(e.target.checked)} />
+          Logo texture
         </label>
         {ready && view?.conf && (
           <label className="imp-select">
