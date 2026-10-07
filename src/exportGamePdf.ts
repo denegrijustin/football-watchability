@@ -1,4 +1,5 @@
-/** A searchable, single-page report of everything in the expanded card. */
+import { getTz } from "./tz";
+/** A one-page portrait scouting card with visual trends and player portraits. */
 export async function downloadGameReport(card: HTMLElement, title: string, date: string) {
   const [{ jsPDF }, { toPng }] = await Promise.all([import("jspdf"), import("html-to-image")]);
   const clone = card.cloneNode(true) as HTMLElement;
@@ -13,7 +14,7 @@ export async function downloadGameReport(card: HTMLElement, title: string, date:
   });
   const clean = (text: string) => text.replace(/[–—−]/g, "-").replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/[…]/g,"...").replace(/[•·]/g," | ").replace(/[^\x20-\x7e\xa0-\xff\n\t]/g, "").replace(/[ \t]+/g," ").trim();
   type Asset = { data: string; width: number; height: number; chart: boolean };
-  type Section = { heading: string; text: string; assets: Asset[] };
+  type Section = { heading: string; text: string; assets: Asset[]; key: string };
   try {
     await Promise.all(Array.from(clone.querySelectorAll("img")).map(img => {
       img.loading = "eager";
@@ -66,66 +67,110 @@ export async function downloadGameReport(card: HTMLElement, title: string, date:
       const headingEl = (block as Element).matches(".matchup") ? null : block.querySelector<HTMLElement>("summary,h3,h4,caption");
       const heading = clean(headingEl?.innerText.trim().split("\n")[0] || ((block as Element).matches("header") ? "Kickoff & broadcast" : (block as Element).matches(".matchup") ? "Matchup & watchability" : (block as Element).matches(".facts") ? "Venue, line, announcers & weather" : (block as Element).matches(".take") ? "Commentary" : "Game detail")).slice(0, 60);
       const text = clean(block.innerText).replace(/\s*\n\s*/g, " | ");
-      if (text || assets.length) sections.push({ heading, text, assets });
+      if (text || assets.length) sections.push({ heading, text, assets, key: block.className });
     }
-    const pdf = new jsPDF({ orientation: "landscape", unit: "pt", format: "a3", compress: true });
-    pdf.setProperties({ title: `${title} - game report`, subject: "Football Watchability game details", creator: "FBWatch" });
-    const W = pdf.internal.pageSize.getWidth(), H = pdf.internal.pageSize.getHeight(), margin = 28, gap = 16, cols = 3, cw = (W - margin * 2 - gap * (cols - 1)) / cols;
-    const top = 76, bottom = H - 34;
-    let font = 10;
-    type Layout = { section: Section; x: number; y: number; lines: string[]; height: number };
-    let layout: Layout[] = [];
-    for (;;) {
-      pdf.setFont("helvetica", "normal"); pdf.setFontSize(font);
-      const heights = Array(cols).fill(top);
-      layout = sections.map(section => {
-        const lines = pdf.splitTextToSize(section.text, cw - 12) as string[];
-        const pictures = section.assets.filter(a => !a.chart);
-        const charts = section.assets.filter(a => a.chart);
-        const imageHeight = pictures.length ? Math.ceil(pictures.length / 6) * 30 + 4 : 0;
-        const chartHeight = charts.reduce((sum, a) => sum + Math.min(72, (cw - 12) * a.height / a.width) + 4, 0);
-        const height = 22 + lines.length * font * 1.15 + imageHeight + chartHeight;
-        const col = heights.indexOf(Math.min(...heights));
-        const item = { section, x: margin + col * (cw + gap), y: heights[col], lines, height };
-        heights[col] += height + 8;
-        return item;
+    const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "letter", compress: true });
+    pdf.setProperties({ title: `${title} - game report`, subject: "Visual game scouting report", creator: "FBWatch" });
+    const W = 612, M = 24, CW = W - M * 2;
+    const text = (value: string, x: number, y: number, width: number, size = 9, maxLines = 2, bold = false, white = false) => {
+      pdf.setFont("helvetica", bold ? "bold" : "normal"); pdf.setFontSize(size);
+      pdf.setTextColor(...(white ? [255,255,255] : [28,40,53]) as [number,number,number]);
+      let lines = pdf.splitTextToSize(clean(value).replace(/\s+/g, " "), width) as string[];
+      if (lines.length > maxLines) { lines = lines.slice(0,maxLines); lines[maxLines - 1] = lines[maxLines - 1].replace(/\s+\S*$/, "") + "..."; }
+      pdf.text(lines, x, y, { lineHeightFactor: 1.2 });
+    };
+    const image = (asset: Asset | undefined, x: number, y: number, w: number, h: number) => {
+      if (!asset) return;
+      const scale = Math.min(w / asset.width,h / asset.height);
+      pdf.addImage(asset.data,"PNG",x + (w - asset.width * scale)/2,y + (h - asset.height * scale)/2,asset.width * scale,asset.height * scale);
+    };
+    const box = (x: number,y: number,w: number,h: number,label: string) => {
+      pdf.setFillColor(242,245,248); pdf.roundedRect(x,y,w,h,8,8,"F");
+      text(label.toUpperCase(),x+12,y+19,w-24,9,1,true);
+    };
+    const find = (key: string) => sections.find(section => section.key.includes(key));
+    const teamNodes = Array.from(card.querySelectorAll<HTMLElement>(".team-heading,.ls-team"));
+    const teams = teamNodes.map(node => ({ name: clean(node.querySelector("h4,.ls-name")?.textContent || node.innerText).replace(/Home$/, ""), record: clean(node.querySelector(".record,.ls-rec,p")?.textContent || ""), rank: clean(node.querySelector(".rank-line")?.textContent || "") }));
+    const matchup = find("matchup") || find("final-board") || sections.find(section => section.assets.some(asset => !asset.chart) && section.text.includes("FINAL"));
+    const teamAssets = (matchup?.assets || []).filter(asset => !asset.chart);
+    const rgb = getComputedStyle(card).backgroundColor.match(/\d+/g)?.map(Number);
+    pdf.setFillColor(...(rgb && rgb.length >= 3 ? rgb.slice(0,3) : [15,35,55]) as [number,number,number]);
+    pdf.roundedRect(M,M,CW,190,12,12,"F");
+    text("FBWATCH  /  GAME REPORT",M+16,45,CW-32,9,1,true,true);
+    text(sections[0]?.text || new Date(date).toLocaleDateString(),M+16,63,CW-110,9,1,false,true);
+    pdf.setFillColor(244,247,250); pdf.roundedRect(W-M-82,34,68,32,6,6,"F");
+    image(sections[0]?.assets[0],W-M-78,38,60,24);
+    const names = title.split(/\s+@\s+/);
+    for (let i=0;i<2;i++) {
+      image(teamAssets[i],M+14,79+i*50,38,38);
+      text(names[i] || teams[i]?.name || title,M+62,96+i*50,CW-155,15,1,true,true);
+      text([teams[i]?.record,teams[i]?.rank].filter(Boolean).join(" | "),M+62,113+i*50,CW-155,8,1,false,true);
+    }
+    const rating = card.querySelector(".score strong,.fva-box.actual strong")?.textContent?.trim() || "-";
+    pdf.setFillColor(182,224,118); pdf.roundedRect(W-M-94,83,76,76,10,10,"F");
+    text(rating,W-M-84,120,56,30,1,true);
+    text("WATCH SCORE",W-M-86,144,64,7,1,true);
+    const facts = find("facts");
+    text(facts?.text || card.querySelector(".attendance")?.textContent || "",M+16,181,CW-32,8,2,false,true);
+    const chartSection = find("season-trends") || sections.find(section => /Season trends/i.test(section.heading)) || find("insanity");
+    const charts = chartSection?.assets.filter(asset => asset.chart) || sections.flatMap(section => section.assets.filter(asset => asset.chart)).slice(0,2);
+    box(M,226,CW,168,card.classList.contains("result-card") ? "Game momentum & trends" : "Season trends - scoring margin");
+    charts.slice(0,2).forEach((asset,i) => {
+      text(names[i] || teams[i]?.name || "Win probability",M+14+i*(CW/2),264,CW/2-28,10,1,true);
+      image(asset,M+14+i*(CW/2),274,charts.length === 1 ? CW-28 : CW/2-28,90);
+    });
+    if (!charts.length) text("Trend chart unavailable for this game",M+14,282,CW-28,11);
+    text(card.classList.contains("result-card") ? "Win probability through the game. Momentum data from ESPN." : "Blue: positive margin  |  Red: negative margin. Season results from ESPN.",M+14,382,CW-28,7,1);
+    box(M,406,CW,178,card.querySelector(".kp-card") ? "Players to watch" : "Final score & quarter-by-quarter");
+    const playerNodes = Array.from(card.querySelectorAll<HTMLElement>(".kp-card"));
+    const portraits = sections.find(section => /History.*players/i.test(section.heading))?.assets.filter(asset => !asset.chart) || [];
+    playerNodes.slice(0,8).forEach((player,i) => {
+      const x=M+12+(i%4)*(CW-24)/4, y=438+Math.floor(i/4)*70;
+      // History's image order follows the player cards, including tiny team logos.
+      const photos = portraits.filter(asset => asset.height >= 30 && asset.width >= 30);
+      image(photos[i],x,y,42,42);
+      text(player.querySelector(".kp-text strong")?.innerHTML.replace(/<[^>]*>/g, " ") || "Player",x+47,y+12,(CW-24)/4-52,8,2,true);
+      text(player.querySelector(".kp-team-line")?.textContent || "",x+47,y+33,(CW-24)/4-52,6.5,2);
+      text(player.querySelector("small")?.textContent || "",x,y+54,(CW-24)/4-8,7,1);
+    });
+    if (!playerNodes.length) {
+      const rows = Array.from(card.querySelectorAll<HTMLTableRowElement>(".linescore tbody tr"));
+      rows.forEach((row,i) => {
+        const y=440+i*64;
+        image(teamAssets[i],M+14,y-12,32,32);
+        text(names[i] || teams[i]?.name || "Team",M+56,y+1,220,12,1,true);
+        text(row.querySelector(".ls-total")?.textContent || "",M+56,y+23,100,22,1,true);
+        const quarters=Array.from(row.querySelectorAll("td")).map(td=>Number(td.textContent)||0);
+        quarters.forEach((points,q) => {
+          const x=M+270+q*50;
+          pdf.setFillColor(i===0 ? 223 : 53,i===0 ? 94 : 130,i===0 ? 103 : 211);
+          pdf.rect(x,y+22-points*1.5,28,Math.max(1,points*1.5),"F");
+          text(`Q${q+1}: ${points}`,x-2,y+36,46,7,1);
+        });
       });
-      if (Math.max(...heights) <= bottom || font <= 5) break;
-      font -= .25;
+      if (!rows.length) text("Player portraits unavailable in the saved game data.",M+14,456,CW-28,11,2);
     }
-    // Very data-rich cards use a larger single sheet, preserving the same font size.
-    const contentBottom = Math.max(...layout.map(item => item.y + item.height));
-    if (contentBottom > bottom) {
-      const newHeight = contentBottom + 34;
-      pdf.deletePage(1); pdf.addPage([W, newHeight], newHeight > W ? "portrait" : "landscape");
-    }
-    const pageHeight = pdf.internal.pageSize.getHeight();
-    pdf.setFillColor(12, 26, 39); pdf.rect(0, 0, W, 62, "F");
-    pdf.setTextColor(255,255,255); pdf.setFont("helvetica","bold"); pdf.setFontSize(18);
-    pdf.text(clean(title), margin, 29, { maxWidth: W - margin * 2 });
-    pdf.setFontSize(9); pdf.setFont("helvetica","normal");
-    pdf.text(`GAME REPORT | ${clean(new Date(date).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" }))} | Football Watchability`, margin, 48);
-    for (const { section, x, y, lines, height } of layout) {
-      pdf.setFillColor(245,247,249); pdf.roundedRect(x, y, cw, height, 4, 4, "F");
-      pdf.setTextColor(18,47,66); pdf.setFont("helvetica","bold"); pdf.setFontSize(font + 1);
-      pdf.text(section.heading, x + 6, y + 12, { maxWidth: cw - 12 });
-      let cursor = y + 19;
-      const pictures = section.assets.filter(a => !a.chart);
-      pictures.forEach((a, i) => {
-        const size = Math.min(28 / a.width, 26 / a.height);
-        pdf.addImage(a.data,"PNG", x + 6 + (i % 6) * 36, cursor + Math.floor(i / 6) * 30, a.width * size, a.height * size);
-      });
-      if (pictures.length) cursor += Math.ceil(pictures.length / 6) * 30 + 4;
-      pdf.setFont("helvetica","normal"); pdf.setFontSize(font); pdf.setTextColor(28,35,42);
-      pdf.text(lines, x + 6, cursor + font, { lineHeightFactor: 1.15 });
-      cursor += lines.length * font * 1.15;
-      for (const a of section.assets.filter(a => a.chart)) {
-        const h = Math.min(72, (cw - 12) * a.height / a.width);
-        pdf.addImage(a.data,"PNG",x + 6,cursor + 4,h * a.width / a.height,h); cursor += h + 4;
-      }
-    }
-    pdf.setTextColor(90,100,110); pdf.setFontSize(7);
-    pdf.text(`fbwatch.elskatemm.com | Exported ${new Date().toLocaleString()}${missing ? ` | ${missing} unavailable image(s)` : ""}`, margin, pageHeight - 14);
+    const half=(CW-12)/2;
+    box(M,596,half,144,"Matchup outlook"); box(M+half+12,596,half,144,"Why watch");
+    const projected = card.querySelector<HTMLElement>(".proj summary strong,.sc-box strong")?.innerText || "Projection unavailable";
+    text("PROJECTED SCORE",M+12,629,half-24,8,1);
+    text(projected.replace(/-\s*to\s*/g, " - "),M+12,654,half-24,19,1,true);
+    const winRow = card.querySelector(".pwp-row");
+    const awayWin = winRow?.querySelector(".pwp-val.away")?.textContent || "";
+    const homeWin = winRow?.querySelector(".pwp-val.home")?.textContent || "";
+    if (winRow) {
+      text(`${awayWin}  /  ${homeWin}`,M+12,680,half-24,9,1,true);
+      const percent = Number(awayWin.match(/(\d+)%/)?.[1] || 50);
+      pdf.setFillColor(225,96,103); pdf.roundedRect(M+12,690,half-24,12,4,4,"F");
+      pdf.setFillColor(53,130,211); pdf.rect(M+12+(half-24)*percent/100,690,(half-24)*(100-percent)/100,12,"F");
+      text(winRow.querySelector(".pwp-label")?.textContent || "Win probability",M+12,719,half-24,8,1);
+    } else text(find("fva")?.text || "",M+12,689,half-24,10,3);
+    const commentary=find("take");
+    text(commentary?.text || "",M+half+24,629,half-24,10,3,true);
+    const watch=sections.find(section => /Why watch/i.test(section.heading));
+    text(watch?.text.split(/WHY WATCH\s*\|/i).pop()?.split(/\|?\s*WHY SKIP/i)[0] || find("readout")?.text || "",M+half+24,674,half-24,9,4);
+    pdf.setTextColor(100,112,124); pdf.setFontSize(7);
+    pdf.text(`fbwatch.elskatemm.com | ${new Date(date).toLocaleDateString("en-US", { timeZone: getTz() })} | Visual summary of available game data`,M,762);
     pdf.save(`${title.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")}-${date.slice(0,10)}-game-report.pdf`);
   } finally { clone.remove(); }
 }
