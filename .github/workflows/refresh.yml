@@ -124,6 +124,9 @@ jobs:
           timeout 120s node scripts/fetch-trends.mjs || echo "trends failed; building without them"
           timeout 120s node scripts/fetch-advanced.mjs || echo "advanced stats failed; building without them"
           timeout 300s node scripts/fetch-history.mjs || echo "history failed or timed out; using what we have"
+          # Rankings and playoff projections from the FPI feeds already fetched above; the script itself
+          # decides whether this run is a new Sunday (college) or Tuesday (NFL) cycle and otherwise keeps the snapshot.
+          timeout 60s node scripts/build-outlook.mjs || echo "outlook failed; keeping the saved snapshot"
 
       - name: Build
         timeout-minutes: 25
@@ -140,12 +143,27 @@ jobs:
           timeout 180s node scripts/attendance.mjs || echo "attendance fetch failed; building without it"
           pnpm build
 
-      - name: Browser checks
+      # The full suite already gates every code change (check.yml runs it on each push and pull request), so a
+      # data refresh only needs to prove the app still renders what it fetched. The smoke tests block the
+      # deploy; the full suite still runs and reports, but a test that happens to depend on this week's games
+      # cannot hold back fresh data.
+      - name: Browser smoke checks
         timeout-minutes: 10
         if: steps.go.outputs.go == 'yes'
         run: |
           pnpm exec playwright install --with-deps chromium
-          pnpm test
+          pnpm exec playwright test --grep @smoke
+
+      - name: Full browser checks (advisory)
+        id: full
+        timeout-minutes: 10
+        continue-on-error: true
+        if: steps.go.outputs.go == 'yes'
+        run: pnpm test
+
+      - name: Report advisory failures
+        if: steps.go.outputs.go == 'yes' && steps.full.outcome == 'failure'
+        run: echo "::warning title=Full browser checks failed::The smoke checks passed, so the data was committed and deployed. Fix the failing tests on main."
 
       - name: Commit data to slate-data
         if: steps.go.outputs.go == 'yes'

@@ -17,15 +17,15 @@ const expand = async (card: import("@playwright/test").Locator) => {
   if (await t.count()) await t.click();
 };
 const expandAll = async (page: import("@playwright/test").Page) => {
-  const closed = page.locator('.game-card .card-toggle[aria-expanded="false"]');
+  const closed = page.locator('.game-card:visible .card-toggle[aria-expanded="false"]');
   while (await closed.count()) await closed.first().click();
 };
-test("all games, conferences, history and logos remain available", async ({
+test("@smoke all games, conferences, history and logos remain available", async ({
   page,
 }) => {
   const errors: string[] = [];
   page.on("pageerror", (err) => errors.push(err.message));
-  await page.goto("/");
+  await page.goto("/?league=NFL");
   await expect(page.locator(CARD)).toHaveCount(
     slate.games.filter((g: any) => g.league === "NFL").length,
   );
@@ -83,7 +83,7 @@ test("all games, conferences, history and logos remain available", async ({
 test("search, empty state, league switch and responsive layout", async ({
   page,
 }, testInfo) => {
-  await page.goto("/");
+  await page.goto("/?league=NFL");
   const search = page.getByRole("searchbox");
   await search.fill("Ravens");
   await expect(page.locator(CARD)).toHaveCount(1);
@@ -124,7 +124,7 @@ test("search, empty state, league switch and responsive layout", async ({
 
 test("narrow phone has no page overflow", async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 740 });
-  await page.goto("/");
+  await page.goto("/?league=NFL");
   await league(page, "CFB");
   expect(
     await page.evaluate(
@@ -136,7 +136,7 @@ test("narrow phone has no page overflow", async ({ page }) => {
 test("day and watchability filters narrow the board", async ({ page }) => {
   await page.clock.install({ time: Math.min(...slate.games.map((g: any) => Date.parse(g.date))) - 3600e3 });
   await page.route("**/api/scores**", (route) => route.fulfill({ json: [] }));
-  await page.goto("/");
+  await page.goto("/?league=NFL");
   const nfl = slate.games.filter((g: any) => g.league === "NFL");
   const sunday = nfl.filter((g: any) => g.meta.startsWith("Sun ")).length;
   await pick(page, "Day", "Sunday");
@@ -157,7 +157,7 @@ test("day and watchability filters narrow the board", async ({ page }) => {
 });
 
 test("season form chart, trends panel and network logos render", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/?league=NFL");
   await league(page, "CFB");
   const card = page.locator(CARD).first();
   await expand(card);
@@ -183,7 +183,7 @@ test("final view compares forecast with actual and explains the score", async ({
   test.skip(!results.games.length, "no finished games in this build");
   const errors: string[] = [];
   page.on("pageerror", (err) => errors.push(err.message));
-  await page.goto("/");
+  await page.goto("/?league=NFL");
   const league = results.games.some((r: any) => r.league === "NFL") ? "NFL" : "CFB";
   if (league === "CFB") await league(page, "CFB");
   await completed(page);
@@ -234,7 +234,7 @@ test("final view compares forecast with actual and explains the score", async ({
 test("TV grid lays out every game by network and time, lighting good games and dimming bad ones", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (err) => errors.push(err.message));
-  await page.goto("/");
+  await page.goto("/?league=NFL");
   await page.getByRole("button", { name: "TV grid" }).click();
   const dayButtons = page.locator(".tv-toolbar [aria-label='Day'] button");
   const days = await dayButtons.count();
@@ -280,7 +280,7 @@ test("weekend export files and advanced stats are available", async ({ page, req
   const ics = await (await request.get("/exports/entertaining.ics")).text();
   expect(ics).toContain("BEGIN:VCALENDAR");
   expect((ics.match(/BEGIN:VEVENT/g) ?? []).length).toBe(slate.games.filter((g: any) => g.score >= 74).length);
-  await page.goto("/");
+  await page.goto("/?league=NFL");
   await page.locator(".export summary").click();
   await expect(page.locator(".export-menu a[href='/exports/watch-slate.csv']")).toBeVisible();
   await expect(page.getByRole("button", { name: /Download.*JPG/ })).toHaveCount(0);
@@ -294,7 +294,7 @@ test("weekend export files and advanced stats are available", async ({ page, req
 });
 
 test("times default to Central, follow the chosen zone, and the TV grid JPG downloads", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/?league=NFL");
   await expect(page.locator(".cc-time").first()).toContainText("CT");
   await page.selectOption(".tz-pick select", "America/New_York");
   await expect(page.locator(".cc-time").first()).toContainText("ET");
@@ -317,7 +317,7 @@ test("times default to Central, follow the chosen zone, and the TV grid JPG down
 });
 
 test("TV grid conference filter narrows college games and All conferences restores them", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/?league=NFL");
   await page.getByRole("button", { name: "TV grid" }).click();
   // The conference picker only appears for College.
   await expect(page.getByLabel("Conference")).toHaveCount(0);
@@ -355,7 +355,7 @@ test("Game Center overlay opens from a card with projection, momentum, field til
   const fx = readFileSync("tests/fixtures/game-nfl.json", "utf8");
   await page.route("**/api/game**", (r) => r.fulfill({ status: 200, contentType: "application/json", body: fx }));
   await page.route("https://site.api.espn.com/**", (r) => r.abort());
-  await page.goto("/");
+  await page.goto("/?league=NFL");
   // Upcoming game: pregame view
   // Compact card: first click expands it, a click on the matchup opens the Game Center.
   const first = page.locator(CARD).first();
@@ -398,7 +398,7 @@ test("Game Center overlay opens from a card with projection, momentum, field til
 });
 
 test("insanity meter looks back on every final and ranks wild games above blowouts", async ({ page }) => {
-  await page.goto("/");
+  await page.goto("/?league=NFL");
   await completed(page);
   await expandAll(page);
   const cards = page.locator(".result-card");
@@ -441,7 +441,7 @@ test("insanity meter updates live from the flow feed", async ({ page }) => {
     flowCalls++;
     return route.fulfill({ json: { wp } });
   });
-  await page.goto("/");
+  await page.goto("/?league=NFL");
   await expand(page.locator(CARD).first()); // the meter lives in the expanded card
   const meter = page.locator(".game-card .insanity.live").first();
   await expect(meter).toBeVisible();
@@ -454,7 +454,7 @@ test("insanity meter updates live from the flow feed", async ({ page }) => {
 test("Insanity tab ranks the week and season for NFL and college", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (err) => errors.push(err.message));
-  await page.goto("/");
+  await page.goto("/?league=NFL");
   await page.getByRole("button", { name: /^Insanity/ }).click();
   const rows = page.locator(".ic");
   await expect(rows.first()).toBeVisible();
@@ -499,7 +499,7 @@ test("Key players show photo, name, position and team for every upcoming game", 
       expect(p.logoId, g.matchup).toBeTruthy();
     }
   }
-  await page.goto("/");
+  await page.goto("/?league=NFL");
   const card = page.locator(CARD).first();
   await expand(card);
   await card.locator("summary").filter({ hasText: "History + key players" }).click();
@@ -514,7 +514,7 @@ test("NFL cards carry an injury report with Out / Doubtful / Questionable and th
   const nfl = slate.games.filter((g: any) => g.league === "NFL" && g.teams.some((t: any) => (t.injuries ?? []).length));
   test.skip(!nfl.length, "no injury data in this build");
   for (const g of nfl) for (const t of g.teams) for (const i of t.injuries ?? []) expect(i.status).toBeTruthy();
-  await page.goto("/");
+  await page.goto("/?league=NFL");
   await expandAll(page);
   const card = page.locator(".game-card").filter({ has: page.locator("summary", { hasText: "Injury report" }) }).first();
   await card.locator("summary").filter({ hasText: "Injury report" }).click();
@@ -533,7 +533,7 @@ test("college conference games carry the conference availability report", async 
     for (const t of g.teams) for (const i of t.injuries ?? []) expect(i.status).not.toBe("Available");
   }
   const g = games.find((x: any) => !x.availability.pending) ?? games[0];
-  await page.goto("/");
+  await page.goto("/?league=NFL");
   await league(page, "CFB");
   await expandAll(page);
   const card = page
@@ -556,7 +556,7 @@ test("cards show the broadcast crew when the announcing schedule lists the game"
   const games = slate.games.filter((g: any) => g.league === "NFL" && g.announcers?.length);
   test.skip(!games.length, "no announcer data in this build");
   for (const g of games) for (const c of g.announcers) expect(c.name && c.role).toBeTruthy();
-  await page.goto("/");
+  await page.goto("/?league=NFL");
   const g = games[0];
   const card = page.locator(".game-card").filter({ hasText: g.teams[0].name }).filter({ hasText: g.teams[1].name }).first();
   // On the opened card, with play-by-play first.
@@ -568,7 +568,7 @@ test("cards show the broadcast crew when the announcing schedule lists the game"
   expect(box!.height).toBeLessThanOrEqual(22);
 });
 
-test("board lists in progress first, then completed, then upcoming, and the Status filter narrows it", async ({ page }) => {
+test("board shows upcoming first and collapses completed games below, with working status filters", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (err) => errors.push(err.message));
   const games = slate.games.filter((g: any) => g.league === "NFL");
@@ -587,10 +587,10 @@ test("board lists in progress first, then completed, then upcoming, and the Stat
       })),
     }),
   );
-  await page.goto("/");
+  await page.goto("/?league=NFL");
   const sections = page.locator(".board-section");
-  await expect(sections.first()).toHaveAttribute("aria-label", "In progress");
-  expect(await sections.evaluateAll((els) => els.map((e) => e.getAttribute("aria-label")))).toEqual(["In progress", "Completed", "Upcoming"]);
+  await expect(sections.first()).toHaveAttribute("aria-label", "Upcoming");
+  expect(await sections.evaluateAll((els) => els.map((e) => e.getAttribute("aria-label")))).toEqual(["Upcoming", "In progress", "Completed"]);
   await expect(page.locator(".board-section.live .game-card")).toHaveCount(1);
   await expect(page.locator(".board-section.live .game-status")).toContainText("Live");
   // Completed holds the just-finished game plus the archived finals; Upcoming holds the rest.
@@ -601,7 +601,13 @@ test("board lists in progress first, then completed, then upcoming, and the Stat
   await expect(counts).toContainText(`1 in progress · ${archived + 1} completed · ${games.length - 2} upcoming`);
   const status = (name: string) => pick(page, "Status", name);
   await expect(page.getByLabel("Status", { exact: true }).locator("option")).toHaveText(["All status", "In progress", "Completed", "Upcoming"]);
-  // Under All, a long Completed list is capped so Upcoming stays reachable.
+  // Completed games start collapsed below upcoming and live games.
+  const toggle = page.getByRole("button", { name: "Show completed games", exact: true });
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
+  await expect(page.locator("#completed-games")).toBeHidden();
+  await toggle.click();
+  await expect(page.locator("#completed-games")).toBeVisible();
+  // Expanding preserves the completed preview and its show-all control.
   if (archived + 1 > 12) {
     await expect(page.getByRole("button", { name: /Show all \d+ completed games/ })).toBeVisible();
     expect(await page.locator(".board-section.final .game-card").count()).toBe(12);
@@ -631,7 +637,7 @@ test("game details open fixed to the screen, keep the page still, and scroll ins
   const fx = readFileSync("tests/fixtures/game-nfl.json", "utf8");
   await page.route("**/api/game**", (r) => r.fulfill({ status: 200, contentType: "application/json", body: fx }));
   await page.route("https://site.api.espn.com/**", (r) => r.abort());
-  await page.goto("/");
+  await page.goto("/?league=NFL");
   const vh = page.viewportSize()!.height;
   const y = () => page.evaluate(() => Math.round(window.scrollY));
   const checkDialog = async (dialog: import("@playwright/test").Locator, body: import("@playwright/test").Locator) => {
@@ -692,7 +698,7 @@ test("live and completed cards show the status above the teams and the score bes
       })),
     }),
   );
-  await page.goto("/");
+  await page.goto("/?league=NFL");
   const live = page.locator(".board-section.live .game-card").first();
   await expect(live.locator(".game-status.in")).toBeVisible();
   // The old single line is gone.
@@ -750,7 +756,8 @@ const openGameCenter = async (page: import("@playwright/test").Page, fixtureFile
   await page.clock.install({ time: lastKickoff + 6 * 3600e3 });
   await page.route("**/api/game**", (r) => r.fulfill({ status: 200, contentType: "application/json", body: fx }));
   await page.route("https://site.api.espn.com/**", (r) => r.abort());
-  await page.goto("/");
+  await page.goto("/?league=NFL");
+  await page.getByRole("button", { name: "Show completed games", exact: true }).click();
   await page.locator(`${CARD} .card-toggle`).first().click();
   await page.locator(`${CARD} .gc-open`).first().click();
   const gc = page.locator("dialog.gc");
@@ -836,7 +843,7 @@ test("completed cards show attendance at the top, with a capacity bar when the s
   const count = g.attendance.toLocaleString("en-US");
   const cap = Math.round(g.attendance / 0.8); // a stadium this game filled to 80%
   const open = async () => {
-    await page.goto("/");
+    await page.goto("/?league=NFL");
     if (g.league === "CFB") await league(page, "CFB");
     await completed(page);
     return page.locator(".result-card").filter({ hasText: g.teams[0].name }).filter({ hasText: g.teams[1].name }).first();
@@ -872,12 +879,12 @@ test("completed cards show attendance at the top, with a capacity bar when the s
   expect(width).toBeLessThanOrEqual((page.viewportSize()?.width ?? 0) + 1);
 });
 
-test("the persistent bar is slim and every filter is a pop-down menu", async ({ page }, testInfo) => {
+test("@smoke the persistent bar is slim and every filter is a pop-down menu", async ({ page }, testInfo) => {
   await page.clock.install({ time: Math.min(...slate.games.map((g: any) => Date.parse(g.date))) - 3600e3 });
   await page.route("**/api/scores**", (route) => route.fulfill({ json: [] }));
   const errors: string[] = [];
   page.on("pageerror", (err) => errors.push(err.message));
-  await page.goto("/");
+  await page.goto("/?league=NFL");
   const dock = page.locator(".filter-dock");
   // Every filter is a pop-down (a select), not a row of buttons.
   for (const menu of ["League", "Status", "Day", "Watchability"]) {
@@ -912,8 +919,8 @@ test("the persistent bar is slim and every filter is a pop-down menu", async ({ 
   expect(errors).toEqual([]);
 });
 
-test("game cards open as a minimal strip: logos, scores and the rating; the rest waits behind the toggle", async ({ page }) => {
-  await page.goto("/");
+test("@smoke game cards open as a minimal strip: logos, scores and the rating; the rest waits behind the toggle", async ({ page }) => {
+  await page.goto("/?league=NFL");
   // An upcoming or live game.
   const card = page.locator(CARD).first();
   await expect(card).toHaveClass(/compact/);

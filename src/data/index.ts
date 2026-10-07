@@ -79,7 +79,7 @@ export function daysFor(league: League) {
 }
 
 // ---------- finished games ----------
-export type View = "board" | "grid" | "insanity";
+export type View = "board" | "grid" | "insanity" | "outlook";
 export type StatusFilter = "all" | "live" | "final" | "upcoming";
 export type Part = { id: string; label: string; max: number; pts: number; note: string };
 export type Breakdown = { base: number; parts: Part[] };
