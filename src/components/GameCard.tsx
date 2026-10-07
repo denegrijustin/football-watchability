@@ -1,4 +1,5 @@
-import { useState, type CSSProperties } from "react";
+import { CompactGame } from "./CompactGame";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { nameParts } from "../teamName";
 import { deltaValue, logos, parseMeta, tierLabel, type Game } from "../data";
 import { Stakes } from "./TeamImpact";
@@ -39,6 +40,23 @@ export function GameCard({
   defaultExpanded?: boolean;
 }) {
   const [expanded, setExpanded] = useState(defaultExpanded);
+  const cardRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (!expanded || defaultExpanded) return;
+    const outside = (event: PointerEvent) => {
+      if (document.querySelector("dialog[open]")) return;
+      if (!cardRef.current?.contains(event.target as Node)) setExpanded(false);
+    };
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !document.querySelector("dialog[open]")) setExpanded(false);
+    };
+    document.addEventListener("pointerdown", outside);
+    document.addEventListener("keydown", escape);
+    return () => {
+      document.removeEventListener("pointerdown", outside);
+      document.removeEventListener("keydown", escape);
+    };
+  }, [expanded, defaultExpanded]);
   const netLogo = networkLogo((game as { network?: string | null }).network);
   const meta = parseMeta(game.meta);
   const date = (game as { date?: string }).date ?? "";
@@ -78,6 +96,7 @@ export function GameCard({
   );
   return (
     <article
+      ref={cardRef}
       data-game-id={game.id}
       className={`game-card ${game.tier}${homeColor ? " team-tinted" : ""}${expanded ? " expanded" : " compact"}`}
       style={
@@ -89,36 +108,7 @@ export function GameCard({
           setExpanded(true);
       }}
     >
-      {!expanded && (
-        <div className="cc">
-          <div className="cc-main">
-            <div className="cc-when">
-              {live && live.state !== "pre" ? (
-                <GameStatus live={live} />
-              ) : (
-                <span className="cc-time">
-                  <strong>{dayOf(date)}</strong> {timeOf(date)} {tzAbbr()}
-                </span>
-              )}
-            </div>
-            <h3 id={`${game.id}-title`} className="sr-only">
-              {game.matchup}
-            </h3>
-            {[away, home].map((team, i) => (
-              <div className="cc-team" key={team.name}>
-                <img src={logos[team.logoId]} alt="" width="28" height="28" loading="lazy" />
-                <span className="cc-name">{(([pre, nick]) => (<>{pre && <span className="cc-pre">{pre}</span>}{nick}</>))(nameParts(team.name, game.league))}</span>
-                <TeamScore live={live} side={i === 0 ? "away" : "home"} />
-              </div>
-            ))}
-          </div>
-          <div className="cc-rate" aria-label={`Watchability ${game.score} out of 100, ${tierLabel(game.tier)}`}>
-            <strong>{game.score}</strong>
-            <span>{tierLabel(game.tier)}</span>
-          </div>
-          {chevron}
-        </div>
-      )}
+      {!expanded && <CompactGame titleId={`${game.id}-title`} matchup={game.matchup} date={date} broadcast={game.broadcast} network={game.network} teams={game.teams} league={game.league} score={game.score} tier={game.tier} venue={meta.venue} line={meta.line} crew={(game as { announcers?: CrewMember[] }).announcers} weather={game.weather} status={<GameStatus live={live} />} scores={[<TeamScore live={live} side="away" />, <TeamScore live={live} side="home" />]} onExpand={() => setExpanded(true)} />}
       {expanded && (
         <>
       <header className="card-top">

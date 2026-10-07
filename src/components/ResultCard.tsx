@@ -1,4 +1,5 @@
-import { useState, type CSSProperties } from "react";
+import { CompactGame } from "./CompactGame";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { nameParts } from "../teamName";
 import { attendanceView } from "../attendance";
 import { useVenues } from "../venues";
@@ -24,6 +25,23 @@ const short = (r: Result, i: number) =>
 /** A finished game: final score, forecast vs actual watchability and why. */
 export function ResultCard({ result: r, defaultExpanded = false }: { result: Result; defaultExpanded?: boolean }) {
   const [expanded, setExpanded] = useState(defaultExpanded);
+  const cardRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (!expanded || defaultExpanded) return;
+    const outside = (event: PointerEvent) => {
+      if (document.querySelector("dialog[open]")) return;
+      if (!cardRef.current?.contains(event.target as Node)) setExpanded(false);
+    };
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !document.querySelector("dialog[open]")) setExpanded(false);
+    };
+    document.addEventListener("pointerdown", outside);
+    document.addEventListener("keydown", escape);
+    return () => {
+      document.removeEventListener("pointerdown", outside);
+      document.removeEventListener("keydown", escape);
+    };
+  }, [expanded, defaultExpanded]);
   const netLogo = networkLogo(r.network);
   const [away, home] = r.teams;
   const winner = away.score > home.score ? 0 : home.score > away.score ? 1 : -1;
@@ -40,6 +58,7 @@ export function ResultCard({ result: r, defaultExpanded = false }: { result: Res
         : null;
   return (
     <article
+      ref={cardRef}
       className={`game-card result-card ${r.actual.tier}${teamColor(home.color) ? " team-tinted" : ""}${expanded ? " expanded" : " compact"}`}
       style={
         teamColor(home.color)
@@ -51,45 +70,7 @@ export function ResultCard({ result: r, defaultExpanded = false }: { result: Res
         if (!expanded && !(e.target as HTMLElement).closest("a,button,summary")) setExpanded(true);
       }}
     >
-      {!expanded && (
-        <div className="cc">
-          <div className="cc-main">
-            <div className="cc-when">
-              <span className="game-status post">
-                <span className="gs-pill">Final</span>
-                {extra && <span className="gs-period">{extra}</span>}
-              </span>
-              <span className="cc-time">
-                <strong>{dayOf(r.date)}</strong> {timeOf(r.date)} {tzAbbr()}
-              </span>
-            </div>
-            <h3 id={`r-${r.espnId}`} className="sr-only">
-              {r.matchup}, final {away.score}–{home.score}
-            </h3>
-            {[away, home].map((t, i) => (
-              <div className="cc-team" key={t.name}>
-                <img src={logos[t.logoId]} alt="" width="28" height="28" loading="lazy" />
-                <span className="cc-name">{(([pre, nick]) => (<>{pre && <span className="cc-pre">{pre}</span>}{nick}</>))(nameParts(t.name, r.league))}</span>
-                <span className={`team-score${winner === i ? " won" : winner >= 0 ? " lost" : ""}`}>{t.score}</span>
-              </div>
-            ))}
-          </div>
-          <div className="cc-rate" aria-label={`Actual watchability ${r.actual.score} out of 100, ${tierLabel(r.actual.tier)}`}>
-            <strong>{r.actual.score}</strong>
-            <span>{tierLabel(r.actual.tier)}</span>
-            {Math.abs(d) > 4 && <em className={d > 0 ? "up" : "down"}>{d > 0 ? "▲" : "▼"}{Math.abs(d)}</em>}
-          </div>
-          <button
-            type="button"
-            className="card-toggle cc-chevron"
-            aria-expanded={false}
-            aria-label="Show game details"
-            onClick={() => setExpanded(true)}
-          >
-            <span aria-hidden="true">▾</span>
-          </button>
-        </div>
-      )}
+      {!expanded && <CompactGame titleId={`r-${r.espnId}`} matchup={`${r.matchup}, final ${away.score}–${home.score}`} date={r.date} broadcast={r.broadcast} network={r.network} teams={r.teams} league={r.league} score={r.actual.score} tier={r.actual.tier} venue={r.venue} line={r.forecast.line} crew={(r as { announcers?: CrewMember[] }).announcers} status={<span className="game-status post">Final {extra}</span>} scores={[away, home].map((t, i) => <span className={`team-score${winner === i ? " won" : " lost"}`}>{t.score}</span>)} onExpand={() => setExpanded(true)} />}
       {expanded && (
         <>
       <header className="card-top">
@@ -275,7 +256,7 @@ export function ResultCard({ result: r, defaultExpanded = false }: { result: Res
         <span aria-hidden="true">↗</span>
       </button>
       <div className="game-details">
-        <details>
+        <details open>
           <summary>
             Why it scored {r.actual.score}
             <span aria-hidden="true">+</span>
@@ -290,7 +271,7 @@ export function ResultCard({ result: r, defaultExpanded = false }: { result: Res
           </div>
         </details>
         {(away.advanced || home.advanced) && (
-          <details>
+          <details open>
             <summary>
               Advanced stats + rankings<span aria-hidden="true">+</span>
             </summary>
@@ -301,7 +282,7 @@ export function ResultCard({ result: r, defaultExpanded = false }: { result: Res
             />
           </details>
         )}
-        <details>
+        <details open>
           <summary>
             The forecast ({r.forecast.score})<span aria-hidden="true">+</span>
           </summary>
