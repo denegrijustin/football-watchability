@@ -73,6 +73,7 @@ export function ResultCard({ result: r, defaultExpanded = false }: { result: Res
                 <span className={`team-score${winner === i ? " won" : winner >= 0 ? " lost" : ""}`}>{t.score}</span>
               </div>
             ))}
+            <div className="cc-outlook"><span className="cc-network" title="Where to watch">{r.broadcast}</span></div>
           </div>
           <div className="cc-rate" aria-label={`Actual watchability ${r.actual.score} out of 100, ${tierLabel(r.actual.tier)}`}>
             <strong>{r.actual.score}</strong>
@@ -275,7 +276,7 @@ export function ResultCard({ result: r, defaultExpanded = false }: { result: Res
         <span aria-hidden="true">↗</span>
       </button>
       <div className="game-details">
-        <details>
+        <details open>
           <summary>
             Why it scored {r.actual.score}
             <span aria-hidden="true">+</span>
@@ -290,7 +291,7 @@ export function ResultCard({ result: r, defaultExpanded = false }: { result: Res
           </div>
         </details>
         {(away.advanced || home.advanced) && (
-          <details>
+          <details open>
             <summary>
               Advanced stats + rankings<span aria-hidden="true">+</span>
             </summary>
@@ -301,7 +302,7 @@ export function ResultCard({ result: r, defaultExpanded = false }: { result: Res
             />
           </details>
         )}
-        <details>
+        <details open>
           <summary>
             The forecast ({r.forecast.score})<span aria-hidden="true">+</span>
           </summary>
