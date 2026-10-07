@@ -37,7 +37,7 @@ On this Mac, the bundled Codex Node runtime can be used without installing syste
 - **Thursday** refreshes lines, weather and the forecasts.
 - **Friday, Sunday and Monday** move finished games (Thursday's, Saturday's, Sunday's) to **Final**.
 
-Each run fetches ESPN and Open-Meteo, runs every build step and the browser tests, commits the data to `slate-data` and copies the site files to `main`, which Cloudflare deploys. GitHub runs schedules in UTC from `main`, so the workflow has 13:02 and 14:02 UTC crons and a gate that keeps whichever is 8am in Chicago (daylight or standard time). Runs can start a few minutes late when GitHub is busy. To run it by hand, use **Run workflow** (optionally with a pretend date and with deploy switched off).
+Each run fetches ESPN and Open-Meteo, runs every build step and the browser smoke checks (tests tagged `@smoke`; they must pass to publish), commits the data to `slate-data` and copies the site files to `main`, which Cloudflare deploys. GitHub runs schedules in UTC from `main`, so the workflow has 13:02 and 14:02 UTC crons and a gate that keeps whichever is 8am in Chicago (daylight or standard time). The full browser suite also runs in the refresh but is advisory there, because `check.yml` already runs it on every push and pull request and a test that happens to depend on this week's games must not hold back fresh data (that is what stopped refreshes for two days in October). Runs can start a few minutes late when GitHub is busy. To run it by hand, use **Run workflow** (optionally with a pretend date and with deploy switched off).
 
 ### Conference and overall rank
 
@@ -71,6 +71,17 @@ Completed game cards show the announced attendance, and when the stadium's capac
 ### Key players
 
 Each upcoming card's **History + key players** section lists both teams' season leaders (passing, rushing, receiving and a pass rusher or tackler) as player cards in team colors: photo, name, position, team logo and abbreviation, jersey number and stat line. They come from ESPN's season leaders in each game summary (`leaderCards` in `build-slate.mjs`), stored as `players` on the Key players box.
+
+### Outlook: rankings and projections
+
+The **Outlook** tab shows a composite college ranking (top 120), the projected 12-team College Football Playoff field, a bowl-eligibility picture and the projected NFL playoff field. Everything comes from the ESPN FPI feeds the refresh already fetches (`data-raw/cfb-fpi.json`, `nfl-fpi.json`), which carry each team's AP, Coaches and CFP rank, projected record and odds, so nothing is simulated here. `scripts/build-outlook.mjs` (rules and maths in `scripts/outlook-lib.mjs`) writes `src/data/outlook.json`.
+
+- **Composite rank:** the average of a team's AP, Coaches and ESPN FPI rank; a team outside a poll's top 25 counts as 30. A poll that has not been published is left out, and when the committee's CFP ranking appears (late in the season) it joins and counts double. This stands in for a CBS-style top 120; CBS's own ranking is not a feed the site can read.
+- **College playoff field:** the five highest-ranked projected conference champions (the likeliest champion in each conference by FPI's title odds; the Sun Belt's two ESPN groups count as one; independents cannot win a conference) plus the next best teams, 12 in all, seeded straight by composite rank, with seeds 1-4 getting byes. If the format changes, edit `FORMAT` in `outlook-lib.mjs`.
+- **Bowls:** teams already at six wins or with FPI's chance of six wins at 50% or better count as on track; 20-50% are listed as the bubble. Projected bowl-by-bowl matchups are not built because they need each bowl's conference tie-ins, which no feed here provides.
+- **NFL field:** per conference, the four division winners (highest FPI division odds) seeded by projected wins, then the best three remaining teams; only seed 1 gets a bye.
+- **Refresh:** college is rebuilt once each Sunday after 8am Central and the NFL once each Tuesday after 8am Central (`cycleKey`); any other run keeps the saved snapshot, and an empty feed never replaces one. The cards say which week they were built for.
+- **Default league:** the site opens on college. From Sunday 12am Central until the Tuesday 8am refresh it opens on the NFL (`src/league.ts`). `?league=NFL` or `?league=CFB` in the address overrides it.
 
 ### Compact cards
 

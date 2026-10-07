@@ -3,13 +3,15 @@ import { dayName, results, slate, tiers, type FilterState, type League, type Vie
 import { Filters } from "./components/Filters";
 import { GameBoard, useBoard } from "./components/GameBoard";
 import { InsanityBoard } from "./components/InsanityBoard";
+import { Outlook } from "./components/Outlook";
+import { defaultLeague } from "./league";
 import { TvGrid } from "./components/TvGrid";
 import { setTz, tzLabel, useTz, ZONES } from "./tz";
 
 const gameCount = (l: League) => slate.games.filter((g) => g.league === l).length + results.filter((r) => r.league === l).length;
 
 const initial: FilterState = {
-  league: "NFL",
+  league: defaultLeague(),
   conference: "all-fbs",
   query: "",
   day: "all",
@@ -124,6 +126,9 @@ export default function App() {
             <button aria-pressed={view === "insanity"} onClick={() => switchView("insanity")}>
               Insanity
             </button>
+            <button aria-pressed={view === "outlook"} onClick={() => switchView("outlook")}>
+              Outlook
+            </button>
           </div>
           <div className="export-btns">
             <details className="export">
@@ -141,7 +146,9 @@ export default function App() {
             </details>
           </div>
           </div>
-          {view === "insanity" ? (
+          {view === "outlook" ? (
+            <Outlook defaultLeague={league} />
+          ) : view === "insanity" ? (
             <InsanityBoard defaultLeague={league === "CFB" ? "CFB" : "NFL"} />
           ) : view === "grid" ? (
             <TvGrid />
