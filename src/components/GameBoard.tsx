@@ -58,15 +58,18 @@ const SECTION_HELP = {
 function KickoffSlots({ games }: { games: Game[] }) {
   const tz = useTz();
   const slots = new Map<string, Game[]>();
-  for (const game of [...games].sort((a, b) => a.date.localeCompare(b.date) || b.score - a.score || a.id.localeCompare(b.id))) {
-    const date = new Date(game.date).toISOString();
+  for (const game of [...games].sort((a, b) => a.date.localeCompare(b.date))) {
+    const kickoff = new Date(game.date);
+    kickoff.setUTCMinutes(0, 0, 0);
+    const date = kickoff.toISOString();
     const group = slots.get(date) ?? [];
     group.push(game);
+    group.sort((a, b) => b.score - a.score || a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
     slots.set(date, group);
   }
   return <>{[...slots].map(([date, games]) => (
     <section className="kickoff-slot" key={date} data-kickoff={date} aria-label={`Kickoff ${date}`}>
-      <h4>{new Date(date).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric", timeZone: tz })} · {timeOf(date, tz, true)} {tzAbbr(tz)}</h4>
+      <h4>{new Date(date).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric", timeZone: tz })} · {timeOf(date, tz, true)}–{timeOf(new Date(new Date(date).getTime() + 3600000).toISOString(), tz, true)} {tzAbbr(tz)}</h4>
       <div className="game-grid">{games.map(game => <GameCard key={game.id} game={game} />)}</div>
     </section>
   ))}</>;
