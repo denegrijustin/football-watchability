@@ -161,7 +161,7 @@ export function GameDetails({ game }: { game: Game }) {
             </div>
           ))}
           {game.history.games && game.history.games.length > 5 && (
-            <details className="all-meetings">
+            <details open className="all-meetings">
               <summary>
                 All {game.history.games.length} meetings
                 <span aria-hidden="true">+</span>
