@@ -3,7 +3,8 @@ export async function downloadGameReport(card: HTMLElement, title: string, date:
   const [{ jsPDF }, { toPng }] = await Promise.all([import("jspdf"), import("html-to-image")]);
   const clone = card.cloneNode(true) as HTMLElement;
   clone.style.cssText = "position:fixed;left:-20000px;top:0;width:1000px;pointer-events:none";
-  clone.querySelectorAll("button,.sr-only,[aria-hidden='true']").forEach(el => el.remove());
+  clone.querySelectorAll("button,.sr-only").forEach(el => el.remove());
+  clone.querySelectorAll("[aria-hidden='true']").forEach(el => { if (el.textContent?.trim() === "+") el.remove(); });
   clone.querySelectorAll("details").forEach(el => el.open = true);
   document.body.append(clone);
   clone.querySelectorAll("span,strong,small").forEach(el => {
@@ -27,11 +28,6 @@ export async function downloadGameReport(card: HTMLElement, title: string, date:
     const sections: Section[] = [];
     let missing = 0;
     for (const block of blocks) {
-      // Keep tables' columns intelligible in the printable text.
-      block.querySelectorAll("tr").forEach(row => {
-        const text = Array.from(row.cells).map(cell => cell.innerText.trim()).join(" | ");
-        row.replaceWith(Object.assign(document.createElement("p"), { textContent: text }));
-      });
       const assets: Asset[] = [];
       const images = Array.from(block.querySelectorAll("img,svg"));
       for (const image of images) {
@@ -62,8 +58,13 @@ export async function downloadGameReport(card: HTMLElement, title: string, date:
           assets.push({ data, width: box.width, height: box.height, chart: image.tagName.toLowerCase() === "svg" });
         } catch { missing++; }
       }
-      const headingEl = (block as Element).matches(".matchup") ? null : block.querySelector("summary,h3,h4,caption");
-      const heading = clean(headingEl?.childNodes[0]?.textContent || ((block as Element).matches("header") ? "Kickoff & broadcast" : (block as Element).matches(".matchup") ? "Matchup & watchability" : (block as Element).matches(".facts") ? "Venue, line, announcers & weather" : (block as Element).matches(".take") ? "Commentary" : "Game detail")).slice(0, 60);
+      // Keep tables' columns intelligible in the printable text.
+      block.querySelectorAll("tr").forEach(row => {
+        const text = Array.from(row.cells).map(cell => cell.innerText.trim()).join(" | ");
+        row.replaceWith(Object.assign(document.createElement("p"), { textContent: text }));
+      });
+      const headingEl = (block as Element).matches(".matchup") ? null : block.querySelector<HTMLElement>("summary,h3,h4,caption");
+      const heading = clean(headingEl?.innerText.trim().split("\n")[0] || ((block as Element).matches("header") ? "Kickoff & broadcast" : (block as Element).matches(".matchup") ? "Matchup & watchability" : (block as Element).matches(".facts") ? "Venue, line, announcers & weather" : (block as Element).matches(".take") ? "Commentary" : "Game detail")).slice(0, 60);
       const text = clean(block.innerText).replace(/\s*\n\s*/g, " | ");
       if (text || assets.length) sections.push({ heading, text, assets });
     }
