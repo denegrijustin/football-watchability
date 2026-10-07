@@ -34,7 +34,7 @@ function useWide() {
  * Linear TV grid for one day. On desktop, networks run down the side and time
  * runs left to right; on phones, networks run across and time runs down. One
  * block per game spans its broadcast window. Entertaining games (Good or
- * better) are highlighted; Background games are dimmed. A block opens the same
+ * better) are highlighted; Background games use a dashed outline and ↓ marker. A block opens the same
  * card as the main board.
  */
 export function TvGrid() {
@@ -160,7 +160,7 @@ export function TvGrid() {
         <ul className="tv-key" aria-label="Key">
           <li className="k-hl">Entertaining (74+)</li>
           <li className="k-mid">Watchable (64–73)</li>
-          <li className="k-dim">Background (&lt;64)</li>
+          <li className="k-dim">↓ Lower priority (&lt;64)</li>
           <li className="k-rank" title="Both ranks are ESPN FPI power ratings: conference rank is the team's place among its conference mates, overall rank is across the whole league.">
             Under each logo: conference rank · overall rank (ESPN FPI)
           </li>
@@ -265,7 +265,7 @@ function Block({ g, pos, onOpen }: { g: PlacedGame; pos: CSSProperties; onOpen: 
       </span>
       <Side t={h} cls="home" />
       <span className="tv-score" title={tierLabel(g.tier)}>
-        {g.score}
+        {g.tier === "bg" ? `↓ ${g.score}` : g.score}
       </span>
     </button>
   );
@@ -316,3 +316,5 @@ function GameDialog({ game, onClose }: { game: GridGame | null; onClose: () => v
     </dialog>
   );
 }
+
+
