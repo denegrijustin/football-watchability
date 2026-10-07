@@ -5389,3 +5389,14 @@ html:has(dialog[open]) {
     display: none;
   }
 }
+
+/* Texas and Kansas logos are shown upside down everywhere (cards, grids, results, the Empire map). The files are
+   named by team, so the rule follows the logo wherever it is drawn; the JPG export flips them too (exportJpg.ts). */
+img[src$="/logos/texas.webp"],
+img[src$="/logos/kansas.webp"],
+image[href$="/logos/texas.webp"],
+image[href$="/logos/kansas.webp"] {
+  rotate: 180deg;
+  transform-box: fill-box;
+  transform-origin: center;
+}

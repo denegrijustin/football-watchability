@@ -60,12 +60,22 @@ function fit(ctx: CanvasRenderingContext2D, text: string, max: number) {
   while (t.length > 1 && ctx.measureText(`${t}…`).width > max) t = t.slice(0, -1);
   return `${t}…`;
 }
+/** Texas and Kansas logos are shown upside down everywhere on the site (see styles.css); the export matches. */
+const UPSIDE_DOWN = /\/logos\/(texas|kansas)\.webp(\?|$)/;
 /** Draws an image scaled to fit inside a box, centered. */
 function contain(ctx: CanvasRenderingContext2D, img: HTMLImageElement, x: number, y: number, w: number, h: number) {
   const r = Math.min(w / img.width, h / img.height);
   const dw = img.width * r,
     dh = img.height * r;
-  ctx.drawImage(img, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh);
+  const cx = x + w / 2,
+    cy = y + h / 2;
+  if (UPSIDE_DOWN.test(img.src)) {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(Math.PI);
+    ctx.drawImage(img, -dw / 2, -dh / 2, dw, dh);
+    ctx.restore();
+  } else ctx.drawImage(img, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh);
 }
 
 export type ExportDay = { date: string; day: string; label: string; games: GridGame[] };
