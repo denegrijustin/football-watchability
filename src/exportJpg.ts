@@ -5,7 +5,7 @@ import { tzAbbr } from "./tz";
 /**
  * Draws one day of the TV grid, or every day of the weekend (the same lanes,
  * times and tier styling as the on-screen grid, honoring its league and
- * "Entertaining only" filters) onto a canvas and downloads it as a JPG. The
+ * "Entertaining only" filters) onto a canvas and renders it as a high-resolution PNG (see renderGridImage). The
  * weekend image shares one time axis across all days, so a given time is the
  * same column on every day. Networks run down the side, time runs left
  * to right. Entertaining games (Good or better) get a tier-colored outline,
@@ -80,7 +80,21 @@ function contain(ctx: CanvasRenderingContext2D, img: HTMLImageElement, x: number
 
 export type ExportDay = { date: string; day: string; label: string; games: GridGame[] };
 
-export async function downloadGridJpg({
+/** The finished image, ready to preview, download or hand to the share sheet. */
+export type GridImage = { blob: Blob; filename: string; width: number; height: number; scale: number };
+
+/**
+ * Pixel budget for the canvas. Phones cap a canvas at about 16.7 million pixels (iOS Safari) and will silently draw
+ * nothing past it, so touch devices stay under 16M; desktops get a much larger budget. The layout is about
+ * 2,000-3,500 CSS pixels wide, so a day renders at 3-4x on a desktop and 2x or more on a phone, with text and shapes
+ * drawn as vectors at that size, so a zoom stays sharp.
+ */
+function pixelBudget() {
+  const touch = typeof matchMedia === "function" && matchMedia("(pointer: coarse)").matches;
+  return { maxPixels: touch ? 15.5e6 : 90e6, maxSide: touch ? 8192 : 16384, maxScale: touch ? 3 : 4 };
+}
+
+export async function renderGridImage({
   days,
   period,
   scope,
@@ -88,11 +102,11 @@ export async function downloadGridJpg({
   days: ExportDay[];
   period: string;
   scope: "day" | "weekend";
-}) {
+}): Promise<GridImage | null> {
   const sections = days
     .map((d) => ({ ...d, layout: layoutGrid(d.games) }))
     .filter((d) => d.layout.placed.length);
-  if (!sections.length) return;
+  if (!sections.length) return null;
   const one = scope === "day" || sections.length === 1;
   const allPlaced = sections.flatMap((d) => d.layout.placed);
   // One shared time axis for every day, so the same kickoff time lines up in
@@ -104,12 +118,16 @@ export async function downloadGridJpg({
   const W = Math.max(MIN_W, PAD * 2 + LABEL_W + axisSteps * STEP_W);
   const secH = (d: (typeof sections)[number]) => (one ? 0 : DAY_H) + HEAD_H + d.layout.lanes.length * LANE_H + 28;
   const H = TOP + sections.reduce((h, d) => h + secH(d), 0) + 52;
-  // Phones cap canvas area (~16M px); shrink very tall weekend images to fit.
-  const scale = Math.min(1, Math.sqrt(15e6 / (W * H)));
+  // As sharp as the device allows: up to 4x on a desktop, with a floor of 1x (a very tall weekend on a phone can
+  // only just fit); everything is drawn at this scale rather than enlarged afterwards.
+  const { maxPixels, maxSide, maxScale } = pixelBudget();
+  const scale = Math.min(maxScale, Math.sqrt(maxPixels / (W * H)), maxSide / Math.max(W, H));
   const canvas = document.createElement("canvas");
   canvas.width = Math.round(W * scale);
   canvas.height = Math.round(H * scale);
   const ctx = canvas.getContext("2d")!;
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
   ctx.scale(scale, scale);
 
   // Team and network logos (same-origin files or data URIs).
@@ -166,7 +184,10 @@ export async function downloadGridJpg({
   }
   ctx.fillStyle = "#8d9eac";
   ctx.font = `500 16px ${FONT}`;
-  ctx.fillText("Under each logo: conference rank · overall rank (ESPN FPI). Top: record, or AP rank.", lx, ly);
+  const hint = "Under each logo: conference rank · overall rank (ESPN FPI). Top: record, or AP rank.";
+  // On a narrow day the key leaves no room for the hint beside it: put it on the next line instead of running off the edge.
+  if (lx + ctx.measureText(hint).width > W - PAD) ctx.fillText(hint, PAD, ly + 26);
+  else ctx.fillText(hint, lx, ly);
 
   let y = TOP;
   for (const d of sections) {
@@ -242,17 +263,17 @@ export async function downloadGridJpg({
     H - 22,
   );
 
-  const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/jpeg", 0.92));
-  if (!blob) return;
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
+  // Lossless PNG: no compression artifacts around text and logo edges, however far you zoom.
+  const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/png"));
+  if (!blob) return null;
   const slug = (t: string) => t.toLowerCase().replace(/[^\w]+/g, "-");
-  a.download = `tv-grid-${one ? slug(sections[0].day || sections[0].label) : "weekend"}-${slug(period)}.jpg`;
-  document.body.append(a);
-  a.click();
-  a.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  return {
+    blob,
+    filename: `tv-grid-${one ? slug(sections[0].day || sections[0].label) : "weekend"}-${slug(period)}.png`,
+    width: canvas.width,
+    height: canvas.height,
+    scale,
+  };
 }
 
 function drawBlock(
