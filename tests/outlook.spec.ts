@@ -4,7 +4,8 @@ import { promisify } from "node:util";
 import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { cfbBowls, cfbComposite, cfbPlayoff, cycleKey, nflPlayoff, parseFpi } from "../scripts/outlook-lib.mjs";
+import { cfbBowls, cfbComposite, cfbPlayoff, cycleKey, hashSeed, nflPlayoff, parseFpi, simulateNfl } from "../scripts/outlook-lib.mjs";
+import { createServer } from "node:http";
 import { defaultLeague } from "../src/league";
 
 const run = promisify(execFile);
@@ -161,7 +162,8 @@ test("the build keeps a saved snapshot until its cycle turns over, and never rep
   expect(log).toContain("NFL outlook rebuilt for the week of 2026-10-06");
   const first = JSON.parse(readFileSync(out, "utf8"));
   expect(first.cfb.playoff.field).toHaveLength(12);
-  expect(first.cfb.composite.length).toBeLessThanOrEqual(120);
+  expect(first.cfb.composite).toHaveLength(130); // every team, so a conference can be listed whole
+  expect(first.cfb.composite.find((t: { conf: string }) => t.conf === "SEC").confRank).toBe(1);
   expect(first.nfl.conferences.AFC.field).toHaveLength(7);
 
   // Later the same week the feeds change, but the snapshots are frozen until their next cycle.
@@ -211,18 +213,27 @@ test("@smoke the page opens on the right league and the Outlook tab shows the pr
   await expect(page.locator('ol[aria-label="Projected playoff field"] > li')).toHaveCount(12);
   await expect(page.locator('ol[aria-label="Projected playoff field"] > li.bye')).toHaveCount(4);
   await expect(page.locator(".ol-note").first()).toContainText("Sunday");
-  // Top 120: starts at 25 and opens up to all of them.
-  await page.getByRole("button", { name: "Top 120" }).click();
+  // Rankings: start at 25 and open up to the top 120.
+  await page.getByRole("button", { name: "Rankings" }).click();
   await expect(page.locator(".ol-table tbody tr")).toHaveCount(25);
   await page.getByRole("button", { name: /^Show all/ }).click();
-  expect(await page.locator(".ol-table tbody tr").count()).toBeGreaterThan(100);
+  expect(await page.locator(".ol-table tbody tr").count()).toBe(120);
+  // By conference: every member, numbered within the conference, with its overall rank beside it.
+  await page.getByLabel("Conference", { exact: true }).selectOption("SEC");
+  const rows = page.locator(".ol-table tbody tr");
+  await expect(rows).toHaveCount(16);
+  expect(await rows.locator("th").allInnerTexts()).toEqual(Array.from({ length: 16 }, (_, i) => String(i + 1)));
+  const overall = (await rows.locator("td:nth-child(3)").allInnerTexts()).map(Number);
+  expect(overall).toEqual([...overall].sort((a, b) => a - b)); // composite order holds inside the conference
+  await expect(page.locator(".ol-table thead")).toContainText("Title");
+  await page.getByLabel("Conference", { exact: true }).selectOption("Ind");
+  await expect(rows).toHaveCount(2);
   // Bowls.
   await page.getByRole("button", { name: "Bowls" }).click();
   await expect(page.locator(".ol-bowls > li").first()).toBeVisible();
   // NFL: seven seeds per conference.
   await page.getByRole("button", { name: "NFL" }).click();
-  await expect(page.locator('ol[aria-label="AFC playoff seeds"] > li')).toHaveCount(7);
-  await expect(page.locator('ol[aria-label="NFC playoff seeds"] > li')).toHaveCount(7);
+  await expect(page.locator(".ol h3")).toHaveText(["AFC", "NFC"]);
   await expect(page.locator(".ol-note").first()).toContainText("Tuesday");
   const width = await page.evaluate(() => document.documentElement.scrollWidth);
   expect(width).toBeLessThanOrEqual((page.viewportSize()?.width ?? 0) + 1);
@@ -232,4 +243,156 @@ test("@smoke the page opens on the right league and the Outlook tab shows the pr
   await page.clock.setFixedTime(new Date("2026-10-11T18:00:00Z"));
   await page.reload();
   await expect(page.getByLabel("League", { exact: true }).first()).toHaveValue("NFL");
+});
+
+test("the NFL grid has a row per team, a column per seed, and the #1 seed column stands out", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  // The saved snapshot only gets a grid after the schedule has been fetched in Actions, so serve one here.
+  const row = (i: number, conf: string) => ({
+    id: `${conf}${i}`, name: `${conf} Team ${i}`, abbr: `${conf[0]}${i}`, logoId: null, division: `${conf} North`, record: "3-1",
+    expW: 11 - i * 0.4, pSeed: [40 - i * 2, 20, 10, 8, 6, 5, 4].map((v) => Math.max(v, 0)), pPlayoffs: 95 - i * 4, pDiv: 50 - i * 2,
+  });
+  const nflSnapshot = (conf: string) => ({ field: [], out: [], grid: Array.from({ length: 16 }, (_, i) => row(i + 1, conf)) });
+  await page.route("**/assets/outlook-*.js", async (route) => {
+    const res = await route.fetch();
+    const body = await res.text();
+    // Replace the NFL part of the bundled snapshot with one that has grids.
+    const nfl = { cycle: "2026-10-06", built: "2026-10-06", fpiUpdated: null, rules: {}, sim: { sims: 20000, games: 208 }, conferences: { AFC: nflSnapshot("AFC"), NFC: nflSnapshot("NFC") } };
+    await route.fulfill({ response: res, body: `${body}\n;` .replace(/export\s*\{\s*(\w+)\s+as\s+default\s*\}/, (_m, v) => `export default { ...${v}, nfl: ${JSON.stringify(nfl)} }`) });
+  });
+  await page.goto("/?league=NFL");
+  await page.getByRole("button", { name: /^Outlook/ }).click();
+  await expect(page.locator(".ol-grid")).toHaveCount(2);
+  const afc = page.locator('[aria-label="AFC seed odds"] table');
+  await expect(afc.locator("tbody tr")).toHaveCount(16);
+  await expect(afc.locator("thead th")).toHaveText(["Team", "Exp W", "#1", "#2", "#3", "#4", "#5", "#6", "#7", "Playoffs", "Division"]);
+  await expect(afc.locator("thead th.one")).toHaveText("#1");
+  await expect(afc.locator("tbody tr").first().locator("td.cell.one")).toHaveText("38");
+  await expect(afc.locator("tbody tr").first().locator("td.tot")).toHaveText("91%");
+  await expect(page.locator(".ol-note").nth(1)).toContainText("20,000 times");
+  // The grid scrolls inside its own box; the page never scrolls sideways.
+  const width = await page.evaluate(() => document.documentElement.scrollWidth);
+  expect(width).toBeLessThanOrEqual((page.viewportSize()?.width ?? 0) + 1);
+  expect(errors).toEqual([]);
+});
+
+test("the view tabs and Export never overlap, down to the narrowest phone", async ({ page }) => {
+  for (const w of [320, 360, 390, 430, 521, 760]) {
+    await page.setViewportSize({ width: w, height: 800 });
+    await page.goto("/?league=NFL");
+    const boxes = await page.evaluate(() => {
+      const box = (el: Element) => {
+        const b = el.getBoundingClientRect();
+        return { l: b.left, r: b.right, t: b.top, b: b.bottom };
+      };
+      const tabs = [...document.querySelectorAll(".view-switch button")].map(box);
+      return { tabs, exp: box(document.querySelector(".export-btns summary")!), sw: document.querySelector(".view-switch")!.scrollWidth - document.querySelector(".view-switch")!.clientWidth };
+    });
+    expect(boxes.sw, `tabs overflow at ${w}px`).toBeLessThanOrEqual(0);
+    expect(boxes.tabs).toHaveLength(4);
+    for (const t of boxes.tabs) {
+      const apart = t.r <= boxes.exp.l + 0.5 || t.l >= boxes.exp.r - 0.5 || t.b <= boxes.exp.t + 0.5 || t.t >= boxes.exp.b - 0.5;
+      expect(apart, `a view tab overlaps Export at ${w}px`).toBe(true);
+    }
+  }
+});
+
+test("the seed simulation is a fair season: seeds and divisions each add to 100%, and the better team wins more", () => {
+  const teams = parseFpi(nflFeed()).map((t, i) => ({ ...t, fpi: 8 - (i % 16) * 0.8, wins: 2, losses: 1, ties: 0 }));
+  // Everyone plays out the remaining 14 games against a rotating set of opponents (16 teams per conference).
+  const games: { home: string; away: string }[] = [];
+  for (let round = 1; round <= 14; round++)
+    for (let i = 0; i < teams.length; i += 2) games.push({ home: teams[i].id, away: teams[(i + round * 2 + 1) % teams.length].id });
+  const left = games.slice(0, 272 - 48 * 0 - 48).length; // 32 teams x 3 played / 2 = 48 played
+  void left;
+  const full = (() => {
+    const need = new Map(teams.map((t) => [t.id, 14]));
+    const out: { home: string; away: string }[] = [];
+    let s = 11;
+    const r = () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296);
+    for (let guard = 0; guard < 20000 && out.length < 224; guard++) {
+      const open = teams.filter((t) => need.get(t.id)! > 0);
+      if (open.length < 2) break;
+      const a = open[Math.floor(r() * open.length)].id;
+      const b = open[Math.floor(r() * open.length)].id;
+      if (a === b) continue;
+      out.push({ home: a, away: b });
+      need.set(a, need.get(a)! - 1);
+      need.set(b, need.get(b)! - 1);
+    }
+    return out;
+  })();
+  const sim = simulateNfl(teams, full, { sims: 4000, seed: hashSeed("2026-10-06") })!;
+  expect(sim.sims).toBe(4000);
+  for (const conf of ["AFC", "NFC"]) {
+    const mine = teams.filter((t) => t.conf === conf);
+    for (let k = 0; k < 7; k++) expect(mine.reduce((n, t) => n + sim.byId.get(t.id)!.pSeed[k], 0)).toBeCloseTo(100, 0);
+    expect(mine.reduce((n, t) => n + sim.byId.get(t.id)!.pPlayoffs, 0)).toBeCloseTo(700, -1);
+    for (const d of new Set(mine.map((t) => t.division)))
+      expect(mine.filter((t) => t.division === d).reduce((n, t) => n + sim.byId.get(t.id)!.pDiv, 0)).toBeCloseTo(100, 0);
+  }
+  // Higher FPI means a better shot at the bye and more expected wins.
+  const strong = sim.byId.get(teams[0].id)!;
+  const weak = sim.byId.get(teams[15].id)!;
+  expect(strong.pSeed[0]).toBeGreaterThan(weak.pSeed[0]);
+  expect(strong.expW).toBeGreaterThan(weak.expW);
+  // Same seed, same answer; a partial schedule is refused rather than guessed at.
+  expect(simulateNfl(teams, full, { sims: 4000, seed: hashSeed("2026-10-06") })!.byId.get(teams[3].id)).toEqual(sim.byId.get(teams[3].id));
+  expect(simulateNfl(teams, full.slice(0, 40), { sims: 100 })).toBeNull();
+});
+
+test("the schedule fetch keeps only games still to play and ignores a half-fetched season", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "sched-"));
+  writeFileSync(join(dir, "index.json"), JSON.stringify({ season: 2026 }));
+  const ev = (state: string, home: string, away: string, n: number) => ({
+    date: `2026-10-${10 + n}T17:00Z`,
+    status: { type: { state, completed: state === "post" } },
+    competitions: [{ competitors: [{ homeAway: "home", team: { id: home } }, { homeAway: "away", team: { id: away } }] }],
+  });
+  let weeksSeen = 0;
+  const server = createServer((req, res) => {
+    const u = new URL(req.url ?? "/", "http://x");
+    const week = Number(u.searchParams.get("week"));
+    if (!u.pathname.endsWith("/nfl/scoreboard") || u.searchParams.get("dates") !== "2026" || u.searchParams.get("seasontype") !== "2") return void (res.statusCode = 404, res.end("{}"));
+    weeksSeen++;
+    res.end(JSON.stringify({ events: [ev(week < 5 ? "post" : "pre", "1", "2", week), ev(week === 5 ? "in" : "pre", "3", "4", week)] }));
+  });
+  await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));
+  const base = `http://127.0.0.1:${(server.address() as { port: number }).port}`;
+  try {
+    const log = (await run("node", ["scripts/fetch-nfl-schedule.mjs"], { env: { ...process.env, RAW_DIR: dir, ESPN_BASE: base } })).stdout;
+    expect(weeksSeen).toBe(18);
+    const saved = JSON.parse(readFileSync(join(dir, "nfl-schedule.json"), "utf8"));
+    // Weeks 1-4: game one is final (dropped), game two still to play (kept). Weeks 5-18: both kept.
+    expect(saved.games).toHaveLength(4 + 14 * 2);
+    expect(saved.games[0]).toMatchObject({ week: 1, home: "3", away: "4" });
+    expect(log).toContain("32 games left across 18 weeks");
+    // A fetch that only gets a few weeks leaves the saved file alone.
+    const before = readFileSync(join(dir, "nfl-schedule.json"), "utf8");
+    const dead = await run("node", ["scripts/fetch-nfl-schedule.mjs"], { env: { ...process.env, RAW_DIR: dir, ESPN_BASE: "http://127.0.0.1:1" } });
+    expect(dead.stdout).toContain("keeping the saved file");
+    expect(readFileSync(join(dir, "nfl-schedule.json"), "utf8")).toBe(before);
+  } finally {
+    server.close();
+  }
+});
+
+test("a snapshot built without the schedule is rebuilt with the simulation as soon as one exists", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "outlook-sim-"));
+  const raw = join(dir, "raw");
+  mkdirSync(raw);
+  writeFileSync(join(raw, "cfb-fpi.json"), JSON.stringify(cfbFeed(make(130))));
+  const feed = nflFeed();
+  writeFileSync(join(raw, "nfl-fpi.json"), JSON.stringify(feed));
+  const out = join(dir, "outlook.json");
+  const build = async (now: string) => (await run("node", ["scripts/build-outlook.mjs"], { env: { ...process.env, RAW_DIR: raw, OUT_FILE: out, NOW: now } })).stdout;
+  expect(await build("2026-10-06T14:00:00Z")).toContain("no simulation");
+  expect(JSON.parse(readFileSync(out, "utf8")).nfl.sim).toBeNull();
+  // A schedule that covers the season (each team has played 3 games, 14 left each: 224 games).
+  const ids = (feed.teams as { team: { id: string } }[]).map((t) => t.team.id);
+  const games = Array.from({ length: 224 }, (_, i) => ({ week: 5, home: ids[i % 32], away: ids[(i * 7 + 3) % 32 === i % 32 ? (i + 1) % 32 : (i * 7 + 3) % 32] }));
+  writeFileSync(join(raw, "nfl-schedule.json"), JSON.stringify({ season: 2026, games }));
+  const log = await build("2026-10-07T14:00:00Z"); // same Tuesday-cycle, but now there is something to simulate
+  expect(log).toMatch(/NFL outlook rebuilt for the week of 2026-10-06 with \d+ simulated seasons|simulation skipped/);
 });

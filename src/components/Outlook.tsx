@@ -26,8 +26,19 @@ type Ranked = Team & {
   cfp: number | null;
   fpiRank: number | null;
   composite: number;
+  pConf?: number | null;
+  confRank?: number;
+};
+type GridRow = Team & {
+  division: string;
+  record: string;
+  expW: number;
+  pSeed: number[];
+  pPlayoffs: number;
+  pDiv: number;
 };
 type Stamp = { cycle: string; built: string; fpiUpdated: string | null };
+const TOP = 120;
 type Data = {
   cfb?: Stamp & {
     sources: string[];
@@ -35,7 +46,7 @@ type Data = {
     playoff: { field: Seed[]; out: Out[]; rules: { teams: number; autoBids: number; byes: number } };
     bowls: { eligible: number; conferences: { name: string; teams: number; eligible: (Out & { pBowl: number })[]; bubble: (Out & { pBowl: number })[] }[] };
   };
-  nfl?: Stamp & { conferences: Record<string, { field: Seed[]; out: Out[] }> };
+  nfl?: Stamp & { sim: { sims: number; games: number } | null; conferences: Record<string, { field: Seed[]; out: Out[]; grid: GridRow[] | null }> };
 };
 
 const pct = (n?: number | null) => (n == null ? "–" : n >= 99.5 ? ">99%" : n < 0.5 ? "<1%" : `${Math.round(n)}%`);
@@ -72,6 +83,53 @@ function SeedRow({ s, odds, tag }: { s: Seed; odds: [string, number | null | und
   );
 }
 
+/** Every team in a conference against every seed: how often the season ends with it there. Seed 1 is the bye. */
+function SeedGrid({ conf, rows }: { conf: string; rows: GridRow[] }) {
+  const heat = (v: number) => (v >= 0.5 ? { background: `color-mix(in srgb, var(--lime) ${Math.min(70, Math.round(v * 0.9 + 6))}%, transparent)` } : undefined);
+  return (
+    <div className="ol-gridwrap" role="region" aria-label={`${conf} seed odds`} tabIndex={0}>
+      <table className="ol-grid">
+        <thead>
+          <tr>
+            <th scope="col">Team</th>
+            <th scope="col" title="Expected wins">Exp W</th>
+            {[1, 2, 3, 4, 5, 6, 7].map((n) => (
+              <th scope="col" key={n} className={n === 1 ? "one" : undefined} title={n === 1 ? "Seed 1: the only first-round bye" : `Seed ${n}`}>
+                #{n}
+              </th>
+            ))}
+            <th scope="col">Playoffs</th>
+            <th scope="col">Division</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.id}>
+              <th scope="row">
+                <span className="ol-name">
+                  <Logo t={r} />
+                  <span>
+                    <strong>{r.name}</strong>
+                    <small>{r.record} · {r.division.replace(/^(AFC|NFC) /, "")}</small>
+                  </span>
+                </span>
+              </th>
+              <td>{r.expW.toFixed(1)}</td>
+              {r.pSeed.map((v, i) => (
+                <td key={i} className={`cell${i === 0 ? " one" : ""}`} style={heat(v)}>
+                  {v >= 0.5 ? (v >= 99.5 ? "100" : v.toFixed(v < 10 ? 1 : 0)) : "–"}
+                </td>
+              ))}
+              <td className="tot">{pct(r.pPlayoffs)}</td>
+              <td>{pct(r.pDiv)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function OutRow({ t }: { t: Out }) {
   return (
     <li className="ol-out">
@@ -91,11 +149,78 @@ function OutRow({ t }: { t: Out }) {
  * ranking, projected College Football Playoff field and bowl picture, and the projected NFL
  * playoff field. College is rebuilt Sunday mornings, the NFL Tuesday mornings.
  */
+function RankingTable({ cfb, conf, setConf, shown, setShown }: { cfb: NonNullable<Data["cfb"]>; conf: string; setConf: (c: string) => void; shown: number; setShown: (n: number) => void }) {
+  const confs = [...new Set(cfb.composite.map((t) => t.conf ?? ""))].filter(Boolean).sort((a, b) => a.localeCompare(b));
+  const all = conf === "all";
+  const rows = all ? cfb.composite.slice(0, TOP) : cfb.composite.filter((t) => t.conf === conf);
+  const shownRows = all ? rows.slice(0, shown) : rows;
+  const hasCfp = cfb.sources.includes("cfp");
+  return (
+    <>
+      <p className="ol-note">
+        Composite of {cfb.sources.map((k) => POLL[k] ?? k).join(", ")}: the average rank, with a team outside a poll's top 25 counted as 30
+        {hasCfp ? " and the committee's rank counted double" : "; the committee's CFP ranking joins when it is first released"}. Rebuilt every Sunday morning.
+      </p>
+      <label className="ol-pick">
+        <span>Conference</span>
+        <select value={conf} onChange={(e) => { setConf(e.target.value); setShown(25); }} aria-label="Conference">
+          <option value="all">All FBS (top {TOP})</option>
+          {confs.map((c) => (
+            <option key={c} value={c}>{c === "Ind" ? "Independents" : c}</option>
+          ))}
+        </select>
+      </label>
+      <table className="ol-table" aria-label={all ? `Top ${TOP} composite ranking` : `${conf} composite ranking`}>
+        <thead>
+          <tr>
+            <th scope="col">{all ? "#" : "Conf"}</th>
+            <th scope="col">Team</th>
+            {!all && <th scope="col" title="Overall composite rank">All</th>}
+            <th scope="col">AP</th>
+            <th scope="col">Coach</th>
+            {hasCfp && <th scope="col">CFP</th>}
+            <th scope="col">FPI</th>
+            {!all && <th scope="col" title="Chance to win the conference (ESPN FPI)">Title</th>}
+          </tr>
+        </thead>
+        <tbody>
+          {shownRows.map((t, i) => (
+            <tr key={t.id}>
+              <th scope="row">{all ? t.rank : (t.confRank ?? i + 1)}</th>
+              <td>
+                <span className="ol-name">
+                  <Logo t={t} />
+                  <span>
+                    <strong>{t.name}</strong>
+                    <small>{t.record} · {t.conf === "Ind" ? "Independent" : t.conf}</small>
+                  </span>
+                </span>
+              </td>
+              {!all && <td>{t.rank}</td>}
+              <td>{t.ap ?? "–"}</td>
+              <td>{t.coaches ?? "–"}</td>
+              {hasCfp && <td>{t.cfp ?? "–"}</td>}
+              <td>{t.fpiRank ?? "–"}</td>
+              {!all && <td>{t.conf === "Ind" ? "–" : pct(t.pConf)}</td>}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {all && shown < rows.length && (
+        <button type="button" className="ol-more" onClick={() => setShown(rows.length)}>
+          Show all {rows.length}
+        </button>
+      )}
+    </>
+  );
+}
+
 export function Outlook({ defaultLeague }: { defaultLeague: League }) {
   const [data, setData] = useState<Data | null>(null);
   const [league, setLeague] = useState<League>(defaultLeague);
   const [part, setPart] = useState<"playoff" | "ranking" | "bowls">("playoff");
   const [shown, setShown] = useState(25);
+  const [conf, setConf] = useState("all");
   useEffect(() => {
     let live = true;
     import("../data/outlook.json").then((m) => live && setData(m.default as unknown as Data));
@@ -116,7 +241,7 @@ export function Outlook({ defaultLeague }: { defaultLeague: League }) {
         {league === "CFB" && (
           <div className="segmented" role="group" aria-label="Outlook section">
             <button aria-pressed={part === "playoff"} onClick={() => setPart("playoff")}>Playoff</button>
-            <button aria-pressed={part === "ranking"} onClick={() => setPart("ranking")}>Top 120</button>
+            <button aria-pressed={part === "ranking"} onClick={() => setPart("ranking")}>Rankings</button>
             <button aria-pressed={part === "bowls"} onClick={() => setPart("bowls")}>Bowls</button>
           </div>
         )}
@@ -129,20 +254,34 @@ export function Outlook({ defaultLeague }: { defaultLeague: League }) {
         ) : (
           <>
             <p className="ol-note">
-              Projected playoff field as of the Tuesday {dayText(nfl.cycle)} refresh; updates every Tuesday morning. Division winners are seeded 1–4 by
-              projected wins, then the three best remaining teams; only seed 1 gets a bye. From ESPN FPI.
+              As of the Tuesday {dayText(nfl.cycle)} refresh; updates every Tuesday morning. Division winners take seeds 1–4, then the three best remaining records; only seed 1 gets a bye.
             </p>
+            {nfl.sim ? (
+              <p className="ol-note">
+                Odds come from playing out the rest of the schedule {nfl.sim.sims.toLocaleString()} times ({nfl.sim.games} games left), each won by the better ESPN FPI team with a home-field edge.
+                Ties for a seed are split evenly instead of using head-to-head tiebreakers, so treat close races as close. Each cell is the chance of finishing in that seed; the shaded #1 column is the
+                chance at the first-round bye.
+              </p>
+            ) : (
+              <p className="ol-note">The seed grid appears once the schedule has been fetched; until then only ESPN's playoff odds are shown.</p>
+            )}
             <div className="ol-cols">
               {Object.entries(nfl.conferences).map(([conf, c]) => (
-                <div key={conf}>
+                <div key={conf} className={c.grid ? "ol-wide" : undefined}>
                   <h3>{conf}</h3>
-                  <ol className="ol-list" aria-label={`${conf} playoff seeds`}>
-                    {c.field.map((s) => (
-                      <SeedRow key={s.id} s={{ ...s, conf: s.division }} tag={s.bid} odds={[["playoffs", s.pPlayoffs], ["division", s.pDiv], ["title", s.pTitle]]} />
-                    ))}
-                  </ol>
-                  <p className="ol-sub">First out</p>
-                  <ul className="ol-outs">{c.out.map((t) => <OutRow key={t.id} t={t} />)}</ul>
+                  {c.grid ? (
+                    <SeedGrid conf={conf} rows={c.grid} />
+                  ) : (
+                    <>
+                      <ol className="ol-list" aria-label={`${conf} playoff seeds`}>
+                        {c.field.map((s) => (
+                          <SeedRow key={s.id} s={{ ...s, conf: s.division }} tag={s.bid} odds={[["playoffs", s.pPlayoffs], ["division", s.pDiv], ["title", s.pTitle]]} />
+                        ))}
+                      </ol>
+                      <p className="ol-sub">First out</p>
+                      <ul className="ol-outs">{c.out.map((t) => <OutRow key={t.id} t={t} />)}</ul>
+                    </>
+                  )}
                 </div>
               ))}
             </div>
@@ -165,49 +304,7 @@ export function Outlook({ defaultLeague }: { defaultLeague: League }) {
           <ul className="ol-outs">{cfb.playoff.out.map((t) => <OutRow key={t.id} t={t} />)}</ul>
         </>
       ) : part === "ranking" ? (
-        <>
-          <p className="ol-note">
-            Composite of {cfb.sources.map((k) => POLL[k] ?? k).join(", ")}: the average rank, with a team outside a poll's top 25 counted as 30
-            {cfb.sources.includes("cfp") ? " and the committee's rank counted double" : "; the committee's CFP ranking joins when it is first released"}. Rebuilt every Sunday morning.
-          </p>
-          <table className="ol-table">
-            <thead>
-              <tr>
-                <th scope="col">#</th>
-                <th scope="col">Team</th>
-                <th scope="col">AP</th>
-                <th scope="col">Coach</th>
-                {cfb.sources.includes("cfp") && <th scope="col">CFP</th>}
-                <th scope="col">FPI</th>
-              </tr>
-            </thead>
-            <tbody>
-              {cfb.composite.slice(0, shown).map((t) => (
-                <tr key={t.id}>
-                  <th scope="row">{t.rank}</th>
-                  <td>
-                    <span className="ol-name">
-                      <Logo t={t} />
-                      <span>
-                        <strong>{t.name}</strong>
-                        <small>{t.record} · {t.conf}</small>
-                      </span>
-                    </span>
-                  </td>
-                  <td>{t.ap ?? "–"}</td>
-                  <td>{t.coaches ?? "–"}</td>
-                  {cfb.sources.includes("cfp") && <td>{t.cfp ?? "–"}</td>}
-                  <td>{t.fpiRank ?? "–"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {shown < cfb.composite.length && (
-            <button type="button" className="ol-more" onClick={() => setShown(cfb.composite.length)}>
-              Show all {cfb.composite.length}
-            </button>
-          )}
-        </>
+        <RankingTable cfb={cfb} conf={conf} setConf={setConf} shown={shown} setShown={setShown} />
       ) : (
         <>
           <p className="ol-note">

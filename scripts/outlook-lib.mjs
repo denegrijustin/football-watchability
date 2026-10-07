@@ -190,6 +190,84 @@ const nflSlim = (t) => ({
   pTitle: t.pTitle,
 });
 
+// ---------- NFL seed simulation ----------
+const erf = (x) => {
+  const t = 1 / (1 + 0.3275911 * Math.abs(x));
+  const y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x);
+  return x >= 0 ? y : -y;
+};
+const phi = (z) => 0.5 * (1 + erf(z / Math.SQRT2));
+function rng(seed) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+export const hashSeed = (str) => [...String(str)].reduce((h, c) => (Math.imul(h, 31) + c.charCodeAt(0)) >>> 0, 7);
+
+/**
+ * Plays out the rest of the NFL season `sims` times and counts where each team lands. A game is won by
+ * the home side with probability Phi((home FPI - away FPI + hfa) / sd); FPI is in points, and NFL game
+ * margins have a standard deviation of about 13.5. Seeds follow the real format: the four division winners
+ * (most wins in each division) take seeds 1-4 by wins, then the three best remaining records. Tiebreakers are
+ * coin flips, so a tie for a seed is split evenly rather than resolved by head-to-head or conference record.
+ * Returns null when the schedule does not account for the whole 272-game season.
+ */
+export function simulateNfl(teams, games, { sims = 20000, seed = 1, hfa = 2, sd = 13.5 } = {}) {
+  const byId = new Map(teams.map((t, i) => [t.id, i]));
+  const played = teams.reduce((n, t) => n + t.wins + t.losses + t.ties, 0) / 2;
+  const left = games.filter((g) => byId.has(g.home) && byId.has(g.away));
+  if (!left.length || played + left.length < 270) return null;
+  const p = left.map((g) => phi((teams[byId.get(g.home)].fpi - teams[byId.get(g.away)].fpi + hfa) / sd));
+  const h = left.map((g) => byId.get(g.home));
+  const a = left.map((g) => byId.get(g.away));
+  const base = teams.map((t) => t.wins + t.ties / 2);
+  const n = teams.length;
+  const seedHits = Array.from({ length: n }, () => new Array(7).fill(0));
+  const divHits = new Array(n).fill(0);
+  const winsSum = new Array(n).fill(0);
+  const groups = [];
+  for (const conf of ["AFC", "NFC"]) {
+    const mine = teams.map((t, i) => (t.conf === conf ? i : -1)).filter((i) => i >= 0);
+    const divs = new Map();
+    for (const i of mine) divs.set(teams[i].division, [...(divs.get(teams[i].division) ?? []), i]);
+    groups.push({ mine, divs: [...divs.values()] });
+  }
+  const rand = rng(seed);
+  const w = new Float64Array(n);
+  const noise = new Float64Array(n);
+  for (let s = 0; s < sims; s++) {
+    for (let i = 0; i < n; i++) {
+      w[i] = base[i];
+      noise[i] = rand() * 0.01; // coin-flip tiebreak, smaller than any difference in wins
+    }
+    for (let g = 0; g < h.length; g++) w[rand() < p[g] ? h[g] : a[g]] += 1;
+    for (let i = 0; i < n; i++) winsSum[i] += w[i];
+    const score = (i) => w[i] + noise[i];
+    for (const { mine, divs } of groups) {
+      const winners = divs.map((d) => d.reduce((best, i) => (score(i) > score(best) ? i : best)));
+      for (const i of winners) divHits[i]++;
+      winners.sort((x, y) => score(y) - score(x));
+      const rest = mine.filter((i) => !winners.includes(i)).sort((x, y) => score(y) - score(x));
+      [...winners, ...rest.slice(0, 7 - winners.length)].forEach((i, k) => seedHits[i][k]++);
+    }
+  }
+  const pc = (x) => Math.round((x / sims) * 1000) / 10;
+  return {
+    sims,
+    byId: new Map(
+      teams.map((t, i) => {
+        const pSeed = seedHits[i].map(pc);
+        return [t.id, { pSeed, pPlayoffs: pc(seedHits[i].reduce((x, y) => x + y, 0)), pDiv: pc(divHits[i]), expW: Math.round((winsSum[i] / sims) * 10) / 10 }];
+      }),
+    ),
+  };
+}
+
 // ---------- weekly cycle ----------
 const CT = "America/Chicago";
 const parts = (d) => {
