@@ -136,11 +136,11 @@ The NFL doesn't publish snap counts live, so time of possession stands in for ti
 
 ### Weekend export
 
-`scripts/export-slate.mjs` (run in the refresh after the notes) writes `public/exports/watch-slate.csv` (every game Thursday–Monday by kickoff: TV, watchability, tier, projected score, win probability, line, venue, weather, take, and finals with actual watchability) and `public/exports/entertaining.ics` (a calendar of the 74+ games). On the **TV grid**, **Download JPG** saves the current day, or the **Full weekend**, as an image of the grid itself (`src/exportJpg.ts`), following the grid's league and "Entertaining only" filters and the viewer's time zone. The weekend image uses one time axis for every day, so a given kickoff time is the same column on Thursday through Monday (8 PM Saturday sits directly above 8 PM Sunday).
+`scripts/export-slate.mjs` (run in the refresh after the notes) writes `public/exports/watch-slate.csv` (every game Thursday–Monday by kickoff: TV, watchability, tier, projected score, win probability, line, venue, weather, take, and finals with actual watchability) and `public/exports/entertaining.ics` (a calendar of the 74+ games). On the **TV grid**, **Save image** makes the current day, or the **Full weekend**, as a lossless PNG of the grid itself (`src/exportJpg.ts`), drawn at up to 4x on a desktop (about 5,000 px wide for a day) and at the most a phone's canvas allows (around 15 million pixels, usually 2-3x), with text and shapes drawn as vectors at that size so a zoom stays sharp. It opens in a preview with **Download PNG** and, on devices that can share files (phones and tablets), **Save to Photos / Share**, which opens the share sheet where Save Image puts it in Photos (touching and holding the preview works too), following the grid's league and "Entertaining only" filters and the viewer's time zone. The weekend image uses one time axis for every day, so a given kickoff time is the same column on Thursday through Monday (8 PM Saturday sits directly above 8 PM Sunday).
 
 ### Time zone
 
-Times show in Central by default. The clock menu in the header switches to Eastern, Mountain, Arizona, Pacific, Alaska or Hawaii (`src/tz.ts`); the choice is remembered in that browser. Cards, finals, the weather strip, the TV grid and the JPG all follow it. The written notes and the spreadsheet use Central.
+Times show in Central by default. The clock menu in the header switches to Eastern, Mountain, Arizona, Pacific, Alaska or Hawaii (`src/tz.ts`); the choice is remembered in that browser. Cards, finals, the weather strip, the TV grid and its image all follow it. The written notes and the spreadsheet use Central.
 
 ### Forecast vs actual
 

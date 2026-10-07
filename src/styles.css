@@ -5396,3 +5396,22 @@ image[href$="/logos/kansas.webp"] {
   transform-box: fill-box;
   transform-origin: center;
 }
+
+/* TV grid image preview: shows the full-resolution PNG scaled to fit, with save/share/download */
+.img-dialog {
+  width: min(96vw, 1100px);
+  max-height: 92dvh;
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  overflow: auto;
+}
+.img-dialog::backdrop { background: rgb(0 0 0 / 0.7); }
+.img-dialog-body { display: grid; gap: 10px; padding: 14px; }
+.img-dialog-body > img { width: 100%; height: auto; border-radius: 8px; background: var(--bg); -webkit-touch-callout: default; user-select: auto; }
+.img-meta { margin: 0; color: var(--muted); font-size: 0.82rem; }
+.img-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.img-actions button, .img-actions a { min-height: 44px; padding: 0 16px; border: 1px solid var(--line-strong); border-radius: 10px; background: var(--surface-2); color: var(--text); font: inherit; font-weight: 650; display: inline-flex; align-items: center; text-decoration: none; cursor: pointer; }
+.img-actions .img-primary { background: var(--lime); color: #142110; border-color: transparent; }

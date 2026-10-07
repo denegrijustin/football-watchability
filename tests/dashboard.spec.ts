@@ -301,7 +301,7 @@ test("weekend export files and advanced stats are available", async ({ page, req
   await page.goto("/?league=NFL");
   await page.locator(".export summary").click();
   await expect(page.locator(".export-menu a[href='/exports/watch-slate.csv']")).toBeVisible();
-  await expect(page.getByRole("button", { name: /Download.*JPG/ })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /Save image/ })).toHaveCount(0);
   const card = page.locator(CARD).first();
   await expand(card);
   const adv = card.locator("summary").filter({ hasText: "Advanced stats" });
@@ -311,7 +311,7 @@ test("weekend export files and advanced stats are available", async ({ page, req
   }
 });
 
-test("times default to Central, follow the chosen zone, and the TV grid JPG downloads", async ({ page }) => {
+test("times default to Central, follow the chosen zone, and the TV grid saves a high-resolution PNG", async ({ page }) => {
   await page.goto("/?league=NFL");
   await expect(page.locator(".cc-time").first()).toContainText("CT");
   await page.selectOption(".tz-pick select", "America/New_York");
@@ -322,15 +322,25 @@ test("times default to Central, follow the chosen zone, and the TV grid JPG down
   expect(width).toBeLessThanOrEqual((page.viewportSize()?.width ?? 0) + 1);
   await page.getByRole("button", { name: "TV grid" }).click();
   for (const [item, name] of [
-    [/This day/, /^tv-grid-(?!weekend).*\.jpg$/],
-    [/Full weekend/, /^tv-grid-weekend-.*\.jpg$/],
+    [/This day/, /^tv-grid-(?!weekend).*\.png$/],
+    [/Full weekend/, /^tv-grid-weekend-.*\.png$/],
   ] as const) {
     await page.locator(".export-jpg-menu summary").click();
-    const [download] = await Promise.all([
-      page.waitForEvent("download"),
-      page.locator(".export-jpg-menu .export-menu button").filter({ hasText: item }).click(),
-    ]);
+    await page.locator(".export-jpg-menu .export-menu button").filter({ hasText: item }).click();
+    // The finished image opens in a preview with Download (and, where the device can share files, Save to Photos).
+    const dialog = page.locator("dialog.img-dialog");
+    await expect(dialog).toBeVisible({ timeout: 30000 });
+    await expect(dialog.locator(".img-meta").first()).toContainText(/[\d,]+ × [\d,]+ px PNG/);
+    const [download] = await Promise.all([page.waitForEvent("download"), dialog.getByRole("link", { name: "Download PNG" }).click()]);
     expect(download.suggestedFilename()).toMatch(name);
+    // It really is a PNG, and much bigger than the 1x layout, so a zoom stays sharp.
+    const bytes = readFileSync((await download.path())!);
+    expect(bytes.subarray(0, 8).toString("hex")).toBe("89504e470d0a1a0a");
+    const [w, h] = [bytes.readUInt32BE(16), bytes.readUInt32BE(20)];
+    expect(w * h).toBeGreaterThan(4e6);
+    expect(w * h).toBeLessThanOrEqual(90e6);
+    await dialog.getByRole("button", { name: "Close" }).click();
+    await expect(dialog).toBeHidden();
   }
 });
 
