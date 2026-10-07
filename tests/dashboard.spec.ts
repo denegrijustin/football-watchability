@@ -148,12 +148,26 @@ test("day and watchability filters narrow the board", async ({ page }) => {
   );
   await page.getByRole("button", { name: "Reset filters" }).click();
   await expect(page.locator(CARD)).toHaveCount(nfl.length);
-  // Within each section (in progress, just finished, upcoming) the strips run from most to least watchable.
+  // Each kickoff slot runs from most to least watchable.
   const sections = await page
-    .locator(".board-section, .just-final")
+    .locator(".kickoff-slot, .just-final")
     .evaluateAll((els) => els.map((el) => [...el.querySelectorAll(":scope > .game-grid > .game-card:not(.result-card) .cc-rate strong, :scope.just-final > .game-card:not(.result-card) .cc-rate strong")].map((e) => Number(e.textContent))));
   for (const scores of sections) expect(scores).toEqual([...scores].sort((a, b) => b - a));
   expect(sections.flat().length).toBeGreaterThan(0);
+  const slots = await page.locator(".upcoming .kickoff-slot").evaluateAll(els => els.map(el => ({
+    date: el.getAttribute("data-kickoff")!,
+    ids: [...el.querySelectorAll(".game-card")].map(card => card.getAttribute("data-game-id")),
+  })));
+  expect(slots.length).toBeGreaterThan(0);
+  expect(slots.map(s => s.date)).toEqual(slots.map(s => s.date).sort());
+  for (const slot of slots) {
+    const expected = nfl.filter((g: any) => new Date(g.date).toISOString() === slot.date)
+      .sort((a: any, b: any) => b.score - a.score || a.id.localeCompare(b.id)).map((g: any) => g.id);
+    expect(slot.ids).toEqual(expected);
+  }
+  await page.getByLabel("Time zone", { exact: true }).selectOption("America/Los_Angeles");
+  await expect(page.locator(".kickoff-slot h4").first()).toContainText("PT");
+
 });
 
 test("season form chart, trends panel and network logos render", async ({ page }) => {
