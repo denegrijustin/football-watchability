@@ -54,7 +54,7 @@ const SECTION_HELP = {
   upcoming: "Still to play, most watchable first.",
 };
 
-/** Main board: In progress, then Completed, then Upcoming. */
+/** Main board: Upcoming first, then In progress, with Completed collapsed below. */
 export function GameBoard({
   board,
   status,
@@ -67,6 +67,8 @@ export function GameBoard({
   onReset: () => void;
 }) {
   const [showAll, setShowAll] = useState(false);
+  const [showCompleted, setShowCompleted] = useState(false);
+  const completedExpanded = status === "final" || showCompleted;
   const { live, justFinal, finals, upcoming, counts } = board;
   const showLive = (status === "all" || status === "live") && live.length > 0;
   const showFinal = (status === "all" || status === "final") && counts.final > 0;
@@ -99,6 +101,21 @@ export function GameBoard({
 
   return (
     <>
+      {showUpcoming && (
+        <section className="board-section upcoming" aria-label="Upcoming">
+          <div className="section-head">
+            <h3>Upcoming</h3>
+            <span className="count">{upcoming.length}</span>
+            <span className="section-note">{SECTION_HELP.upcoming}</span>
+          </div>
+          <div className="game-grid">
+            {upcoming.map((game) => (
+              <GameCard key={game.id} game={game} />
+            ))}
+          </div>
+        </section>
+      )}
+
       {showLive && (
         <section className="board-section live" aria-label="In progress">
           <div className="section-head">
@@ -122,7 +139,13 @@ export function GameBoard({
             <h3>Completed</h3>
             <span className="count">{counts.final}</span>
             <span className="section-note">{SECTION_HELP.final}</span>
+            {status !== "final" && (
+              <button className="completed-toggle" aria-expanded={completedExpanded} aria-controls="completed-games" onClick={() => setShowCompleted(!showCompleted)}>
+                {completedExpanded ? "Hide completed games" : "Show completed games"}
+              </button>
+            )}
           </div>
+          <div id="completed-games" hidden={!completedExpanded}>
           {justFinal.length > 0 && (
             <div className="game-grid just-final" aria-label="Just finished">
               {justFinal.map((game) => (
@@ -189,23 +212,11 @@ export function GameBoard({
               Show all {counts.final} completed games ({hidden} more)
             </button>
           )}
+          </div>
         </section>
       )}
 
-      {showUpcoming && (
-        <section className="board-section upcoming" aria-label="Upcoming">
-          <div className="section-head">
-            <h3>Upcoming</h3>
-            <span className="count">{upcoming.length}</span>
-            <span className="section-note">{SECTION_HELP.upcoming}</span>
-          </div>
-          <div className="game-grid">
-            {upcoming.map((game) => (
-              <GameCard key={game.id} game={game} />
-            ))}
-          </div>
-        </section>
-      )}
+
     </>
   );
 }
