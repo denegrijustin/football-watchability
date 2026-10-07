@@ -154,7 +154,7 @@ export async function downloadGameReport(card: HTMLElement, title: string, date:
     box(M,596,half,144,"Matchup outlook"); box(M+half+12,596,half,144,"Why watch");
     const projected = card.querySelector<HTMLElement>(".proj summary strong,.sc-box strong")?.innerText || "Projection unavailable";
     text("PROJECTED SCORE",M+12,629,half-24,8,1);
-    text(projected.replace(/-\s*to\s*/g, " - "),M+12,654,half-24,19,1,true);
+    text(projected.replace(/[–-]\s*to\s*/g, " - "),M+12,654,half-24,19,1,true);
     const winRow = card.querySelector(".pwp-row");
     const awayWin = winRow?.querySelector(".pwp-val.away")?.textContent || "";
     const homeWin = winRow?.querySelector(".pwp-val.home")?.textContent || "";
