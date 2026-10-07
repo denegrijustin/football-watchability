@@ -348,7 +348,8 @@ test("the schedule fetch keeps only games still to play and ignores a half-fetch
   const ev = (state: string, home: string, away: string, n: number) => ({
     date: `2026-10-${10 + n}T17:00Z`,
     status: { type: { state, completed: state === "post" } },
-    competitions: [{ competitors: [{ homeAway: "home", team: { id: home } }, { homeAway: "away", team: { id: away } }] }],
+    id: `g${home}-${away}-${n}`,
+    competitions: [{ competitors: [{ homeAway: "home", score: "27", team: { id: home } }, { homeAway: "away", score: "20", team: { id: away } }] }],
   });
   let weeksSeen = 0;
   const server = createServer((req, res) => {
@@ -369,6 +370,10 @@ test("the schedule fetch keeps only games still to play and ignores a half-fetch
     expect(saved.games[0]).toMatchObject({ week: 1, home: "3", away: "4" });
     expect(log).toContain("32 games left across 18 weeks");
     expect(log).toContain("NFL schedule");
+    // The finished games are kept for the Imperialism Map: weeks 1-4's first game, with scores and who was home.
+    const finals = JSON.parse(readFileSync(join(dir, "nfl-finals.json"), "utf8"));
+    expect(finals.games).toHaveLength(4);
+    expect(finals.games[0]).toMatchObject({ week: 1, weekLabel: "Week 1", home: "1", away: "2", homeScore: 27, awayScore: 20, postseason: false });
     // A fetch that only gets a few weeks leaves the saved file alone.
     const before = readFileSync(join(dir, "nfl-schedule.json"), "utf8");
     const dead = await run("node", ["scripts/fetch-nfl-schedule.mjs"], { env: { ...process.env, RAW_DIR: dir, ESPN_BASE: "http://127.0.0.1:1" } });
@@ -443,9 +448,10 @@ test("the college schedule fetch asks for FBS games and keeps nothing if any wee
   const dir = mkdtempSync(join(tmpdir(), "csched-"));
   writeFileSync(join(dir, "index.json"), JSON.stringify({ season: 2026 }));
   const ev = (state: string, home: string, away: string) => ({
+    id: `c${home}-${away}`,
     date: "2026-10-17T17:00Z",
     status: { type: { state, completed: state === "post" } },
-    competitions: [{ competitors: [{ homeAway: "home", team: { id: home } }, { homeAway: "away", team: { id: away } }] }],
+    competitions: [{ competitors: [{ homeAway: "home", score: "31", team: { id: home } }, { homeAway: "away", score: "17", team: { id: away } }] }],
   });
   const asked: string[] = [];
   let failWeek = 0;
@@ -463,6 +469,10 @@ test("the college schedule fetch asks for FBS games and keeps nothing if any wee
     let log = (await run("node", ["scripts/fetch-cfb-schedule.mjs"], { env })).stdout;
     expect(asked[0]).toBe("/college-football/scoreboard?groups=80&limit=300");
     expect(log).toContain("College schedule: 27 games left across 16 weeks"); // finished games dropped (weeks 1-5); every opponent kept, FCS ones included
+    const finals = JSON.parse(readFileSync(join(dir, "cfb-finals.json"), "utf8")).games;
+    expect(finals.filter((g: { postseason: boolean }) => !g.postseason)).toHaveLength(5); // weeks 1-5, one finished game each
+    expect(finals.filter((g: { postseason: boolean }) => g.postseason).length).toBeGreaterThan(0); // postseason weeks follow week 16
+    expect(Math.min(...finals.filter((g: { postseason: boolean }) => g.postseason).map((g: { week: number }) => g.week))).toBe(17);
     const saved = JSON.parse(readFileSync(join(dir, "cfb-schedule.json"), "utf8"));
     expect(saved.games.some((g: { away: string }) => g.away === "999")).toBe(true);
     const before = readFileSync(join(dir, "cfb-schedule.json"), "utf8");

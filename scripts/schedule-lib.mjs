@@ -5,8 +5,8 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 
 const LEAGUES = {
-  nfl: { name: "NFL", path: "nfl", weeks: 18, extra: "" },
-  cfb: { name: "College", path: "college-football", weeks: 16, extra: "&groups=80&limit=300" }, // FBS games, including ones against FCS teams
+  nfl: { name: "NFL", path: "nfl", weeks: 18, post: 5, extra: "" },
+  cfb: { name: "College", path: "college-football", weeks: 16, post: 3, extra: "&groups=80&limit=300" }, // FBS games, including ones against FCS teams
 };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -28,7 +28,17 @@ export async function fetchSchedule(key) {
     return null;
   }
   const games = [];
+  const finals = []; // every finished game this season, for the Imperialism Map (written to <league>-finals.json)
   const failed = [];
+  const finish = (e, week, weekLabel, postseason) => {
+    const c = e.competitions?.[0];
+    if (!c || !(e.status?.type?.state === "post" || e.status?.type?.completed)) return;
+    const side = (ha) => c.competitors?.find((x) => x.homeAway === ha);
+    const [h, a] = [side("home"), side("away")];
+    const [hs, as] = [Number(h?.score), Number(a?.score)];
+    if (h?.team?.id && a?.team?.id && Number.isFinite(hs) && Number.isFinite(as))
+      finals.push({ id: String(e.id), week, weekLabel, postseason, date: e.date, home: String(h.team.id), away: String(a.team.id), homeScore: hs, awayScore: as });
+  };
   for (let week = 1; week <= L.weeks; week++) {
     const b = await get(`${SITE}/${L.path}/scoreboard?dates=${season}&seasontype=2&week=${week}${L.extra}`);
     if (!b?.events) {
@@ -37,6 +47,7 @@ export async function fetchSchedule(key) {
       continue;
     }
     for (const e of b.events) {
+      finish(e, week, `Week ${week}`, false);
       const c = e.competitions?.[0];
       if (!c || e.status?.type?.state === "post" || e.status?.type?.completed) continue; // already in the standings
       const home = c.competitors?.find((x) => x.homeAway === "home")?.team?.id;
@@ -45,11 +56,19 @@ export async function fetchSchedule(key) {
     }
     await sleep(80);
   }
+  // Postseason results (NFL playoffs, college bowls and playoff). Not needed for the schedule, so a miss is ignored.
+  if (!failed.length)
+    for (let n = 1; n <= L.post; n++) {
+      const b = await get(`${SITE}/${L.path}/scoreboard?dates=${season}&seasontype=3&week=${n}${L.extra}`);
+      for (const e of b?.events ?? []) finish(e, L.weeks + n, e.week?.text ?? e.season?.slug ?? "Postseason", true);
+      await sleep(80);
+    }
   const file = `${dir}${key}-schedule.json`;
   if (failed.length) {
     console.log(`${L.name} schedule: week${failed.length === 1 ? "" : "s"} ${failed.join(", ")} did not come back; ${existsSync(file) ? "keeping the saved file" : "no schedule saved"}.`);
   } else {
     writeFileSync(file, JSON.stringify({ season, fetchedAt: new Date().toISOString(), weeksRead: L.weeks, games }, null, 1) + "\n");
+    writeFileSync(`${dir}${key}-finals.json`, JSON.stringify({ season, fetchedAt: new Date().toISOString(), games: finals }) + "\n");
     console.log(`${L.name} schedule: ${games.length} games left across ${L.weeks} weeks.`);
   }
 }

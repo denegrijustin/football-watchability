@@ -134,6 +134,8 @@ jobs:
           timeout 120s node scripts/fetch-nfl-schedule.mjs || echo "NFL schedule failed; seed odds will wait"
           timeout 180s node scripts/fetch-cfb-schedule.mjs || echo "college schedule failed; playoff odds will wait"
           timeout 60s node scripts/build-outlook.mjs || echo "outlook failed; keeping the saved snapshot"
+          # Imperialism Map: replays every finished game from the finals the schedule fetches saved (Python, standard library only).
+          timeout 120s python3 scripts/imperialism/build.py || echo "imperialism map failed; keeping the saved map"
 
       - name: Build
         timeout-minutes: 25
