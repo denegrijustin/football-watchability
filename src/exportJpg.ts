@@ -9,7 +9,7 @@ import { tzAbbr } from "./tz";
  * weekend image shares one time axis across all days, so a given time is the
  * same column on every day. Networks run down the side, time runs left
  * to right. Entertaining games (Good or better) get a tier-colored outline,
- * Background games are dimmed. Times follow the site's chosen time zone.
+ * Background games use a dashed outline and ↓ marker. Times follow the site's chosen time zone.
  */
 const PAD = 40;
 const LABEL_W = 132;
@@ -60,12 +60,22 @@ function fit(ctx: CanvasRenderingContext2D, text: string, max: number) {
   while (t.length > 1 && ctx.measureText(`${t}…`).width > max) t = t.slice(0, -1);
   return `${t}…`;
 }
+/** Texas and Kansas logos are shown upside down everywhere on the site (see styles.css); the export matches. */
+const UPSIDE_DOWN = /\/logos\/(texas|kansas)\.webp(\?|$)/;
 /** Draws an image scaled to fit inside a box, centered. */
 function contain(ctx: CanvasRenderingContext2D, img: HTMLImageElement, x: number, y: number, w: number, h: number) {
   const r = Math.min(w / img.width, h / img.height);
   const dw = img.width * r,
     dh = img.height * r;
-  ctx.drawImage(img, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh);
+  const cx = x + w / 2,
+    cy = y + h / 2;
+  if (UPSIDE_DOWN.test(img.src)) {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(Math.PI);
+    ctx.drawImage(img, -dw / 2, -dh / 2, dw, dh);
+    ctx.restore();
+  } else ctx.drawImage(img, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh);
 }
 
 export type ExportDay = { date: string; day: string; label: string; games: GridGame[] };
@@ -143,9 +153,9 @@ export async function downloadGridJpg({
   for (const [label, color, dim] of [
     ["Entertaining (74+): outlined", TIER_COLOR.elite, false],
     ["Watchable (64–73)", TIER_COLOR.watch, false],
-    ["Background (<64): dimmed", TIER_COLOR.bg, true],
+    ["↓ Lower priority (<64): dashed", TIER_COLOR.bg, true],
   ] as const) {
-    ctx.globalAlpha = dim ? 0.45 : 1;
+    ctx.globalAlpha = 1;
     ctx.fillStyle = color;
     roundRect(ctx, lx, ly - 9, 18, 18, 4);
     ctx.fill();
@@ -263,7 +273,7 @@ function drawBlock(
   const [a, h] = g.sides;
 
   ctx.save();
-  ctx.globalAlpha = dim ? 0.42 : 1;
+  ctx.globalAlpha = 1;
   // Body, clipped to the rounded block: away color | dark middle | home color
   roundRect(ctx, x, y, w, BLOCK_H, 12);
   ctx.clip();
@@ -301,11 +311,13 @@ function drawBlock(
 
   // Outline: tier color for Entertaining, hairline otherwise
   ctx.save();
-  ctx.globalAlpha = dim ? 0.42 : 1;
+  ctx.globalAlpha = 1;
   ctx.lineWidth = hl ? 3 : 1;
-  ctx.strokeStyle = hl ? color : "rgba(255,255,255,0.14)";
+  ctx.strokeStyle = hl ? color : dim ? "#8d9eac" : "rgba(255,255,255,0.14)";
+  if (dim) ctx.setLineDash([5, 4]);
   roundRect(ctx, x + ctx.lineWidth / 2, y + ctx.lineWidth / 2, w - ctx.lineWidth, BLOCK_H - ctx.lineWidth, 12);
   ctx.stroke();
+  ctx.setLineDash([]);
 
   // Label: matchup, then kickoff · network (or final score)
   const pillW = 46;
@@ -329,7 +341,9 @@ function drawBlock(
   ctx.font = `800 18px ${FONT}`;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(String(g.score), px + pillW / 2, py + 16);
+  ctx.fillText(dim ? `↓ ${g.score}` : String(g.score), px + pillW / 2, py + 16);
   ctx.textAlign = "left";
   ctx.restore();
 }
+
+
