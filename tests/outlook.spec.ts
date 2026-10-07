@@ -290,7 +290,7 @@ test("the view tabs and Export never overlap, down to the narrowest phone", asyn
       return { tabs, exp: box(document.querySelector(".export-btns summary")!), sw: document.querySelector(".view-switch")!.scrollWidth - document.querySelector(".view-switch")!.clientWidth };
     });
     expect(boxes.sw, `tabs overflow at ${w}px`).toBeLessThanOrEqual(0);
-    expect(boxes.tabs).toHaveLength(4);
+    expect(boxes.tabs).toHaveLength(5);
     for (const t of boxes.tabs) {
       const apart = t.r <= boxes.exp.l + 0.5 || t.l >= boxes.exp.r - 0.5 || t.b <= boxes.exp.t + 0.5 || t.t >= boxes.exp.b - 0.5;
       expect(apart, `a view tab overlaps Export at ${w}px`).toBe(true);
