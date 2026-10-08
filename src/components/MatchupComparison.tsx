@@ -47,8 +47,8 @@ export function rankEdge(left?: number | null, right?: number | null) {
 
 function StatCell({ stat, unit, league, rankedTeams }: { stat?: Stat; unit: string; league: MatchupData["league"]; rankedTeams: number }) {
   const rank = validRank(stat?.rank) && stat.rank <= rankedTeams ? stat.rank : null;
-  const bottom = rank != null && rank > rankedTeams / 2 && rank >= rankedTeams - 9;
-  const badge = rank === 1 ? league === "NFL" ? "Best in League" : "Best in Nation" : (rank === rankedTeams || stat?.worst) ? "Worst" : bottom ? rank >= rankedTeams - 4 ? "Bottom 5" : "Bottom 10" : rank && rank <= 5 ? "Top 5" : rank && rank <= 10 ? "Top 10" : null;
+  const bottom = rank != null && (league === "CFB" ? rank > rankedTeams * 0.8 : rank > rankedTeams / 2 && rank >= rankedTeams - 9);
+  const badge = rank === 1 ? league === "NFL" ? "Best in League" : "Best in Nation" : (rank === rankedTeams || stat?.worst) ? "Worst" : bottom ? league === "CFB" ? rank > rankedTeams * 0.95 ? "Bottom 5%" : rank > rankedTeams * 0.9 ? "Bottom 10%" : "Bottom 20%" : rank >= rankedTeams - 4 ? "Bottom 5" : "Bottom 10" : rank && rank <= 5 ? "Top 5" : rank && rank <= 10 ? "Top 10" : null;
   return <div className="mc:flex mc:min-w-0 mc:flex-col mc:items-center mc:gap-1 mc:py-2">
     <strong className="mc:text-base mc:font-semibold mc:tabular-nums mc:text-zinc-100">
       {stat?.value != null && Number.isFinite(stat.value) ? `${stat.value.toFixed(unit === "Total" ? 0 : 1)}${unit === "%" ? "%" : ""}` : "—"}
