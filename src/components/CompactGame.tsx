@@ -7,11 +7,11 @@ import { useOpenGame } from "./GameCenter";
 import { SquareActivity } from "lucide-react";
 
 type Team = { name: string; logoId: string; record: string; ranks?: unknown };
-export function CompactGame({ titleId, matchup, date, broadcast, network, espnId, teams, league, score, tier, venue, line, crew, weather, status, scores, onExpand }: {
+export function CompactGame({ titleId, matchup, date, broadcast, network, espnId, teams, league, score, tier, venue, line, crew, weather, status, scores, momentum, onExpand }: {
   titleId: string; matchup: string; date: string; broadcast: string; network?: string | null; espnId?: string | null;
   teams: Team[]; league: string; score: number; tier: string; venue: string; line?: string | null;
   crew?: CrewMember[]; weather?: { icon: string; title: string; detail: string; impact: string };
-  status?: ReactNode; scores?: ReactNode[]; onExpand: () => void;
+  status?: ReactNode; scores?: ReactNode[]; momentum?: ReactNode; onExpand: () => void;
 }) {
   const openGame = useOpenGame();
   const logo = networkLogo(network);
@@ -39,6 +39,7 @@ export function CompactGame({ titleId, matchup, date, broadcast, network, espnId
         {impact && impact !== "none" && impact !== "low" && <span className={`impact-pill ${impact}`}>{impact} weather impact</span>}
       </li>
     </ul>
+    {momentum}
     <div className="cc-actions">{espnId && <button type="button" className="cc-gc" title="Open Game Center" aria-label={`Open Game Center for ${matchup}`} onClick={e => { e.stopPropagation(); openGame(espnId); }}><SquareActivity size={16} aria-hidden="true" /><span>GC</span></button>}<button className="card-toggle cc-chevron" type="button" aria-label="Show game details" aria-expanded={false} onClick={onExpand}>Details <span aria-hidden="true">▾</span></button></div>
   </div>;
 }
