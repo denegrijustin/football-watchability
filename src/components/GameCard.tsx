@@ -2,10 +2,6 @@ import { CompactGame } from "./CompactGame";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { nameParts } from "../teamName";
 import { deltaValue, logos, parseMeta, tierLabel, type Game } from "../data";
-import { Stakes } from "./TeamImpact";
-import { GameDetails } from "./GameDetails";
-import { WeatherLook } from "./WeatherLook";
-import { TeamForm } from "./Trends";
 import {
   networkLogo,
   rankLine,
@@ -142,6 +138,16 @@ export function GameCard({
           {game.broadcast}
         </div>
       </header>
+          <button
+            type="button"
+            className="gc-open"
+            onClick={() => openGame(game.espnId)}
+          >
+            <span>
+              <strong>Game Center</strong> · matchup stats, players & deeper analysis
+            </span>
+            <span aria-hidden="true">↗</span>
+          </button>
       {flow && (
         <InsanityMeter
           wp={flow}
@@ -248,7 +254,7 @@ export function GameCard({
       )}
       {expanded && (
         <div className="card-more" id={`${game.id}-more`}>
-          <WeatherLook game={game} />
+
 
           <p className="take">{game.narrative}</p>
           {"projected" in game && (
@@ -276,20 +282,10 @@ export function GameCard({
             }}
           />
           <InjuryWatch game={game} />
-          <Stakes game={game} />
-          <TeamForm game={game} />
-          <button
-            type="button"
-            className="gc-open"
-            onClick={() => openGame(game.espnId)}
-          >
-            <span>
-              <strong>Game Center</strong> · live win probability, momentum,
-              field tilt, drive chart, player tracker
-            </span>
-            <span aria-hidden="true">↗</span>
-          </button>
-          <GameDetails game={game} />
+
+
+
+
         </div>
       )}
       {expanded && toggle}
