@@ -1,3 +1,4 @@
+import { MomentumFlow } from "./MomentumFlow";
 import { CompactGame } from "./CompactGame";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { nameParts } from "../teamName";
@@ -106,7 +107,7 @@ export function GameCard({
           setExpanded(true);
       }}
     >
-      {!expanded && <CompactGame titleId={`${game.id}-title`} matchup={game.matchup} date={date} broadcast={game.broadcast} network={game.network} espnId={game.espnId} teams={game.teams} league={game.league} score={game.score} tier={game.tier} venue={meta.venue} line={meta.line} crew={(game as { announcers?: CrewMember[] }).announcers} weather={game.weather} status={<GameStatus live={live} />} scores={[<TeamScore live={live} side="away" />, <TeamScore live={live} side="home" />]} onExpand={() => setExpanded(true)} />}
+      {!expanded && <CompactGame titleId={`${game.id}-title`} matchup={game.matchup} date={date} broadcast={game.broadcast} network={game.network} espnId={game.espnId} teams={game.teams} league={game.league} score={game.score} tier={game.tier} venue={meta.venue} line={meta.line} crew={(game as { announcers?: CrewMember[] }).announcers} weather={game.weather} status={<GameStatus live={live} />} scores={[<TeamScore live={live} side="away" />, <TeamScore live={live} side="home" />]} onExpand={() => setExpanded(true)} momentum={live?.state === "in" ? <MomentumFlow wp={flow ?? []} away={awayAbbr} home={homeAbbr} compact /> : undefined} />}
       {expanded && (
         <>
       <header className="card-top">
