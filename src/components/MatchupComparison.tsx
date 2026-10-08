@@ -33,12 +33,12 @@ const categories = [
   { id: "turnovers", label: "Turnovers", unit: "Total" },
 ] as const;
 export type MetricId = typeof categories[number]["id"];
-export type Stat = { value: number | null; rank: number | null };
+export type Stat = { value: number | null; rank: number | null; worst?: boolean };
 export type MatchupTeam = {
   id: string; name: string; abbreviation: string;
   metrics: { id: MetricId; offense: Stat; defense: Stat }[];
 };
-export type MatchupData = { league: "NFL" | "CFB"; season: number; rankedTeams: number; sample?: boolean; teams: [MatchupTeam, MatchupTeam] };
+export type MatchupData = { league: "NFL" | "CFB"; season: number; rankedTeams: number; sample?: boolean; source?: string; sourceUrl?: string; updatedAt?: string; teams: [MatchupTeam, MatchupTeam] };
 const validRank = (rank?: number | null): rank is number => Number.isInteger(rank) && rank! > 0;
 export function rankEdge(left?: number | null, right?: number | null) {
   if (!validRank(left) || !validRank(right)) return null;
@@ -48,7 +48,7 @@ export function rankEdge(left?: number | null, right?: number | null) {
 function StatCell({ stat, unit, league, rankedTeams }: { stat?: Stat; unit: string; league: MatchupData["league"]; rankedTeams: number }) {
   const rank = validRank(stat?.rank) && stat.rank <= rankedTeams ? stat.rank : null;
   const bottom = rank != null && rank > rankedTeams / 2 && rank >= rankedTeams - 9;
-  const badge = rank === 1 ? league === "NFL" ? "Best in League" : "Best in Nation" : rank === rankedTeams ? "Worst" : bottom ? rank >= rankedTeams - 4 ? "Bottom 5" : "Bottom 10" : rank && rank <= 5 ? "Top 5" : rank && rank <= 10 ? "Top 10" : null;
+  const badge = rank === 1 ? league === "NFL" ? "Best in League" : "Best in Nation" : (rank === rankedTeams || stat?.worst) ? "Worst" : bottom ? rank >= rankedTeams - 4 ? "Bottom 5" : "Bottom 10" : rank && rank <= 5 ? "Top 5" : rank && rank <= 10 ? "Top 10" : null;
   return <div className="mc:flex mc:min-w-0 mc:flex-col mc:items-center mc:gap-1 mc:py-2">
     <strong className="mc:text-base mc:font-semibold mc:tabular-nums mc:text-zinc-100">
       {stat?.value != null && Number.isFinite(stat.value) ? `${stat.value.toFixed(unit === "Total" ? 0 : 1)}${unit === "%" ? "%" : ""}` : "—"}
@@ -104,6 +104,7 @@ export function MatchupComparison({ data }: { data: MatchupData }) {
       <button type="button" aria-pressed={swapped} onClick={() => setSwapped(v => !v)} className="mc:cursor-pointer mc:rounded-lg mc:border mc:border-zinc-700 mc:bg-zinc-800 mc:px-3 mc:py-2 mc:text-xs mc:text-zinc-200 mc:hover:bg-zinc-700 mc:focus-visible:outline-2 mc:focus-visible:outline-emerald-300">Swap teams</button>
     </div>
     <div className="mc:grid mc:gap-3 mc:@min-[680px]:grid-cols-2"><Crossover left={left} right={right} side="offense" league={data.league} rankedTeams={data.rankedTeams} /><Crossover left={left} right={right} side="defense" league={data.league} rankedTeams={data.rankedTeams} /></div>
+    {data.updatedAt && <p className="mc:mb-0 mc:mt-3 mc:text-[11px] mc:text-zinc-400"><a href={data.sourceUrl} target="_blank" rel="noreferrer" className="mc:text-zinc-300 mc:underline">{data.source}</a> · {data.rankedTeams} teams · Updated {new Date(data.updatedAt).toLocaleString("en-US", { timeZone: "America/Chicago", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })} CT. Current season totals; tied values share ranks.</p>}
     <p className="mc:mb-0 mc:mt-3 mc:text-[11px] mc:text-zinc-400">Lower rank is better. Arrows point to the advantage; gaps of 5 or fewer are even. Defense shows yards/points allowed, conversion rate allowed and takeaways; offense shows giveaways.</p>
   </div>;
 }
