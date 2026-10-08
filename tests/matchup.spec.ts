@@ -40,5 +40,7 @@ test("crossover engine expands, compares ranks and swaps teams", async ({ page }
   await expect(page.getByText("Best in Nation", { exact: true })).toBeVisible();
   await expect(page.getByText("#136 nationally", { exact: true })).toBeVisible();
   await expect(page.getByText("Worst", { exact: true })).toBeVisible();
-  await expect(page.getByText("Bottom 5", { exact: true })).toHaveCount(1);
+  await expect(page.getByText("Bottom 5%", { exact: true })).toHaveCount(5);
+  await expect(page.getByText("Bottom 10%", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("Bottom 20%", { exact: true })).toBeVisible();
 });
