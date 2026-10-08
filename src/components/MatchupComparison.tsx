@@ -35,7 +35,7 @@ const categories = [
 export type MetricId = typeof categories[number]["id"];
 export type Stat = { value: number | null; rank: number | null; worst?: boolean };
 export type MatchupTeam = {
-  id: string; name: string; abbreviation: string;
+  id: string; name: string; abbreviation: string; logo?: string;
   metrics: { id: MetricId; offense: Stat; defense: Stat }[];
 };
 export type MatchupData = { league: "NFL" | "CFB"; season: number; rankedTeams: number; sample?: boolean; source?: string; sourceUrl?: string; updatedAt?: string; teams: [MatchupTeam, MatchupTeam] };
@@ -70,18 +70,22 @@ function Edge({ left, right, names }: { left?: Stat; right?: Stat; names: [strin
   </span>;
 }
 
+function TeamMark({ team }: { team: MatchupTeam }) {
+  return <span className="mc:inline-flex mc:items-center mc:justify-center mc:gap-1.5" title={team.name}>{team.logo && <img src={team.logo} alt="" width={24} height={24} className="mc:h-6 mc:w-6 mc:shrink-0 mc:object-contain" />}<span>{team.abbreviation}</span></span>;
+}
+
 function Crossover({ left, right, side, league, rankedTeams }: { left: MatchupTeam; right: MatchupTeam; side: "offense" | "defense"; league: MatchupData["league"]; rankedTeams: number }) {
   const other = side === "offense" ? "defense" : "offense";
   const Icon = side === "offense" ? Swords : Shield;
   return <section className="mc:min-w-0 mc:overflow-hidden mc:rounded-xl mc:border mc:border-zinc-700/70 mc:bg-zinc-900">
-    <h4 className="mc:m-0 mc:flex mc:items-center mc:gap-2 mc:border-b mc:border-zinc-700/70 mc:px-3 mc:py-3 mc:text-sm mc:font-semibold mc:text-zinc-100"><Icon size={16} aria-hidden="true" />{left.abbreviation} {side} vs. {right.abbreviation} {other}</h4>
+    <h4 className="mc:m-0 mc:flex mc:items-center mc:gap-2 mc:border-b mc:border-zinc-700/70 mc:px-3 mc:py-3 mc:text-sm mc:font-semibold mc:text-zinc-100"><Icon size={16} aria-hidden="true" /><TeamMark team={left} /> {side} vs. <TeamMark team={right} /> {other}</h4>
     <table className="mc:w-full mc:table-fixed mc:border-collapse mc:text-left">
       <caption className="mc:sr-only">{left.name} {side} against {right.name} {other}</caption>
       <thead><tr className="mc:text-[10px] mc:uppercase mc:tracking-wider mc:text-zinc-400">
         <th scope="col" className="mc:w-[30%] mc:px-3 mc:py-2">Metric</th>
-        <th scope="col" className="mc:w-[28%] mc:text-center">{left.abbreviation}</th>
+        <th scope="col" className="mc:w-[28%] mc:text-center"><TeamMark team={left} /></th>
         <th scope="col" className="mc:w-[14%] mc:text-center">Edge</th>
-        <th scope="col" className="mc:w-[28%] mc:text-center">{right.abbreviation}</th>
+        <th scope="col" className="mc:w-[28%] mc:text-center"><TeamMark team={right} /></th>
       </tr></thead>
       <tbody>{categories.map(({ id, label, unit }) => {
         const a = left.metrics.find(m => m.id === id)?.[side], b = right.metrics.find(m => m.id === id)?.[other];
