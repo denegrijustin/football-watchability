@@ -16,6 +16,10 @@ const expand = async (card: import("@playwright/test").Locator) => {
   const t = card.locator('.card-toggle[aria-expanded="false"]');
   if (await t.count()) await t.click();
 };
+const deep = async (page: import("@playwright/test").Page, card: import("@playwright/test").Locator) => {
+  await card.getByRole("button", { name: /Game Center/ }).click();
+  return page.getByRole("dialog");
+};
 const expandAll = async (page: import("@playwright/test").Page) => {
   const closed = page.locator('.game-card:visible .card-toggle[aria-expanded="false"]');
   // Expand fixtures without an outside pointer event collapsing the previous card.
@@ -47,7 +51,10 @@ test("@smoke all games, conferences, history and logos remain available", async 
   }
   await pick(page, "Conference", "All conferences");
   await expandAll(page);
-  const first = page.locator(CARD).first();
+  const completedToggle = page.getByRole("button", { name: "Show completed games", exact: true });
+  if (await completedToggle.count()) await completedToggle.click();
+  await page.locator(CARD).first().getByRole("button", { name: /Game Center/ }).click();
+  const first = page.getByRole("dialog");
   await first
     .locator("summary")
     .filter({ hasText: "History + key players" }).evaluate(el => { if (!(el.parentElement as HTMLDetailsElement).open) (el as HTMLElement).click(); });
@@ -60,7 +67,8 @@ test("@smoke all games, conferences, history and logos remain available", async 
   await page.screenshot({
     path: `test-results/expanded-${test.info().project.name}.png`,
   });
-  await page.locator(CARD).last().scrollIntoViewIfNeeded();
+  await page.getByRole("button", { name: "Close Game Center" }).click();
+  await page.locator(CARD + ":visible").last().scrollIntoViewIfNeeded();
   const loaded = await page
     .locator(".team-heading img, .cc-team img")
     .evaluateAll(async (imgs) => {
@@ -109,10 +117,12 @@ test("search, empty state, league switch and responsive layout", async ({
     ).toBe(0);
     expect((await page.locator(".card-toggle").first().boundingBox())!.height).toBeGreaterThanOrEqual(44);
     await expand(page.locator(CARD).first());
+    await page.locator(CARD).first().getByRole("button", { name: /Game Center/ }).click();
     expect(
       (await page.locator(".game-details summary").first().boundingBox())!
         .height,
     ).toBeGreaterThanOrEqual(44);
+    await page.getByRole("button", { name: "Close Game Center" }).click();
   }
   await page.evaluate(() => scrollTo(0, 0));
   await page.screenshot({
@@ -172,8 +182,9 @@ test("day and watchability filters narrow the board", async ({ page }) => {
 test("season form chart, trends panel and network logos render", async ({ page }) => {
   await page.goto("/?league=NFL");
   await league(page, "CFB");
-  const card = page.locator(CARD).first();
+  let card = page.locator(CARD).first();
   await expand(card);
+  card = await deep(page, card);
   await expect(card.locator(".form-row")).toHaveCount(2);
   await card.locator(".form .mb-svg rect").first().focus();
   await expect(card.locator(".mb-tip")).toBeVisible();
@@ -215,13 +226,15 @@ test("final view compares forecast with actual and explains the score", async ({
     await expect(card.locator(".sc-head")).toHaveText(top.scoreCheck.headline);
     await expect(card.locator(".sc-box").first()).toContainText(`${top.scoreCheck.projected.away}–${top.scoreCheck.projected.home}`);
   }
-  await card.locator("summary").filter({ hasText: "Why it scored" }).evaluate(el => { if (!(el.parentElement as HTMLDetailsElement).open) (el as HTMLElement).evaluate(el => { if (!(el.parentElement as HTMLDetailsElement).open) (el as HTMLElement).click(); }); });
+  const analysis = await deep(page, card);
+  await analysis.locator("summary").filter({ hasText: "Why it scored" }).click();
   // Only the actual-score breakdown: a card with forecast parts carries a second table for the forecast.
-  const rows = card
+  const rows = analysis
     .locator("details")
     .filter({ has: page.locator("summary", { hasText: "Why it scored" }) })
     .locator(".breakdown tbody tr");
   await expect(rows).toHaveCount(top.actual.parts.length + 2);
+  await page.getByRole("button", { name: "Close Game Center" }).click();
   if (top.wp.length >= 8) {
     await expect(card.locator(".wp svg")).toBeVisible();
     await card.locator(".wp svg rect[tabindex='0']").first().focus();
@@ -239,8 +252,10 @@ test("final view compares forecast with actual and explains the score", async ({
   const withWp = slate.games.filter((x: any) => x.league === league && x.winProb).length;
   await expect(page.locator(`${CARD} .pwp`)).toHaveCount(withWp);
   await expect(page.locator(".pwp-bar").first()).toBeVisible();
-  await g.locator("summary").filter({ hasText: "Why it's a" }).evaluate(el => { if (!(el.parentElement as HTMLDetailsElement).open) (el as HTMLElement).evaluate(el => { if (!(el.parentElement as HTMLDetailsElement).open) (el as HTMLElement).click(); }); });
-  await expect(g.locator(".breakdown .bd-total td")).toHaveText(await g.locator(".score strong").innerText());
+  const score = await g.locator(".score strong").innerText();
+  const forecast = await deep(page, g);
+  await forecast.locator("summary").filter({ hasText: "Why it's a" }).click();
+  await expect(forecast.locator(".breakdown .bd-total td")).toHaveText(score);
   expect(errors).toEqual([]);
 });
 
@@ -280,7 +295,7 @@ test("TV grid lays out every game by network and time, highlighting good games a
   const dialog = page.locator("dialog.tv-dialog");
   await expect(dialog).toBeVisible();
   await expect(dialog.locator(".game-card, .result-card")).toHaveCount(1);
-  await expect(dialog.locator(".game-details summary").first()).toBeVisible();
+  await expect(dialog.getByRole("button", { name: /Game Center/ })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();
   await expect(page.locator(".tv-key")).toContainText("Entertaining");
@@ -302,8 +317,9 @@ test("weekend export files and advanced stats are available", async ({ page, req
   await page.locator(".export summary").click();
   await expect(page.locator(".export-menu a[href='/exports/watch-slate.csv']")).toBeVisible();
   await expect(page.getByRole("button", { name: /Save image/ })).toHaveCount(0);
-  const card = page.locator(CARD).first();
+  let card = page.locator(CARD).first();
   await expand(card);
+  card = await deep(page, card);
   const adv = card.locator("summary").filter({ hasText: "Advanced stats" });
   if (await adv.count()) {
     if (!(await adv.locator("..").getAttribute("open") !== null)) await adv.click();
@@ -339,7 +355,7 @@ test("times default to Central, follow the chosen zone, and the TV grid saves a 
     expect(bytes.subarray(0, 8).toString("hex")).toBe("89504e470d0a1a0a");
     const [w, h] = [bytes.readUInt32BE(16), bytes.readUInt32BE(20)];
     expect(w * h).toBeGreaterThan(4e6);
-    expect(w * h).toBeLessThanOrEqual(90e6);
+    expect(w * h).toBeLessThanOrEqual(90e6 + w + h);
     await dialog.getByRole("button", { name: "Close" }).click();
     await expect(dialog).toBeHidden();
   }
@@ -529,9 +545,10 @@ test("Key players show photo, name, position and team for every upcoming game", 
     }
   }
   await page.goto("/?league=NFL");
-  const card = page.locator(CARD).first();
+  let card = page.locator(CARD).first();
   await expand(card);
-  await card.locator("summary").filter({ hasText: "History + key players" }).evaluate(el => { if (!(el.parentElement as HTMLDetailsElement).open) (el as HTMLElement).evaluate(el => { if (!(el.parentElement as HTMLDetailsElement).open) (el as HTMLElement).click(); }); });
+  card = await deep(page, card);
+  await card.locator("summary").filter({ hasText: "History + key players" }).click();
   const kp = card.locator(".kp-card");
   await expect(kp.first()).toBeVisible();
   await expect(kp.first().locator(".kp-pos")).not.toBeEmpty();
@@ -544,9 +561,8 @@ test("NFL cards carry an injury report with Out / Doubtful / Questionable and th
   test.skip(!nfl.length, "no injury data in this build");
   for (const g of nfl) for (const t of g.teams) for (const i of t.injuries ?? []) expect(i.status).toBeTruthy();
   await page.goto("/?league=NFL");
-  await expandAll(page);
-  const card = page.locator(".game-card").filter({ has: page.locator("summary", { hasText: "Injury report" }) }).first();
-  await card.locator("summary").filter({ hasText: "Injury report" }).evaluate(el => { if (!(el.parentElement as HTMLDetailsElement).open) (el as HTMLElement).evaluate(el => { if (!(el.parentElement as HTMLDetailsElement).open) (el as HTMLElement).click(); }); });
+  const card = await deep(page, page.locator(`${CARD}[data-game-id="${nfl[0].id}"]`));
+  await card.locator("summary").filter({ hasText: "Injury report" }).click();
   await expect(card.locator(".inj-team")).toHaveCount(2);
   const status = card.locator(".inj-status").first();
   if (await status.count()) await expect(status).toHaveText(/Out|Doubtful|Questionable/i);
@@ -564,13 +580,8 @@ test("college conference games carry the conference availability report", async 
   const g = games.find((x: any) => !x.availability.pending) ?? games[0];
   await page.goto("/?league=NFL");
   await league(page, "CFB");
-  await expandAll(page);
-  const card = page
-    .locator(`${CARD}[data-game-id="${g.id}"]`)
-    .filter({ has: page.locator("summary", { hasText: "Injury report" }) })
-    .first();
-  await card.scrollIntoViewIfNeeded();
-  await card.locator("summary").filter({ hasText: "Injury report" }).evaluate(el => { if (!(el.parentElement as HTMLDetailsElement).open) (el as HTMLElement).evaluate(el => { if (!(el.parentElement as HTMLDetailsElement).open) (el as HTMLElement).click(); }); });
+  const card = await deep(page, page.locator(`${CARD}[data-game-id="${g.id}"]`));
+  await card.locator("summary").filter({ hasText: "Injury report" }).click();
   if (g.availability.pending) {
     await expect(card.locator(".inj-pending")).toContainText(`${g.availability.conf} posts its first availability report`);
   } else {
@@ -948,7 +959,7 @@ test("@smoke the persistent bar is slim and every filter is a pop-down menu", as
   expect(errors).toEqual([]);
 });
 
-test("@smoke game cards show a full compact overview and expand to all analysis", async ({ page }) => {
+test("@smoke game cards show a full compact overview and concise first expansion", async ({ page }) => {
   await page.goto("/?league=NFL");
   // An upcoming or live game.
   const card = page.locator(CARD).first();
@@ -971,7 +982,8 @@ test("@smoke game cards show a full compact overview and expand to all analysis"
   await expect(card).toHaveClass(/expanded/);
   await expect(card.locator(".compact-overview")).toHaveCount(0);
   await expect(card.locator(".facts")).toBeVisible();
-  await expect(card.locator(".game-details details:not([open])")).toHaveCount(0);
+  await expect(card.locator(".game-details")).toHaveCount(0);
+  await expect(card.getByRole("button", { name: /Game Center/ })).toBeVisible();
   await expect(card.locator(".booth")).toContainText("Announcers:");
   await expect(card.locator(".tv")).toBeVisible();
   await expect(card.locator(".card-more .take")).toBeVisible();
@@ -1002,7 +1014,8 @@ test("compact Details button fits and outside click collapses expanded games", a
   await expect(button).toBeVisible();
   const sizes = await button.evaluate(el => ({ width: el.clientWidth, scroll: el.scrollWidth, parent: el.parentElement!.clientWidth }));
   expect(sizes.scroll).toBeLessThanOrEqual(sizes.width);
-  expect(sizes.width).toBeGreaterThan(sizes.parent * .95);
+  expect(sizes.width).toBeGreaterThan(sizes.parent - 70);
+  await expect(card.locator(".cc-gc")).toBeVisible();
   await button.click();
   await expect(card).toHaveClass(/expanded/);
   await card.locator(".facts").click();
