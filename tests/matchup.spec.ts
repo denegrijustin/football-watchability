@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test("crossover engine expands, compares ranks and swaps teams", async ({ page }) => {
-  await page.goto("/matchup-demo.html");
+  await page.goto("/matchup-demo.html?sample=1");
   const toggle = page.getByRole("button", { name: /Kansas City Chiefs vs/ });
   const swap = page.getByRole("button", { name: "Swap teams" });
   await expect(toggle).toHaveAttribute("aria-expanded", "false");
@@ -33,8 +33,8 @@ test("crossover engine expands, compares ranks and swaps teams", async ({ page }
 });
 
  test("college labels use national ranks and the supplied pool", async ({ page }) => {
-  await page.goto("/matchup-demo.html");
-  await page.getByLabel("Sample league").selectOption("CFB");
+  await page.goto("/matchup-demo.html?sample=1");
+  await page.getByLabel("League").selectOption("CFB");
   await page.getByRole("button", { name: /College Team A vs/ }).click();
   await expect(page.getByText("#1 nationally", { exact: true })).toBeVisible();
   await expect(page.getByText("Best in Nation", { exact: true })).toBeVisible();
