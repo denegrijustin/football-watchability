@@ -3,20 +3,20 @@ import { ArrowLeft, ArrowRight, ChevronDown, Minus, Shield, Swords } from "lucid
 import "./matchup.css";
 
 export const mockMatchup: MatchupData = {
-  league: "NFL", season: 2026, sample: true,
+  league: "NFL", season: 2026, rankedTeams: 32, sample: true,
   teams: [
     { id: "kc", name: "Kansas City Chiefs", abbreviation: "KC", metrics: [
       { id: "scoring", offense: { value: 27.4, rank: 6 }, defense: { value: 19.2, rank: 7 } },
       { id: "total", offense: { value: 371.8, rank: 8 }, defense: { value: 305.6, rank: 5 } },
-      { id: "passing", offense: { value: 258.2, rank: 4 }, defense: { value: 208.3, rank: 9 } },
+      { id: "passing", offense: { value: 258.2, rank: 1 }, defense: { value: 208.3, rank: 9 } },
       { id: "rushing", offense: { value: 113.6, rank: 18 }, defense: { value: 97.3, rank: 6 } },
       { id: "thirdDown", offense: { value: 46.1, rank: 3 }, defense: { value: 35.4, rank: 8 } },
       { id: "turnovers", offense: { value: 5, rank: 7 }, defense: { value: 10, rank: 4 } },
     ] },
     { id: "lv", name: "Las Vegas Raiders", abbreviation: "LV", metrics: [
       { id: "scoring", offense: { value: 20.6, rank: 24 }, defense: { value: 25.8, rank: 26 } },
-      { id: "total", offense: { value: 312.5, rank: 25 }, defense: { value: 354.2, rank: 22 } },
-      { id: "passing", offense: { value: 215.8, rank: 21 }, defense: { value: 233.4, rank: 24 } },
+      { id: "total", offense: { value: 312.5, rank: 32 }, defense: { value: 354.2, rank: 22 } },
+      { id: "passing", offense: { value: 215.8, rank: 29 }, defense: { value: 233.4, rank: 24 } },
       { id: "rushing", offense: { value: 96.7, rank: 27 }, defense: { value: 120.8, rank: 19 } },
       { id: "thirdDown", offense: { value: 36.2, rank: 26 }, defense: { value: 43.6, rank: 27 } },
       { id: "turnovers", offense: { value: 9, rank: 23 }, defense: { value: 6, rank: 20 } },
@@ -38,22 +38,24 @@ export type MatchupTeam = {
   id: string; name: string; abbreviation: string;
   metrics: { id: MetricId; offense: Stat; defense: Stat }[];
 };
-export type MatchupData = { league: "NFL" | "CFB"; season: number; sample?: boolean; teams: [MatchupTeam, MatchupTeam] };
+export type MatchupData = { league: "NFL" | "CFB"; season: number; rankedTeams: number; sample?: boolean; teams: [MatchupTeam, MatchupTeam] };
 const validRank = (rank?: number | null): rank is number => Number.isInteger(rank) && rank! > 0;
 export function rankEdge(left?: number | null, right?: number | null) {
   if (!validRank(left) || !validRank(right)) return null;
   return right - left;
 }
 
-function StatCell({ stat, unit }: { stat?: Stat; unit: string }) {
-  const rank = validRank(stat?.rank) ? stat.rank : null;
+function StatCell({ stat, unit, league, rankedTeams }: { stat?: Stat; unit: string; league: MatchupData["league"]; rankedTeams: number }) {
+  const rank = validRank(stat?.rank) && stat.rank <= rankedTeams ? stat.rank : null;
+  const bottom = rank != null && rank > rankedTeams / 2 && rank >= rankedTeams - 9;
+  const badge = rank === 1 ? league === "NFL" ? "Best in League" : "Best in Nation" : rank === rankedTeams ? "Worst" : bottom ? rank >= rankedTeams - 4 ? "Bottom 5" : "Bottom 10" : rank && rank <= 5 ? "Top 5" : rank && rank <= 10 ? "Top 10" : null;
   return <div className="mc:flex mc:min-w-0 mc:flex-col mc:items-center mc:gap-1 mc:py-2">
     <strong className="mc:text-base mc:font-semibold mc:tabular-nums mc:text-zinc-100">
       {stat?.value != null && Number.isFinite(stat.value) ? `${stat.value.toFixed(unit === "Total" ? 0 : 1)}${unit === "%" ? "%" : ""}` : "—"}
     </strong>
     <div className="mc:flex mc:flex-wrap mc:items-center mc:justify-center mc:gap-1 mc:text-xs mc:text-zinc-400">
-      <span>{rank ? `#${rank}` : "Unranked"}</span>
-      {rank && rank <= 10 && <span className="mc:rounded-full mc:border mc:border-emerald-400/25 mc:bg-emerald-400/10 mc:px-1.5 mc:py-0.5 mc:font-semibold mc:text-emerald-300">Top 10</span>}
+      <span>{rank ? `#${rank}${league === "CFB" ? " nationally" : ""}` : "Unranked"}</span>
+      {badge && <span className={`mc:rounded-full mc:border mc:px-1.5 mc:py-0.5 mc:font-semibold ${bottom ? "mc:border-red-400/25 mc:bg-red-400/10 mc:text-red-300" : "mc:border-emerald-400/25 mc:bg-emerald-400/10 mc:text-emerald-300"}`}>{badge}</span>}
     </div>
   </div>;
 }
@@ -68,7 +70,7 @@ function Edge({ left, right, names }: { left?: Stat; right?: Stat; names: [strin
   </span>;
 }
 
-function Crossover({ left, right, side }: { left: MatchupTeam; right: MatchupTeam; side: "offense" | "defense" }) {
+function Crossover({ left, right, side, league, rankedTeams }: { left: MatchupTeam; right: MatchupTeam; side: "offense" | "defense"; league: MatchupData["league"]; rankedTeams: number }) {
   const other = side === "offense" ? "defense" : "offense";
   const Icon = side === "offense" ? Swords : Shield;
   return <section className="mc:min-w-0 mc:overflow-hidden mc:rounded-xl mc:border mc:border-zinc-700/70 mc:bg-zinc-900">
@@ -85,7 +87,7 @@ function Crossover({ left, right, side }: { left: MatchupTeam; right: MatchupTea
         const a = left.metrics.find(m => m.id === id)?.[side], b = right.metrics.find(m => m.id === id)?.[other];
         return <tr key={id} className="mc:border-t mc:border-zinc-800 mc:transition-colors mc:hover:bg-zinc-800/70">
           <th scope="row" className="mc:px-3 mc:py-2 mc:text-xs mc:font-medium mc:text-zinc-300">{label}<span className="mc:block mc:text-[10px] mc:font-normal mc:text-zinc-500">{unit}</span></th>
-          <td><StatCell stat={a} unit={unit} /></td><td><Edge left={a} right={b} names={[left.abbreviation, right.abbreviation]} /></td><td><StatCell stat={b} unit={unit} /></td>
+          <td><StatCell stat={a} unit={unit} league={league} rankedTeams={rankedTeams} /></td><td><Edge left={a} right={b} names={[left.abbreviation, right.abbreviation]} /></td><td><StatCell stat={b} unit={unit} league={league} rankedTeams={rankedTeams} /></td>
         </tr>;
       })}</tbody>
     </table>
@@ -101,7 +103,7 @@ export function MatchupComparison({ data }: { data: MatchupData }) {
       <div><h3 className="mc:m-0 mc:text-sm mc:font-semibold">Offense vs. defense</h3><p className="mc:m-0 mc:text-xs mc:text-zinc-400">{data.league} · {data.season}{data.sample ? " · Sample data" : " · Season rankings"}</p></div>
       <button type="button" aria-pressed={swapped} onClick={() => setSwapped(v => !v)} className="mc:cursor-pointer mc:rounded-lg mc:border mc:border-zinc-700 mc:bg-zinc-800 mc:px-3 mc:py-2 mc:text-xs mc:text-zinc-200 mc:hover:bg-zinc-700 mc:focus-visible:outline-2 mc:focus-visible:outline-emerald-300">Swap teams</button>
     </div>
-    <div className="mc:grid mc:gap-3 mc:@min-[680px]:grid-cols-2"><Crossover left={left} right={right} side="offense" /><Crossover left={left} right={right} side="defense" /></div>
+    <div className="mc:grid mc:gap-3 mc:@min-[680px]:grid-cols-2"><Crossover left={left} right={right} side="offense" league={data.league} rankedTeams={data.rankedTeams} /><Crossover left={left} right={right} side="defense" league={data.league} rankedTeams={data.rankedTeams} /></div>
     <p className="mc:mb-0 mc:mt-3 mc:text-[11px] mc:text-zinc-400">Lower rank is better. Arrows point to the advantage; gaps of 5 or fewer are even. Defense shows yards/points allowed, conversion rate allowed and takeaways; offense shows giveaways.</p>
   </div>;
 }
