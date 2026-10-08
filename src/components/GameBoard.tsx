@@ -122,17 +122,6 @@ export function GameBoard({
 
   return (
     <>
-      {showUpcoming && (
-        <section className="board-section upcoming" aria-label="Upcoming">
-          <div className="section-head">
-            <h3>Upcoming</h3>
-            <span className="count">{upcoming.length}</span>
-            <span className="section-note">{SECTION_HELP.upcoming}</span>
-          </div>
-          <KickoffSlots games={upcoming} />
-        </section>
-      )}
-
       {showLive && (
         <section className="board-section live" aria-label="In progress">
           <div className="section-head">
@@ -143,6 +132,17 @@ export function GameBoard({
             <span className="section-note">{SECTION_HELP.live}</span>
           </div>
           <KickoffSlots games={live} />
+        </section>
+      )}
+
+      {showUpcoming && (
+        <section className="board-section upcoming" aria-label="Upcoming">
+          <div className="section-head">
+            <h3>Upcoming</h3>
+            <span className="count">{upcoming.length}</span>
+            <span className="section-note">{SECTION_HELP.upcoming}</span>
+          </div>
+          <KickoffSlots games={upcoming} />
         </section>
       )}
 
