@@ -10,6 +10,11 @@ import { PregameWinProb, type WinProbData } from "./PregameWinProb";
 import { ProjectedScore, type Projection } from "./ProjectedScore";
 import { InsanityMeter } from "./InsanityMeter";
 import { Headshot } from "./Headshot";
+import { GameDetails } from "./GameDetails";
+import { ResultAnalysis } from "./ResultAnalysis";
+import { WeatherLook } from "./WeatherLook";
+import { Stakes } from "./TeamImpact";
+import { TeamForm } from "./Trends";
 
 // ---------- open/close from anywhere ----------
 /** A game the board doesn't carry any more (earlier weeks), described just enough to open. */
@@ -273,7 +278,9 @@ function GameCenter({ espnId, stub, onClose }: { espnId: string | null; stub?: G
               </>
             )}
 
-            {(away.advanced || home.advanced) && (
+            {up && <section className="gc-panel gc-wide gc-deep-analysis"><h3 className="micro-label">Matchup & season analysis</h3><WeatherLook game={up} /><Stakes game={up} /><TeamForm game={up} /><GameDetails game={up} defaultOpen={false} /></section>}
+            {fin && <section className="gc-panel gc-wide"><h3 className="micro-label">Forecast & final analysis</h3><ResultAnalysis result={fin} /></section>}
+            {!up && !fin && (away.advanced || home.advanced) && (
               <section className="gc-panel gc-wide">
                 <h3 className="micro-label">Advanced stats + rankings (season)</h3>
                 <AdvancedStats league={league ?? "NFL"} away={{ abbr: abbr(away), adv: away.advanced ?? null }} home={{ abbr: abbr(home), adv: home.advanced ?? null }} />
