@@ -47,6 +47,8 @@ jobs:
       - run: node scripts/fetch-announcers.mjs || echo "announcer schedules failed"
       - run: node scripts/fetch-announcer-photos.mjs || echo "announcer photos failed"
       - run: node scripts/fetch-trends.mjs
+      - run: timeout 600s node scripts/fetch-matchup-stats.mjs
+        continue-on-error: true
       - run: node scripts/fetch-history.mjs
         timeout-minutes: 40
       - name: Commit raw data
