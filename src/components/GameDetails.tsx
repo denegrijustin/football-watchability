@@ -1,4 +1,5 @@
 import type { Game } from "../data";
+import { MatchupComparison, type MatchupData } from "./MatchupComparison";
 import type { Breakdown } from "../data";
 import { SeasonTrends } from "./Trends";
 import { ScoreBreakdown } from "./ScoreBreakdown";
@@ -57,9 +58,10 @@ function KeyPlayers({ game, players }: { game: Game; players: KeyPlayer[] }) {
     </div>
   );
 }
-export function GameDetails({ game }: { game: Game }) {
+export function GameDetails({ game, matchup = (game as Game & { matchupComparison?: MatchupData }).matchupComparison }: { game: Game; matchup?: MatchupData }) {
   return (
     <div className="game-details">
+      {matchup && <MatchupComparison data={matchup} />}
       {"breakdown" in game && (
         <details open>
           <summary>
