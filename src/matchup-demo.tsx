@@ -9,7 +9,7 @@ function Demo() {
   const sampleData: MatchupData = league === "NFL" ? mockMatchup : {
     ...mockMatchup, league: "CFB", rankedTeams: 136,
     teams: mockMatchup.teams.map((team, i) => ({ ...team, name: i ? "College Team B" : "College Team A", abbreviation: i ? "B" : "A",
-      metrics: team.metrics.map(m => ({ ...m, offense: { ...m.offense, rank: i && m.offense.rank ? m.offense.rank + 104 : m.offense.rank }, defense: { ...m.defense, rank: i && m.defense.rank ? m.defense.rank + 104 : m.defense.rank } })) })) as MatchupData["teams"],
+      metrics: team.metrics.map(m => ({ ...m, offense: { ...m.offense, rank: i && m.offense.rank ? m.offense.rank + 104 : m.offense.rank }, defense: { ...m.defense, rank: i && m.defense.rank ? (m.defense.rank === 19 ? 115 : m.defense.rank + 104) : m.defense.rank } })) })) as MatchupData["teams"],
   };
   const game = slate.games.find(g => g.league === league && matchupForGame(g));
   const data = sample ? sampleData : game && matchupForGame(game);
