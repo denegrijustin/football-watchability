@@ -11,6 +11,7 @@ import { ProjectedScore, type Projection } from "./ProjectedScore";
 import { InsanityMeter } from "./InsanityMeter";
 import { Headshot } from "./Headshot";
 import { GameDetails } from "./GameDetails";
+import { MomentumFlow } from "./MomentumFlow";
 import { ResultAnalysis } from "./ResultAnalysis";
 import { WeatherLook } from "./WeatherLook";
 import { Stakes } from "./TeamImpact";
@@ -358,7 +359,8 @@ function Momentum({ game, away, home }: { game: LiveGame; away: string; home: st
   const w = Math.min(50, Math.abs(swing));
   return (
     <section className="gc-panel">
-      <h3 className="micro-label">Momentum</h3>
+      <h3 className="micro-label">Game flow · momentum</h3>
+      <MomentumFlow wp={game.wp.map(p => [p[0], p[1]])} away={away} home={home} />
       <p className="gc-big">
         {side ? (
           <>
