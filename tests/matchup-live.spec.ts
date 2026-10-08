@@ -1,0 +1,23 @@
+import { test, expect } from '@playwright/test';
+import { readFileSync } from 'node:fs';
+const stats = JSON.parse(readFileSync('src/data/matchup-stats.json', 'utf8'));
+const slate = JSON.parse(readFileSync('src/data/slate.json', 'utf8'));
+for (const league of ['NFL', 'CFB']) test(`${league} game cards show real crossover statistics`, async ({ page }) => {
+  await page.goto(`/?league=${league}`);
+  const card = page.locator('.game-card:not(.result-card):visible').first();
+  const id = await card.getAttribute('data-game-id');
+  const game = slate.games.find((g: any) => g.id === id);
+  const snapshot = stats.leagues[league];
+  const team = snapshot.teams[game.teams[0].espnId];
+  await card.locator('.card-toggle[aria-expanded="false"]').first().click();
+  const engine = card.locator('.matchup-engine');
+  await expect(engine).toBeVisible();
+  await expect(engine.getByRole('table')).toHaveCount(2);
+  await expect(engine.getByText(/Sample data/)).toHaveCount(0);
+  await expect(engine.getByText(/ESPN regular-season team statistics/)).toBeVisible();
+  const scoring = engine.getByRole('table').first().getByRole('row').nth(1);
+  await expect(scoring.getByText(team.metrics[0].offense.value.toFixed(1), { exact: true })).toBeVisible();
+  await expect(scoring.getByText(`#${team.metrics[0].offense.rank}${league === 'CFB' ? ' nationally' : ''}`, { exact: true })).toBeVisible();
+  await engine.getByRole('button', { name: 'Swap teams' }).click();
+  await expect(engine.getByRole('button', { name: 'Swap teams' })).toHaveAttribute('aria-pressed', 'true');
+});
