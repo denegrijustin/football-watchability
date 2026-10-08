@@ -68,7 +68,7 @@ jobs:
           # the scripts, tests and application code maintained on main.
           git checkout origin/main -- . ':!data-raw' ':!data-raw-test' ':!data-raw-prev' ':!src/data/*.json' ':!public'
           # Keep the last published independent TV checks even if sources are down.
-          git checkout origin/main -- src/data/broadcast-checks.json
+          git checkout origin/main -- src/data/broadcast-checks.json src/data/matchup-stats.json
 
       - name: Anything to do?
         id: go
@@ -126,6 +126,7 @@ jobs:
           # Discover missing photos with the manual Fetch slate data workflow,
           # never on the critical path of a routine refresh.
           timeout 120s node scripts/fetch-trends.mjs || echo "trends failed; building without them"
+          timeout 600s node scripts/fetch-matchup-stats.mjs || echo "matchup statistics failed; keeping saved rankings"
           timeout 120s node scripts/fetch-advanced.mjs || echo "advanced stats failed; building without them"
           timeout 300s node scripts/fetch-history.mjs || echo "history failed or timed out; using what we have"
           # Rankings and playoff projections from the FPI feeds already fetched above; the script itself
