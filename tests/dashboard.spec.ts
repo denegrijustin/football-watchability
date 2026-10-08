@@ -487,6 +487,8 @@ test("insanity meter updates live from the flow feed", async ({ page }) => {
     return route.fulfill({ json: { wp } });
   });
   await page.goto("/?league=NFL");
+  await expect(page.locator(".game-card .flow-mini").first()).toBeVisible();
+  await page.screenshot({path: "test-results/live-momentum-" + test.info().project.name + ".png"});
   await expand(page.locator(CARD).first()); // the meter lives in the expanded card
   const meter = page.locator(".game-card .insanity.live").first();
   await expect(meter).toBeVisible();
@@ -608,7 +610,7 @@ test("cards show the broadcast crew when the announcing schedule lists the game"
   expect(box!.height).toBeLessThanOrEqual(22);
 });
 
-test("board shows upcoming first and collapses completed games below, with working status filters", async ({ page }) => {
+test("board shows live first and collapses completed games below, with working status filters", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (err) => errors.push(err.message));
   const games = slate.games.filter((g: any) => g.league === "NFL");
@@ -629,8 +631,8 @@ test("board shows upcoming first and collapses completed games below, with worki
   );
   await page.goto("/?league=NFL");
   const sections = page.locator(".board-section");
-  await expect(sections.first()).toHaveAttribute("aria-label", "Upcoming");
-  expect(await sections.evaluateAll((els) => els.map((e) => e.getAttribute("aria-label")))).toEqual(["Upcoming", "In progress", "Completed"]);
+  await expect(sections.first()).toHaveAttribute("aria-label", "In progress");
+  expect(await sections.evaluateAll((els) => els.map((e) => e.getAttribute("aria-label")))).toEqual(["In progress", "Upcoming", "Completed"]);
   await expect(page.locator(".board-section.live .game-card")).toHaveCount(1);
   await expect(page.locator(".board-section.live .game-status")).toContainText("Live");
   // Completed holds the just-finished game plus the archived finals; Upcoming holds the rest.
