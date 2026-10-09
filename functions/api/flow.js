@@ -12,7 +12,7 @@ export async function onRequestGet({ request }) {
     return new Response(JSON.stringify({ error: "league=nfl|cfb and numeric id required" }), { status: 400 });
 
   const cache = caches.default;
-  const key = new Request(`https://fbwatch-cache/flow/${league}/${id}`);
+  const key = new Request(`https://fbwatch-cache/flow2/${league}/${id}`);
   const hit = await cache.match(key);
   if (hit) return hit;
 
