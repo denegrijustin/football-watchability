@@ -184,7 +184,7 @@ const flowCache = new Map<string, { at: number; wp: WpPoint[] }>();
 /** Home win % (0–100) and period per play: our edge function first, ESPN directly as a fallback. */
 async function flow(league: "nfl" | "cfb", id: string): Promise<WpPoint[] | null> {
   try {
-    const res = await fetch(`/api/flow?league=${league}&id=${id}`);
+    const res = await fetch(`/api/flow?v=2&league=${league}&id=${id}`);
     if (res.ok && (res.headers.get("content-type") ?? "").includes("json")) {
       const body = (await res.json()) as { wp?: WpPoint[] };
       if (body.wp?.length) return body.wp;
