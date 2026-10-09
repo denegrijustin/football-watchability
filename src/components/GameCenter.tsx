@@ -48,7 +48,7 @@ export type LiveGame = {
   status: { state: "pre" | "in" | "post"; detail: string; period: number; clock: string };
   teams: Side[];
   situation: { text: string; possession: string | null; toGo: number | null; redZone: boolean; lastPlay: string } | null;
-  wp: [number, number | null][];
+  wp: import("../insanity").WpPoint[];
   /** Every play that can credit a player; older cached responses may not have it. */
   log?: PlayLog[];
   drives: Drive[];
@@ -360,7 +360,7 @@ function Momentum({ game, away, home }: { game: LiveGame; away: string; home: st
   return (
     <section className="gc-panel">
       <h3 className="micro-label">Game flow · momentum</h3>
-      <MomentumFlow wp={game.wp.map(p => [p[0], p[1]])} away={away} home={home} />
+      <MomentumFlow wp={game.wp} away={away} home={home} />
       <p className="gc-big">
         {side ? (
           <>
