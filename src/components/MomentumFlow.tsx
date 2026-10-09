@@ -30,7 +30,7 @@ export function MomentumFlow({ wp, away, home, compact = false, pendingLabel = '
       <rect x={xTime(current)} y="0" width={294-xTime(current)} height={height} fill="currentColor" opacity=".035" />
       {Array.from({length:lastPeriod+1},(_,q)=><line key={q} x1={xTime(q*900)} x2={xTime(q*900)} y1="2" y2={height-2} stroke="currentColor" opacity=".16" />)}
       <line x1="6" x2="294" y1={height/2} y2={height/2} stroke="currentColor" opacity=".35" strokeDasharray="3 3" />
-      <polyline points={swings.map((v,i)=>`${x(i)},${y(v)}`).join(' ')} fill="none" stroke="var(--lime)" strokeWidth="2" />
+      <polyline points={swings.map((v,i)=>`${x(i)},${y(v)}`).join(' ') + (status?.state === 'post' && points.length ? ` 294,${y(swings.at(-1) ?? 0)}` : '')} fill="none" stroke="var(--lime)" strokeWidth="2" />
       {points.length > 0 && <circle cx={xTime(current)} cy={y(swings.at(-1) ?? 0)} r="3" fill="var(--lime)"><title>{status?.state === 'post' ? 'Final' : `Now: Q${status?.period ?? points.at(-1)?.[1]} ${status?.clock ?? points.at(-1)?.[2]?.clock ?? ''}`}</title></circle>}
       {swings.map((v,i)=> (!compact || i===shift) && <circle key={i} cx={x(i)} cy={y(v)} r={i===selected?5:4} fill={i===selected?'var(--lime)':'transparent'} tabIndex={compact?undefined:0} onMouseEnter={()=>setActive(i)} onMouseLeave={()=>setActive(null)} onFocus={()=>setActive(i)} onBlur={()=>setActive(null)} aria-label={`Play ${i+1}: ${points[i][2]?.text ?? 'Description unavailable'}`}><title>{points[i][2]?.text ?? 'Description unavailable'}</title></circle>)}
     </svg>
