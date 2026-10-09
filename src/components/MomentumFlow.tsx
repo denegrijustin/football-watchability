@@ -1,8 +1,8 @@
 import { useState } from 'react';
-export function MomentumFlow({ wp, away, home, compact = false }: { wp: [number, number | null][]; away: string; home: string; compact?: boolean }) {
+export function MomentumFlow({ wp, away, home, compact = false, pendingLabel = "Awaiting play data" }: { wp: [number, number | null][]; away: string; home: string; compact?: boolean; pendingLabel?: string }) {
   const [active, setActive] = useState<number | null>(null);
   const points = wp.filter(p => Number.isFinite(p[0]));
-  if (points.length < 2) return <p className="flow-pending">Momentum · awaiting play data</p>;
+  if (points.length < 2) return <div className={`momentum-flow ${compact ? "flow-mini" : ""}`}><div className="flow-label"><strong>Game flow · Momentum</strong><span>{pendingLabel}</span></div><svg viewBox="0 0 300 28" role="img" aria-label={`Momentum: ${pendingLabel}`}><line x1="4" x2="296" y1="14" y2="14" stroke="currentColor" opacity=".25" strokeDasharray="4 4" /></svg></div>;
   const swings = points.map((p, i) => p[0] - points[Math.max(0, i - 12)][0]);
   const selected = active ?? points.length - 1, swing = swings[selected];
   const side = Math.abs(swing) < 3 ? 'Even' : swing > 0 ? home : away;
