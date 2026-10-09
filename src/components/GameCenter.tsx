@@ -360,7 +360,7 @@ function Momentum({ game, away, home }: { game: LiveGame; away: string; home: st
   return (
     <section className="gc-panel">
       <h3 className="micro-label">Game flow · momentum</h3>
-      <MomentumFlow wp={game.wp} away={away} home={home} />
+      <MomentumFlow wp={game.wp} status={game.status} away={away} home={home} />
       <p className="gc-big">
         {side ? (
           <>
