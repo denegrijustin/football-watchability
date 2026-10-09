@@ -198,13 +198,14 @@ async function flow(league: "nfl" | "cfb", id: string): Promise<WpPoint[] | null
     );
     if (!res.ok) return null;
     const sum = await res.json();
-    const periodByPlay = new Map<string, number | null>();
+    const periodByPlay = new Map<string, { id: string; text?: string; period?: { number: number }; clock?: { displayValue: string } }>();
     const drives = [...(sum.drives?.previous ?? []), ...(sum.drives?.current ? [sum.drives.current] : [])];
-    for (const d of drives) for (const p of d.plays ?? []) periodByPlay.set(p.id, p.period?.number ?? null);
+    for (const d of drives) for (const p of d.plays ?? []) periodByPlay.set(p.id, p);
     const wp = (sum.winprobability ?? []).map(
       (w: { homeWinPercentage?: number; playId: string }): WpPoint => [
         Math.round((w.homeWinPercentage ?? 0) * 1000) / 10,
-        periodByPlay.get(w.playId) ?? null,
+        periodByPlay.get(w.playId)?.period?.number ?? null,
+        { id: w.playId, text: periodByPlay.get(w.playId)?.text ?? "Play description unavailable", clock: periodByPlay.get(w.playId)?.clock?.displayValue ?? "" },
       ],
     );
     return wp.length ? wp : null;
