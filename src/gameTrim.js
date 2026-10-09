@@ -119,7 +119,7 @@ export function trimGame(s, positions = {}) {
   const byPlay = new Map(plays.map((p) => [p.id, p]));
   const wp = (s.winprobability ?? []).map((w) => {
     const p = byPlay.get(w.playId);
-    return [Math.round((w.homeWinPercentage ?? 0) * 1000) / 10, p?.period ?? null];
+    return [Math.round((w.homeWinPercentage ?? 0) * 1000) / 10, p?.period ?? null, { id: w.playId, text: p?.text ?? "Play description unavailable", clock: p?.clock ?? "" }];
   });
 
   // Team stats
