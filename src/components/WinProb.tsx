@@ -11,7 +11,7 @@ export function WinProb({
   home,
   hot,
 }: {
-  wp: [number, number | null][];
+  wp: import("../insanity").WpPoint[];
   away: string;
   home: string;
   /** Shades the busiest stretch (indexes into wp): the insanity meter's witching hour. */
