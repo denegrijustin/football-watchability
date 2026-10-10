@@ -6114,15 +6114,17 @@ select,
 }
 @keyframes band-sway {
   from {
-    transform: translate(0, 0.07px) rotate(-5deg);
+    transform: translate(0, 0.1px) rotate(-7deg) scale(1);
   }
   to {
-    transform: translate(0, -0.07px) rotate(5deg);
+    transform: translate(0, -0.1px) rotate(7deg) scale(1.06);
   }
 }
 /* seen from above, the feet swing front to back, one forward as the other goes back, a half beat apart */
 .band-foot {
-  fill: #151515;
+  fill: #f1f1f1; /* white spats, so the stride shows against the turf */
+  stroke: rgb(0 0 0 / 55%);
+  stroke-width: 0.12;
   animation: band-foot 0.5s ease-in-out infinite alternate;
 }
 .band-foot.b {
@@ -6130,10 +6132,27 @@ select,
 }
 @keyframes band-foot {
   from {
-    transform: translateX(-0.75px);
+    transform: translateX(-1.1px);
   }
   to {
-    transform: translateX(0.75px);
+    transform: translateX(1.1px);
+  }
+}
+/* arms swing against the legs */
+.band-arm {
+  stroke: rgb(0 0 0 / 35%);
+  stroke-width: 0.1;
+  animation: band-arm 0.5s ease-in-out infinite alternate;
+}
+.band-arm.b {
+  animation-delay: -0.5s;
+}
+@keyframes band-arm {
+  from {
+    transform: translateX(0.5px);
+  }
+  to {
+    transform: translateX(-0.5px);
   }
 }
 .band-member {
@@ -6233,6 +6252,7 @@ select,
 }
 @media (prefers-reduced-motion: reduce) {
   .band-march,
+  .band-arm,
   .band-foot {
     animation: none;
   }

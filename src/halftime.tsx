@@ -141,17 +141,23 @@ export function HalftimeBand({ espnId, home, away, badge }: { espnId: string; ho
             <g
               key={i}
               className={`band-member ${role}`}
-              style={{ transform: `translate(${x.toFixed(2)}px, ${y.toFixed(2)}px) rotate(${angles[i].toFixed(1)}deg)`, transitionDelay: `${(i % 4) * 40}ms` }}
+              style={{ transform: `translate(${x.toFixed(2)}px, ${y.toFixed(2)}px) rotate(${angles[i].toFixed(1)}deg) scale(1.1)`, transitionDelay: `${(i % 4) * 40}ms` }}
             >
-              <g className="band-march" style={{ animationDelay: `${-(i % 8) * 60}ms` }}>
-              <ellipse className="band-foot a" cx="0" cy="-0.75" rx="0.75" ry="0.34" />
-              <ellipse className="band-foot b" cx="0" cy="0.75" rx="0.75" ry="0.34" />
+              <g className="band-march" style={{ animationDelay: `${-((i * 37) % 7) * 12}ms` }}>
+              <ellipse className="band-foot a" cx="0" cy="-0.7" rx="0.85" ry="0.38" />
+              <ellipse className="band-foot b" cx="0" cy="0.7" rx="0.85" ry="0.38" />
               <ellipse cx="0.25" cy="0.3" rx={role === "sousa" ? 2.1 : 1.5} ry={role === "sousa" ? 1.7 : 1} className="band-shadow" />
               {/* jacket with white shoulder trim and a chest stripe */}
               <ellipse cx="0" cy="0" rx="0.85" ry="1.45" fill={major ? "#f6f6f6" : hc} className="band-shoulders" />
               <ellipse cx="0" cy="-1.05" rx="0.35" ry="0.28" fill={major ? "#d9b13b" : "#ffffff"} className="band-epaulet" />
               <ellipse cx="0" cy="1.05" rx="0.35" ry="0.28" fill={major ? "#d9b13b" : "#ffffff"} className="band-epaulet" />
               <line x1="-0.3" x2="-0.3" y1="-1" y2="1" stroke={major ? "#d9b13b" : mix(hc, 0.7)} strokeWidth="0.22" />
+              {(role === "wood" || role === "major") && (
+                <>
+                  <ellipse className="band-arm a" cx="0.2" cy="-1.35" rx="0.55" ry="0.28" fill={major ? "#f6f6f6" : mix(hc, -0.1)} />
+                  <ellipse className="band-arm b" cx="0.2" cy="1.35" rx="0.55" ry="0.28" fill={major ? "#f6f6f6" : mix(hc, -0.1)} />
+                </>
+              )}
               {role === "sousa" && <circle cx="0.5" cy="0" r="1.55" className="band-sousa" />}
               {role === "brass" && <ellipse cx="1.4" cy="0" rx="0.8" ry="0.55" className="band-brass" />}
               {role === "wood" && <line x1="0.6" x2="1.9" y1="0" y2="0" className="band-wood" />}
