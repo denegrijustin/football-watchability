@@ -19,6 +19,7 @@ test("it scrolls, stops under the pointer or on request, and each score says whe
   const track = ticker.locator(".ticker-track");
   await expect(track).toBeVisible();
   const state = () => track.evaluate((e) => getComputedStyle(e).animationPlayState);
+  await page.mouse.move(0, 400); // off the strip: a pointer resting over it would hold it still
   expect(await state()).toBe("running");
   await ticker.hover();
   expect(await state()).toBe("paused");
