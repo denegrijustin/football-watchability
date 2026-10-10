@@ -5894,7 +5894,7 @@ select,
   display: block;
   width: 100%;
   height: auto;
-  aspect-ratio: 120 / 18;
+  aspect-ratio: 120 / 34;
   border-radius: 10px;
   overflow: hidden;
   box-shadow: 0 0 0 1px rgb(255 255 255 / 12%);
@@ -5946,7 +5946,7 @@ select,
   opacity: 0.7;
 }
 .df-path {
-  stroke-width: 1.7;
+  stroke-width: 3.2;
   stroke-linecap: round;
   opacity: 0.9;
   /* the drive draws itself the first time it appears */
@@ -6317,4 +6317,95 @@ select,
   opacity: 0.7;
   font-size: 0.75rem;
   word-break: break-word;
+}
+
+/* ---------- live field: possession, drive start and the plays of the drive ---------- */
+.lf-ball-team {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 6px;
+  font-size: 0.9rem;
+}
+.lf-ball-team img {
+  flex: none;
+}
+.lf-ball-team .ball-icon {
+  margin: 0;
+}
+.lf-ez {
+  fill: #fff;
+  font-size: 5px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  opacity: 0.9;
+}
+.lf-tagtext {
+  font-size: 3.2px;
+  font-weight: 800;
+  fill: #fff;
+  paint-order: stroke;
+  stroke: rgb(0 0 0 / 70%);
+  stroke-width: 0.7px;
+}
+.lf-tagtext.ball {
+  font-size: 3.6px;
+}
+.lf-started {
+  opacity: 0.75;
+}
+.lf-drive {
+  margin-top: 8px;
+}
+.lf-drive summary {
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+.lf-plays {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+  max-height: 14rem;
+  overflow: auto;
+}
+.lf-plays li {
+  display: grid;
+  grid-template-columns: 5.6rem 1fr auto;
+  gap: 8px;
+  align-items: baseline;
+  padding: 5px 8px;
+  border-radius: 8px;
+  background: rgb(255 255 255 / 6%);
+  font-size: 0.78rem;
+}
+.lf-plays li.latest {
+  background: rgb(255 255 255 / 14%);
+  box-shadow: inset 3px 0 0 #7fe3a0;
+}
+.lf-plays li.score {
+  box-shadow: inset 3px 0 0 #ffd24a;
+}
+.lf-plays li.turnover {
+  box-shadow: inset 3px 0 0 #ff6b6b;
+}
+.lf-down {
+  font-weight: 700;
+  opacity: 0.85;
+}
+.lf-yds {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+.lf-yds.neg {
+  color: #ff9d9d;
+}
+.gc-livefield .drive-svg {
+  border-radius: 10px;
+}
+.lf .drive-cap {
+  flex-wrap: wrap;
+  white-space: normal;
 }
