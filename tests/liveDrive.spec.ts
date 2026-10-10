@@ -134,3 +134,21 @@ test("when ESPN gives no yards-to-end-zone figure, the ball is placed from its o
   await page.clock.fastForward(16_000);
   await expect.poll(() => live.locator(".df-ball").evaluate((e) => (e as SVGGElement).style.transform)).toBe("translateX(75px)");
 });
+
+test("with no situation spot at all, the ball comes from the latest snap in the play data", async ({ page }) => {
+  const start = Math.max(...games.map((g: any) => new Date(g.date).getTime()));
+  await page.clock.install({ time: start + 90 * 60e3 });
+  await page.route("**/api/scores**", (route) =>
+    route.fulfill({ json: games.map((g: any, i: number) => ({ id: g.espnId, state: i === 0 ? "in" : "pre", detail: "5:12 - 3rd", away: 14, home: 17 })) }),
+  );
+  await page.route("**/api/flow**", (route) => route.fulfill({ json: { wp: [] } }));
+  const [a, h] = games[0].teams;
+  const base = summary(null, "");
+  // No situation block: the ball is 40 yards from the home team's goal line, measured for the HOME team (so 60 from the away team's).
+  await page.route("**/api/game**", (route) => route.fulfill({ json: { ...base, situation: null, ball: { team: h.espnId, own: 40 } } }));
+  await page.goto("/?league=NFL");
+  const live = page.locator(".board-section.live .game-card").first();
+  await expect(live.locator(".df-ball")).toBeAttached();
+  // The away team (a) has the ball; 40 from the home goal line = 60 yards from a's own goal line, plus the 10-yard end zone.
+  expect(await live.locator(".df-ball").evaluate((e) => (e as SVGGElement).style.transform)).toBe("translateX(70px)");
+});
