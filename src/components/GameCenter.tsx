@@ -12,6 +12,7 @@ import { InsanityMeter } from "./InsanityMeter";
 import { Headshot } from "./Headshot";
 import { GameDetails } from "./GameDetails";
 import { FootballIcon } from "../live";
+import { FieldView } from "../liveDrive";
 import { HalftimeBand } from "../halftime";
 import { GameBadgeRow } from "./GameBadge";
 import { gameBadge } from "../gameLogo";
@@ -39,6 +40,7 @@ export type LiveGame = {
   log?: PlayLog[];
   drives: Drive[];
   plays: Play[];
+  curPlays?: { down: string; text: string; yards: number; period: number | null; clock: string; kind: string; score: boolean; turnover: boolean }[];
   allOffense: [number, number, number, number][]; // [side 0 away/1 home, yards to end zone, quarter, yards gained]
   scoring: { period: number; clock: string; team: string; text: string; away: number; home: number }[];
   teamStats: Record<string, TeamStats>;
@@ -202,6 +204,17 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
             <p className="gc-updated" role="status">
               Updating every 15 seconds · last {updated.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", second: "2-digit" })}
             </p>
+          )}
+
+          {game && state === "in" && !isHalftime(game.status.detail) && (
+            <section className="gc-panel gc-wide gc-livefield">
+              <h3 className="micro-label">Live field</h3>
+              <FieldView
+                variant="center"
+                data={game}
+                teams={[away, home].map((t, i) => ({ espnId: game.teams[i]?.id, abbr: t.abbr, name: t.name, color: t.color, logoId: t.logoId }))}
+              />
+            </section>
           )}
 
           <div className="gc-grid">
