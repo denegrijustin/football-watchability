@@ -30,18 +30,18 @@ const GameCenter = lazy(loadGameCenter);
 export const preloadGameCenter = () => void loadGameCenter();
 
 /** A Game Center that fails must never take the whole page with it (React unmounts everything on an uncaught render error). */
-class GcBoundary extends Component<{ children: ReactNode; onClose: () => void }, { failed: boolean }> {
-  state = { failed: false };
-  static getDerivedStateFromError() {
-    return { failed: true };
+class GcBoundary extends Component<{ children: ReactNode; onClose: () => void }, { failed: boolean; why: string }> {
+  state = { failed: false, why: "" };
+  static getDerivedStateFromError(err: unknown) {
+    return { failed: true, why: String((err as Error)?.message ?? err).slice(0, 160) };
   }
   render() {
     if (!this.state.failed) return this.props.children;
     return (
       <div className="gc-failed" role="alertdialog" aria-label="Game Center">
-        <p>The Game Center could not load.</p>
+        <p>The Game Center could not load.{this.state.why && <small> {this.state.why}</small>}</p>
         <button type="button" onClick={() => location.reload()}>Reload</button>
-        <button type="button" onClick={() => { this.setState({ failed: false }); this.props.onClose(); }}>Close</button>
+        <button type="button" onClick={() => { this.setState({ failed: false, why: "" }); this.props.onClose(); }}>Close</button>
       </div>
     );
   }
