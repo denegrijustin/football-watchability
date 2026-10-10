@@ -45,7 +45,12 @@ test("at halftime the game's logo is painted at midfield and tops the card", asy
 });
 
 test("if the Game Center's file is gone (site updated under an open page), the page survives and says so", async ({ page }) => {
-  await page.route(/\/assets\/GameCenter-.*\.js/, (r) => r.fulfill({ status: 404, body: "gone" }));
+  // Chunk names are plain hashes, so the Game Center's file is recognised by what is in it.
+  await page.route(/\/assets\/c-.*\.js/, async (r) => {
+    const res = await r.fetch();
+    if ((await res.text()).includes("Time on the field (possession)")) return r.fulfill({ status: 404, body: "gone" });
+    return r.fulfill({ response: res });
+  });
   await page.goto("/?league=CFB");
   await page.evaluate(() => sessionStorage.setItem("fbwatch-gc-reload", "1")); // the one automatic reload was already used
   await page.locator(".cc-gc").first().click();

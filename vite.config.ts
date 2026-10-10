@@ -49,5 +49,12 @@ const logoVersion = createHash("sha1")
 export default defineConfig({
   plugins: [react(), tailwindcss(), dataFiles(), siteHeaders()],
   define: { __LOGO_V__: JSON.stringify(logoVersion) },
-  build: { rollupOptions: { input: { main: "index.html", matchup: "matchup-demo.html" } } },
+  build: {
+    rollupOptions: {
+      input: { main: "index.html", matchup: "matchup-demo.html" },
+      // Plain hashed file names: nothing in a URL (like "Logo" or "Game") for a content blocker to match, which would break the
+      // Game Center's lazy load with "Failed to fetch dynamically imported module".
+      output: { chunkFileNames: "assets/c-[hash].js", entryFileNames: "assets/e-[hash].js", assetFileNames: "assets/a-[hash][extname]" },
+    },
+  },
 });
