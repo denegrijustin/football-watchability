@@ -11,6 +11,7 @@ import { ProjectedScore, type Projection } from "./ProjectedScore";
 import { InsanityMeter } from "./InsanityMeter";
 import { Headshot } from "./Headshot";
 import { GameDetails } from "./GameDetails";
+import { FootballIcon } from "../live";
 import { HalftimeBand } from "../halftime";
 import { GameBadgeRow } from "./GameBadge";
 import { gameBadge } from "../gameLogo";
@@ -297,7 +298,7 @@ function TeamHead({ t, score, poss, win, right }: { t: TeamLike; score: number |
       <div>
         <h2>
           {t.name}
-          {poss && <span className="gc-ball" title="Has the ball" aria-label="has the ball" />}
+          {poss && <FootballIcon title="Has the ball" />}
         </h2>
         <p>{t.record.split(" · ")[0]}</p>
         {rankLine(t.ranks) && <p className="rank-line">{rankLine(t.ranks)}</p>}
