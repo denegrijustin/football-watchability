@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { logos, teamColor } from "./data";
+import type { GameBadge } from "./gameLogo";
 import { FORMATIONS, HALFTIME_MS, N, STEP_MS, anglesAt, clockText, firstSeen, halftimeLeft } from "./halftimeLogic";
 
 /**
@@ -15,7 +16,7 @@ function mix(hex: string, t: number) {
   return `#${ch.map((c) => c.toString(16).padStart(2, "0")).join("")}`;
 }
 
-export function HalftimeBand({ espnId, home, away }: { espnId: string; home: Side; away: Side }) {
+export function HalftimeBand({ espnId, home, away, badge }: { espnId: string; home: Side; away: Side; badge?: GameBadge | null }) {
   const ref = useRef<HTMLDivElement>(null);
   const [seenAt] = useState(() => firstSeen(espnId, Date.now()));
   const [now, setNow] = useState(() => Date.now());
@@ -129,7 +130,9 @@ export function HalftimeBand({ espnId, home, away }: { espnId: string; home: Sid
         })}
         {/* midfield: the home team's logo, painted on the turf */}
         <circle cx="60" cy="20" r="9.4" className="band-mid-ring" />
-        {home.logoId && logos[home.logoId] && <image href={logos[home.logoId]} x="50" y="10" width="20" height="20" preserveAspectRatio="xMidYMid meet" className="band-mid-logo" />}
+        {/* a special or neutral-site game paints its own logo here; any other game, the home team's */}
+        {badge?.src ? <image href={badge.src} x="50" y="10" width="20" height="20" preserveAspectRatio="xMidYMid meet" className="band-mid-logo" data-game-logo />
+          : !badge?.neutral && home.logoId && logos[home.logoId] && <image href={logos[home.logoId]} x="50" y="10" width="20" height="20" preserveAspectRatio="xMidYMid meet" className="band-mid-logo" />}
         {dots.map((i) => {
           const [x, y] = f.pts[i];
           const major = i === 0; // the drum major leads the band

@@ -24,6 +24,8 @@ import { dayOf, timeOf, tzAbbr } from "../tz";
 import { NetChip } from "./NetChip";
 import { LiveDrive } from "../liveDrive";
 import { HalftimeBand } from "../halftime";
+import { GameBadgeRow } from "./GameBadge";
+import { gameBadge } from "../gameLogo";
 import { isHalftime } from "../halftimeLogic";
 
 const impactLevel = (impact: string) =>
@@ -97,8 +99,9 @@ export function GameCard({
       <span aria-hidden="true">▾</span>
     </button>
   );
+  const badge = gameBadge(game as { meta?: string; event?: string | null; teams: { logoId?: string }[] });
   const atHalf = live?.state === "in" && !!game.espnId && game.league === "CFB" && isHalftime(live.detail);
-  const bandTop = atHalf ? <HalftimeBand espnId={game.espnId} away={game.teams[0] as { abbr?: string; name: string; color?: string | null; logoId?: string }} home={game.teams[1] as { abbr?: string; name: string; color?: string | null; logoId?: string }} /> : null;
+  const bandTop = atHalf ? <HalftimeBand badge={badge} espnId={game.espnId} away={game.teams[0] as { abbr?: string; name: string; color?: string | null; logoId?: string }} home={game.teams[1] as { abbr?: string; name: string; color?: string | null; logoId?: string }} /> : null;
   return (
     <article
       ref={cardRef}
@@ -113,7 +116,7 @@ export function GameCard({
           setExpanded(true);
       }}
     >
-      {!expanded && <CompactGame titleId={`${game.id}-title`} matchup={game.matchup} date={date} broadcast={game.broadcast} network={game.network} espnId={game.espnId} teams={game.teams} league={game.league} score={game.score} tier={game.tier} venue={meta.venue} line={meta.line} crew={(game as { announcers?: CrewMember[] }).announcers} driveChart={live?.state === "in" && game.espnId && !atHalf ? (<LiveDrive espnId={game.espnId} league={game.league} teams={game.teams as { espnId?: string | null; abbr?: string; name: string; color?: string | null }[]} />) : undefined} top={bandTop} weather={game.weather} status={<GameStatus live={live} />} scores={[<TeamScore live={live} side="away" />, <TeamScore live={live} side="home" />]} onExpand={() => setExpanded(true)} momentum={<MomentumFlow wp={flow ?? []} away={awayAbbr} home={homeAbbr} compact status={live ? { state: live.state, period: flow?.at(-1)?.[1] ?? 1, clock: flow?.at(-1)?.[2]?.clock ?? "15:00" } : undefined} pendingLabel={live?.state === "in" ? "Awaiting play data" : live?.state === "post" ? "Play data unavailable" : "Starts at kickoff"} />} />}
+      {!expanded && <CompactGame titleId={`${game.id}-title`} matchup={game.matchup} date={date} broadcast={game.broadcast} network={game.network} espnId={game.espnId} teams={game.teams} league={game.league} score={game.score} tier={game.tier} venue={meta.venue} line={meta.line} crew={(game as { announcers?: CrewMember[] }).announcers} driveChart={live?.state === "in" && game.espnId && !atHalf ? (<LiveDrive espnId={game.espnId} league={game.league} teams={game.teams as { espnId?: string | null; abbr?: string; name: string; color?: string | null }[]} />) : undefined} top={bandTop} badge={<GameBadgeRow badge={badge} />} weather={game.weather} status={<GameStatus live={live} />} scores={[<TeamScore live={live} side="away" />, <TeamScore live={live} side="home" />]} onExpand={() => setExpanded(true)} momentum={<MomentumFlow wp={flow ?? []} away={awayAbbr} home={homeAbbr} compact status={live ? { state: live.state, period: flow?.at(-1)?.[1] ?? 1, clock: flow?.at(-1)?.[2]?.clock ?? "15:00" } : undefined} pendingLabel={live?.state === "in" ? "Awaiting play data" : live?.state === "post" ? "Play data unavailable" : "Starts at kickoff"} />} />}
       {expanded && (
         <>
       {bandTop}
@@ -153,6 +156,7 @@ export function GameCard({
           )}
         </div>
       </header>
+      <GameBadgeRow badge={badge} />
           <button
             type="button"
             className="gc-open"

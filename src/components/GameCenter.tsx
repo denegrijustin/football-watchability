@@ -12,6 +12,8 @@ import { InsanityMeter } from "./InsanityMeter";
 import { Headshot } from "./Headshot";
 import { GameDetails } from "./GameDetails";
 import { HalftimeBand } from "../halftime";
+import { GameBadgeRow } from "./GameBadge";
+import { gameBadge } from "../gameLogo";
 import { isHalftime } from "../halftimeLogic";
 import { MomentumFlow } from "./MomentumFlow";
 import { ResultAnalysis } from "./ResultAnalysis";
@@ -141,6 +143,7 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
   const net = up?.broadcast ?? fin?.broadcast ?? "";
   const netSlug = (up as { network?: string } | undefined)?.network ?? fin?.network ?? null;
   const netLogo = networkLogo(netSlug);
+  const badge = gameBadge({ meta: (up as { meta?: string } | undefined)?.meta, event: (up as { event?: string } | undefined)?.event, teams: teams as { logoId?: string }[] });
   const watch = up ? { score: up.score, tier: up.tier } : fin ? { score: fin.actual.score, tier: fin.actual.tier } : null;
 
   return (
@@ -157,11 +160,12 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
           ×
         </button>
         <div className="gc-body">
-          {league === "CFB" && state === "in" && isHalftime(game?.status.detail) && <HalftimeBand espnId={espnId} away={{ ...away, logoId: away.logoId }} home={{ ...home, logoId: home.logoId }} />}
+          {league === "CFB" && state === "in" && isHalftime(game?.status.detail) && <HalftimeBand badge={badge} espnId={espnId} away={{ ...away, logoId: away.logoId }} home={{ ...home, logoId: home.logoId }} />}
           {/* Scoreboard */}
           <header className="gc-head" style={{ background: `linear-gradient(90deg, ${away.color ?? "#17222c"}, #111a22 42%, #111a22 58%, ${home.color ?? "#17222c"})` }}>
             <TeamHead t={away} score={scoreA} poss={!!game?.situation?.possession && game.situation.possession === game.teams[0]?.id} win={state === "post" && scoreA! > scoreH!} />
             <div className="gc-mid">
+              <GameBadgeRow badge={badge} large />
               <span className={`gc-state ${state}`}>{state === "in" ? "Live" : state === "post" ? "Final" : "Upcoming"}</span>
               <strong className="gc-clock">
                 {state === "pre" ? `${dayOf(date)} ${timeOf(date, undefined, true)} ${tzAbbr()}` : game?.status.detail ?? fin?.final.detail ?? "Final"}

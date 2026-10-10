@@ -79,7 +79,7 @@ export const FORMATIONS: { name: string; pts: Pt[] }[] = [
 ];
 /** A formation is held a few seconds, then the band marches to the next one (see MOVE_MS). */
 export const STEP_MS = 16000;
-/** The march between formations: 20 steps at 120 beats a minute, so they cover ground at about a real band's pace. */
+/** The march between formations: at an even walking pace with a soft start and stop. */
 export const MOVE_MS = 10000;
 
 
