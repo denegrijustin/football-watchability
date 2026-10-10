@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { logos, teamColor } from "./data";
 import { FootballIcon } from "./live";
+import { mix } from "./halftimeLogic";
+import type { GameBadge } from "./gameLogo";
 
 /** The slice of /api/game (see functions/api/game.js) the drive animation uses. */
 type Summary = {
@@ -13,9 +15,12 @@ type Summary = {
   ball?: { team: string | null; own: number } | null;
   curPlays?: { down: string; text: string; yards: number; period: number | null; clock: string; kind: string; score: boolean; turnover: boolean }[];
 };
-export type FieldTeam = { espnId?: string | null; abbr?: string; name: string; color?: string | null; logoId?: string };
+export type FieldTeam = { espnId?: string | null; abbr?: string; name: string; color?: string | null; logoId?: string; conf?: string | null };
+/** The conference to paint on the sideline, if it has a short name worth painting (not independents). */
+const confMark = (c?: string | null) => (c && !/independent/i.test(c) ? c.toUpperCase() : null);
 
-const PATHS: Record<string, string> = { NFL: "nfl", CFB: "college-football" };
+// The /api/game function takes nfl or cfb (not the ESPN path), the same values the Game Center sends.
+const PATHS: Record<string, string> = { NFL: "nfl", CFB: "cfb" };
 const POLL_MS = 15_000;
 const cache = new Map<string, { at: number; data: Summary | null }>();
 
@@ -133,7 +138,7 @@ const signed = (n: number) => (n > 0 ? `+${n}` : String(n));
  * the plays of the drive in progress. Shown on live cards (compact, plays folded away) and in the Game Center.
  * Static for visitors who ask for reduced motion.
  */
-export function FieldView({ data, teams, variant, rootRef }: { data: Summary | null; teams: FieldTeam[]; variant: "card" | "center"; rootRef?: React.Ref<HTMLDivElement> }) {
+export function FieldView({ data, teams, variant, rootRef, badge }: { data: Summary | null; teams: FieldTeam[]; variant: "card" | "center"; rootRef?: React.Ref<HTMLDivElement>; badge?: GameBadge | null }) {
   const [away, home] = teams;
   const ids = [away.espnId ?? "", home.espnId ?? ""];
   const colors = [teamColor(away.color) ?? "#c1403d", teamColor(home.color) ?? "#2f7de1"];
@@ -183,21 +188,41 @@ export function FieldView({ data, teams, variant, rootRef }: { data: Summary | n
   return (
     <div ref={rootRef} className={`lf lf-${variant}`} role="img" aria-label={`Live field: ${label}. ${stats}. Drive started at ${startedAt}.`}>
       <p className="lf-ball-team">
-        {logo && <img src={logos[teams[side].logoId!]} alt="" width="22" height="22" />}
+        {logo && <img src={logos[teams[side].logoId!]} alt="" width={variant === "card" ? 16 : 22} height={variant === "card" ? 16 : 22} />}
         <FootballIcon title="Has the ball" />
         <b>{teams[side].name}</b>
         <span> have the ball</span>
       </p>
-      <svg viewBox="0 0 120 34" className="drive-svg" aria-hidden="true">
+      <svg viewBox={variant === "card" ? "0 6 120 23" : "0 0 120 34"} className="drive-svg" aria-hidden="true">
         <rect x="0" y="0" width="120" height="34" className="df-turf" />
         {Array.from({ length: 10 }, (_, i) => (
           <rect key={i} x={10 + i * 10} y="0" width="10" height="34" className={i % 2 ? "df-stripe" : "df-stripe alt"} />
         ))}
-        <rect x="0" y="0" width="10" height="34" fill={colors[0]} opacity="0.6" />
-        <rect x="110" y="0" width="10" height="34" fill={colors[1]} opacity="0.6" />
+        {/* end zones in team color with a woven pattern, the team's logo and name; the home logo (or the game's own) at midfield */}
+        <defs>
+          {[0, 1].map((k) => (
+            <pattern key={k} id={`lf-ez-${ids.join("-")}-${k}-${variant}`} width="3" height="3" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+              <rect width="3" height="3" fill={colors[k]} />
+              <rect width="1.2" height="3" fill={mix(colors[k], -0.22)} />
+            </pattern>
+          ))}
+        </defs>
+        <rect x="0" y="0" width="10" height="34" fill={`url(#lf-ez-${ids.join("-")}-0-${variant})`} />
+        <rect x="110" y="0" width="10" height="34" fill={`url(#lf-ez-${ids.join("-")}-1-${variant})`} />
         {[[away, 5, -90] as const, [home, 115, 90] as const].map(([t, x, rot], k) => (
-          <text key={k} x={x} y="17" className="lf-ez" transform={`rotate(${rot} ${x} 17)`} textAnchor="middle" dominantBaseline="central">{(t.abbr ?? t.name).toUpperCase()}</text>
+          <g key={k}>
+            <text x={x} y="22" className="lf-ez" transform={`rotate(${rot} ${x} 22)`} textAnchor="middle" dominantBaseline="central">{(t.abbr ?? t.name).toUpperCase()}</text>
+            {t.logoId && logos[t.logoId] && <image href={logos[t.logoId]} x={x - 3.5} y="8" width="7" height="7" preserveAspectRatio="xMidYMid meet" />}
+          </g>
         ))}
+        {(badge?.src ?? (!badge?.neutral && home.logoId ? logos[home.logoId] : null)) && (
+          <image href={badge?.src ?? logos[home.logoId!]} x="52" y="9" width="16" height="16" preserveAspectRatio="xMidYMid meet" opacity="0.55" className="lf-mid" />
+        )}
+        {[[away, 35] as const, [home, 95] as const].map(([t, x], k) =>
+          confMark(t.conf) ? (
+            <text key={k} x={x} y="27" className="lf-conf" textAnchor="middle">{confMark(t.conf)}</text>
+          ) : null,
+        )}
         {sit?.redZone && <rect x={awayOffense ? X(80) : X(0)} y="0" width="20" height="34" className="df-red" />}
         {Array.from({ length: 11 }, (_, i) => (
           <line key={i} x1={10 + i * 10} x2={10 + i * 10} y1="0" y2="34" className={i === 5 ? "df-line mid" : "df-line"} />
@@ -224,8 +249,15 @@ export function FieldView({ data, teams, variant, rootRef }: { data: Summary | n
         </g>
         <g className="df-ball" style={{ transform: `translateX(${X(ball)}px)` }}>
           <line x1="0" x2="0" y1="0" y2="34" className="df-los" />
-          <circle cx="0" cy="17" r="3.4" className="df-pulse" stroke={colors[side]} />
-          <ellipse cx="0" cy="17" rx="2.4" ry="1.5" className="df-pigskin" />
+          <circle cx="0" cy="17" r="4.6" className="df-pulse" stroke={colors[side]} />
+          {logo ? (
+            <>
+              <circle cx="0" cy="17" r="3.6" className="lf-chip" stroke={colors[side]} />
+              <image href={logos[teams[side].logoId!]} x="-2.8" y="14.2" width="5.6" height="5.6" preserveAspectRatio="xMidYMid meet" className="lf-ball-logo" />
+            </>
+          ) : (
+            <ellipse cx="0" cy="17" rx="2.4" ry="1.5" className="df-pigskin" />
+          )}
           <text x={tagLeft ? -4.5 : 4.5} y="9" className="lf-tagtext ball" textAnchor={tagLeft ? "end" : "start"}>{abbr} · {spotName(ballOwn, own, opp)}</text>
         </g>
       </svg>
@@ -252,11 +284,11 @@ export function FieldView({ data, teams, variant, rootRef }: { data: Summary | n
 }
 
 /** The live field on a card: fetches the game summary while the card is on screen and draws it. */
-export function LiveDrive({ espnId, league, teams }: { espnId: string; league: string; teams: FieldTeam[] }) {
+export function LiveDrive({ espnId, league, teams, badge }: { espnId: string; league: string; teams: FieldTeam[]; badge?: GameBadge | null }) {
   // The wrapper (and its ref, which the on-screen check watches) stays put as the field appears and disappears.
   const { ref, data, loaded } = useSummary(league, espnId, true);
   const live = data?.status.state === "in";
-  const field = FieldView({ data, teams, variant: "card" });
+  const field = FieldView({ data, teams, variant: "card", badge });
   if (!field)
     return (
       <div ref={ref} className={`drive-live${loaded ? " empty" : " loading"}`} aria-hidden={!loaded || undefined}>

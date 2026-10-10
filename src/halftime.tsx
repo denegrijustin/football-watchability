@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { logos, teamColor } from "./data";
 import type { GameBadge } from "./gameLogo";
-import { FORMATIONS, HALFTIME_MS, N, STEP_MS, anglesAt, clockText, firstSeen, halftimeLeft } from "./halftimeLogic";
+import { FORMATIONS, HALFTIME_MS, mix, N, STEP_MS, anglesAt, clockText, firstSeen, halftimeLeft } from "./halftimeLogic";
 
 /**
  * College halftime: a 20-minute countdown and the band marching through formations on the field. It stands in for the drive
@@ -9,12 +9,6 @@ import { FORMATIONS, HALFTIME_MS, N, STEP_MS, anglesAt, clockText, firstSeen, ha
  */
 type Side = { abbr?: string; name: string; color?: string | null; logoId?: string };
 
-/** Mix a #rrggbb color toward white (t > 0) or black (t < 0). */
-function mix(hex: string, t: number) {
-  const n = parseInt(hex.slice(1), 16);
-  const ch = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((c) => Math.round(t >= 0 ? c + (255 - c) * t : c * (1 + t)));
-  return `#${ch.map((c) => c.toString(16).padStart(2, "0")).join("")}`;
-}
 
 export function HalftimeBand({ espnId, home, away, badge }: { espnId: string; home: Side; away: Side; badge?: GameBadge | null }) {
   const ref = useRef<HTMLDivElement>(null);

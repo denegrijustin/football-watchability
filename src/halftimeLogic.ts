@@ -108,3 +108,10 @@ export function anglesAt(step: number): number[] {
   angleCache.set(step, out);
   return out;
 }
+
+/** Mix a #rrggbb color toward white (t > 0) or black (t < 0). */
+export function mix(hex: string, t: number) {
+  const n = parseInt(hex.slice(1), 16);
+  const ch = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((c) => Math.round(t >= 0 ? c + (255 - c) * t : c * (1 + t)));
+  return `#${ch.map((c) => c.toString(16).padStart(2, "0")).join("")}`;
+}
