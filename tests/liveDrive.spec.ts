@@ -182,3 +182,14 @@ test("a college card asks the game feed for league=cfb, and shows the field", as
   await expect(page.locator(".board-section.live .game-card").first().locator("svg.drive-svg")).toBeVisible();
   expect(asked.every((x) => x === "cfb")).toBe(true);
 });
+
+test("the ball marker is the offense's team logo, and the field carries end-zone, midfield and conference art", async ({ page }) => {
+  await open(page, { toGo: 65, text: "2nd & 7 at SEA 35" });
+  const svg = page.locator(".board-section.live .game-card").first().locator("svg.drive-svg");
+  await expect(svg.locator(".df-ball image.lf-ball-logo")).toHaveCount(1);
+  await expect(svg.locator(".df-ball .df-pigskin")).toHaveCount(0); // no football drawn when the team has a logo
+  await expect(svg.locator("image.lf-mid")).toHaveCount(1); // the home logo at midfield
+  await expect(svg.locator("text.lf-ez")).toHaveCount(2); // team names in the end zones
+  await expect(svg.locator("g > image")).not.toHaveCount(0); // end-zone logos
+  await expect(svg.locator("text.lf-conf").first()).toBeAttached(); // conference painted on the sideline
+});

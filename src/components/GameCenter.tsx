@@ -149,7 +149,7 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
   const badge = gameBadge({ meta: (up as { meta?: string } | undefined)?.meta, event: (up as { event?: string } | undefined)?.event, teams: teams as { logoId?: string }[] });
   const liveField =
     game && state === "in" && !isHalftime(game.status.detail)
-      ? FieldView({ variant: "center", data: game, teams: [away, home].map((t, i) => ({ espnId: game.teams[i]?.id, abbr: t?.abbr, name: t?.name ?? "", color: t?.color, logoId: t?.logoId })) })
+      ? FieldView({ variant: "center", data: game, badge, teams: [away, home].map((t, i) => ({ espnId: game.teams[i]?.id, abbr: t?.abbr, name: t?.name ?? "", color: t?.color, logoId: t?.logoId, conf: t?.ranks?.confName })) })
       : null;
   const watch = up ? { score: up.score, tier: up.tier } : fin ? { score: fin.actual.score, tier: fin.actual.tier } : null;
 
