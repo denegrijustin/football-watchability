@@ -1,5 +1,5 @@
 import { defineConfig, type Plugin } from "vite";
-import { existsSync, readFileSync } from "node:fs";
+import { copyFileSync, existsSync, readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { readdirSync } from "node:fs";
 import react from "@vitejs/plugin-react";
@@ -27,6 +27,16 @@ const dataFiles = (): Plugin => ({
   },
 });
 
+// Cache and security headers live in config/_headers, not public/, because the refresh publishes the whole
+// public folder from the data branch and would overwrite them with an old copy.
+const siteHeaders = (): Plugin => ({
+  name: "site-headers",
+  apply: "build",
+  closeBundle() {
+    copyFileSync(new URL("./config/_headers", import.meta.url), new URL("./dist/_headers", import.meta.url));
+  },
+});
+
 // Logos are cached for a year; a changed logo set changes this stamp, which is appended to every logo URL.
 const logoVersion = createHash("sha1")
   .update(readdirSync(new URL("./public/logos", import.meta.url)).sort().map((f) => {
@@ -37,7 +47,7 @@ const logoVersion = createHash("sha1")
   .slice(0, 8);
 
 export default defineConfig({
-  plugins: [react(), tailwindcss(), dataFiles()],
+  plugins: [react(), tailwindcss(), dataFiles(), siteHeaders()],
   define: { __LOGO_V__: JSON.stringify(logoVersion) },
   build: { rollupOptions: { input: { main: "index.html", matchup: "matchup-demo.html" } } },
 });
