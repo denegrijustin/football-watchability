@@ -162,7 +162,7 @@ The last forecast before kickoff is frozen in `src/data/forecasts.json` with its
 - **Data is fetched, not bundled.** `src/data/{slate,results,matchup-stats,broadcast-checks,season,imperialism,outlook}.json`
   are minified into `dist/data/<name>.json` by `vite.config.ts` and fetched at run time (`src/data/load.ts`). A refresh
   therefore changes only those files; the scripts keep their hashed, immutable URLs. `/data/*` is revalidated on every
-  load (`public/_headers`), and `index.html` preloads the slate and results while the scripts download.
+  load (`config/_headers`, copied to `dist/_headers` by the build; it is outside `public/` so the refresh cannot overwrite it), and `index.html` preloads the slate and results while the scripts download.
   Add a new data file to the `DATA` list in `vite.config.ts` and `scripts/check-data.mjs`.
 - **Logos** carry `?v=<hash of the logo set>` (set in `src/data/index.ts`), so they are cached for a year and still update
   when a logo file changes. CSS that targets a logo by file name uses `*=`, not `$=`.
