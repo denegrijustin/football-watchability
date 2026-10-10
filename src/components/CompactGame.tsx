@@ -1,4 +1,4 @@
-import { logos, networkLogo, rankLine, rankTitle, recordLine, tierLabel, type Ranks, type League } from "../data";
+import { broadcastExtra, logos, networkLogo, rankLine, rankTitle, recordLine, tierLabel, type Ranks, type League } from "../data";
 import { Booth, type CrewMember } from "./Booth";
 import type { ReactNode } from "react";
 import { dayOf, timeOf, tzAbbr } from "../tz";
@@ -19,7 +19,7 @@ export function CompactGame({ titleId, matchup, date, broadcast, network, espnId
   return <div className="compact-overview">
     <header className="card-top">
       <div className="cc-when kickoff"><span className="cc-time"><strong>{dayOf(date)}</strong> {timeOf(date)} {tzAbbr()}</span>{status}</div>
-      <div className="tv cc-network">{logo && <NetChip network={network} logo={logo} game={{ league, espnId, broadcast }} />}{broadcast}</div>
+      <div className="tv cc-network">{logo ? <><NetChip network={network} logo={logo} game={{ league, espnId, broadcast }} /><span className="sr-only">{broadcast}</span>{broadcastExtra(broadcast, network) && <span aria-hidden="true">{broadcastExtra(broadcast, network)}</span>}</> : broadcast}</div>
     </header>
     <h3 className="sr-only" id={titleId}>{matchup}</h3>
     <div className="matchup">
