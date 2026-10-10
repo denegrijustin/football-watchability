@@ -313,7 +313,7 @@ h1 em {
 /* ---------- Filters ---------- */
 .filter-dock {
   position: sticky;
-  top: 0;
+  top: var(--ticker-h, 0px);
   z-index: 5;
   margin: 0 -24px;
   padding: 12px 24px;
@@ -5481,5 +5481,140 @@ select,
   *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+  }
+}
+
+/* ---------- Final-scores ticker (persistent, top of every screen) ---------- */
+:root {
+  --ticker-h: 38px;
+}
+.ticker {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: stretch;
+  height: var(--ticker-h);
+  background: #0a1117;
+  border-bottom: 1px solid var(--line);
+  font-size: 12.5px;
+}
+.ticker-title {
+  display: grid;
+  place-items: center;
+  padding: 0 12px;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #0a1117;
+  background: var(--accent, #b6e36a);
+}
+.ticker-viewport {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  /* soft edges where the scores enter and leave */
+  mask-image: linear-gradient(90deg, transparent, #000 24px, #000 calc(100% - 24px), transparent);
+}
+.ticker-track {
+  display: flex;
+  width: max-content;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  animation: ticker-scroll var(--ticker-dur, 120s) linear infinite;
+}
+.ticker:hover .ticker-track,
+.ticker:focus-within .ticker-track,
+.ticker.paused .ticker-track {
+  animation-play-state: paused;
+}
+@keyframes ticker-scroll {
+  to {
+    transform: translateX(-50%);
+  }
+}
+.ticker-track li {
+  display: flex;
+}
+.ticker-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 100%;
+  padding: 0 16px;
+  border: 0;
+  border-right: 1px solid rgb(255 255 255 / 8%);
+  background: none;
+  color: var(--text);
+  font: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.ticker-item:hover,
+.ticker-item:focus-visible {
+  background: rgb(255 255 255 / 8%);
+}
+.ticker-league {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.ticker-team {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--muted);
+}
+.ticker-team.won {
+  color: var(--text);
+  font-weight: 700;
+}
+.ticker-team img {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
+.ticker-final {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.ticker-pause {
+  padding: 0 12px;
+  border: 0;
+  border-left: 1px solid var(--line);
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+.ticker-pause:hover {
+  color: var(--text);
+}
+/* Reduced motion: the strip stays put and scrolls by hand. */
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track {
+    animation: none;
+  }
+  .ticker-viewport {
+    overflow-x: auto;
+    mask-image: none;
+  }
+  .ticker-track .ticker-dup {
+    display: none;
+  }
+  .ticker-pause {
+    display: none;
+  }
+}
+@media (max-width: 520px) {
+  .ticker-title {
+    padding: 0 8px;
   }
 }

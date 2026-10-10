@@ -3,6 +3,7 @@ import { dayName, results, slate, tiers, type FilterState, type League, type Vie
 import { Filters } from "./components/Filters";
 import { GameBoard, useBoard } from "./components/GameBoard";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { ScoreTicker } from "./components/ScoreTicker";
 import { defaultLeague } from "./league";
 
 // The map and its shapes load only when the tab is opened.
@@ -47,6 +48,7 @@ export default function App() {
       <a className="skip-link" href="#games">
         Skip to games
       </a>
+      <ScoreTicker />
       <header className="site-header">
         <a href="/" className="brand" aria-label="Football Watchability home">
           <span className="brand-mark" aria-hidden="true">
