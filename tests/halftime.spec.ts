@@ -135,3 +135,19 @@ test("the Game Center opens with the band and countdown at the very top", async 
   const first = await page.locator("dialog.gc .gc-body").evaluate((e) => (e.firstElementChild as HTMLElement).className);
   expect(first).toContain("halftime-band");
 });
+
+test("the team with the ball gets a football beside its score on a live card", async ({ page }) => {
+  const games = cfb as any[];
+  const start = Math.max(...games.map((g) => new Date(g.date).getTime()));
+  await page.clock.install({ time: start + 90 * 60e3 });
+  await page.route("**/api/scores**", (route) =>
+    route.fulfill({ json: games.map((g, i) => ({ id: g.espnId, state: i === 0 ? "in" : "pre", detail: i === 0 ? "5:12 - 3rd" : "", away: 14, home: 17, ball: i === 0 ? "home" : null })) }),
+  );
+  await page.route("**/api/flow**", (route) => route.fulfill({ json: { wp: [] } }));
+  await page.route("**/api/game**", (route) => route.fulfill({ status: 503, json: {} }));
+  await page.goto("/?league=CFB");
+  const card = live(page);
+  await expect(card.locator(".ball-icon")).toHaveCount(1);
+  await expect(card.locator(".team-score").nth(1).locator(".ball-icon")).toHaveCount(1);
+  await expect(card.locator(".team-score").nth(0).locator(".ball-icon")).toHaveCount(0);
+});

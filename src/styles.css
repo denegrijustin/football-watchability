@@ -6108,7 +6108,7 @@ select,
 }
 /* every member keeps stepping in time: a small rise and fall on each beat, so the band is moving even between formations */
 .band-march {
-  animation: band-step 0.5s steps(2, jump-none) infinite alternate;
+  animation: band-step 0.5s ease-in-out infinite alternate;
   transform-origin: 0 0;
 }
 @keyframes band-step {
@@ -6120,8 +6120,8 @@ select,
   }
 }
 .band-member {
-  /* the band marches to its next place in 20 even steps rather than gliding, turning to face the way it goes */
-  transition: transform 10s steps(20, end);
+  /* the band marches to its next place at an even pace, easing off at each end, turning to face the way it goes */
+  transition: transform 10s cubic-bezier(0.3, 0, 0.7, 1);
 }
 .band-shadow {
   fill: rgb(0 0 0 / 28%);
@@ -6224,4 +6224,35 @@ select,
   .band-member {
     transition: none;
   }
+}
+
+/* ---------- the game's own logo (neutral-site and special games) ---------- */
+.game-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 2px 0 8px;
+  font-size: 0.82rem;
+}
+.game-badge img {
+  flex: none;
+  border-radius: 50%;
+}
+.game-badge i {
+  font-style: normal;
+  opacity: 0.7;
+}
+.game-badge.large {
+  flex-direction: column;
+  text-align: center;
+  gap: 4px;
+  margin: 0 0 6px;
+}
+
+/* ---------- who has the ball ---------- */
+.ball-icon {
+  display: inline-block;
+  vertical-align: -1px;
+  margin-right: 5px;
+  filter: drop-shadow(0 0 1px rgb(0 0 0 / 50%));
 }
