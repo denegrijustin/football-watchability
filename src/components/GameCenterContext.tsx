@@ -13,8 +13,11 @@ export const useOpenGame = () => useContext(Ctx);
 
 // The Game Center is the largest piece of the app; it loads the first time a game is opened (or hovered).
 // If the site was updated while this page was open, the old chunk's file is gone: reload once to pick up the new version.
+// A first failure is often a dropped connection, so it is tried once more before giving up.
 const loadGameCenter = () =>
-  import("./GameCenter").catch((err) => {
+  import("./GameCenter")
+    .catch(() => new Promise((r) => setTimeout(r, 700)).then(() => import("./GameCenter")))
+    .catch((err) => {
     try {
       if (!sessionStorage.getItem("fbwatch-gc-reload")) {
         sessionStorage.setItem("fbwatch-gc-reload", "1");
