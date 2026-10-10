@@ -144,6 +144,8 @@ export function HalftimeBand({ espnId, home, away, badge }: { espnId: string; ho
               style={{ transform: `translate(${x.toFixed(2)}px, ${y.toFixed(2)}px) rotate(${angles[i].toFixed(1)}deg)`, transitionDelay: `${(i % 4) * 40}ms` }}
             >
               <g className="band-march" style={{ animationDelay: `${-(i % 8) * 60}ms` }}>
+              <ellipse className="band-foot a" cx="0" cy="-0.75" rx="0.75" ry="0.34" />
+              <ellipse className="band-foot b" cx="0" cy="0.75" rx="0.75" ry="0.34" />
               <ellipse cx="0.25" cy="0.3" rx={role === "sousa" ? 2.1 : 1.5} ry={role === "sousa" ? 1.7 : 1} className="band-shadow" />
               {/* jacket with white shoulder trim and a chest stripe */}
               <ellipse cx="0" cy="0" rx="0.85" ry="1.45" fill={major ? "#f6f6f6" : hc} className="band-shoulders" />
