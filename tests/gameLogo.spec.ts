@@ -22,5 +22,4 @@ test("the card shows the Red River logo and no badge on a normal game", async ({
   await expect(rr.locator(".game-badge img")).toHaveAttribute("src", "/game-logos/red-river-rivalry.svg");
   await expect(rr.locator(".game-badge")).toContainText("Red River Rivalry");
   await expect(page.locator(".game-card", { hasText: "Missouri" }).first().locator(".game-badge")).toHaveCount(0);
-  await rr.screenshot({ path: process.env.OUT ?? "/dev/null" });
 });
