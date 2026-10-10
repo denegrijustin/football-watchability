@@ -5388,10 +5388,10 @@ html:has(dialog[open]) {
 
 /* Texas and Kansas logos are shown upside down everywhere (cards, grids, results, the Empire map). The files are
    named by team, so the rule follows the logo wherever it is drawn; the JPG export flips them too (exportJpg.ts). */
-img[src$="/logos/texas.webp"],
-img[src$="/logos/kansas.webp"],
-image[href$="/logos/texas.webp"],
-image[href$="/logos/kansas.webp"] {
+img[src*="/logos/texas.webp"],
+img[src*="/logos/kansas.webp"],
+image[href*="/logos/texas.webp"],
+image[href*="/logos/kansas.webp"] {
   rotate: 180deg;
   transform-box: fill-box;
   transform-origin: center;
@@ -5443,3 +5443,15 @@ image[href$="/logos/kansas.webp"] {
 .flow-time-marks { display:flex; justify-content:space-between; font-size:10px; color:var(--text-2); }
 .flow-time-marks span { text-align:center; }
 .flow-time-marks small { display:block; opacity:.65; font-size:9px; }
+
+/* Placeholder shown by index.html until the slate and results have loaded */
+.boot { display: grid; gap: 12px; max-width: 760px; margin: 0 auto; padding: 24px 16px; }
+.boot-bar { height: 88px; border-radius: 12px; background: linear-gradient(90deg, rgba(255,255,255,.04), rgba(255,255,255,.1), rgba(255,255,255,.04)); background-size: 200% 100%; animation: boot-shimmer 1.4s linear infinite; }
+@keyframes boot-shimmer { to { background-position: -200% 0; } }
+@media (prefers-reduced-motion: reduce) { .boot-bar { animation: none; } }
+
+/* Off-screen compact cards skip layout and paint until they scroll near the viewport. */
+.game-card.compact {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 120px;
+}

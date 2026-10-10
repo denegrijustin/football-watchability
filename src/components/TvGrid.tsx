@@ -300,7 +300,7 @@ function Side({ t, cls }: { t: GridGame["sides"][number]; cls: string }) {
           {rankLine(t.ranks, true)}
         </span>
       )}
-      <img src={logos[t.logoId]} alt="" loading="lazy" />
+      <img src={logos[t.logoId]} alt="" loading="lazy" decoding="async" />
     </span>
   );
 }

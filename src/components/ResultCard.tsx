@@ -13,7 +13,7 @@ import {
   type Result,
 } from "../data";
 import { InsanityMeter } from "./InsanityMeter";
-import { useOpenGame } from "./GameCenter";
+import { useOpenGame } from "./GameCenterContext";
 import { Booth, type CrewMember } from "./Booth";
 import { dayOf, timeOf, tzAbbr } from "../tz";
 
@@ -75,7 +75,7 @@ export function ResultCard({ result: r, defaultExpanded = false }: { result: Res
         >
           {netLogo && (
             <span className="net-chip">
-              <img src={netLogo} alt="" height="16" loading="lazy" />
+              <img src={netLogo} alt="" height="16" loading="lazy" decoding="async" />
             </span>
           )}
           <span className="sr-only">Aired on: </span>

@@ -254,12 +254,11 @@ test("the NFL grid has a row per team, a column per seed, and the #1 seed column
     expW: 11 - i * 0.4, pSeed: [40 - i * 2, 20, 10, 8, 6, 5, 4].map((v) => Math.max(v, 0)), pPlayoffs: 95 - i * 4, pDiv: 50 - i * 2,
   });
   const nflSnapshot = (conf: string) => ({ field: [], out: [], grid: Array.from({ length: 16 }, (_, i) => row(i + 1, conf)) });
-  await page.route("**/assets/outlook-*.js", async (route) => {
+  await page.route("**/data/outlook.json", async (route) => {
     const res = await route.fetch();
-    const body = await res.text();
-    // Replace the NFL part of the bundled snapshot with one that has grids.
+    // Replace the NFL part of the saved snapshot with one that has grids.
     const nfl = { cycle: "2026-10-06", built: "2026-10-06", fpiUpdated: null, rules: {}, sim: { sims: 20000, games: 208 }, conferences: { AFC: nflSnapshot("AFC"), NFC: nflSnapshot("NFC") } };
-    await route.fulfill({ response: res, body: `${body}\n;` .replace(/export\s*\{\s*(\w+)\s+as\s+default\s*\}/, (_m, v) => `export default { ...${v}, nfl: ${JSON.stringify(nfl)} }`) });
+    await route.fulfill({ response: res, json: { ...(await res.json()), nfl } });
   });
   await page.goto("/?league=NFL");
   await page.getByRole("button", { name: /^Outlook/ }).click();
@@ -281,6 +280,7 @@ test("the view tabs and Export never overlap, down to the narrowest phone", asyn
   for (const w of [320, 360, 390, 430, 521, 760]) {
     await page.setViewportSize({ width: w, height: 800 });
     await page.goto("/?league=NFL");
+    await expect(page.locator(".view-switch button").first()).toBeVisible(); // the board renders once its data has loaded
     const boxes = await page.evaluate(() => {
       const box = (el: Element) => {
         const b = el.getBoundingClientRect();
@@ -492,13 +492,10 @@ test("the college grid reaches the page: a row per contender, twelve seed column
     id: `T${i}`, name: `Team ${i + 1}`, abbr: `T${i}`, logoId: null, conf: i === 3 ? "Ind" : "SEC", record: "5-0", rank: i + 1, expW: 11 - i * 0.2,
     pSeed: Array.from({ length: 12 }, (_, k) => (k === i % 12 ? 40 : 3)), pPlayoffs: 95 - i * 3, pBye: 60 - i * 2, pConfTitle: 30 - i,
   }));
-  await page.route("**/assets/outlook-*.js", async (route) => {
+  await page.route("**/data/outlook.json", async (route) => {
     const res = await route.fetch();
-    const body = await res.text();
-    await route.fulfill({
-      response: res,
-      body: body.replace(/export\s*\{\s*(\w+)\s+as\s+default\s*\}/, (_m, v) => `export default { ...${v}, cfb: { ...${v}.cfb, sim: { sims: 10000, games: 497 }, grid: ${JSON.stringify(rows)} } }`),
-    });
+    const saved = await res.json();
+    await route.fulfill({ response: res, json: { ...saved, cfb: { ...saved.cfb, sim: { sims: 10000, games: 497 }, grid: rows } } });
   });
   await page.goto("/?league=CFB");
   await page.getByRole("button", { name: /^Outlook/ }).click();

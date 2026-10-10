@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { ART_COUNT, attributePlays, impact, summarizeEvents, type ImpactEvent, type PlayLog, type PlayerRow } from "../playImpact";
 import { ART_LABEL, PlayArt } from "./PlayArt";
 import { openModal } from "../modal";
@@ -17,26 +17,7 @@ import { WeatherLook } from "./WeatherLook";
 import { Stakes } from "./TeamImpact";
 import { TeamForm } from "./Trends";
 
-// ---------- open/close from anywhere ----------
-/** A game the board doesn't carry any more (earlier weeks), described just enough to open. */
-export type GameStub = {
-  league: "NFL" | "CFB";
-  date: string;
-  matchup: string;
-  teams: { name: string; abbr: string; logoId: string; color?: string | null; score: number }[];
-};
-const Ctx = createContext<(espnId: string, stub?: GameStub) => void>(() => {});
-export const useOpenGame = () => useContext(Ctx);
-
-export function GameCenterProvider({ children }: { children: ReactNode }) {
-  const [open, setOpen] = useState<{ id: string; stub?: GameStub } | null>(null);
-  return (
-    <Ctx.Provider value={(id, stub) => setOpen({ id, stub })}>
-      {children}
-      <GameCenter espnId={open?.id ?? null} stub={open?.stub} onClose={() => setOpen(null)} />
-    </Ctx.Provider>
-  );
-}
+import type { GameStub } from "./GameCenterContext";
 
 // ---------- live data ----------
 type Side = { id: string; abbr: string; name: string; homeAway: string; score: number; linescores: number[]; possession: boolean };
@@ -128,7 +109,7 @@ const mmss = (t: string) => {
 };
 const pct = (n: number) => `${Math.round(n)}%`;
 
-function GameCenter({ espnId, stub, onClose }: { espnId: string | null; stub?: GameStub; onClose: () => void }) {
+export default function GameCenter({ espnId, stub, onClose }: { espnId: string | null; stub?: GameStub; onClose: () => void }) {
   const ref = useRef<HTMLDialogElement>(null);
   const up = espnId ? slate.games.find((g) => g.espnId === espnId) : undefined;
   const fin = espnId && !up ? results.find((r) => r.espnId === espnId) : undefined;

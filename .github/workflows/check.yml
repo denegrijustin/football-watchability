@@ -17,5 +17,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: python3 scripts/imperialism/test_engine.py
       - run: pnpm build
+      - run: node scripts/check-data.mjs
+      - run: node scripts/check-budget.mjs
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm test

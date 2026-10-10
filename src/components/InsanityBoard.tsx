@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
 import { logos, results, slate, teamColor } from "../data";
+import { fetchData } from "../data/load";
 import { rankGames, mostInsaneWeek, weekSummaries, type LedgerGame } from "../seasonRank";
 import { INSANITY_TIERS } from "../insanity";
-import { useOpenGame, type GameStub } from "./GameCenter";
+import { useOpenGame, type GameStub } from "./GameCenterContext";
 import { Headshot } from "./Headshot";
 
 type Scope = "week" | "season";
@@ -37,7 +38,7 @@ export function InsanityBoard({ defaultLeague }: { defaultLeague: "NFL" | "CFB" 
 
   useEffect(() => {
     let live = true;
-    import("../data/season.json").then((m) => live && setLedger((m.default as { games: LedgerGame[] }).games));
+    fetchData<{ games: LedgerGame[] }>("season").then((m) => live && setLedger(m.games));
     return () => {
       live = false;
     };
@@ -221,7 +222,7 @@ function InsanityCard({ g, rank, showWeek, onOpen }: { g: LedgerGame; rank: numb
           const won = k === 0 ? g.away.score > g.home.score : g.home.score > g.away.score;
           return (
             <span key={k} className={`ic-team ${k ? "home" : "away"}${won ? " won" : ""}`}>
-              {logos[t.logoId] ? <img src={logos[t.logoId]} alt="" width="40" height="40" loading="lazy" /> : <i className="ic-nologo" />}
+              {logos[t.logoId] ? <img src={logos[t.logoId]} alt="" width="40" height="40" loading="lazy" decoding="async" /> : <i className="ic-nologo" />}
               <span className="ic-abbr">{t.abbr}</span>
               <b>{t.score}</b>
             </span>

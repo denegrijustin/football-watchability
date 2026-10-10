@@ -23,7 +23,7 @@ function TeamRow({ team }: { team: Team }) {
   return (
     <tr className="team-impact">
       <th scope="row">
-        <img src={logos[team.logoId]} alt="" width="22" height="22" loading="lazy" />
+        <img src={logos[team.logoId]} alt="" width="22" height="22" loading="lazy" decoding="async" />
         <span className="sr-only">{team.name}</span>
       </th>
       <td className="scenario-0">

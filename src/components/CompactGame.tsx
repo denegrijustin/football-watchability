@@ -3,7 +3,7 @@ import { Booth, type CrewMember } from "./Booth";
 import type { ReactNode } from "react";
 import { dayOf, timeOf, tzAbbr } from "../tz";
 import { NetChip } from "./NetChip";
-import { useOpenGame } from "./GameCenter";
+import { useOpenGame } from "./GameCenterContext";
 import { SquareActivity } from "lucide-react";
 
 type Team = { name: string; logoId: string; record: string; ranks?: unknown };
@@ -24,7 +24,7 @@ export function CompactGame({ titleId, matchup, date, broadcast, network, espnId
     <h3 className="sr-only" id={titleId}>{matchup}</h3>
     <div className="matchup">
       <div className="matchup-teams">{teams.map((team, i) => <div className="team-heading cc-team" key={team.name}>
-        <img src={logos[team.logoId]} alt="" width="36" height="36" loading="lazy" />
+        <img src={logos[team.logoId]} alt="" width="36" height="36" loading="lazy" decoding="async" />
         <div><h4>{team.name}{i === 1 && <span className="home-tag">Home</span>}</h4>
           <p>{recordLine(team.record, league as League)}</p>
           {rankLine(team.ranks as Ranks) && <p className="rank-line" title={rankTitle(team.ranks as Ranks)}>{rankLine(team.ranks as Ranks)}</p>}
