@@ -205,7 +205,8 @@ jobs:
           git checkout -q -B main origin/main
           # Publish generated data/assets only; never replace main's code or
           # workflows with a stale copy from the data branch.
-          git checkout "$src" -- 'src/data/*.json' public
+          # public/_headers (cache rules) is code, so it stays as main has it.
+          git checkout "$src" -- 'src/data/*.json' public ':!public/_headers'
           git diff --cached --quiet && { echo "Nothing to deploy"; exit 0; }
           git commit -q -m "Refresh board $(TZ=America/Chicago date +'%a %b %-d, %-I:%M %p %Z')"
           git push origin main
