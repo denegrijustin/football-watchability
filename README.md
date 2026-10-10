@@ -236,7 +236,7 @@ The migration preserves **87 games (16 NFL, 71 college), 174 logo images, 87 pop
 
 ## Cloudflare Pages
 
-The build configuration is in `wrangler.jsonc`; Pages response headers are in `public/_headers`. The app uses only static assets and does not require paid services, bindings or environment secrets.
+The build configuration is in `wrangler.jsonc`; Pages response headers are in `config/_headers` (the build copies them to `dist/_headers`). The app uses only static assets and does not require paid services, bindings or environment secrets.
 
 ### GitHub-connected deployment (recommended)
 
