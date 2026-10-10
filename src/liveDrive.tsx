@@ -15,7 +15,8 @@ type Summary = {
 };
 export type FieldTeam = { espnId?: string | null; abbr?: string; name: string; color?: string | null; logoId?: string };
 
-const PATHS: Record<string, string> = { NFL: "nfl", CFB: "college-football" };
+// The /api/game function takes nfl or cfb (not the ESPN path), the same values the Game Center sends.
+const PATHS: Record<string, string> = { NFL: "nfl", CFB: "cfb" };
 const POLL_MS = 15_000;
 const cache = new Map<string, { at: number; data: Summary | null }>();
 
@@ -183,12 +184,12 @@ export function FieldView({ data, teams, variant, rootRef }: { data: Summary | n
   return (
     <div ref={rootRef} className={`lf lf-${variant}`} role="img" aria-label={`Live field: ${label}. ${stats}. Drive started at ${startedAt}.`}>
       <p className="lf-ball-team">
-        {logo && <img src={logos[teams[side].logoId!]} alt="" width="22" height="22" />}
+        {logo && <img src={logos[teams[side].logoId!]} alt="" width={variant === "card" ? 16 : 22} height={variant === "card" ? 16 : 22} />}
         <FootballIcon title="Has the ball" />
         <b>{teams[side].name}</b>
         <span> have the ball</span>
       </p>
-      <svg viewBox="0 0 120 34" className="drive-svg" aria-hidden="true">
+      <svg viewBox={variant === "card" ? "0 6 120 23" : "0 0 120 34"} className="drive-svg" aria-hidden="true">
         <rect x="0" y="0" width="120" height="34" className="df-turf" />
         {Array.from({ length: 10 }, (_, i) => (
           <rect key={i} x={10 + i * 10} y="0" width="10" height="34" className={i % 2 ? "df-stripe" : "df-stripe alt"} />

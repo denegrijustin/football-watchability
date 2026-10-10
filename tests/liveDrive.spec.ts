@@ -152,3 +152,33 @@ test("with no situation spot at all, the ball comes from the latest snap in the 
   // The away team (a) has the ball; 40 from the home goal line = 60 yards from a's own goal line, plus the 10-yard end zone.
   expect(await live.locator(".df-ball").evaluate((e) => (e as SVGGElement).style.transform)).toBe("translateX(70px)");
 });
+
+test("a college card asks the game feed for league=cfb, and shows the field", async ({ page }) => {
+  const cfb = slate.games.filter((g: any) => g.league === "CFB");
+  const start = Math.max(...cfb.map((g: any) => new Date(g.date).getTime()));
+  await page.clock.install({ time: start + 90 * 60e3 });
+  await page.route("**/api/scores**", (route) =>
+    route.fulfill({ json: cfb.map((g: any, i: number) => ({ id: g.espnId, state: i === 0 ? "in" : "pre", detail: "5:12 - 3rd", away: 14, home: 17 })) }),
+  );
+  await page.route("**/api/flow**", (route) => route.fulfill({ json: { wp: [] } }));
+  const asked: string[] = [];
+  const [a, h] = cfb[0].teams;
+  await page.route("**/api/game**", (route) => {
+    asked.push(new URL(route.request().url()).searchParams.get("league") ?? "");
+    return route.fulfill({
+      json: {
+        ...summary(60, "2nd & 7 at " + h.abbr + " 40"),
+        id: cfb[0].espnId,
+        teams: [
+          { id: a.espnId, abbr: a.abbr, name: a.name, homeAway: "away", score: 14, linescores: [], possession: true },
+          { id: h.espnId, abbr: h.abbr, name: h.name, homeAway: "home", score: 17, linescores: [], possession: false },
+        ],
+        situation: { text: "2nd & 7 at " + h.abbr + " 40", possession: a.espnId, toGo: 60, redZone: false, lastPlay: "x" },
+        drives: [{ team: a.espnId, from: 25, to: 40, yards: 15, plays: 4, result: "", score: false, time: "1:40", current: true }],
+      },
+    });
+  });
+  await page.goto("/?league=CFB");
+  await expect(page.locator(".board-section.live .game-card").first().locator("svg.drive-svg")).toBeVisible();
+  expect(asked.every((x) => x === "cfb")).toBe(true);
+});
