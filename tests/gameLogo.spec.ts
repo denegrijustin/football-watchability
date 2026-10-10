@@ -6,7 +6,7 @@ const t = (a: string, b: string) => [{ logoId: a }, { logoId: b }];
 test("Texas and Oklahoma get the Red River Rivalry logo, in either order", () => {
   for (const teams of [t("texas", "oklahoma"), t("oklahoma", "texas")]) {
     const b = gameBadge({ meta: "Sat · Dallas, TX (neutral site)", teams });
-    expect(b).toMatchObject({ name: "Red River Rivalry", src: "/game-logos/red-river-rivalry.svg", neutral: true });
+    expect(b).toMatchObject({ name: "Red River Rivalry", src: "/game-logos/red-river-rivalry.webp", neutral: true });
   }
 });
 
@@ -19,7 +19,27 @@ test("an ordinary home game has no game logo; a named or neutral-site game gets 
 test("the card shows the Red River logo and no badge on a normal game", async ({ page }) => {
   await page.goto("/?league=CFB");
   const rr = page.locator(".game-card", { hasText: "Texas @ Oklahoma" }).first();
-  await expect(rr.locator(".game-badge img")).toHaveAttribute("src", "/game-logos/red-river-rivalry.svg");
+  await expect(rr.locator(".game-badge img")).toHaveAttribute("src", "/game-logos/red-river-rivalry.webp");
   await expect(rr.locator(".game-badge")).toContainText("Red River Rivalry");
   await expect(page.locator(".game-card", { hasText: "Missouri" }).first().locator(".game-badge")).toHaveCount(0);
+});
+
+test("a registry entry can match by ESPN's event headline, for future games", () => {
+  const b = gameBadge({ meta: "Sat · Dallas, TX (neutral site)", event: "Allstate Red River Rivalry presented by X", teams: [{ logoId: "a" }, { logoId: "b" }] });
+  expect(b).toMatchObject({ name: "Red River Rivalry", src: "/game-logos/red-river-rivalry.webp" });
+});
+
+test("at halftime the game's logo is painted at midfield and tops the card", async ({ page }) => {
+  const slate = (await import("../src/data/slate.json", { with: { type: "json" } })).default as any;
+  const g = slate.games.find((x: any) => x.matchup === "Texas @ Oklahoma");
+  const T = new Date(g.date).getTime() + 90 * 60e3;
+  await page.clock.install({ time: T });
+  await page.route("**/api/scores**", (r) => r.fulfill({ json: slate.games.map((x: any) => ({ id: x.espnId, state: x === g ? "in" : "pre", detail: x === g ? "Halftime" : "", away: 14, home: 17 })) }));
+  await page.route("**/api/flow**", (r) => r.fulfill({ json: { wp: [] } }));
+  await page.route("**/api/game**", (r) => r.fulfill({ status: 503, json: {} }));
+  await page.goto("/?league=CFB");
+  await page.clock.resume();
+  const card = page.locator(".game-card", { hasText: "Texas @ Oklahoma" }).first();
+  await expect(card.locator("image[data-game-logo]")).toHaveAttribute("href", "/game-logos/red-river-rivalry.webp");
+  await expect(card.locator(".game-badge img")).toHaveAttribute("src", "/game-logos/red-river-rivalry.webp");
 });
