@@ -10,12 +10,14 @@ export type Ranks = {
 } | null;
 const ord = (n: number) => `${n}${[, "st", "nd", "rd"][(n % 100 >> 3) ^ 1 && n % 10] || "th"}`;
 const SHORT_CONF: Record<string, string> = { "Mountain West": "MW", "Sun Belt": "Sun Belt", American: "AAC", "Conference USA": "C-USA" };
-/** "SEC #3 · #7 overall (FPI)", or "SEC #3 · #7" when compact */
+// The compact TV-grid line has about 100px to work with, so the longest conference names shrink further.
+const COMPACT_CONF: Record<string, string> = { ...SHORT_CONF, "Big Ten": "B1G", "Sun Belt": "SBC" };
+/** "SEC #3 · #7 overall (FPI)", or "SEC #3 · Nat #7" when compact (Nat = national rank by FPI; the TV grid's key says so) */
 export function rankLine(r: Ranks | undefined, compact = false) {
   if (!r) return "";
-  const name = r.confName ? SHORT_CONF[r.confName] ?? r.confName : "";
+  const name = r.confName ? (compact ? COMPACT_CONF : SHORT_CONF)[r.confName] ?? r.confName : "";
   const conf = r.conf && name ? `${name} #${r.conf}` : "";
-  const all = r.overall ? (compact ? `#${r.overall}` : `#${r.overall} overall`) : "";
+  const all = r.overall ? (compact ? `Nat #${r.overall}` : `#${r.overall} overall`) : "";
   const line = [conf, all].filter(Boolean).join(" · ");
   // Full lines name their source; the compact TV-grid one is explained by the grid's key.
   return line && !compact ? `${line} (FPI)` : line;
