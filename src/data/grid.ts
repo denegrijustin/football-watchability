@@ -15,7 +15,7 @@ export type GridGame = {
   score: number;
   tier: Tier;
   final: string | null;
-  sides: { abbr: string; name: string; logoId: string; color: string | null; tag: string | null; ranks?: Ranks }[];
+  sides: { abbr: string; name: string; logoId: string; color: string | null; tag: string | null; ranks?: Ranks; /** the AP rank ("AP #2") for a ranked college team: the national rank the grid shows first */ poll?: string | null }[];
 };
 
 // Broadcast order across the grid: broadcast networks, then ESPN family,
@@ -69,13 +69,16 @@ export function gridGames(): GridGame[] {
       final: null,
       sides: teams.map((t) => {
         const r = cleanRank(t.rankings[0] ?? "");
+        const record = t.record.split(" · ")[0];
+        const apRank = g.league === "CFB" && r.startsWith("#") ? `AP ${r}` : null;
         return {
           abbr: t.abbr ?? t.name,
           name: t.name,
           logoId: t.logoId,
           color: teamColor(t.color),
-          tag: g.league === "CFB" && r.startsWith("#") ? r : t.record.split(" · ")[0],
+          tag: record,
           ranks: t.ranks,
+          poll: apRank,
         };
       }),
     };

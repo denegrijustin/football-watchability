@@ -313,7 +313,7 @@ h1 em {
 /* ---------- Filters ---------- */
 .filter-dock {
   position: sticky;
-  top: 0;
+  top: var(--ticker-h, 0px);
   z-index: 5;
   margin: 0 -24px;
   padding: 12px 24px;
@@ -2318,30 +2318,38 @@ details.proj summary strong {
   outline: 2px solid var(--lime);
   outline-offset: 1px;
 }
+/* A side is three rows: a text line, the logo in whatever height is left, a text line. The logo shrinks to fit
+   between the lines instead of sitting on top of them. */
 .tv-side {
   position: relative;
   display: grid;
-  place-items: center;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  padding: 3px 5px;
   min-height: 0;
 }
 .tv-side img {
-  width: 40px;
-  height: 40px;
+  grid-row: 2;
+  justify-self: center;
+  align-self: center;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  max-width: 40px;
+  max-height: 40px;
   object-fit: contain;
   filter: drop-shadow(0 1px 1px rgb(0 0 0 / 40%));
 }
 .tv-tag {
-  position: absolute;
-  top: 3px;
-  left: 5px;
+  grid-row: 1;
+  line-height: 1.15;
+  text-align: left;
   font-size: 10.5px;
   font-weight: 700;
   color: rgb(255 255 255 / 92%);
   text-shadow: 0 1px 2px rgb(0 0 0 / 55%);
 }
 .tv-side.home .tv-tag {
-  top: auto;
-  bottom: 3px;
+  grid-row: 3;
 }
 .tv-label {
   display: grid;
@@ -2393,8 +2401,8 @@ details.proj summary strong {
     margin-left: 0;
   }
   .tv-side img {
-    width: 32px;
-    height: 32px;
+    max-width: 32px;
+    max-height: 32px;
   }
 }
 
@@ -2412,9 +2420,9 @@ details.proj summary strong {
   font-size: inherit;
 }
 .tv-rank {
-  position: absolute;
-  bottom: 3px;
-  left: 5px;
+  grid-row: 3;
+  line-height: 1.15;
+  text-align: left;
   font-size: 10.5px;
   font-weight: 700;
   color: rgb(255 255 255 / 92%);
@@ -2422,8 +2430,7 @@ details.proj summary strong {
   white-space: nowrap;
 }
 .tv-side.home .tv-rank {
-  bottom: auto;
-  top: 3px;
+  grid-row: 1;
 }
 
 /* Desktop: time runs left to right, each block reads away | label | home. */
@@ -2439,20 +2446,17 @@ details.proj summary strong {
   padding: 4px 6px;
 }
 .wide .tv-side img {
-  width: 36px;
-  height: 36px;
+  max-width: 36px;
+  max-height: 36px;
 }
+/* In the wide layout the home side mirrors the away side: text on the right, tag above the rank. */
 .wide .tv-side.home .tv-tag {
-  top: 3px;
-  bottom: auto;
-  left: auto;
-  right: 5px;
+  grid-row: 1;
+  text-align: right;
 }
 .wide .tv-side.home .tv-rank {
-  top: auto;
-  bottom: 3px;
-  left: auto;
-  right: 5px;
+  grid-row: 3;
+  text-align: right;
 }
 .wide .tv-score {
   top: auto;
@@ -5477,5 +5481,392 @@ select,
   *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+  }
+}
+
+/* ---------- Final-scores ticker (persistent, top of every screen) ---------- */
+:root {
+  --ticker-h: 38px;
+}
+.ticker {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: stretch;
+  height: var(--ticker-h);
+  background: #0a1117;
+  border-bottom: 1px solid var(--line);
+  font-size: 12.5px;
+}
+.ticker-title {
+  display: grid;
+  place-items: center;
+  padding: 0 12px;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #0a1117;
+  background: var(--accent, #b6e36a);
+}
+.ticker-viewport {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  /* soft edges where the scores enter and leave */
+  mask-image: linear-gradient(90deg, transparent, #000 24px, #000 calc(100% - 24px), transparent);
+}
+.ticker-track {
+  display: flex;
+  width: max-content;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  animation: ticker-scroll var(--ticker-dur, 120s) linear infinite;
+}
+.ticker:hover .ticker-track,
+.ticker:focus-within .ticker-track,
+.ticker.paused .ticker-track {
+  animation-play-state: paused;
+}
+@keyframes ticker-scroll {
+  to {
+    transform: translateX(-50%);
+  }
+}
+.ticker-track li {
+  display: flex;
+}
+.ticker-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 100%;
+  padding: 0 16px;
+  border: 0;
+  border-right: 1px solid rgb(255 255 255 / 8%);
+  background: none;
+  color: var(--text);
+  font: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.ticker-item:hover,
+.ticker-item:focus-visible {
+  background: rgb(255 255 255 / 8%);
+}
+.ticker-league {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.ticker-team {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--muted);
+}
+.ticker-team.won {
+  color: var(--text);
+  font-weight: 700;
+}
+.ticker-team img {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
+.ticker-final {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+.ticker-pause {
+  padding: 0 12px;
+  border: 0;
+  border-left: 1px solid var(--line);
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+.ticker-pause:hover {
+  color: var(--text);
+}
+/* Reduced motion: the strip stays put and scrolls by hand. */
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track {
+    animation: none;
+  }
+  .ticker-viewport {
+    overflow-x: auto;
+    mask-image: none;
+  }
+  .ticker-track .ticker-dup {
+    display: none;
+  }
+  .ticker-pause {
+    display: none;
+  }
+}
+@media (max-width: 520px) {
+  .ticker-title {
+    padding: 0 8px;
+  }
+}
+
+/* ---------- Compact top of the page on phones ---------- */
+@media (max-width: 760px) {
+  :root {
+    --ticker-h: 32px;
+  }
+  .ticker {
+    font-size: 12px;
+  }
+  .ticker-title {
+    font-size: 10px;
+  }
+  /* "How to read a card" is a slim line */
+  .how-to {
+    margin: 4px 0 0;
+  }
+  .how-to > summary {
+    min-height: 28px;
+    padding: 0 10px;
+    font-size: 12px;
+  }
+  /* One scrolling row of filters instead of three wrapped rows */
+  .filter-dock {
+    padding: 4px 12px;
+    margin: 0 -12px;
+  }
+  .filter-bar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    gap: 5px;
+    mask-image: linear-gradient(90deg, #000 calc(100% - 22px), transparent);
+  }
+  .filter-bar::-webkit-scrollbar {
+    display: none;
+  }
+  .fmenu {
+    flex: none;
+  }
+  .fmenu select {
+    height: 32px;
+    font-size: 16px;
+  }
+  .filter-bar .search {
+    flex: none;
+    width: 150px;
+    margin-left: 0;
+    height: 32px;
+  }
+  /* Tabs and Export share a row; Export shrinks to an icon */
+  .view-row {
+    flex-wrap: nowrap;
+    gap: 6px;
+    margin-top: 4px;
+  }
+  .view-row .view-switch {
+    flex: 1;
+    min-width: 0;
+    width: auto;
+  }
+  .view-row .export-btns {
+    flex: none;
+    width: auto;
+    margin: 0;
+  }
+  .view-switch button {
+    padding: 0 4px;
+    font-size: 12px;
+    min-height: 34px;
+  }
+  .export summary {
+    min-height: 34px;
+    padding: 0 10px;
+    font-size: 0;
+  }
+  .export summary::before {
+    content: "⤓";
+    font-size: 16px;
+    line-height: 1;
+  }
+  .export summary::after {
+    display: none;
+  }
+  /* The heading and the long sort note repeat what the menus already say; the counts become one plain line */
+  .board-heading {
+    margin: 6px 0 4px;
+    gap: 4px 10px;
+  }
+  .board-heading h2,
+  .board-heading .sort-label {
+    display: none;
+  }
+  .board-heading [role="status"] {
+    background: none;
+    padding: 0;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .board-section,
+  .board-section:first-of-type {
+    margin-top: 10px;
+  }
+  .section-head {
+    margin: 0 0 8px;
+    padding-bottom: 5px;
+  }
+  .section-head h3 {
+    font-size: 16px;
+  }
+  .section-head .count {
+    font-size: 12px;
+    padding: 0 7px;
+  }
+  .section-note {
+    display: none;
+  }
+}
+@media (max-width: 760px) {
+  /* the section headings below carry the counts, so the line above them goes (Reset filters stays when it applies) */
+  .board-heading [role="status"] {
+    display: none;
+  }
+  .board-heading:not(:has(.reset)) {
+    display: none;
+  }
+  .kickoff-slot {
+    margin: 12px 0;
+  }
+  .kickoff-slot h4 {
+    margin: 0 0 6px;
+    padding-bottom: 5px;
+    font-size: 13px;
+  }
+}
+
+/* ---------- Compact top of the page, all screen sizes ---------- */
+/* "How to read a card" is a small button in the header; its guide opens as a panel under the header */
+.site-header {
+  position: relative;
+}
+.site-header .how-to {
+  position: static;
+  margin: 0 0 0 auto;
+  border: 0;
+  background: none;
+}
+.site-header .how-to > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 32px;
+  padding: 0 12px 0 7px;
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  background: var(--surface);
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.site-header .how-to > summary::after {
+  display: none;
+}
+.site-header .how-to[open] > summary {
+  border-color: var(--lime);
+}
+.how-pop {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: max(24px, calc((100vw - 1480px) / 2));
+  z-index: 60;
+  width: min(1000px, calc(100vw - 32px));
+  max-height: calc(100dvh - 120px);
+  overflow: auto;
+  padding: 16px;
+  border: 1px solid var(--line-strong, var(--line));
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: 0 18px 50px rgb(0 0 0 / 55%);
+}
+/* The counts line and the long sort note repeat what the menus and section headings already say */
+.board-heading [role="status"] {
+  display: none;
+}
+.board-heading h2,
+.board-heading .sort-label {
+  display: none;
+}
+.board-heading:not(:has(.reset)) {
+  display: none;
+}
+.view-row {
+  margin-top: 6px;
+}
+.board-section,
+.board-section:first-of-type {
+  margin-top: 10px;
+}
+.section-head {
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+}
+.kickoff-slot {
+  margin: 12px 0;
+}
+.kickoff-slot h4 {
+  margin: 0 0 8px;
+  padding-bottom: 6px;
+  font-size: 13.5px;
+}
+:root {
+  --ticker-h: 34px;
+}
+@media (max-width: 760px) {
+  :root {
+    --ticker-h: 32px;
+  }
+  .site-header .how-to {
+    margin-left: auto;
+  }
+  .site-header .how-to > summary span {
+    display: none;
+  }
+  .site-header .how-to > summary {
+    padding: 0 7px;
+  }
+  .how-pop {
+    left: 12px;
+    right: 12px;
+    width: auto;
+    padding: 12px;
+  }
+}
+.site-header {
+  justify-content: flex-start;
+}
+@media (max-width: 420px) {
+  .site-header {
+    gap: 8px;
+  }
+  .site-header .tz-pick {
+    margin-right: 0;
+    padding-left: 6px;
+  }
+  .site-header .tz-pick svg {
+    display: none;
+  }
+  .site-header .tz-pick select {
+    max-width: 92px;
+  }
+  .site-header .brand-name {
+    font-size: 13px;
   }
 }

@@ -3,6 +3,7 @@ import { dayName, results, slate, tiers, type FilterState, type League, type Vie
 import { Filters } from "./components/Filters";
 import { GameBoard, useBoard } from "./components/GameBoard";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { ScoreTicker } from "./components/ScoreTicker";
 import { defaultLeague } from "./league";
 
 // The map and its shapes load only when the tab is opened.
@@ -47,6 +48,7 @@ export default function App() {
       <a className="skip-link" href="#games">
         Skip to games
       </a>
+      <ScoreTicker />
       <header className="site-header">
         <a href="/" className="brand" aria-label="Football Watchability home">
           <span className="brand-mark" aria-hidden="true">
@@ -54,6 +56,54 @@ export default function App() {
           </span>
           <span className="brand-name">Football Watchability</span>
         </a>
+      <details className="how-to">
+        <summary aria-label="How to read a card"><span>How to read a card</span></summary>
+        <div className="how-pop">
+        <div className="how-grid">
+          <div>
+            <strong>Score</strong>
+            <p>
+              A 0–100 forecast of how fun the game should be; “Why it’s a…”
+              shows the math. ▲▼ is the change since the last update. After
+              the game, Final scores what actually happened on the same scale.
+            </p>
+          </div>
+          <div>
+            <strong>At stake</strong>
+            <p>
+              Projected ranking and playoff odds now, after a{" "}
+              <span className="scenario-1">win</span> and after a{" "}
+              <span className="scenario-2">loss</span>. The bar shows the
+              full swing; the white tick is today.
+            </p>
+          </div>
+          <div>
+            <strong>Rank line</strong>
+            <p>
+              “NFC #4 · #7 overall (FPI)” is the team's place in its conference and in the whole league, both by
+              ESPN's FPI power rating, not by record or the polls. The record sits beside it, and AP polls are
+              labeled AP.
+            </p>
+          </div>
+          <div>
+            <strong>Snapshot</strong>
+            <p>
+              Updated 8am Central Tue, Thu, Fri, Sun and Mon for{" "}
+              {slate.period}. Rankings and odds are projections; TV and
+              weather aren't live.
+            </p>
+          </div>
+        </div>
+        <ul className="legend" aria-label="Score guide">
+          {tiers.map((t) => (
+            <li key={t.id} className={t.id}>
+              <i />
+              {t.min ? `${t.min}+` : "<64"} {t.label}
+            </li>
+          ))}
+        </ul>
+        </div>
+      </details>
         <label className="tz-pick">
           <span className="sr-only">Time zone</span>
           <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
@@ -77,52 +127,6 @@ export default function App() {
       <main className="page">
         <h1 className="sr-only">Football Watchability — {slate.period}</h1>
 
-        <details className="how-to">
-          <summary>How to read a card</summary>
-          <div className="how-grid">
-            <div>
-              <strong>Score</strong>
-              <p>
-                A 0–100 forecast of how fun the game should be; “Why it’s a…”
-                shows the math. ▲▼ is the change since the last update. After
-                the game, Final scores what actually happened on the same scale.
-              </p>
-            </div>
-            <div>
-              <strong>At stake</strong>
-              <p>
-                Projected ranking and playoff odds now, after a{" "}
-                <span className="scenario-1">win</span> and after a{" "}
-                <span className="scenario-2">loss</span>. The bar shows the
-                full swing; the white tick is today.
-              </p>
-            </div>
-            <div>
-              <strong>Rank line</strong>
-              <p>
-                “NFC #4 · #7 overall (FPI)” is the team's place in its conference and in the whole league, both by
-                ESPN's FPI power rating, not by record or the polls. The record sits beside it, and AP polls are
-                labeled AP.
-              </p>
-            </div>
-            <div>
-              <strong>Snapshot</strong>
-              <p>
-                Updated 8am Central Tue, Thu, Fri, Sun and Mon for{" "}
-                {slate.period}. Rankings and odds are projections; TV and
-                weather aren't live.
-              </p>
-            </div>
-          </div>
-          <ul className="legend" aria-label="Score guide">
-            {tiers.map((t) => (
-              <li key={t.id} className={t.id}>
-                <i />
-                {t.min ? `${t.min}+` : "<64"} {t.label}
-              </li>
-            ))}
-          </ul>
-        </details>
 
         {view === "board" && <Filters {...filters} counts={board.counts} onChange={update} />}
 

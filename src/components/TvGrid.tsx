@@ -176,8 +176,8 @@ export function TvGrid() {
           <li className="k-hl">Entertaining (74+)</li>
           <li className="k-mid">Watchable (64–73)</li>
           <li className="k-dim">↓ Lower priority (&lt;64)</li>
-          <li className="k-rank" title="Both ranks are ESPN FPI power ratings: conference rank is the team's place among its conference mates, overall rank is across the whole league.">
-            Under each logo: conference rank · overall rank (ESPN FPI)
+          <li className="k-rank" title="The national rank is the AP poll rank when a team is in the top 25 (AP #2) and its ESPN FPI rank among all teams when it is not (FPI #96). The conference rank is the team's place among its conference mates by FPI.">
+            Top: record. Bottom: conference rank · national rank (AP if ranked, otherwise ESPN FPI)
           </li>
         </ul>
       </div>
@@ -295,9 +295,9 @@ function Side({ t, cls }: { t: GridGame["sides"][number]; cls: string }) {
   return (
     <span className={`tv-side ${cls}`} style={{ background: t.color ?? "#1d2a35" }}>
       {t.tag && <span className="tv-tag">{t.tag}</span>}
-      {rankLine(t.ranks, true) && (
-        <span className="tv-rank" title={rankTitle(t.ranks)}>
-          {rankLine(t.ranks, true)}
+      {rankLine(t.ranks, true, t.poll) && (
+        <span className="tv-rank" title={rankTitle(t.ranks, t.poll)}>
+          {rankLine(t.ranks, true, t.poll)}
         </span>
       )}
       <img src={logos[t.logoId]} alt="" loading="lazy" decoding="async" />

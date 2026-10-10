@@ -5,6 +5,7 @@ import { attendanceView } from "../attendance";
 import { useVenues } from "../venues";
 import {
   logos,
+  broadcastExtra,
   networkLogo,
   rankLine,
   rankTitle,
@@ -79,7 +80,14 @@ export function ResultCard({ result: r, defaultExpanded = false }: { result: Res
             </span>
           )}
           <span className="sr-only">Aired on: </span>
-          {r.broadcast}
+          {netLogo ? (
+            <>
+              <span className="sr-only">{r.broadcast}</span>
+              {broadcastExtra(r.broadcast, r.network) && <span aria-hidden="true">{broadcastExtra(r.broadcast, r.network)}</span>}
+            </>
+          ) : (
+            r.broadcast
+          )}
         </div>
       </header>
       <button

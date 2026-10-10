@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { nameParts } from "../teamName";
 import { deltaValue, logos, parseMeta, tierLabel, type Game } from "../data";
 import {
+  broadcastExtra,
   networkLogo,
   rankLine,
   rankTitle,
@@ -136,7 +137,14 @@ export function GameCard({
             </svg>
           )}
           <span className="sr-only">Where to watch: </span>
-          {game.broadcast}
+          {netLogo ? (
+            <>
+              <span className="sr-only">{game.broadcast}</span>
+              {broadcastExtra(game.broadcast, net) && <span aria-hidden="true">{broadcastExtra(game.broadcast, net)}</span>}
+            </>
+          ) : (
+            game.broadcast
+          )}
         </div>
       </header>
           <button

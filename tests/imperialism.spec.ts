@@ -134,7 +134,7 @@ test("conference map hatches captured land and counts it; logos can be switched 
   expect(expected).toBeGreaterThan(0);
   expect(hatched).toBe(expected); // exactly the captured counties
   await page.getByLabel("Highlight conference").selectOption("SEC");
-  await page.getByRole("button", { name: "National" }).click();
+  await page.getByRole("button", { name: "National", exact: true }).click();
   // Logos: one per empire with land at this week.
   await expect(page.getByTestId("imp-map").locator(".imp-logos image")).toHaveCount(0);
   await page.getByLabel(/Team logos/i).check();

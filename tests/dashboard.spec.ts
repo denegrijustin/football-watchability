@@ -112,9 +112,11 @@ test("search, empty state, league switch and responsive layout", async ({
   ).toBe(true);
   if (testInfo.project.name === "mobile") {
     await page.evaluate(() => scrollTo(0, 650));
+    // The filter bar sticks directly under the final-scores ticker, which owns the very top.
+    const tickerH = Math.round((await page.locator(".ticker").boundingBox())!.height);
     expect(
       Math.round((await page.locator(".filter-dock").boundingBox())!.y),
-    ).toBe(0);
+    ).toBe(tickerH);
     expect((await page.locator(".card-toggle").first().boundingBox())!.height).toBeGreaterThanOrEqual(44);
     await expand(page.locator(CARD).first());
     await page.locator(CARD).first().getByRole("button", { name: /Game Center/ }).click();
@@ -940,7 +942,8 @@ test("@smoke the persistent bar is slim and every filter is a pop-down menu", as
   expect((await dock.boundingBox())!.height).toBeLessThan(phone ? 100 : 60);
   // Still persistent: it stays at the top of the screen while the page scrolls.
   await page.evaluate(() => scrollTo(0, 900));
-  expect(Math.round((await dock.boundingBox())!.y)).toBe(0);
+  // (directly under the final-scores ticker, which owns the very top)
+  expect(Math.round((await dock.boundingBox())!.y)).toBe(Math.round((await page.locator(".ticker").boundingBox())!.height));
   await page.evaluate(() => scrollTo(0, 0));
   // Each menu narrows the board.
   const nfl = slate.games.filter((g: any) => g.league === "NFL");

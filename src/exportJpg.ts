@@ -185,7 +185,7 @@ export async function renderGridImage({
   }
   ctx.fillStyle = "#8d9eac";
   ctx.font = `500 16px ${FONT}`;
-  const hint = "Under each logo: conference rank · overall rank (ESPN FPI). Top: record, or AP rank.";
+  const hint = "Top: record. Bottom: conference rank · national rank (AP if ranked, otherwise ESPN FPI).";
   // On a narrow day the key leaves no room for the hint beside it: put it on the next line instead of running off the edge.
   if (lx + ctx.measureText(hint).width > W - PAD) ctx.fillText(hint, PAD, ly + 26);
   else ctx.fillText(hint, lx, ly);
@@ -328,7 +328,7 @@ function drawBlock(
       ctx.font = `700 13px ${FONT}`;
       ctx.fillText(fit(ctx, t.tag, SIDE - 8), sx + SIDE / 2, y + 17);
     }
-    const rk = rankLine(t.ranks, true);
+    const rk = rankLine(t.ranks, true, t.poll);
     if (rk) {
       ctx.fillStyle = "#ffffff";
       // Shrink to fit before truncating ("Big Ten #10 · #96").

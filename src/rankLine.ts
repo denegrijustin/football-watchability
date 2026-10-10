@@ -10,21 +10,28 @@ export type Ranks = {
 } | null;
 const ord = (n: number) => `${n}${[, "st", "nd", "rd"][(n % 100 >> 3) ^ 1 && n % 10] || "th"}`;
 const SHORT_CONF: Record<string, string> = { "Mountain West": "MW", "Sun Belt": "Sun Belt", American: "AAC", "Conference USA": "C-USA" };
-/** "SEC #3 · #7 overall (FPI)", or "SEC #3 · #7" when compact */
-export function rankLine(r: Ranks | undefined, compact = false) {
-  if (!r) return "";
-  const name = r.confName ? SHORT_CONF[r.confName] ?? r.confName : "";
+// The compact TV-grid line has about 100px to work with, so the longest conference names shrink further.
+const COMPACT_CONF: Record<string, string> = { ...SHORT_CONF, "Big Ten": "B1G", "Sun Belt": "SBC" };
+/**
+ * "SEC #3 · #7 overall (FPI)". Compact (the TV grid): the national rank is the poll rank when the team has one
+ * ("SEC #3 · AP #7") and the ESPN FPI rank when it doesn't ("SEC #8 · FPI #96"), so which one it is is always spelled out.
+ */
+export function rankLine(r: Ranks | undefined, compact = false, poll?: string | null) {
+  if (!r) return compact && poll ? poll : "";
+  const name = r.confName ? (compact ? COMPACT_CONF : SHORT_CONF)[r.confName] ?? r.confName : "";
   const conf = r.conf && name ? `${name} #${r.conf}` : "";
-  const all = r.overall ? (compact ? `#${r.overall}` : `#${r.overall} overall`) : "";
+  const all = compact ? poll || (r.overall ? `FPI #${r.overall}` : "") : r.overall ? `#${r.overall} overall` : "";
   const line = [conf, all].filter(Boolean).join(" · ");
-  // Full lines name their source; the compact TV-grid one is explained by the grid's key.
+  // Full lines name their source; the compact TV-grid one names it beside the number.
   return line && !compact ? `${line} (FPI)` : line;
 }
-/** Tooltip: "3rd of 16 in the SEC by ESPN FPI · 7th of 138 overall (ESPN FPI)" */
-export function rankTitle(r: Ranks | undefined) {
-  if (!r) return undefined;
+/** Tooltip: "#2 in the AP poll · 3rd of 16 in the SEC by ESPN FPI · 7th of 138 overall (ESPN FPI)" */
+export function rankTitle(r: Ranks | undefined, poll?: string | null) {
   const bits = [];
-  if (r.conf && r.confName) bits.push(`${ord(r.conf)} of ${r.confSize} in the ${r.confName}${r.confBasis === "fpi" ? " by ESPN FPI" : " standings"}`);
-  if (r.overall) bits.push(`${ord(r.overall)} of ${r.overallOf} overall (ESPN FPI)`);
+  if (poll) bits.push(`${poll.replace(/^AP /, "")} in the AP poll`);
+  if (r) {
+    if (r.conf && r.confName) bits.push(`${ord(r.conf)} of ${r.confSize} in the ${r.confName}${r.confBasis === "fpi" ? " by ESPN FPI" : " standings"}`);
+    if (r.overall) bits.push(`${ord(r.overall)} of ${r.overallOf} overall (ESPN FPI)`);
+  }
   return bits.join(" · ") || undefined;
 }

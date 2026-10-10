@@ -221,6 +221,22 @@ export function filterGames({
 const networks = networkData as Record<string, { src: string; name?: string }>;
 export const networkLogo = (slug?: string | null) => (slug ? networks[slug]?.src ?? null : null);
 
+const norm = (t: string) => t.toLowerCase().replace(/^the\s+/, "").replace(/network/g, "net").replace(/[^a-z0-9+]/g, "");
+// Listings that spell a network out differently from its slug or short name.
+const NETWORK_ALIASES: Record<string, string> = { cbssn: "cbssportsnet", espnews: "espnnews" };
+/**
+ * The part of a broadcast listing the network logo doesn't already say: "ESPN / ESPN App" → "" (the logo is ESPN and
+ * links to the app), "CBS / Paramount+" → "Paramount+", "TNT" → "". Used beside a logo so the channel isn't named twice.
+ */
+export function broadcastExtra(broadcast: string, slug?: string | null) {
+  const own = new Set([slug ? norm(slug) : "", slug && networks[slug]?.name ? norm(networks[slug].name!) : "", slug ? NETWORK_ALIASES[slug] ?? "" : "", "espnapp"].filter(Boolean));
+  return broadcast
+    .split("/")
+    .map((part) => part.trim())
+    .filter((part) => part && !own.has(norm(part)))
+    .join(" / ");
+}
+
 // ---------- conference and overall rank ----------
 export { rankLine, rankTitle, type Ranks } from "../rankLine";
 /** Record line without the college conference place, which the rank line covers. */
