@@ -147,6 +147,10 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
   const netSlug = (up as { network?: string } | undefined)?.network ?? fin?.network ?? null;
   const netLogo = networkLogo(netSlug);
   const badge = gameBadge({ meta: (up as { meta?: string } | undefined)?.meta, event: (up as { event?: string } | undefined)?.event, teams: teams as { logoId?: string }[] });
+  const liveField =
+    game && state === "in" && !isHalftime(game.status.detail)
+      ? FieldView({ variant: "center", data: game, teams: [away, home].map((t, i) => ({ espnId: game.teams[i]?.id, abbr: t?.abbr, name: t?.name ?? "", color: t?.color, logoId: t?.logoId })) })
+      : null;
   const watch = up ? { score: up.score, tier: up.tier } : fin ? { score: fin.actual.score, tier: fin.actual.tier } : null;
 
   return (
@@ -206,14 +210,10 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
             </p>
           )}
 
-          {game && state === "in" && !isHalftime(game.status.detail) && (
+          {liveField && (
             <section className="gc-panel gc-wide gc-livefield">
               <h3 className="micro-label">Live field</h3>
-              <FieldView
-                variant="center"
-                data={game}
-                teams={[away, home].map((t, i) => ({ espnId: game.teams[i]?.id, abbr: t.abbr, name: t.name, color: t.color, logoId: t.logoId }))}
-              />
+              {liveField}
             </section>
           )}
 

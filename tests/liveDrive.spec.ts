@@ -5,7 +5,7 @@ const slate = JSON.parse(readFileSync("src/data/slate.json", "utf8"));
 const games = slate.games.filter((g: any) => g.league === "NFL");
 
 // Game 0 is live; the summary says the away team has the ball, driving toward the home end zone.
-function summary(toGo: number, text: string) {
+function summary(toGo: number | null, text: string, spotText = "") {
   const [a, h] = games[0].teams;
   return {
     id: games[0].espnId,
@@ -14,10 +14,10 @@ function summary(toGo: number, text: string) {
       { id: a.espnId, abbr: a.abbr, name: a.name, homeAway: "away", score: 14, linescores: [], possession: true },
       { id: h.espnId, abbr: h.abbr, name: h.name, homeAway: "home", score: 17, linescores: [], possession: false },
     ],
-    situation: { text, possession: a.espnId, toGo, redZone: toGo <= 20, lastPlay: "Pass complete" },
+    situation: { text, possession: a.espnId, toGo, redZone: (toGo ?? 99) <= 20, lastPlay: "Pass complete", spotText },
     drives: [
       { team: h.espnId, from: 20, to: 78, yards: 58, plays: 9, result: "Touchdown", score: true, time: "4:10", current: false },
-      { team: a.espnId, from: 25, to: 100 - toGo, yards: 75 - toGo, plays: 4, result: "", score: false, time: "1:40", current: true },
+      { team: a.espnId, from: 25, to: 100 - (toGo ?? 50), yards: 75 - (toGo ?? 50), plays: 4, result: "", score: false, time: "1:40", current: true },
     ],
     curPlays: [
       { down: "1st & 10 at ATL 25", text: "Pass complete to the right for 12 yards", yards: 12, period: 3, clock: "12:30", kind: "Pass Reception", score: false, turnover: false },
@@ -112,4 +112,25 @@ test("the Game Center carries the same live field, with the plays open", async (
   await expect(panel.locator(".lf-ball-team")).toContainText("have the ball");
   await expect(panel.locator("svg.drive-svg")).toBeVisible();
   await expect(panel.locator(".lf-plays li")).toHaveCount(3);
+});
+
+test("when ESPN gives no yards-to-end-zone figure, the ball is placed from its own spot text", async ({ page }) => {
+  const start = Math.max(...games.map((g: any) => new Date(g.date).getTime()));
+  await page.clock.install({ time: start + 90 * 60e3 });
+  await page.route("**/api/scores**", (route) =>
+    route.fulfill({ json: games.map((g: any, i: number) => ({ id: g.espnId, state: i === 0 ? "in" : "pre", detail: "5:12 - 3rd", away: 14, home: 17 })) }),
+  );
+  await page.route("**/api/flow**", (route) => route.fulfill({ json: { wp: [] } }));
+  // The away team has the ball at the HOME team's 35: 65 yards from its own goal line.
+  const [, h] = games[0].teams;
+  await page.route("**/api/game**", (route) => route.fulfill({ json: summary(null, `2nd & 7 at ${h.abbr} 35`) }));
+  await page.goto("/?league=NFL");
+  const live = page.locator(".board-section.live .game-card").first();
+  await expect(live.locator(".df-ball")).toBeAttached();
+  expect(await live.locator(".df-ball").evaluate((e) => (e as SVGGElement).style.transform)).toBe("translateX(75px)");
+  await expect(live.locator(".lf-ball-team")).toContainText("have the ball");
+  // ... and the same from ESPN's separate spot text when the down text has none.
+  await page.route("**/api/game**", (route) => route.fulfill({ json: summary(null, "2nd & 7", `${h.abbr} 35`) }));
+  await page.clock.fastForward(16_000);
+  await expect.poll(() => live.locator(".df-ball").evaluate((e) => (e as SVGGElement).style.transform)).toBe("translateX(75px)");
 });
