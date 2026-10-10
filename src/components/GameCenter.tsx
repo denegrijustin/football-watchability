@@ -12,7 +12,7 @@ import { InsanityMeter } from "./InsanityMeter";
 import { Headshot } from "./Headshot";
 import { GameDetails } from "./GameDetails";
 import { FootballIcon } from "../live";
-import { FieldView } from "../liveDrive";
+import { FieldView, fieldWhy } from "../liveDrive";
 import { HalftimeBand } from "../halftime";
 import { GameBadgeRow } from "./GameBadge";
 import { gameBadge } from "../gameLogo";
@@ -210,10 +210,15 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
             </p>
           )}
 
-          {liveField && (
+          {game && state === "in" && !isHalftime(game.status.detail) && (
             <section className="gc-panel gc-wide gc-livefield">
               <h3 className="micro-label">Live field</h3>
-              {liveField}
+              {liveField ?? (
+                <p className="gc-note">
+                  Waiting for field position from the feed.
+                  <small className="gc-why"> {fieldWhy(game, [game.teams[0]?.id, game.teams[1]?.id])}</small>
+                </p>
+              )}
             </section>
           )}
 

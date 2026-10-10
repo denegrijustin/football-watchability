@@ -9,6 +9,8 @@ type Summary = {
   situation: { text: string; possession: string | null; toGo: number | null; redZone: boolean; lastPlay: string; spotText?: string; yardLine?: number | null } | null;
   drives: { team: string; period?: number | null; clock?: string; from: number | null; to: number | null; yards: number; plays: number; result: string; score: boolean; time: string; current: boolean }[];
   /** Every snap of the drive in progress (older cached responses may not have it). */
+  /** Where the latest snap of the current drive left the ball, from the play data: the team it is measured for and yards from that team's goal line. */
+  ball?: { team: string | null; own: number } | null;
   curPlays?: { down: string; text: string; yards: number; period: number | null; clock: string; kind: string; score: boolean; turnover: boolean }[];
 };
 export type FieldTeam = { espnId?: string | null; abbr?: string; name: string; color?: string | null; logoId?: string };
@@ -99,15 +101,29 @@ export function ballFromOwn(sit: NonNullable<Summary["situation"]> | null, own: 
   }
   return null;
 }
+/** Why a field could not be drawn, for the Game Center's note. */
+export function fieldWhy(data: Summary | null, ids: string[]) {
+  if (!data) return "no game data yet";
+  const cur = data.drives.find((d) => d.current) ?? null;
+  const sit = data.situation;
+  return [
+    `possession ${sit?.possession ?? cur?.team ?? data.ball?.team ?? "none"} (teams ${ids.join("/")})`,
+    `situation ${sit ? JSON.stringify({ text: sit.text, toGo: sit.toGo, spot: sit.spotText }) : "none"}`,
+    `drive ${cur ? `${cur.from}→${cur.to}` : "none"}`,
+    `ball ${data.ball ? `${data.ball.team}@${data.ball.own}` : "none"}`,
+  ].join(" · ");
+}
 /** Whether a field can be drawn from this summary: a live game, a team with the ball and a spot for it. */
 export function fieldSpot(data: Summary | null, ids: string[], abbrs: { abbr: string; name?: string }[]) {
   if (!data || data.status.state !== "in") return null;
   const cur = data.drives.find((d) => d.current) ?? null;
   const sit = data.situation;
-  const possession = sit?.possession ?? cur?.team ?? null;
+  const possession = sit?.possession ?? cur?.team ?? data.ball?.team ?? null;
   const side = possession === ids[0] ? 0 : possession === ids[1] ? 1 : -1;
   if (side < 0) return null;
-  const at = ballFromOwn(sit, abbrs[side], abbrs[1 - side]) ?? cur?.to ?? null;
+  // The ball from the play data counts for whichever team it was measured for.
+  const fromPlays = data.ball?.team && data.ball.team === ids[side] ? data.ball.own : data.ball?.team ? 100 - data.ball.own : null;
+  const at = ballFromOwn(sit, abbrs[side], abbrs[1 - side]) ?? fromPlays ?? cur?.to ?? null;
   return at == null ? null : { side, at, cur, sit };
 }
 const signed = (n: number) => (n > 0 ? `+${n}` : String(n));
