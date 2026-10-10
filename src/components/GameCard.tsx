@@ -15,7 +15,7 @@ import { PregameWinProb, type WinProbData } from "./PregameWinProb";
 import { ProjectedScore, type Projection } from "./ProjectedScore";
 import { GameStatus, TeamScore, useFlow, useLive } from "../live";
 import { InsanityMeter } from "./InsanityMeter";
-import { useOpenGame } from "./GameCenter";
+import { useOpenGame } from "./GameCenterContext";
 import { EdgeLine, type Advanced } from "./AdvancedStats";
 import { InjuryWatch } from "./InjuryReport";
 import { Booth, type CrewMember } from "./Booth";

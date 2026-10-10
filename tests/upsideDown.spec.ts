@@ -25,7 +25,7 @@ test("Texas and Kansas logos are upside down wherever they appear, and no other 
   }
   // Real logos on the page: any Texas or Kansas logo currently rendered carries the flip.
   const real = await page.evaluate(() =>
-    [...document.querySelectorAll<HTMLImageElement>('img[src$="/logos/texas.webp"], img[src$="/logos/kansas.webp"]')].filter((i) => i.isConnected && !i.dataset.test).map((i) => getComputedStyle(i).rotate),
+    [...document.querySelectorAll<HTMLImageElement>('img[src*="/logos/texas.webp"], img[src*="/logos/kansas.webp"]')].filter((i) => i.isConnected && !i.dataset.test).map((i) => getComputedStyle(i).rotate),
   );
   for (const r of real) expect(r).toBe("180deg");
 });

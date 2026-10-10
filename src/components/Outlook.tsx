@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { logos, type League } from "../data";
+import { fetchData } from "../data/load";
 
 type Team = { id: string; name: string; abbr: string; logoId: string | null };
 type Seed = Team & {
@@ -67,7 +68,7 @@ const dayText = (iso: string) => new Date(`${iso}T12:00:00Z`).toLocaleDateString
 
 function Logo({ t }: { t: Team }) {
   const src = t.logoId ? logos[t.logoId] : undefined;
-  return src ? <img src={src} alt="" width="28" height="28" loading="lazy" /> : <span className="ol-chip" aria-hidden="true">{t.abbr.slice(0, 3)}</span>;
+  return src ? <img src={src} alt="" width="28" height="28" loading="lazy" decoding="async" /> : <span className="ol-chip" aria-hidden="true">{t.abbr.slice(0, 3)}</span>;
 }
 
 function SeedRow({ s, odds, tag }: { s: Seed; odds: [string, number | null | undefined][]; tag: string }) {
@@ -251,7 +252,7 @@ export function Outlook({ defaultLeague }: { defaultLeague: League }) {
   const [conf, setConf] = useState("all");
   useEffect(() => {
     let live = true;
-    import("../data/outlook.json").then((m) => live && setData(m.default as unknown as Data));
+    fetchData<Data>("outlook").then((m) => live && setData(m));
     return () => {
       live = false;
     };

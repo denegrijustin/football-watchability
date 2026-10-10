@@ -22,7 +22,7 @@ export function NetChip({
   const ch = directvChannel(network);
   const watch = game ? watchLink({ network, broadcast: game.broadcast, league: game.league, espnId: game.espnId }) : null;
   const dtv = directvLink(network);
-  const img = <img src={logo} alt={alt} height={height} loading="lazy" />;
+  const img = <img src={logo} alt={alt} height={height} loading="lazy" decoding="async" />;
   return (
     <span className={`net-chip${ch ? " has-ch" : ""}${watch ? " has-link" : ""}`} title={directvTitle(network)}>
       {watch ? (

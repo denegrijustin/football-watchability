@@ -1,11 +1,15 @@
 import type { Ranks } from "../rankLine";
-import slateData from "./slate.json";
-import broadcastChecks from "./broadcast-checks.json";
 import logoData from "./logos.json";
 import networkData from "./networks.json";
-import resultsData from "./results.json";
+import { fetchData } from "./load";
 import { dayOf } from "../tz";
-export type Game = (typeof slateData.games)[number];
+// The slate and the results are fetched before the app starts (see ./load), not bundled with the scripts.
+const [slateData, broadcastChecks, resultsData] = await Promise.all([
+  fetchData<typeof import("./slate.json")>("slate"),
+  fetchData<unknown>("broadcast-checks"),
+  fetchData<typeof import("./results.json")>("results"),
+]);
+export type Game = (typeof import("./slate.json"))["games"][number];
 export type Team = Game["teams"][number];
 export type League = "NFL" | "CFB";
 export type Tier = "elite" | "vgood" | "good" | "watch" | "bg";
@@ -21,7 +25,10 @@ export const slate = {
     return { ...game, broadcast: checked.broadcast, network: checked.network } as Game;
   }),
 };
-export const logos: Record<string, string> = logoData;
+/** Logo URLs carry a stamp of the logo set, so they can be cached for a year and still update when one changes. */
+export const logos: Record<string, string> = Object.fromEntries(
+  Object.entries(logoData as Record<string, string>).map(([id, url]) => [id, url.startsWith("/logos/") ? `${url}?v=${__LOGO_V__}` : url]),
+);
 
 /** Display labels and score floors for each color tier, best first. */
 export const tiers: { id: Tier; label: string; min: number }[] = [

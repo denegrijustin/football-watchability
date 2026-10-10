@@ -33,6 +33,7 @@ test("the channel number shows beside the network logo on cards and in the TV gr
   // TV grid lanes.
   await page.getByRole("button", { name: "TV grid" }).click();
   const lanes = page.locator(".tv-net .net-chip.has-ch .ch-num");
+  await expect(lanes.first()).toBeAttached(); // the grid loads on first use
   expect(await lanes.count()).toBeGreaterThan(0);
   for (const t of await lanes.allInnerTexts()) expect(t).toMatch(/^\d{1,3}$/);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual((page.viewportSize()?.width ?? 0) + 1);
@@ -72,6 +73,7 @@ test("the logo and channel number are links that open elsewhere and leave the ca
   await expect(card).toHaveClass(/compact/);
   // TV grid lanes: the number links; the logo does not (a lane is a network, not a game).
   await page.getByRole("button", { name: "TV grid" }).click();
+  await expect(page.locator(".tv-net a.ch-num").first()).toBeAttached(); // the grid loads on first use
   expect(await page.locator(".tv-net a.ch-num").count()).toBeGreaterThan(0);
   expect(await page.locator(".tv-net a.net-link").count()).toBe(0);
 });

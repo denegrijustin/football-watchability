@@ -32,6 +32,7 @@ on:
         default: true
 permissions:
   contents: write
+  issues: write
 concurrency:
   group: slate-data-writes
   cancel-in-progress: false
@@ -153,6 +154,17 @@ jobs:
           timeout 180s node scripts/attendance.mjs || echo "attendance fetch failed; building without it"
           pnpm build
 
+      # Every file the app fetches must exist, parse and have its basic shape before anything is published.
+      - name: Data check
+        if: steps.go.outputs.go == 'yes'
+        run: node scripts/check-data.mjs
+
+      # Growth past a size budget is reported, but never holds back fresh data.
+      - name: Size budget (advisory)
+        continue-on-error: true
+        if: steps.go.outputs.go == 'yes'
+        run: node scripts/check-budget.mjs
+
       # The full suite already gates every code change (check.yml runs it on each push and pull request), so a
       # data refresh only needs to prove the app still renders what it fetched. The smoke tests block the
       # deploy; the full suite still runs and reports, but a test that happens to depend on this week's games
@@ -197,3 +209,23 @@ jobs:
           git diff --cached --quiet && { echo "Nothing to deploy"; exit 0; }
           git commit -q -m "Refresh board $(TZ=America/Chicago date +'%a %b %-d, %-I:%M %p %Z')"
           git push origin main
+
+      # A failed run opens (or updates) one issue, so a broken refresh is noticed the same day; a good run closes it.
+      - name: Open an issue when the refresh fails
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="Scheduled refresh failed"
+          body="Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} ($(TZ=America/Chicago date +'%a %b %-d %H:%M %Z'))"
+          n=$(gh issue list --repo "${{ github.repository }}" --state open --search "\"$title\" in:title" --json number --jq '.[0].number // empty')
+          if [ -n "$n" ]; then gh issue comment "$n" --repo "${{ github.repository }}" --body "$body"
+          else gh issue create --repo "${{ github.repository }}" --title "$title" --body "$body"; fi
+
+      - name: Close the failure issue after a good run
+        if: success() && steps.go.outputs.go == 'yes'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          n=$(gh issue list --repo "${{ github.repository }}" --state open --search "\"Scheduled refresh failed\" in:title" --json number --jq '.[0].number // empty')
+          [ -z "$n" ] || gh issue close "$n" --repo "${{ github.repository }}" --comment "The latest refresh succeeded."

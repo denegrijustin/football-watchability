@@ -2,13 +2,14 @@ import { lazy, Suspense, useState } from "react";
 import { dayName, results, slate, tiers, type FilterState, type League, type View } from "./data";
 import { Filters } from "./components/Filters";
 import { GameBoard, useBoard } from "./components/GameBoard";
-import { InsanityBoard } from "./components/InsanityBoard";
-import { Outlook } from "./components/Outlook";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import { defaultLeague } from "./league";
 
 // The map and its shapes load only when the tab is opened.
 const ImperialismMap = lazy(() => import("./components/ImperialismMap").then((m) => ({ default: m.ImperialismMap })));
-import { TvGrid } from "./components/TvGrid";
+const Outlook = lazy(() => import("./components/Outlook").then((m) => ({ default: m.Outlook })));
+const InsanityBoard = lazy(() => import("./components/InsanityBoard").then((m) => ({ default: m.InsanityBoard })));
+const TvGrid = lazy(() => import("./components/TvGrid").then((m) => ({ default: m.TvGrid })));
 import { setTz, tzLabel, useTz, ZONES } from "./tz";
 
 const gameCount = (l: League) => slate.games.filter((g) => g.league === l).length + results.filter((r) => r.league === l).length;
@@ -160,16 +161,20 @@ export default function App() {
             </details>
           </div>
           </div>
-          {view === "empire" ? (
-            <Suspense fallback={<p className="ol-note" role="status">Loading the map…</p>}>
-              <ImperialismMap defaultLeague={league} />
-            </Suspense>
-          ) : view === "outlook" ? (
-            <Outlook defaultLeague={league} />
-          ) : view === "insanity" ? (
-            <InsanityBoard defaultLeague={league === "CFB" ? "CFB" : "NFL"} />
-          ) : view === "grid" ? (
-            <TvGrid />
+          {view !== "board" ? (
+            <ErrorBoundary resetKey={view}>
+              <Suspense fallback={<p className="ol-note" role="status">Loading…</p>}>
+                {view === "empire" ? (
+                  <ImperialismMap defaultLeague={league} />
+                ) : view === "outlook" ? (
+                  <Outlook defaultLeague={league} />
+                ) : view === "insanity" ? (
+                  <InsanityBoard defaultLeague={league === "CFB" ? "CFB" : "NFL"} />
+                ) : (
+                  <TvGrid />
+                )}
+              </Suspense>
+            </ErrorBoundary>
           ) : (
             <>
           <div className="board-heading">

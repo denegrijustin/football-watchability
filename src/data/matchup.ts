@@ -1,7 +1,8 @@
-import snapshot from './matchup-stats.json';
+import { fetchData } from './load';
 import type { MatchupData, MatchupTeam } from '../components/MatchupComparison';
 import { logos, type Game } from './index';
 type LeagueStats = { season: number; rankedTeams: number; updatedAt: string; source: string; sourceUrl: string; teams: Record<string, MatchupTeam> };
+const snapshot = await fetchData<typeof import('./matchup-stats.json')>('matchup-stats');
 const leagues = snapshot.leagues as unknown as Partial<Record<MatchupData['league'], LeagueStats>>;
 export function matchupForGame(game: Game): MatchupData | undefined {
   const league = leagues[game.league as MatchupData['league']];

@@ -17,5 +17,5 @@ export function Headshot({ src, name, size, className }: { src: string | null | 
         {initials}
       </span>
     );
-  return <img className={className} src={src} alt="" width={size} height={size} loading="lazy" referrerPolicy="no-referrer" onError={() => setBroken(true)} />;
+  return <img className={className} src={src} alt="" width={size} height={size} loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={() => setBroken(true)} />;
 }

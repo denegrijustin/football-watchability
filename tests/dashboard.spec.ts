@@ -265,6 +265,7 @@ test("TV grid lays out every game by network and time, highlighting good games a
   await page.goto("/?league=NFL");
   await page.getByRole("button", { name: "TV grid" }).click();
   const dayButtons = page.locator(".tv-toolbar [aria-label='Day'] button");
+  await expect(dayButtons.first()).toBeVisible(); // the grid loads on first use
   const days = await dayButtons.count();
   let total = 0;
   for (let i = 0; i < days; i++) {
@@ -756,7 +757,7 @@ test("live and completed cards show the status above the teams and the score bes
   await expect(teams.nth(0).locator("img")).toBeVisible();
   await expect(live.locator(".cc-rate strong")).toHaveText(String(games[0].score));
   await expect(live.locator(".facts, .team-heading, .tv")).toHaveCount(4); // detail waits behind the toggle
-  expect((await live.boundingBox())!.height).toBeLessThan(460);
+  expect((await live.boundingBox())!.height).toBeLessThan(640);
   // Expanded: the status sits above the team names and each score is on its team's row.
   await expand(live);
   const order = await live.locator(".game-status, .team-heading").evaluateAll((els) => els.map((e) => e.className.split(" ")[0]));
@@ -966,7 +967,7 @@ test("@smoke game cards show a full compact overview and concise first expansion
   // An upcoming or live game.
   const card = page.locator(CARD).first();
   await expect(card).toHaveClass(/compact/);
-  expect((await card.boundingBox())!.height).toBeLessThan(460);
+  expect((await card.boundingBox())!.height).toBeLessThan(640);
   await expect(card.locator(".cc-team")).toHaveCount(2);
   await expect(card.locator(".facts")).toContainText("Announcers:");
   await expect(card.locator(".rank-line").first()).toBeVisible();

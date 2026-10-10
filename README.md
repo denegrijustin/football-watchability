@@ -157,6 +157,26 @@ Times show in Central by default. The clock menu in the header switches to Easte
 
 The last forecast before kickoff is frozen in `src/data/forecasts.json` with its take. Once a game is final, the builder writes `src/data/results.json` (the two most recent weeks). It holds the final score and linescore, forecast and actual scores with their component breakdowns, a readout explaining the gap, and a thinned win-probability line. The Sept. 24–28 forecasts are the scores published at the time. They came from the older rescaled formula, so they have no breakdown.
 
+## Performance and refresh safety
+
+- **Data is fetched, not bundled.** `src/data/{slate,results,matchup-stats,broadcast-checks,season,imperialism,outlook}.json`
+  are minified into `dist/data/<name>.json` by `vite.config.ts` and fetched at run time (`src/data/load.ts`). A refresh
+  therefore changes only those files; the scripts keep their hashed, immutable URLs. `/data/*` is revalidated on every
+  load (`public/_headers`), and `index.html` preloads the slate and results while the scripts download.
+  Add a new data file to the `DATA` list in `vite.config.ts` and `scripts/check-data.mjs`.
+- **Logos** carry `?v=<hash of the logo set>` (set in `src/data/index.ts`), so they are cached for a year and still update
+  when a logo file changes. CSS that targets a logo by file name uses `*=`, not `$=`.
+- **Lazy views.** Outlook, Insanity, TV grid, Empire map and the Game Center load when first used; the Game Center is
+  fetched during idle time after the board appears. Each view sits in an error boundary with a "Try again" button.
+- **Checks.** `node scripts/check-data.mjs` (every fetched file exists, parses and has its shape; staleness is a warning)
+  and `node scripts/check-budget.mjs` (gzip budgets for each script, stylesheet and data file) run in `check.yml` after the
+  build. In the scheduled refresh the data check blocks the publish and the size budget only warns, so growth never holds
+  back fresh data.
+- **Failures are visible.** A failed scheduled refresh opens (or comments on) one "Scheduled refresh failed" issue; the next
+  good run closes it.
+- **Idle tabs are quiet.** The kickoff clock and live-score polling pause while the tab is hidden and catch up when it is
+  shown again.
+
 ## Manual data updates
 
 The slate is built from ESPN data rather than typed in by hand. ESPN is fetched by GitHub Actions, because it isn't reachable from every environment.

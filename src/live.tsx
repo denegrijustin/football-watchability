@@ -33,8 +33,14 @@ export function gameStatus(startIso: string, live: LiveScore | undefined, now: n
 export function useNow(ms = 30_000) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), ms);
-    return () => clearInterval(t);
+    // A hidden tab has nothing to redraw; catch up the moment it is shown again.
+    const t = setInterval(() => !document.hidden && setNow(Date.now()), ms);
+    const show = () => !document.hidden && setNow(Date.now());
+    document.addEventListener("visibilitychange", show);
+    return () => {
+      clearInterval(t);
+      document.removeEventListener("visibilitychange", show);
+    };
   }, [ms]);
   return now;
 }
@@ -88,11 +94,23 @@ export function LiveScores({ children }: { children: ReactNode }) {
   useEffect(() => {
     let stop = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
+    let stopHidden = () => {};
     const archived = new Set(results.map((r) => r.espnId));
     const games = slate.games
       .map((g) => ({ id: g.espnId, league: g.league, date: new Date((g as { date?: string }).date ?? "") }))
       .filter((g) => !archived.has(g.id) && !Number.isNaN(g.date.getTime()));
     const tick = async () => {
+      // No polling while the tab is hidden: wait until it is shown, then fetch straight away.
+      if (document.hidden) {
+        const resume = () => {
+          if (document.hidden || stop) return;
+          document.removeEventListener("visibilitychange", resume);
+          tick();
+        };
+        document.addEventListener("visibilitychange", resume);
+        stopHidden = () => document.removeEventListener("visibilitychange", resume);
+        return;
+      }
       const now = Date.now();
       const started = games.filter((g) => g.date.getTime() - 10 * 60e3 <= now);
       if (!started.length) {
@@ -133,6 +151,7 @@ export function LiveScores({ children }: { children: ReactNode }) {
     return () => {
       stop = true;
       clearTimeout(timer);
+      stopHidden();
     };
   }, []);
   return <LiveContext.Provider value={map}>{children}</LiveContext.Provider>;

@@ -17,6 +17,7 @@ import {
   type Layer,
 } from "../imperialism";
 import { logos } from "../data";
+import { fetchData } from "../data/load";
 import "../imperialism.css";
 
 /* ------------------------------------------------------------------ geometry */
@@ -116,7 +117,7 @@ const logoSrc = (t: ImpTeam): string | null => (t.logoId && logos[t.logoId]) || 
 function TeamLogo({ t, size = 22 }: { t: ImpTeam | undefined; size?: number }) {
   if (!t) return null;
   return logoSrc(t) ? (
-    <img className="imp-logo" src={logoSrc(t)!} alt="" width={size} height={size} loading="lazy" />
+    <img className="imp-logo" src={logoSrc(t)!} alt="" width={size} height={size} loading="lazy" decoding="async" />
   ) : (
     <span className="imp-chip" style={{ background: t.color, width: size, height: size }} aria-hidden="true">
       {t.abbr.slice(0, 2)}
@@ -169,7 +170,7 @@ export function ImperialismMap({ defaultLeague }: { defaultLeague: "NFL" | "CFB"
     let live = true;
     setFailed(false);
     Promise.all([
-      import("../data/imperialism.json"),
+      fetchData<ImperialismData>("imperialism"),
       fetch(GEO_URL).then((r) => {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json() as Promise<Topo>;
@@ -177,7 +178,7 @@ export function ImperialismMap({ defaultLeague }: { defaultLeague: "NFL" | "CFB"
     ])
       .then(([m, t]) => {
         if (!live) return;
-        setData(m.default as unknown as ImperialismData);
+        setData(m);
         setTopo(t);
       })
       .catch(() => live && setFailed(true));

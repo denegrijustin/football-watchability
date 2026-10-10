@@ -26,7 +26,7 @@ export function TeamForm({ game }: { game: Game }) {
       </div>
       {teams.map((t) => (
         <div className="form-row" key={t.name}>
-          <img src={logos[t.logoId]} alt="" width="20" height="20" loading="lazy" />
+          <img src={logos[t.logoId]} alt="" width="20" height="20" loading="lazy" decoding="async" />
           <MarginBars games={t.trend!.games} up={up} down={down} slots={slots} label={`${t.name} margins`} height={34} />
           <span className="form-sum">
             <strong>{t.trend!.streak}</strong>
@@ -51,7 +51,7 @@ export function SeasonTrends({ game }: { game: Game }) {
         return (
           <section key={t.name} className="trend-team" aria-label={`${t.name} season trends`}>
             <header>
-              <img src={logos[t.logoId]} alt="" width="22" height="22" loading="lazy" />
+              <img src={logos[t.logoId]} alt="" width="22" height="22" loading="lazy" decoding="async" />
               <strong>{t.name}</strong>
               <span>{t.record.split(" · ")[0]}</span>
             </header>
