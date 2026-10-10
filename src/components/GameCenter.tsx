@@ -11,6 +11,8 @@ import { ProjectedScore, type Projection } from "./ProjectedScore";
 import { InsanityMeter } from "./InsanityMeter";
 import { Headshot } from "./Headshot";
 import { GameDetails } from "./GameDetails";
+import { HalftimeBand } from "../halftime";
+import { isHalftime } from "../halftimeLogic";
 import { MomentumFlow } from "./MomentumFlow";
 import { ResultAnalysis } from "./ResultAnalysis";
 import { WeatherLook } from "./WeatherLook";
@@ -155,6 +157,7 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
           ×
         </button>
         <div className="gc-body">
+          {league === "CFB" && state === "in" && isHalftime(game?.status.detail) && <HalftimeBand espnId={espnId} away={{ ...away, logoId: away.logoId }} home={{ ...home, logoId: home.logoId }} />}
           {/* Scoreboard */}
           <header className="gc-head" style={{ background: `linear-gradient(90deg, ${away.color ?? "#17222c"}, #111a22 42%, #111a22 58%, ${home.color ?? "#17222c"})` }}>
             <TeamHead t={away} score={scoreA} poss={!!game?.situation?.possession && game.situation.possession === game.teams[0]?.id} win={state === "post" && scoreA! > scoreH!} />

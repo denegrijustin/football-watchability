@@ -6056,7 +6056,7 @@ select,
 
 /* ---------- College halftime: the band on the field ---------- */
 .halftime-band {
-  margin: 10px 0 2px;
+  margin: 0 0 10px;
 }
 .band-svg {
   display: block;
@@ -6067,9 +6067,61 @@ select,
   overflow: hidden;
   box-shadow: 0 0 0 1px rgb(255 255 255 / 12%);
 }
+.band-count {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  align-items: baseline;
+  gap: 2px 10px;
+  padding: 8px 12px 10px;
+  margin-bottom: 6px;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #14241a, #1c3626);
+  color: #fff;
+}
+.band-count-k {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: #9fd8b0;
+}
+.band-count-t {
+  font-size: 1.9rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.band-count-l {
+  font-size: 0.85rem;
+  opacity: 0.85;
+}
+.band-count-bar {
+  grid-column: 1 / -1;
+  height: 4px;
+  border-radius: 2px;
+  background: rgb(255 255 255 / 18%);
+  overflow: hidden;
+}
+.band-count-bar b {
+  display: block;
+  height: 100%;
+  background: #7fe3a0;
+  transition: width 1s linear;
+}
+/* every member keeps stepping in time: a small rise and fall on each beat, so the band is moving even between formations */
+.band-march {
+  animation: band-step 0.5s steps(2, jump-none) infinite alternate;
+  transform-origin: 0 0;
+}
+@keyframes band-step {
+  from {
+    transform: translate(0, 0.08px) scale(1);
+  }
+  to {
+    transform: translate(0, -0.08px) scale(1.05);
+  }
+}
 .band-member {
-  /* each member glides to its place in the next formation, turning toward the march, a little after the one before */
-  transition: transform 1.8s cubic-bezier(0.45, 0, 0.25, 1);
+  /* the band marches to its next place in 20 even steps rather than gliding, turning to face the way it goes */
+  transition: transform 10s steps(20, end);
 }
 .band-shadow {
   fill: rgb(0 0 0 / 28%);
@@ -6163,6 +6215,12 @@ select,
   opacity: 0.45;
 }
 @media (prefers-reduced-motion: reduce) {
+  .band-march {
+    animation: none;
+  }
+  .band-count-bar b {
+    transition: none;
+  }
   .band-member {
     transition: none;
   }

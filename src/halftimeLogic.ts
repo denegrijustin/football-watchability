@@ -77,7 +77,10 @@ export const FORMATIONS: { name: string; pts: Pt[] }[] = [
     pts: along([[CX - 4, CY - 17], [CX + 4, CY - 17], [CX + 4, CY - 4], [CX + 22, CY - 4], [CX + 22, CY + 4], [CX + 4, CY + 4], [CX + 4, CY + 17], [CX - 4, CY + 17], [CX - 4, CY + 4], [CX - 22, CY + 4], [CX - 22, CY - 4], [CX - 4, CY - 4]], N),
   },
 ];
-export const STEP_MS = 5000;
+/** A formation is held a few seconds, then the band marches to the next one (see MOVE_MS). */
+export const STEP_MS = 16000;
+/** The march between formations: 20 steps at 120 beats a minute, so they cover ground at about a real band's pace. */
+export const MOVE_MS = 10000;
 
 
 /** Degrees the band member `i` faces at formation step `step`: toward where it just marched from the last formation. */

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { logos, teamColor } from "./data";
-import { FORMATIONS, N, STEP_MS, anglesAt, clockText, firstSeen, halftimeLeft } from "./halftimeLogic";
+import { FORMATIONS, HALFTIME_MS, N, STEP_MS, anglesAt, clockText, firstSeen, halftimeLeft } from "./halftimeLogic";
 
 /**
  * College halftime: a 20-minute countdown and the band marching through formations on the field. It stands in for the drive
@@ -45,12 +45,19 @@ export function HalftimeBand({ espnId, home, away }: { espnId: string; home: Sid
   const f = FORMATIONS[step % FORMATIONS.length];
   const hc = teamColor(home.color) ?? "#2f7de1";
   const ac = teamColor(away.color) ?? "#c1403d";
-  const label = left > 0 ? `Halftime · about ${clockText(left)} left` : "Halftime is wrapping up";
+  const label = left > 0 ? `Second half in ${clockText(left)}` : "Second half starting";
+  const pctLeft = Math.round((left / HALFTIME_MS) * 100);
   const dots = useMemo(() => Array.from({ length: N }, (_, i) => i), []);
   const angles = anglesAt(step);
 
   return (
     <div ref={ref} className="halftime-band" role="img" aria-label={`${label}. The ${home.abbr ?? home.name} band is on the field in a ${f.name.toLowerCase()} formation.`}>
+      <div className="band-count" aria-hidden="true">
+        <span className="band-count-k">HALFTIME</span>
+        <strong className="band-count-t">{left > 0 ? clockText(left) : "0:00"}</strong>
+        <span className="band-count-l">{left > 0 ? "until the second half" : "second half starting"}</span>
+        <i className="band-count-bar"><b style={{ width: `${pctLeft}%` }} /></i>
+      </div>
       {/* The stadium seen from directly above: end zones with the schools' names and logos, the home logo at midfield, and the
           home band in its uniforms — shakos with plumes, jackets with white trim, brass, drums and sousaphones. */}
       <svg viewBox="0 0 120 40" className="band-svg" aria-hidden="true">
@@ -131,8 +138,9 @@ export function HalftimeBand({ espnId, home, away }: { espnId: string; home: Sid
             <g
               key={i}
               className={`band-member ${role}`}
-              style={{ transform: `translate(${x.toFixed(2)}px, ${y.toFixed(2)}px) rotate(${angles[i].toFixed(1)}deg)`, transitionDelay: `${(i % 16) * 45}ms` }}
+              style={{ transform: `translate(${x.toFixed(2)}px, ${y.toFixed(2)}px) rotate(${angles[i].toFixed(1)}deg)`, transitionDelay: `${(i % 4) * 40}ms` }}
             >
+              <g className="band-march" style={{ animationDelay: `${-(i % 8) * 60}ms` }}>
               <ellipse cx="0.25" cy="0.3" rx={role === "sousa" ? 2.1 : 1.5} ry={role === "sousa" ? 1.7 : 1} className="band-shadow" />
               {/* jacket with white shoulder trim and a chest stripe */}
               <ellipse cx="0" cy="0" rx="0.85" ry="1.45" fill={major ? "#f6f6f6" : hc} className="band-shoulders" />
@@ -148,6 +156,7 @@ export function HalftimeBand({ espnId, home, away }: { espnId: string; home: Sid
               <circle cx="0.05" cy="0" r="0.72" fill={major ? "#f6f6f6" : mix(hc, -0.25)} className="band-hat" />
               <circle cx="0.05" cy="0" r="0.45" fill={major ? "#d9b13b" : hc} className="band-crown" />
               <ellipse cx="-0.25" cy="-0.1" rx={major ? 0.5 : 0.3} ry={major ? 0.9 : 0.55} className="band-plume" />
+              </g>
             </g>
           );
         })}
