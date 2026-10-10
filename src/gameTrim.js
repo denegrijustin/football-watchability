@@ -194,6 +194,9 @@ export function trimGame(s, positions = {}) {
           toGo: sit.yardsToEndzone ?? null,
           redZone: !!sit.isRedZone,
           lastPlay: sit.lastPlay?.text ?? "",
+          // ESPN's own spot text, "SEA 35": the way to place the ball when it gives no yards-to-end-zone figure.
+          spotText: sit.possessionText ?? sit.lastPlay?.end?.possessionText ?? "",
+          yardLine: sit.yardLine ?? null,
         }
       : null,
     wp,

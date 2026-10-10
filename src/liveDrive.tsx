@@ -5,8 +5,8 @@ import { FootballIcon } from "./live";
 /** The slice of /api/game (see functions/api/game.js) the drive animation uses. */
 type Summary = {
   status: { state: "pre" | "in" | "post" };
-  teams: { id: string; abbr: string }[];
-  situation: { text: string; possession: string | null; toGo: number | null; redZone: boolean; lastPlay: string } | null;
+  teams: { id: string; abbr: string; name?: string }[];
+  situation: { text: string; possession: string | null; toGo: number | null; redZone: boolean; lastPlay: string; spotText?: string; yardLine?: number | null } | null;
   drives: { team: string; period?: number | null; clock?: string; from: number | null; to: number | null; yards: number; plays: number; result: string; score: boolean; time: string; current: boolean }[];
   /** Every snap of the drive in progress (older cached responses may not have it). */
   curPlays?: { down: string; text: string; yards: number; period: number | null; clock: string; kind: string; score: boolean; turnover: boolean }[];
@@ -78,6 +78,38 @@ const clamp = (n: number) => Math.max(0, Math.min(100, n));
 const spot = (fromOwn: number, awayOffense: boolean) => (awayOffense ? clamp(fromOwn) : 100 - clamp(fromOwn));
 /** "ATL 34" / "50" / "SEA 35": a spot measured from the offense's own goal line, named the way the broadcast does. */
 const spotName = (fromOwn: number, own: string, opp: string) => (fromOwn === 50 ? "50" : fromOwn < 50 ? `${own} ${Math.round(fromOwn)}` : `${opp} ${Math.round(100 - fromOwn)}`);
+/**
+ * Where the ball is, in yards from the offense's own goal line. ESPN's yards-to-end-zone figure is used when it is there; the live
+ * summary often gives only text such as "2nd & 7 at SEA 35" or a spot of "SEA 35", so that is read when it is not.
+ */
+export function ballFromOwn(sit: NonNullable<Summary["situation"]> | null, own: { abbr: string; name?: string }, opp: { abbr: string; name?: string }): number | null {
+  if (!sit) return null;
+  if (sit.toGo != null) return 100 - sit.toGo;
+  const name = (t: { abbr: string; name?: string }, tag: string) => {
+    const a = tag.toUpperCase();
+    return a === t.abbr.toUpperCase() || (!!t.name && (t.name.toUpperCase().startsWith(a) || a.startsWith(t.abbr.toUpperCase())));
+  };
+  for (const text of [sit.spotText ?? "", sit.text ?? ""]) {
+    if (/\b(?:at|on)\s+50\b/i.test(text) || /^50$/.test(text.trim())) return 50;
+    const m = /(?:\b(?:at|on)\s+)?\b([A-Za-z][A-Za-z&.]{0,9})\s+(\d{1,2})\s*$/.exec(text.trim());
+    if (!m) continue;
+    const n = Number(m[2]);
+    if (name(own, m[1])) return n;
+    if (name(opp, m[1])) return 100 - n;
+  }
+  return null;
+}
+/** Whether a field can be drawn from this summary: a live game, a team with the ball and a spot for it. */
+export function fieldSpot(data: Summary | null, ids: string[], abbrs: { abbr: string; name?: string }[]) {
+  if (!data || data.status.state !== "in") return null;
+  const cur = data.drives.find((d) => d.current) ?? null;
+  const sit = data.situation;
+  const possession = sit?.possession ?? cur?.team ?? null;
+  const side = possession === ids[0] ? 0 : possession === ids[1] ? 1 : -1;
+  if (side < 0) return null;
+  const at = ballFromOwn(sit, abbrs[side], abbrs[1 - side]) ?? cur?.to ?? null;
+  return at == null ? null : { side, at, cur, sit };
+}
 const signed = (n: number) => (n > 0 ? `+${n}` : String(n));
 
 /**
@@ -89,20 +121,18 @@ export function FieldView({ data, teams, variant, rootRef }: { data: Summary | n
   const [away, home] = teams;
   const ids = [away.espnId ?? "", home.espnId ?? ""];
   const colors = [teamColor(away.color) ?? "#c1403d", teamColor(home.color) ?? "#2f7de1"];
-  const live = data?.status.state === "in";
-  const cur = data?.drives.find((d) => d.current) ?? null;
-  const sit = data?.situation ?? null;
-  const possession = sit?.possession ?? cur?.team ?? null;
-  const side = possession === ids[0] ? 0 : possession === ids[1] ? 1 : -1;
-  const drawable = !!data && live && side >= 0 && (sit?.toGo != null || cur?.to != null);
-  if (!drawable) return null;
+  const abbrs = teams.map((t) => ({ abbr: t.abbr ?? t.name, name: t.name }));
+  const found = fieldSpot(data, ids, abbrs);
+  if (!data || !found) return null;
+  const { side, cur, sit } = found;
+  const possession = ids[side];
 
   const awayOffense = side === 0;
   const own = teams[side].abbr ?? teams[side].name;
   const opp = teams[1 - side].abbr ?? teams[1 - side].name;
-  const ballFromOwn = sit?.toGo != null ? 100 - sit.toGo : (cur?.to ?? 0);
-  const startFromOwn = cur?.from ?? ballFromOwn;
-  const ball = spot(ballFromOwn, awayOffense);
+  const ballOwn = found.at;
+  const startFromOwn = cur?.from ?? ballOwn;
+  const ball = spot(ballOwn, awayOffense);
   const start = spot(startFromOwn, awayOffense);
   const dir = awayOffense ? 1 : -1;
   const m = /&\s*(\d+)/.exec(sit?.text ?? "");
@@ -110,7 +140,8 @@ export function FieldView({ data, teams, variant, rootRef }: { data: Summary | n
   const firstDown = toFirst != null ? clamp(ball + dir * toFirst) : null;
   const goal = awayOffense ? 100 : 0;
   const abbr = data.teams.find((t) => t.id === possession)?.abbr ?? own;
-  const label = `${abbr} ${sit?.text ? sit.text : "driving"}`;
+  const downText = sit?.text ?? "";
+  const label = `${abbr} ${downText ? downText : "driving"}`;
   const stats = cur ? `${cur.plays} play${cur.plays === 1 ? "" : "s"} · ${cur.yards} yd${cur.yards === 1 ? "" : "s"}${cur.time ? ` · ${cur.time}` : ""}` : "";
   const startedAt = `${spotName(startFromOwn, own, opp)}${cur?.period ? ` · Q${cur.period}${cur.clock ? ` ${cur.clock}` : ""}` : ""}`;
   // The last few finished drives sit faintly behind it.
@@ -179,7 +210,7 @@ export function FieldView({ data, teams, variant, rootRef }: { data: Summary | n
           <line x1="0" x2="0" y1="0" y2="34" className="df-los" />
           <circle cx="0" cy="17" r="3.4" className="df-pulse" stroke={colors[side]} />
           <ellipse cx="0" cy="17" rx="2.4" ry="1.5" className="df-pigskin" />
-          <text x={tagLeft ? -4.5 : 4.5} y="9" className="lf-tagtext ball" textAnchor={tagLeft ? "end" : "start"}>{abbr} · {spotName(ballFromOwn, own, opp)}</text>
+          <text x={tagLeft ? -4.5 : 4.5} y="9" className="lf-tagtext ball" textAnchor={tagLeft ? "end" : "start"}>{abbr} · {spotName(ballOwn, own, opp)}</text>
         </g>
       </svg>
       <p className="drive-cap">
