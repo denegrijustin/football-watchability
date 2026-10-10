@@ -15,7 +15,7 @@ export async function onRequestGet({ request }) {
     return new Response(JSON.stringify({ error: "league=nfl|cfb and event=ID required" }), { status: 400 });
 
   const cache = caches.default;
-  const key = new Request(`https://fbwatch-cache/game3/${league}/${event}`);
+  const key = new Request(`https://fbwatch-cache/game4/${league}/${event}`);
   const hit = await cache.match(key);
   if (hit) return hit;
 

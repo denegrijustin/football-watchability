@@ -10,6 +10,8 @@ export type LiveScore = {
   detail: string;
   away: number;
   home: number;
+  /** Which side has the ball, while the game is live. */
+  ball?: "away" | "home" | null;
 };
 type LiveMap = Record<string, LiveScore>;
 const LiveContext = createContext<LiveMap>({});
@@ -64,9 +66,9 @@ async function scores(league: string, date: string): Promise<LiveScore[]> {
     );
     if (!res.ok) return [];
     const data = await res.json();
-    type Comp = { homeAway: string; score?: string };
+    type Comp = { id?: string; homeAway: string; score?: string };
     return (data.events ?? []).map(
-      (ev: { id: string; competitions?: { competitors?: Comp[]; status?: { type?: { state?: string; shortDetail?: string } } }[] }) => {
+      (ev: { id: string; competitions?: { competitors?: Comp[]; situation?: { possession?: string }; status?: { type?: { state?: string; shortDetail?: string } } }[] }) => {
         const c = ev.competitions?.[0];
         const side = (h: string) => Number(c?.competitors?.find((x) => x.homeAway === h)?.score ?? 0);
         return {
@@ -75,6 +77,11 @@ async function scores(league: string, date: string): Promise<LiveScore[]> {
           detail: c?.status?.type?.shortDetail ?? "",
           away: side("away"),
           home: side("home"),
+          ball: (() => {
+            const who = c?.situation?.possession;
+            const sideOf = (h: string) => c?.competitors?.find((x) => x.homeAway === h)?.id;
+            return c?.status?.type?.state === "in" && who ? (sideOf("home") === who ? "home" : sideOf("away") === who ? "away" : null) : null;
+          })(),
         };
       },
     );
@@ -183,6 +190,18 @@ export function GameStatus({ live }: { live?: LiveScore }) {
   );
 }
 
+/** A football on its side, for the team with the ball. */
+export function FootballIcon({ title }: { title: string }) {
+  return (
+    <svg className="ball-icon" viewBox="0 0 24 14" width="18" height="11" role="img" aria-label={title}>
+      <title>{title}</title>
+      <ellipse cx="12" cy="7" rx="11" ry="6.2" fill="#8b4a1b" stroke="#2a1608" strokeWidth="1" />
+      <path d="M5.2 2.2Q3 7 5.2 11.8M18.8 2.2Q21 7 18.8 11.8" fill="none" stroke="#fff" strokeWidth="1.2" />
+      <path d="M8.5 7h7M10 5.2v3.6M12 5.2v3.6M14 5.2v3.6" stroke="#fff" strokeWidth="1" />
+    </svg>
+  );
+}
+
 /** A team's score, shown beside its name and logo once the game has started. */
 export function TeamScore({ live, side }: { live?: LiveScore; side: "away" | "home" }) {
   if (!live || live.state === "pre") return null;
@@ -191,6 +210,7 @@ export function TeamScore({ live, side }: { live?: LiveScore; side: "away" | "ho
   const cls = live.state === "post" ? (mine > theirs ? " won" : mine < theirs ? " lost" : "") : mine > theirs ? " lead" : "";
   return (
     <span className={`team-score${cls}`} aria-label={`${side === "away" ? "Away" : "Home"} score`}>
+      {live.state === "in" && live.ball === side && <FootballIcon title="Has the ball" />}
       {mine}
     </span>
   );

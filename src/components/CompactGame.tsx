@@ -7,20 +7,22 @@ import { useOpenGame } from "./GameCenterContext";
 import { SquareActivity } from "lucide-react";
 
 type Team = { name: string; logoId: string; record: string; ranks?: unknown };
-export function CompactGame({ titleId, matchup, date, broadcast, network, espnId, teams, league, score, tier, venue, line, crew, weather, status, scores, momentum, onExpand }: {
+export function CompactGame({ titleId, matchup, date, broadcast, network, espnId, teams, league, score, tier, venue, line, crew, driveChart, top, badge, weather, status, scores, momentum, onExpand }: {
   titleId: string; matchup: string; date: string; broadcast: string; network?: string | null; espnId?: string | null;
   teams: Team[]; league: string; score: number; tier: string; venue: string; line?: string | null;
-  crew?: CrewMember[]; weather?: { icon: string; title: string; detail: string; impact: string };
+  crew?: CrewMember[]; driveChart?: ReactNode; top?: ReactNode; badge?: ReactNode; weather?: { icon: string; title: string; detail: string; impact: string };
   status?: ReactNode; scores?: ReactNode[]; momentum?: ReactNode; onExpand: () => void;
 }) {
   const openGame = useOpenGame();
   const logo = networkLogo(network);
   const impact = weather?.impact.replace(/\s*impact$/i, "").toLowerCase();
   return <div className="compact-overview">
+    {top}
     <header className="card-top">
       <div className="cc-when kickoff"><span className="cc-time"><strong>{dayOf(date)}</strong> {timeOf(date)} {tzAbbr()}</span>{status}</div>
       <div className="tv cc-network">{logo ? <><NetChip network={network} logo={logo} game={{ league, espnId, broadcast }} /><span className="sr-only">{broadcast}</span>{broadcastExtra(broadcast, network) && <span aria-hidden="true">{broadcastExtra(broadcast, network)}</span>}</> : broadcast}</div>
     </header>
+    {badge}
     <h3 className="sr-only" id={titleId}>{matchup}</h3>
     <div className="matchup">
       <div className="matchup-teams">{teams.map((team, i) => <div className="team-heading cc-team" key={team.name}>
@@ -32,6 +34,7 @@ export function CompactGame({ titleId, matchup, date, broadcast, network, espnId
       </div>)}</div>
       <div className="score cc-rate" aria-label={`Watchability ${score} out of 100, ${tierLabel(tier)}`}><strong>{score}</strong><span className="score-tier">{tierLabel(tier)}</span></div>
     </div>
+    {driveChart}
     <ul className="facts" aria-label="Game info">
       <li><span aria-hidden="true">📍 </span>{venue}{line && <span> · ⚖️ {line}</span>}</li>
       <Booth crew={crew} />

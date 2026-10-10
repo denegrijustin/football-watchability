@@ -70,6 +70,7 @@ export function trimGame(s, positions = {}) {
   const seen = new Set();
   const drives = [];
   const plays = [];
+  let curPlays = [];
   for (const d of driveList) {
     if (seen.has(d.id)) continue;
     seen.add(d.id);
@@ -94,6 +95,21 @@ export function trimGame(s, positions = {}) {
       time: d.timeElapsed?.displayValue ?? "",
       current: d === s.drives?.current,
     });
+    if (d === s.drives?.current) {
+      // Every snap of the drive in progress, for the live field view.
+      curPlays = (d.plays ?? [])
+        .filter((p) => !/Kickoff|Timeout|End of|Two-minute|Coin|Official/i.test(p.type?.text ?? ""))
+        .map((p) => ({
+          down: p.start?.shortDownDistanceText ?? p.start?.downDistanceText ?? "",
+          text: p.text ?? "",
+          yards: num(p.statYardage),
+          period: p.period?.number ?? null,
+          clock: p.clock?.displayValue ?? "",
+          kind: p.type?.text ?? "",
+          score: !!p.scoringPlay,
+          turnover: !!p.isTurnover,
+        }));
+    }
     for (const p of d.plays ?? []) {
       const kind = p.type?.text ?? "";
       const offense = !/Kickoff|Punt|Timeout|End of|Two-minute|Coin|Official/i.test(kind);
@@ -183,6 +199,7 @@ export function trimGame(s, positions = {}) {
     wp,
     drives,
     plays: plays.slice(-40),
+    curPlays: curPlays.slice(-30),
     // Every play that can credit a player (see src/playImpact.ts), so Top 3 / Bottom 3 can show
     // the plays behind each number. Timeouts, kicks off, punts and penalty-only plays never do.
     log: plays

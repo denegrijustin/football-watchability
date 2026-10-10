@@ -11,6 +11,12 @@ import { ProjectedScore, type Projection } from "./ProjectedScore";
 import { InsanityMeter } from "./InsanityMeter";
 import { Headshot } from "./Headshot";
 import { GameDetails } from "./GameDetails";
+import { FootballIcon } from "../live";
+import { FieldView } from "../liveDrive";
+import { HalftimeBand } from "../halftime";
+import { GameBadgeRow } from "./GameBadge";
+import { gameBadge } from "../gameLogo";
+import { isHalftime } from "../halftimeLogic";
 import { MomentumFlow } from "./MomentumFlow";
 import { ResultAnalysis } from "./ResultAnalysis";
 import { WeatherLook } from "./WeatherLook";
@@ -34,6 +40,7 @@ export type LiveGame = {
   log?: PlayLog[];
   drives: Drive[];
   plays: Play[];
+  curPlays?: { down: string; text: string; yards: number; period: number | null; clock: string; kind: string; score: boolean; turnover: boolean }[];
   allOffense: [number, number, number, number][]; // [side 0 away/1 home, yards to end zone, quarter, yards gained]
   scoring: { period: number; clock: string; team: string; text: string; away: number; home: number }[];
   teamStats: Record<string, TeamStats>;
@@ -139,6 +146,7 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
   const net = up?.broadcast ?? fin?.broadcast ?? "";
   const netSlug = (up as { network?: string } | undefined)?.network ?? fin?.network ?? null;
   const netLogo = networkLogo(netSlug);
+  const badge = gameBadge({ meta: (up as { meta?: string } | undefined)?.meta, event: (up as { event?: string } | undefined)?.event, teams: teams as { logoId?: string }[] });
   const watch = up ? { score: up.score, tier: up.tier } : fin ? { score: fin.actual.score, tier: fin.actual.tier } : null;
 
   return (
@@ -155,10 +163,12 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
           ×
         </button>
         <div className="gc-body">
+          {league === "CFB" && state === "in" && isHalftime(game?.status.detail) && <HalftimeBand badge={badge} espnId={espnId} away={{ ...away, logoId: away.logoId }} home={{ ...home, logoId: home.logoId }} />}
           {/* Scoreboard */}
           <header className="gc-head" style={{ background: `linear-gradient(90deg, ${away.color ?? "#17222c"}, #111a22 42%, #111a22 58%, ${home.color ?? "#17222c"})` }}>
             <TeamHead t={away} score={scoreA} poss={!!game?.situation?.possession && game.situation.possession === game.teams[0]?.id} win={state === "post" && scoreA! > scoreH!} />
             <div className="gc-mid">
+              <GameBadgeRow badge={badge} large />
               <span className={`gc-state ${state}`}>{state === "in" ? "Live" : state === "post" ? "Final" : "Upcoming"}</span>
               <strong className="gc-clock">
                 {state === "pre" ? `${dayOf(date)} ${timeOf(date, undefined, true)} ${tzAbbr()}` : game?.status.detail ?? fin?.final.detail ?? "Final"}
@@ -194,6 +204,17 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
             <p className="gc-updated" role="status">
               Updating every 15 seconds · last {updated.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", second: "2-digit" })}
             </p>
+          )}
+
+          {game && state === "in" && !isHalftime(game.status.detail) && (
+            <section className="gc-panel gc-wide gc-livefield">
+              <h3 className="micro-label">Live field</h3>
+              <FieldView
+                variant="center"
+                data={game}
+                teams={[away, home].map((t, i) => ({ espnId: game.teams[i]?.id, abbr: t.abbr, name: t.name, color: t.color, logoId: t.logoId }))}
+              />
+            </section>
           )}
 
           <div className="gc-grid">
@@ -290,7 +311,7 @@ function TeamHead({ t, score, poss, win, right }: { t: TeamLike; score: number |
       <div>
         <h2>
           {t.name}
-          {poss && <span className="gc-ball" title="Has the ball" aria-label="has the ball" />}
+          {poss && <FootballIcon title="Has the ball" />}
         </h2>
         <p>{t.record.split(" · ")[0]}</p>
         {rankLine(t.ranks) && <p className="rank-line">{rankLine(t.ranks)}</p>}

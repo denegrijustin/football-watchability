@@ -43,12 +43,15 @@ export async function onRequestGet({ request }) {
     const c = ev.competitions?.[0] ?? {};
     const side = (h) => c.competitors?.find((x) => x.homeAway === h);
     const st = c.status?.type ?? {};
+    const holder = c.situation?.possession;
+    const ball = st.state === "in" && holder ? (side("home")?.id === holder ? "home" : side("away")?.id === holder ? "away" : null) : null;
     return {
       id: ev.id,
       state: st.state ?? "pre",
       detail: st.shortDetail ?? st.detail ?? "",
       away: Number(side("away")?.score ?? 0),
       home: Number(side("home")?.score ?? 0),
+      ball,
     };
   });
   const live = out.some((g) => g.state === "in");
