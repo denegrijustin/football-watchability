@@ -62,3 +62,26 @@ test("TV grid: every team shows its record, and the national rank is the AP rank
   expect(sides.some((s) => /FPI #\d+$/.test(s.rank))).toBe(true); // everyone else shows the FPI rank, labeled
   for (const s of sides) if (s.rank) expect(s.rank).toMatch(/(AP|FPI) #\d+$/);
 });
+
+test("TV grid: logos never sit on top of the record or rank text", async ({ page }) => {
+  for (const league of ["CFB", "NFL"]) {
+    await page.goto(`/?league=${league}`);
+    await page.getByRole("button", { name: "TV grid" }).click();
+    await expect(page.locator(".tv-game").first()).toBeVisible();
+    const overlaps = await page.locator(".tv-side").evaluateAll((sides) => {
+      const hits: string[] = [];
+      for (const side of sides) {
+        const img = side.querySelector("img")?.getBoundingClientRect();
+        if (!img) continue;
+        for (const text of side.querySelectorAll(".tv-tag, .tv-rank")) {
+          const r = text.getBoundingClientRect();
+          const w = Math.min(r.right, img.right) - Math.max(r.left, img.left);
+          const h = Math.min(r.bottom, img.bottom) - Math.max(r.top, img.top);
+          if (w > 1 && h > 1) hits.push(`${text.textContent} (${Math.round(w)}x${Math.round(h)})`);
+        }
+      }
+      return hits;
+    });
+    expect(overlaps, `${league}: text under a logo`).toEqual([]);
+  }
+});

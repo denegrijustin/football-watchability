@@ -2318,30 +2318,38 @@ details.proj summary strong {
   outline: 2px solid var(--lime);
   outline-offset: 1px;
 }
+/* A side is three rows: a text line, the logo in whatever height is left, a text line. The logo shrinks to fit
+   between the lines instead of sitting on top of them. */
 .tv-side {
   position: relative;
   display: grid;
-  place-items: center;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  padding: 3px 5px;
   min-height: 0;
 }
 .tv-side img {
-  width: 40px;
-  height: 40px;
+  grid-row: 2;
+  justify-self: center;
+  align-self: center;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  max-width: 40px;
+  max-height: 40px;
   object-fit: contain;
   filter: drop-shadow(0 1px 1px rgb(0 0 0 / 40%));
 }
 .tv-tag {
-  position: absolute;
-  top: 3px;
-  left: 5px;
+  grid-row: 1;
+  line-height: 1.15;
+  text-align: left;
   font-size: 10.5px;
   font-weight: 700;
   color: rgb(255 255 255 / 92%);
   text-shadow: 0 1px 2px rgb(0 0 0 / 55%);
 }
 .tv-side.home .tv-tag {
-  top: auto;
-  bottom: 3px;
+  grid-row: 3;
 }
 .tv-label {
   display: grid;
@@ -2393,8 +2401,8 @@ details.proj summary strong {
     margin-left: 0;
   }
   .tv-side img {
-    width: 32px;
-    height: 32px;
+    max-width: 32px;
+    max-height: 32px;
   }
 }
 
@@ -2412,9 +2420,9 @@ details.proj summary strong {
   font-size: inherit;
 }
 .tv-rank {
-  position: absolute;
-  bottom: 3px;
-  left: 5px;
+  grid-row: 3;
+  line-height: 1.15;
+  text-align: left;
   font-size: 10.5px;
   font-weight: 700;
   color: rgb(255 255 255 / 92%);
@@ -2422,8 +2430,7 @@ details.proj summary strong {
   white-space: nowrap;
 }
 .tv-side.home .tv-rank {
-  bottom: auto;
-  top: 3px;
+  grid-row: 1;
 }
 
 /* Desktop: time runs left to right, each block reads away | label | home. */
@@ -2439,20 +2446,17 @@ details.proj summary strong {
   padding: 4px 6px;
 }
 .wide .tv-side img {
-  width: 36px;
-  height: 36px;
+  max-width: 36px;
+  max-height: 36px;
 }
+/* In the wide layout the home side mirrors the away side: text on the right, tag above the rank. */
 .wide .tv-side.home .tv-tag {
-  top: 3px;
-  bottom: auto;
-  left: auto;
-  right: 5px;
+  grid-row: 1;
+  text-align: right;
 }
 .wide .tv-side.home .tv-rank {
-  top: auto;
-  bottom: 3px;
-  left: auto;
-  right: 5px;
+  grid-row: 3;
+  text-align: right;
 }
 .wide .tv-score {
   top: auto;
