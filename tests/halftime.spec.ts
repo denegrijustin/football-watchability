@@ -155,10 +155,12 @@ test("the team with the ball gets a football beside its score on a live card", a
 
 test("the two feet swing in opposite directions, as in a march", async ({ page }) => {
   await open(page, "CFB", "Halftime");
-  const x = (sel: string) => live(page).locator(sel).first().evaluate((e) => new DOMMatrix(getComputedStyle(e).transform).m41);
   await page.clock.resume();
-  await page.waitForTimeout(120);
-  const a = await x(".band-foot.a");
-  const b = await x(".band-foot.b");
-  expect(Math.sign(a)).not.toBe(Math.sign(b));
+  await expect(live(page).locator(".band-foot.b").first()).toBeAttached();
+  // Both feet are read in one instant, so the animation can't move between the two readings.
+  const [a, b] = await live(page).evaluate((card) => {
+    const x = (sel: string) => new DOMMatrix(getComputedStyle(card.querySelector(sel)!).transform).m41;
+    return [x(".band-foot.a"), x(".band-foot.b")];
+  });
+  expect(Math.abs(a - -b)).toBeLessThan(0.05); // equal and opposite: one forward as the other is back
 });
