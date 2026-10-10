@@ -5618,3 +5618,255 @@ select,
     padding: 0 8px;
   }
 }
+
+/* ---------- Compact top of the page on phones ---------- */
+@media (max-width: 760px) {
+  :root {
+    --ticker-h: 32px;
+  }
+  .ticker {
+    font-size: 12px;
+  }
+  .ticker-title {
+    font-size: 10px;
+  }
+  /* "How to read a card" is a slim line */
+  .how-to {
+    margin: 4px 0 0;
+  }
+  .how-to > summary {
+    min-height: 28px;
+    padding: 0 10px;
+    font-size: 12px;
+  }
+  /* One scrolling row of filters instead of three wrapped rows */
+  .filter-dock {
+    padding: 4px 12px;
+    margin: 0 -12px;
+  }
+  .filter-bar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    gap: 5px;
+    mask-image: linear-gradient(90deg, #000 calc(100% - 22px), transparent);
+  }
+  .filter-bar::-webkit-scrollbar {
+    display: none;
+  }
+  .fmenu {
+    flex: none;
+  }
+  .fmenu select {
+    height: 32px;
+    font-size: 16px;
+  }
+  .filter-bar .search {
+    flex: none;
+    width: 150px;
+    margin-left: 0;
+    height: 32px;
+  }
+  /* Tabs and Export share a row; Export shrinks to an icon */
+  .view-row {
+    flex-wrap: nowrap;
+    gap: 6px;
+    margin-top: 4px;
+  }
+  .view-row .view-switch {
+    flex: 1;
+    min-width: 0;
+    width: auto;
+  }
+  .view-row .export-btns {
+    flex: none;
+    width: auto;
+    margin: 0;
+  }
+  .view-switch button {
+    padding: 0 4px;
+    font-size: 12px;
+    min-height: 34px;
+  }
+  .export summary {
+    min-height: 34px;
+    padding: 0 10px;
+    font-size: 0;
+  }
+  .export summary::before {
+    content: "⤓";
+    font-size: 16px;
+    line-height: 1;
+  }
+  .export summary::after {
+    display: none;
+  }
+  /* The heading and the long sort note repeat what the menus already say; the counts become one plain line */
+  .board-heading {
+    margin: 6px 0 4px;
+    gap: 4px 10px;
+  }
+  .board-heading h2,
+  .board-heading .sort-label {
+    display: none;
+  }
+  .board-heading [role="status"] {
+    background: none;
+    padding: 0;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .board-section,
+  .board-section:first-of-type {
+    margin-top: 10px;
+  }
+  .section-head {
+    margin: 0 0 8px;
+    padding-bottom: 5px;
+  }
+  .section-head h3 {
+    font-size: 16px;
+  }
+  .section-head .count {
+    font-size: 12px;
+    padding: 0 7px;
+  }
+  .section-note {
+    display: none;
+  }
+}
+@media (max-width: 760px) {
+  /* the section headings below carry the counts, so the line above them goes (Reset filters stays when it applies) */
+  .board-heading [role="status"] {
+    display: none;
+  }
+  .board-heading:not(:has(.reset)) {
+    display: none;
+  }
+  .kickoff-slot {
+    margin: 12px 0;
+  }
+  .kickoff-slot h4 {
+    margin: 0 0 6px;
+    padding-bottom: 5px;
+    font-size: 13px;
+  }
+}
+
+/* ---------- Compact top of the page, all screen sizes ---------- */
+/* "How to read a card" is a small button in the header; its guide opens as a panel under the header */
+.site-header {
+  position: relative;
+}
+.site-header .how-to {
+  position: static;
+  margin: 0 0 0 auto;
+  border: 0;
+  background: none;
+}
+.site-header .how-to > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 32px;
+  padding: 0 12px 0 7px;
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  background: var(--surface);
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.site-header .how-to > summary::after {
+  display: none;
+}
+.site-header .how-to[open] > summary {
+  border-color: var(--lime);
+}
+.how-pop {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: max(24px, calc((100vw - 1480px) / 2));
+  z-index: 60;
+  width: min(1000px, calc(100vw - 32px));
+  max-height: calc(100dvh - 120px);
+  overflow: auto;
+  padding: 16px;
+  border: 1px solid var(--line-strong, var(--line));
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: 0 18px 50px rgb(0 0 0 / 55%);
+}
+/* The counts line and the long sort note repeat what the menus and section headings already say */
+.board-heading [role="status"] {
+  display: none;
+}
+.board-heading h2,
+.board-heading .sort-label {
+  display: none;
+}
+.board-heading:not(:has(.reset)) {
+  display: none;
+}
+.view-row {
+  margin-top: 6px;
+}
+.board-section,
+.board-section:first-of-type {
+  margin-top: 10px;
+}
+.section-head {
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+}
+.kickoff-slot {
+  margin: 12px 0;
+}
+.kickoff-slot h4 {
+  margin: 0 0 8px;
+  padding-bottom: 6px;
+  font-size: 13.5px;
+}
+:root {
+  --ticker-h: 34px;
+}
+@media (max-width: 760px) {
+  :root {
+    --ticker-h: 32px;
+  }
+  .site-header .how-to {
+    margin-left: auto;
+  }
+  .site-header .how-to > summary span {
+    display: none;
+  }
+  .site-header .how-to > summary {
+    padding: 0 7px;
+  }
+  .how-pop {
+    left: 12px;
+    right: 12px;
+    width: auto;
+    padding: 12px;
+  }
+}
+.site-header {
+  justify-content: flex-start;
+}
+@media (max-width: 420px) {
+  .site-header {
+    gap: 8px;
+  }
+  .site-header .tz-pick {
+    margin-right: 0;
+    padding-left: 6px;
+  }
+  .site-header .tz-pick svg {
+    display: none;
+  }
+  .site-header .tz-pick select {
+    max-width: 92px;
+  }
+  .site-header .brand-name {
+    font-size: 13px;
+  }
+}
