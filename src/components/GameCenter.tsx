@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import { ART_COUNT, attributePlays, impact, summarizeEvents, type ImpactEvent, type PlayLog, type PlayerRow } from "../playImpact";
 import { ART_LABEL, PlayArt } from "./PlayArt";
 import { openModal } from "../modal";
-import { logos, networkLogo, rankLine, results, slate, teamColor, tierLabel, type Ranks } from "../data";
+import { broadcastExtra, logos, networkLogo, rankLine, results, slate, teamColor, tierLabel, type Ranks } from "../data";
 import { trimGame } from "../gameTrim.js";
 import { dayOf, timeOf, tzAbbr } from "../tz";
 import { AdvancedStats, type Advanced } from "./AdvancedStats";
@@ -172,7 +172,14 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
                     <img src={netLogo} alt="" height="14" />
                   </span>
                 )}
-                {net}
+                {netLogo ? (
+                  <>
+                    <span className="sr-only">{net}</span>
+                    {broadcastExtra(net ?? "", netSlug) && <span aria-hidden="true">{broadcastExtra(net ?? "", netSlug)}</span>}
+                  </>
+                ) : (
+                  net
+                )}
               </span>
               {watch && (
                 <span className={`gc-watch ${watch.tier}`}>

@@ -9,6 +9,7 @@ export const DIRECTV: Record<string, { ch: number; name: string }> = {
   espn: { ch: 206, name: "ESPN" },
   espn2: { ch: 209, name: "ESPN2" },
   espnu: { ch: 208, name: "ESPNU" },
+  espnews: { ch: 207, name: "ESPNEWS" },
   fs1: { ch: 219, name: "FS1" },
   cbssn: { ch: 221, name: "CBS Sports Network" },
   "nfl-net": { ch: 212, name: "NFL Network" },
