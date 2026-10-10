@@ -5455,3 +5455,27 @@ image[href*="/logos/kansas.webp"] {
   content-visibility: auto;
   contain-intrinsic-size: auto 120px;
 }
+
+/* Taps respond at once, with no double-tap-zoom delay */
+button,
+summary,
+select,
+[role="button"] {
+  touch-action: manipulation;
+}
+/* iPhones zoom the page when a field under 16px is focused */
+@media (max-width: 640px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
