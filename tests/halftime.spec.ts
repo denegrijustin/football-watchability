@@ -114,7 +114,8 @@ test("with reduced motion the band stays in one formation", async ({ page }) => 
 test("every member keeps marching, and the countdown also tops the expanded card", async ({ page }) => {
   await open(page, "CFB", "Halftime");
   const step = live(page).locator(".band-march").first();
-  expect(await step.evaluate((e) => getComputedStyle(e).animationName)).toBe("band-step");
+  expect(await step.evaluate((e) => getComputedStyle(e).animationName)).toBe("band-sway");
+  expect(await live(page).locator(".band-foot.a").first().evaluate((e) => getComputedStyle(e).animationName)).toBe("band-foot");
   await live(page).locator("button.card-toggle, .cc-chevron").first().click();
   const first = await live(page).evaluate((e) => (e.firstElementChild as HTMLElement).className);
   expect(first).toContain("halftime-band");
@@ -150,4 +151,14 @@ test("the team with the ball gets a football beside its score on a live card", a
   await expect(card.locator(".ball-icon")).toHaveCount(1);
   await expect(card.locator(".team-score").nth(1).locator(".ball-icon")).toHaveCount(1);
   await expect(card.locator(".team-score").nth(0).locator(".ball-icon")).toHaveCount(0);
+});
+
+test("the two feet swing in opposite directions, as in a march", async ({ page }) => {
+  await open(page, "CFB", "Halftime");
+  const x = (sel: string) => live(page).locator(sel).first().evaluate((e) => new DOMMatrix(getComputedStyle(e).transform).m41);
+  await page.clock.resume();
+  await page.waitForTimeout(120);
+  const a = await x(".band-foot.a");
+  const b = await x(".band-foot.b");
+  expect(Math.sign(a)).not.toBe(Math.sign(b));
 });

@@ -6108,15 +6108,51 @@ select,
 }
 /* every member keeps stepping in time: a small rise and fall on each beat, so the band is moving even between formations */
 .band-march {
-  animation: band-step 0.5s ease-in-out infinite alternate;
+  /* a full left-right stride takes a second: the shoulders roll with each step */
+  animation: band-sway 0.5s ease-in-out infinite alternate;
   transform-origin: 0 0;
 }
-@keyframes band-step {
+@keyframes band-sway {
   from {
-    transform: translate(0, 0.08px) scale(1);
+    transform: translate(0, 0.1px) rotate(-7deg) scale(1);
   }
   to {
-    transform: translate(0, -0.08px) scale(1.05);
+    transform: translate(0, -0.1px) rotate(7deg) scale(1.06);
+  }
+}
+/* seen from above, the feet swing front to back, one forward as the other goes back, a half beat apart */
+.band-foot {
+  fill: #f1f1f1; /* white spats, so the stride shows against the turf */
+  stroke: rgb(0 0 0 / 55%);
+  stroke-width: 0.12;
+  animation: band-foot 0.5s ease-in-out infinite alternate;
+}
+.band-foot.b {
+  animation-delay: -0.5s;
+}
+@keyframes band-foot {
+  from {
+    transform: translateX(-1.1px);
+  }
+  to {
+    transform: translateX(1.1px);
+  }
+}
+/* arms swing against the legs */
+.band-arm {
+  stroke: rgb(0 0 0 / 35%);
+  stroke-width: 0.1;
+  animation: band-arm 0.5s ease-in-out infinite alternate;
+}
+.band-arm.b {
+  animation-delay: -0.5s;
+}
+@keyframes band-arm {
+  from {
+    transform: translateX(0.5px);
+  }
+  to {
+    transform: translateX(-0.5px);
   }
 }
 .band-member {
@@ -6215,7 +6251,9 @@ select,
   opacity: 0.45;
 }
 @media (prefers-reduced-motion: reduce) {
-  .band-march {
+  .band-march,
+  .band-arm,
+  .band-foot {
     animation: none;
   }
   .band-count-bar b {
