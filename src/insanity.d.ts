@@ -1,4 +1,5 @@
-export type WpPoint = [number, number | null];
+export type FlowPlay = { id: string; text: string; clock: string };
+export type WpPoint = [number, number | null, FlowPlay?];
 
 export type InsanityTier = { id: "calm" | "restless" | "wild" | "unhinged" | "witching"; label: string; min: number };
 

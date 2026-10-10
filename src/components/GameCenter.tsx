@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { ART_COUNT, attributePlays, impact, summarizeEvents, type ImpactEvent, type PlayLog, type PlayerRow } from "../playImpact";
 import { ART_LABEL, PlayArt } from "./PlayArt";
 import { openModal } from "../modal";
@@ -10,27 +10,14 @@ import { PregameWinProb, type WinProbData } from "./PregameWinProb";
 import { ProjectedScore, type Projection } from "./ProjectedScore";
 import { InsanityMeter } from "./InsanityMeter";
 import { Headshot } from "./Headshot";
+import { GameDetails } from "./GameDetails";
+import { MomentumFlow } from "./MomentumFlow";
+import { ResultAnalysis } from "./ResultAnalysis";
+import { WeatherLook } from "./WeatherLook";
+import { Stakes } from "./TeamImpact";
+import { TeamForm } from "./Trends";
 
-// ---------- open/close from anywhere ----------
-/** A game the board doesn't carry any more (earlier weeks), described just enough to open. */
-export type GameStub = {
-  league: "NFL" | "CFB";
-  date: string;
-  matchup: string;
-  teams: { name: string; abbr: string; logoId: string; color?: string | null; score: number }[];
-};
-const Ctx = createContext<(espnId: string, stub?: GameStub) => void>(() => {});
-export const useOpenGame = () => useContext(Ctx);
-
-export function GameCenterProvider({ children }: { children: ReactNode }) {
-  const [open, setOpen] = useState<{ id: string; stub?: GameStub } | null>(null);
-  return (
-    <Ctx.Provider value={(id, stub) => setOpen({ id, stub })}>
-      {children}
-      <GameCenter espnId={open?.id ?? null} stub={open?.stub} onClose={() => setOpen(null)} />
-    </Ctx.Provider>
-  );
-}
+import type { GameStub } from "./GameCenterContext";
 
 // ---------- live data ----------
 type Side = { id: string; abbr: string; name: string; homeAway: string; score: number; linescores: number[]; possession: boolean };
@@ -42,7 +29,7 @@ export type LiveGame = {
   status: { state: "pre" | "in" | "post"; detail: string; period: number; clock: string };
   teams: Side[];
   situation: { text: string; possession: string | null; toGo: number | null; redZone: boolean; lastPlay: string } | null;
-  wp: [number, number | null][];
+  wp: import("../insanity").WpPoint[];
   /** Every play that can credit a player; older cached responses may not have it. */
   log?: PlayLog[];
   drives: Drive[];
@@ -122,7 +109,7 @@ const mmss = (t: string) => {
 };
 const pct = (n: number) => `${Math.round(n)}%`;
 
-function GameCenter({ espnId, stub, onClose }: { espnId: string | null; stub?: GameStub; onClose: () => void }) {
+export default function GameCenter({ espnId, stub, onClose }: { espnId: string | null; stub?: GameStub; onClose: () => void }) {
   const ref = useRef<HTMLDialogElement>(null);
   const up = espnId ? slate.games.find((g) => g.espnId === espnId) : undefined;
   const fin = espnId && !up ? results.find((r) => r.espnId === espnId) : undefined;
@@ -273,7 +260,9 @@ function GameCenter({ espnId, stub, onClose }: { espnId: string | null; stub?: G
               </>
             )}
 
-            {(away.advanced || home.advanced) && (
+            {up && <section className="gc-panel gc-wide gc-deep-analysis"><h3 className="micro-label">Matchup & season analysis</h3><WeatherLook game={up} /><Stakes game={up} /><TeamForm game={up} /><GameDetails game={up} defaultOpen={false} /></section>}
+            {fin && <section className="gc-panel gc-wide"><h3 className="micro-label">Forecast & final analysis</h3><ResultAnalysis result={fin} /></section>}
+            {!up && !fin && (away.advanced || home.advanced) && (
               <section className="gc-panel gc-wide">
                 <h3 className="micro-label">Advanced stats + rankings (season)</h3>
                 <AdvancedStats league={league ?? "NFL"} away={{ abbr: abbr(away), adv: away.advanced ?? null }} home={{ abbr: abbr(home), adv: home.advanced ?? null }} />
@@ -351,7 +340,8 @@ function Momentum({ game, away, home }: { game: LiveGame; away: string; home: st
   const w = Math.min(50, Math.abs(swing));
   return (
     <section className="gc-panel">
-      <h3 className="micro-label">Momentum</h3>
+      <h3 className="micro-label">Game flow · momentum</h3>
+      <MomentumFlow wp={game.wp} status={game.status} away={away} home={home} />
       <p className="gc-big">
         {side ? (
           <>

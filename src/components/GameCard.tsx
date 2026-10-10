@@ -1,11 +1,8 @@
+import { MomentumFlow } from "./MomentumFlow";
 import { CompactGame } from "./CompactGame";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { nameParts } from "../teamName";
 import { deltaValue, logos, parseMeta, tierLabel, type Game } from "../data";
-import { Stakes } from "./TeamImpact";
-import { GameDetails } from "./GameDetails";
-import { WeatherLook } from "./WeatherLook";
-import { TeamForm } from "./Trends";
 import {
   networkLogo,
   rankLine,
@@ -18,7 +15,7 @@ import { PregameWinProb, type WinProbData } from "./PregameWinProb";
 import { ProjectedScore, type Projection } from "./ProjectedScore";
 import { GameStatus, TeamScore, useFlow, useLive } from "../live";
 import { InsanityMeter } from "./InsanityMeter";
-import { useOpenGame } from "./GameCenter";
+import { useOpenGame } from "./GameCenterContext";
 import { EdgeLine, type Advanced } from "./AdvancedStats";
 import { InjuryWatch } from "./InjuryReport";
 import { Booth, type CrewMember } from "./Booth";
@@ -110,7 +107,7 @@ export function GameCard({
           setExpanded(true);
       }}
     >
-      {!expanded && <CompactGame titleId={`${game.id}-title`} matchup={game.matchup} date={date} broadcast={game.broadcast} network={game.network} espnId={game.espnId} teams={game.teams} league={game.league} score={game.score} tier={game.tier} venue={meta.venue} line={meta.line} crew={(game as { announcers?: CrewMember[] }).announcers} weather={game.weather} status={<GameStatus live={live} />} scores={[<TeamScore live={live} side="away" />, <TeamScore live={live} side="home" />]} onExpand={() => setExpanded(true)} />}
+      {!expanded && <CompactGame titleId={`${game.id}-title`} matchup={game.matchup} date={date} broadcast={game.broadcast} network={game.network} espnId={game.espnId} teams={game.teams} league={game.league} score={game.score} tier={game.tier} venue={meta.venue} line={meta.line} crew={(game as { announcers?: CrewMember[] }).announcers} weather={game.weather} status={<GameStatus live={live} />} scores={[<TeamScore live={live} side="away" />, <TeamScore live={live} side="home" />]} onExpand={() => setExpanded(true)} momentum={<MomentumFlow wp={flow ?? []} away={awayAbbr} home={homeAbbr} compact status={live ? { state: live.state, period: flow?.at(-1)?.[1] ?? 1, clock: flow?.at(-1)?.[2]?.clock ?? "15:00" } : undefined} pendingLabel={live?.state === "in" ? "Awaiting play data" : live?.state === "post" ? "Play data unavailable" : "Starts at kickoff"} />} />}
       {expanded && (
         <>
       <header className="card-top">
@@ -142,6 +139,16 @@ export function GameCard({
           {game.broadcast}
         </div>
       </header>
+          <button
+            type="button"
+            className="gc-open"
+            onClick={() => openGame(game.espnId)}
+          >
+            <span>
+              <strong>Game Center</strong> · matchup stats, players & deeper analysis
+            </span>
+            <span aria-hidden="true">↗</span>
+          </button>
       {flow && (
         <InsanityMeter
           wp={flow}
@@ -248,7 +255,7 @@ export function GameCard({
       )}
       {expanded && (
         <div className="card-more" id={`${game.id}-more`}>
-          <WeatherLook game={game} />
+
 
           <p className="take">{game.narrative}</p>
           {"projected" in game && (
@@ -276,20 +283,10 @@ export function GameCard({
             }}
           />
           <InjuryWatch game={game} />
-          <Stakes game={game} />
-          <TeamForm game={game} />
-          <button
-            type="button"
-            className="gc-open"
-            onClick={() => openGame(game.espnId)}
-          >
-            <span>
-              <strong>Game Center</strong> · live win probability, momentum,
-              field tilt, drive chart, player tracker
-            </span>
-            <span aria-hidden="true">↗</span>
-          </button>
-          <GameDetails game={game} />
+
+
+
+
         </div>
       )}
       {expanded && toggle}

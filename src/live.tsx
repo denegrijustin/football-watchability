@@ -21,26 +21,26 @@ export const useLiveMap = () => useContext(LiveContext);
 
 /** Where a game is in its life, for the board's sections and Status filter. */
 export type GameStatus = "live" | "final" | "upcoming";
-/** NFL games run about 3.5 hours and college up to 4; past this a game with no feed is treated as over. */
-const LIVE_WINDOW_MS = 4.5 * 3600e3;
-/**
- * The live feed decides when it has the game. Without it (feed down, or not
- * polled yet) fall back to the clock: started within the last 4.5 hours means
- * in progress, longer ago means finished, otherwise upcoming.
- */
+/** Final status requires a feed confirmation; elapsed time alone never ends a game. */
 export function gameStatus(startIso: string, live: LiveScore | undefined, now: number): GameStatus {
   if (live) return live.state === "in" ? "live" : live.state === "post" ? "final" : "upcoming";
   const start = Date.parse(startIso);
   if (Number.isNaN(start) || start > now) return "upcoming";
-  return now - start < LIVE_WINDOW_MS ? "live" : "final";
+  return "live";
 }
 
 /** Re-renders on an interval so games move between sections as kickoffs pass. */
 export function useNow(ms = 30_000) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), ms);
-    return () => clearInterval(t);
+    // A hidden tab has nothing to redraw; catch up the moment it is shown again.
+    const t = setInterval(() => !document.hidden && setNow(Date.now()), ms);
+    const show = () => !document.hidden && setNow(Date.now());
+    document.addEventListener("visibilitychange", show);
+    return () => {
+      clearInterval(t);
+      document.removeEventListener("visibilitychange", show);
+    };
   }, [ms]);
   return now;
 }
@@ -94,11 +94,23 @@ export function LiveScores({ children }: { children: ReactNode }) {
   useEffect(() => {
     let stop = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
+    let stopHidden = () => {};
     const archived = new Set(results.map((r) => r.espnId));
     const games = slate.games
       .map((g) => ({ id: g.espnId, league: g.league, date: new Date((g as { date?: string }).date ?? "") }))
       .filter((g) => !archived.has(g.id) && !Number.isNaN(g.date.getTime()));
     const tick = async () => {
+      // No polling while the tab is hidden: wait until it is shown, then fetch straight away.
+      if (document.hidden) {
+        const resume = () => {
+          if (document.hidden || stop) return;
+          document.removeEventListener("visibilitychange", resume);
+          tick();
+        };
+        document.addEventListener("visibilitychange", resume);
+        stopHidden = () => document.removeEventListener("visibilitychange", resume);
+        return;
+      }
       const now = Date.now();
       const started = games.filter((g) => g.date.getTime() - 10 * 60e3 <= now);
       if (!started.length) {
@@ -139,6 +151,7 @@ export function LiveScores({ children }: { children: ReactNode }) {
     return () => {
       stop = true;
       clearTimeout(timer);
+      stopHidden();
     };
   }, []);
   return <LiveContext.Provider value={map}>{children}</LiveContext.Provider>;
@@ -190,7 +203,7 @@ const flowCache = new Map<string, { at: number; wp: WpPoint[] }>();
 /** Home win % (0–100) and period per play: our edge function first, ESPN directly as a fallback. */
 async function flow(league: "nfl" | "cfb", id: string): Promise<WpPoint[] | null> {
   try {
-    const res = await fetch(`/api/flow?league=${league}&id=${id}`);
+    const res = await fetch(`/api/flow?v=2&league=${league}&id=${id}`);
     if (res.ok && (res.headers.get("content-type") ?? "").includes("json")) {
       const body = (await res.json()) as { wp?: WpPoint[] };
       if (body.wp?.length) return body.wp;
@@ -204,13 +217,14 @@ async function flow(league: "nfl" | "cfb", id: string): Promise<WpPoint[] | null
     );
     if (!res.ok) return null;
     const sum = await res.json();
-    const periodByPlay = new Map<string, number | null>();
+    const periodByPlay = new Map<string, { id: string; text?: string; period?: { number: number }; clock?: { displayValue: string } }>();
     const drives = [...(sum.drives?.previous ?? []), ...(sum.drives?.current ? [sum.drives.current] : [])];
-    for (const d of drives) for (const p of d.plays ?? []) periodByPlay.set(p.id, p.period?.number ?? null);
+    for (const d of drives) for (const p of d.plays ?? []) periodByPlay.set(p.id, p);
     const wp = (sum.winprobability ?? []).map(
       (w: { homeWinPercentage?: number; playId: string }): WpPoint => [
         Math.round((w.homeWinPercentage ?? 0) * 1000) / 10,
-        periodByPlay.get(w.playId) ?? null,
+        periodByPlay.get(w.playId)?.period?.number ?? null,
+        { id: w.playId, text: periodByPlay.get(w.playId)?.text ?? "Play description unavailable", clock: periodByPlay.get(w.playId)?.clock?.displayValue ?? "" },
       ],
     );
     return wp.length ? wp : null;

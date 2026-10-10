@@ -1,4 +1,6 @@
 import type { Game } from "../data";
+import { MatchupComparison, type MatchupData } from "./MatchupComparison";
+import { matchupForGame } from "../data/matchup";
 import type { Breakdown } from "../data";
 import { SeasonTrends } from "./Trends";
 import { ScoreBreakdown } from "./ScoreBreakdown";
@@ -57,11 +59,12 @@ function KeyPlayers({ game, players }: { game: Game; players: KeyPlayer[] }) {
     </div>
   );
 }
-export function GameDetails({ game }: { game: Game }) {
+export function GameDetails({ game, defaultOpen = true, matchup = (game as Game & { matchupComparison?: MatchupData }).matchupComparison ?? matchupForGame(game) }: { game: Game; defaultOpen?: boolean; matchup?: MatchupData }) {
   return (
     <div className="game-details">
+      {matchup && <MatchupComparison data={matchup} />}
       {"breakdown" in game && (
-        <details open>
+        <details open={defaultOpen}>
           <summary>
             Why it's a {game.score}
             <span aria-hidden="true">+</span>
@@ -79,7 +82,7 @@ export function GameDetails({ game }: { game: Game }) {
         const [a, h] = game.teams as unknown as { abbr?: string; name: string; advanced?: Advanced }[];
         if (!a.advanced && !h.advanced) return null;
         return (
-          <details open>
+          <details open={defaultOpen}>
             <summary>
               Advanced stats + rankings<span aria-hidden="true">+</span>
             </summary>
@@ -92,7 +95,7 @@ export function GameDetails({ game }: { game: Game }) {
         );
       })()}
       {hasInjuryData(game) && (
-        <details open>
+        <details open={defaultOpen}>
           <summary>
             <div className="inj-title">
               Injury report <small className="inj-sum">{injurySummary(game)}</small>
@@ -102,7 +105,7 @@ export function GameDetails({ game }: { game: Game }) {
           <InjuryReport game={game} />
         </details>
       )}
-      <details open>
+      <details open={defaultOpen}>
         <summary>
           Why watch / skip<span aria-hidden="true">+</span>
         </summary>
@@ -131,14 +134,14 @@ export function GameDetails({ game }: { game: Game }) {
         </div>
       </details>
       {(game.teams as { trend?: unknown }[]).some((t) => t.trend) && (
-        <details open>
+        <details open={defaultOpen}>
           <summary>
             Season trends<span aria-hidden="true">+</span>
           </summary>
           <SeasonTrends game={game} />
         </details>
       )}
-      <details open>
+      <details open={defaultOpen}>
         <summary>
           History + key players<span aria-hidden="true">+</span>
         </summary>
@@ -161,7 +164,7 @@ export function GameDetails({ game }: { game: Game }) {
             </div>
           ))}
           {game.history.games && game.history.games.length > 5 && (
-            <details open className="all-meetings">
+            <details open={defaultOpen} className="all-meetings">
               <summary>
                 All {game.history.games.length} meetings
                 <span aria-hidden="true">+</span>

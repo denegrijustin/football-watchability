@@ -416,3 +416,17 @@
     stroke-width: 0.9;
   }
 }
+
+/* Dragging the week slider repaints thousands of counties; skip the fade while a finger or pointer is down on it. */
+.imp-body:has(.imp-slider:active) .imp-county,
+.imp-body:has(.imp-slider:focus-visible) .imp-county {
+  transition: none;
+}
+.imp-svg {
+  touch-action: pan-y pinch-zoom;
+}
+@media (prefers-reduced-motion: reduce) {
+  .imp-county {
+    transition: none;
+  }
+}

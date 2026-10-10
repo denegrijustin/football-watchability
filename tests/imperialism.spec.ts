@@ -18,7 +18,7 @@ async function open(page: Page, league: "CFB" | "NFL" = "CFB") {
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   // The saved snapshot has no games until a refresh has fetched the season, so serve the fixture season.
-  await page.route("**/assets/imperialism-*.js", (route) => route.fulfill({ contentType: "text/javascript", body: `export default ${JSON.stringify(data)};` }));
+  await page.route("**/data/imperialism.json", (route) => route.fulfill({ json: data }));
   await page.goto(`/?league=${league}`);
   await page.getByRole("button", { name: /^Empire/ }).click();
   await expect(page.getByTestId("imp-map")).toBeVisible();
@@ -161,7 +161,7 @@ test("with no games yet the map shows the starting split and says results are co
     layer.weeks = layer.weeks.slice(0, 1);
     layer.current = layer.home;
   }
-  await page.route("**/assets/imperialism-*.js", (route) => route.fulfill({ contentType: "text/javascript", body: `export default ${JSON.stringify(empty)};` }));
+  await page.route("**/data/imperialism.json", (route) => route.fulfill({ json: empty }));
   await page.goto("/?league=CFB");
   await page.getByRole("button", { name: /^Empire/ }).click();
   await expect(page.getByTestId("imp-map")).toBeVisible();
