@@ -64,7 +64,7 @@ function Score({ item, hidden }: { item: Item; hidden?: boolean }) {
         <span className="ticker-league">{item.league}</span>
         {item.teams.map((t, i) => (
           <span key={i} className={`ticker-team${winner === i ? " won" : winner === -1 ? "" : " lost"}`}>
-            <img src={logos[t.logoId]} alt="" width="16" height="16" loading="lazy" decoding="async" />
+            <img src={logos[t.logoId]} alt="" width="16" height="16" loading="eager" decoding="async" />
             {t.abbr} <b>{t.score}</b>
           </span>
         ))}
