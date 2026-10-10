@@ -69,12 +69,14 @@ export function gridGames(): GridGame[] {
       final: null,
       sides: teams.map((t) => {
         const r = cleanRank(t.rankings[0] ?? "");
+        const record = t.record.split(" · ")[0];
         return {
           abbr: t.abbr ?? t.name,
           name: t.name,
           logoId: t.logoId,
           color: teamColor(t.color),
-          tag: g.league === "CFB" && r.startsWith("#") ? r : t.record.split(" · ")[0],
+          // A ranked college team keeps its record: "AP #2 · 5-0".
+          tag: g.league === "CFB" && r.startsWith("#") ? `AP ${r} · ${record}` : record,
           ranks: t.ranks,
         };
       }),

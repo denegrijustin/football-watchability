@@ -185,7 +185,7 @@ export async function renderGridImage({
   }
   ctx.fillStyle = "#8d9eac";
   ctx.font = `500 16px ${FONT}`;
-  const hint = "Under each logo: conference rank · overall rank (ESPN FPI). Top: record, or AP rank.";
+  const hint = "Top: AP rank (if ranked) · record. Bottom: conference rank · Nat = national rank (ESPN FPI).";
   // On a narrow day the key leaves no room for the hint beside it: put it on the next line instead of running off the edge.
   if (lx + ctx.measureText(hint).width > W - PAD) ctx.fillText(hint, PAD, ly + 26);
   else ctx.fillText(hint, lx, ly);

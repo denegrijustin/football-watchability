@@ -26,7 +26,9 @@ test("conference rank is the team's place among its conference by the same FPI r
 test("the rank line and tooltip say what each number is", () => {
   const r = { conf: 3, confSize: 16, confName: "NFC", overall: 7, overallOf: 32, confBasis: "fpi" as const };
   expect(rankLine(r)).toBe("NFC #3 · #7 overall (FPI)"); // full lines name their source
-  expect(rankLine(r, true)).toBe("NFC #3 · #7"); // the TV grid explains it once in its key
+  expect(rankLine(r, true)).toBe("NFC #3 · Nat #7"); // the TV grid explains it once in its key
+  expect(rankLine({ ...r, confName: "Big Ten" }, true)).toBe("B1G #3 · Nat #7"); // the longest conference names shrink to fit the grid
+  expect(rankLine({ ...r, conf: null, confName: null }, true)).toBe("Nat #7");
   expect(rankTitle(r)).toBe("3rd of 16 in the NFC by ESPN FPI · 7th of 32 overall (ESPN FPI)");
   // Games archived before the change carry the old standings order and are still described as standings.
   expect(rankTitle({ ...r, confBasis: undefined })).toContain("in the NFC standings");
@@ -38,8 +40,8 @@ test("ranks are labeled where they appear: on the cards, in the TV grid key and 
   await expect(page.locator(".rank-line").first()).toContainText(/#\d+ overall \(FPI\)/);
   await expect(page.locator(".how-to")).toContainText("Rank line");
   await page.getByRole("button", { name: "TV grid" }).click();
-  await expect(page.locator(".tv-key .k-rank")).toContainText("conference rank · overall rank (ESPN FPI)");
-  const compact = await page.locator(".tv-rank").allInnerTexts(); // compact, no label of its own; independents show just the overall rank
+  await expect(page.locator(".tv-key .k-rank")).toContainText("conference rank · Nat = national rank (ESPN FPI)");
+  const compact = await page.locator(".tv-rank").allInnerTexts(); // compact, no label of its own; independents show just the national rank
   expect(compact.length).toBeGreaterThan(0);
-  for (const t of compact) expect(t).toMatch(/^([^#]+ #\d+ · )?#\d+$/);
+  for (const t of compact) expect(t).toMatch(/^([^#]+ #\d+ · )?Nat #\d+$/);
 });

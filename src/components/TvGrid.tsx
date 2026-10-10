@@ -176,8 +176,8 @@ export function TvGrid() {
           <li className="k-hl">Entertaining (74+)</li>
           <li className="k-mid">Watchable (64–73)</li>
           <li className="k-dim">↓ Lower priority (&lt;64)</li>
-          <li className="k-rank" title="Both ranks are ESPN FPI power ratings: conference rank is the team's place among its conference mates, overall rank is across the whole league.">
-            Under each logo: conference rank · overall rank (ESPN FPI)
+          <li className="k-rank" title="AP is the Associated Press poll (top 25 only). The bottom line is ESPN FPI power ratings: the conference rank is the team's place among its conference mates, and Nat is its national rank among all teams, even outside the top 25.">
+            Top: AP rank (if ranked) · record. Bottom: conference rank · Nat = national rank (ESPN FPI)
           </li>
         </ul>
       </div>
