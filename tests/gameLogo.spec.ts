@@ -43,3 +43,12 @@ test("at halftime the game's logo is painted at midfield and tops the card", asy
   await expect(card.locator("image[data-game-logo]")).toHaveAttribute("href", "/game-logos/red-river-rivalry.webp");
   await expect(card.locator(".game-badge img")).toHaveAttribute("src", "/game-logos/red-river-rivalry.webp");
 });
+
+test("if the Game Center's file is gone (site updated under an open page), the page survives and says so", async ({ page }) => {
+  await page.route(/\/assets\/GameCenter-.*\.js/, (r) => r.fulfill({ status: 404, body: "gone" }));
+  await page.goto("/?league=CFB");
+  await page.evaluate(() => sessionStorage.setItem("fbwatch-gc-reload", "1")); // the one automatic reload was already used
+  await page.locator(".cc-gc").first().click();
+  await expect(page.locator(".gc-failed")).toContainText("could not load");
+  await expect(page.locator(".game-card").first()).toBeVisible();
+});
