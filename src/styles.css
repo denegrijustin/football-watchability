@@ -5752,3 +5752,121 @@ select,
     font-size: 13px;
   }
 }
+
+/* ---------- Compact top of the page, all screen sizes ---------- */
+/* "How to read a card" is a small button in the header; its guide opens as a panel under the header */
+.site-header {
+  position: relative;
+}
+.site-header .how-to {
+  position: static;
+  margin: 0 0 0 auto;
+  border: 0;
+  background: none;
+}
+.site-header .how-to > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 32px;
+  padding: 0 12px 0 7px;
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  background: var(--surface);
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.site-header .how-to > summary::after {
+  display: none;
+}
+.site-header .how-to[open] > summary {
+  border-color: var(--lime);
+}
+.how-pop {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: max(24px, calc((100vw - 1480px) / 2));
+  z-index: 60;
+  width: min(1000px, calc(100vw - 32px));
+  max-height: calc(100dvh - 120px);
+  overflow: auto;
+  padding: 16px;
+  border: 1px solid var(--line-strong, var(--line));
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: 0 18px 50px rgb(0 0 0 / 55%);
+}
+/* The counts line and the long sort note repeat what the menus and section headings already say */
+.board-heading [role="status"] {
+  display: none;
+}
+.board-heading h2,
+.board-heading .sort-label {
+  display: none;
+}
+.board-heading:not(:has(.reset)) {
+  display: none;
+}
+.view-row {
+  margin-top: 6px;
+}
+.board-section,
+.board-section:first-of-type {
+  margin-top: 10px;
+}
+.section-head {
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+}
+.kickoff-slot {
+  margin: 12px 0;
+}
+.kickoff-slot h4 {
+  margin: 0 0 8px;
+  padding-bottom: 6px;
+  font-size: 13.5px;
+}
+:root {
+  --ticker-h: 34px;
+}
+@media (max-width: 760px) {
+  :root {
+    --ticker-h: 32px;
+  }
+  .site-header .how-to {
+    margin-left: auto;
+  }
+  .site-header .how-to > summary span {
+    display: none;
+  }
+  .site-header .how-to > summary {
+    padding: 0 7px;
+  }
+  .how-pop {
+    left: 12px;
+    right: 12px;
+    width: auto;
+    padding: 12px;
+  }
+}
+.site-header {
+  justify-content: flex-start;
+}
+@media (max-width: 420px) {
+  .site-header {
+    gap: 8px;
+  }
+  .site-header .tz-pick {
+    margin-right: 0;
+    padding-left: 6px;
+  }
+  .site-header .tz-pick svg {
+    display: none;
+  }
+  .site-header .tz-pick select {
+    max-width: 92px;
+  }
+  .site-header .brand-name {
+    font-size: 13px;
+  }
+}

@@ -19,3 +19,28 @@ test("on a phone the controls take few rows and the first game starts high", asy
   for (const name of ["League", "Status", "Day", "Watchability", "Conference"]) await expect(page.getByLabel(name, { exact: true })).toBeAttached();
   await expect(page.getByLabel("Search teams, channels or locations")).toBeAttached();
 });
+
+test("How to read a card is a button in the header that opens its guide over the page", async ({ page }) => {
+  await page.goto("/?league=NFL");
+  const help = page.locator(".site-header .how-to");
+  await expect(help).toBeVisible();
+  const guide = help.locator(".how-pop");
+  await expect(guide).toBeHidden();
+  await help.getByLabel("How to read a card").click();
+  await expect(guide).toBeVisible();
+  await expect(guide).toContainText("Rank line");
+  await expect(guide).toContainText("Must watch");
+  // It floats over the board instead of pushing it down.
+  const before = await page.locator(".filter-dock").evaluate((e) => Math.round(e.getBoundingClientRect().top));
+  expect(before).toBeLessThan(140);
+  await help.getByLabel("How to read a card").click();
+  await expect(guide).toBeHidden();
+});
+
+test("on a desktop the first game starts in the upper third of the screen", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/?league=CFB");
+  const card = page.locator(".game-card").first();
+  await expect(card).toBeVisible();
+  expect(await card.evaluate((e) => Math.round(e.getBoundingClientRect().top))).toBeLessThan(300);
+});
