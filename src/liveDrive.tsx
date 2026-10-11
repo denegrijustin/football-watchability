@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { logos, teamColor } from "./data";
+import { rename } from "./data/load";
 import { FootballIcon } from "./live";
 import { mix } from "./halftimeLogic";
 import { LogoMark } from "./logoTone";
@@ -32,7 +33,7 @@ async function fetchSummary(league: string, id: string): Promise<Summary | null>
   let data: Summary | null = null;
   try {
     const r = await fetch(`/api/game?league=${PATHS[league]}&event=${id}`);
-    if (r.ok && (r.headers.get("content-type") ?? "").includes("json")) data = await r.json();
+    if (r.ok && (r.headers.get("content-type") ?? "").includes("json")) data = rename(await r.json());
   } catch {
     /* offline: keep what we had */
   }
