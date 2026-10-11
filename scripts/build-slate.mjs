@@ -390,7 +390,8 @@ function weatherFor(comp, summary, iso, localHour) {
     effects: factors.filter((f) => f.level >= 1).map((f) => f.text),
     // Keys and levels only, for the projected-score weather adjustment.
     factors: factors.map(({ key, level }) => ({ key, level })),
-    hours: hours.map(({ label, time, at, icon, tempF, feelsF, precip, windMph, gustMph, dir }) => ({ label, time, at, icon, tempF, feelsF, precip, windMph, gustMph, dir })),
+    // code (WMO weather code) and rainIn (inches that hour) let the field animation match what is actually falling.
+    hours: hours.map(({ label, time, at, icon, tempF, feelsF, precip, windMph, gustMph, dir, code, rainIn }) => ({ label, time, at, icon, tempF, feelsF, precip, windMph, gustMph, dir, code, rainIn: Math.round(rainIn * 100) / 100 })),
     confidence: confText,
   };
 }

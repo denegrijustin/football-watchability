@@ -4,9 +4,9 @@ import { rename } from "./data/load";
 import { FootballIcon } from "./live";
 import { mix } from "./halftimeLogic";
 import { LogoMark } from "./logoTone";
-import { WeatherFx } from "./WeatherFx";
+import { WeatherLayer, weatherCaption } from "./WeatherFx";
 import { ConfMark } from "./ConfMark";
-import { fxText, hasFx, weatherFx, type WeatherLike } from "./weatherFx";
+import type { WeatherLike } from "./weatherFx";
 import type { GameBadge } from "./gameLogo";
 
 /** The slice of /api/game (see functions/api/game.js) the drive animation uses. */
@@ -176,8 +176,7 @@ export function FieldView({ data, teams, variant, rootRef, badge, weather }: { d
   const past = data.drives.filter((d) => !d.current && d.from != null && d.to != null).slice(-3);
   const X = (yd: number) => 10 + yd; // 10-yard end zones either side
   const plays = data.curPlays ?? [];
-  const fx = weatherFx(weather, data.status.period);
-  const wxText = hasFx(fx) ? fxText(fx) : "";
+  const wxText = weatherCaption(weather, data.status.period);
   const logo = teams[side].logoId ? logos[teams[side].logoId!] : undefined;
   // The ball's tag sits on the side with room.
   const tagLeft = ball > 70;
@@ -235,7 +234,7 @@ export function FieldView({ data, teams, variant, rootRef, badge, weather }: { d
         ))}
         <ConfMark conf={away.conf} cx={35} cy={25} size={7} />
         <ConfMark conf={home.conf} cx={85} cy={25} size={7} />
-        {hasFx(fx) && <WeatherFx fx={fx} h={variant === "card" ? 23 : 34} y0={variant === "card" ? 6 : 0} seed={Number(ids[0]) || 1} compact={variant === "card"} />}
+        <WeatherLayer weather={weather} period={data.status.period} h={variant === "card" ? 23 : 34} y0={variant === "card" ? 6 : 0} seed={Number(ids[0]) || 1} compact={variant === "card"} />
         {past.map((d, i) => {
           const a = spot(d.from!, d.team === ids[0]);
           const b = spot(d.to!, d.team === ids[0]);
