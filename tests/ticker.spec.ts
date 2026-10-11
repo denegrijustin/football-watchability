@@ -33,7 +33,7 @@ test("it scrolls, stops under the pointer or on request, and each score says whe
   // Real scores, each labeled for assistive tech, and the looped copy is hidden from it.
   const labels = await ticker.locator(".ticker-track > li:not([aria-hidden]) .ticker-item").evaluateAll((els) => els.map((e) => e.getAttribute("aria-label") ?? ""));
   expect(labels.length).toBeGreaterThan(0);
-  for (const l of labels) expect(l).toMatch(/\d+, .* \d+, final(\/ot)?\. Open the postgame summary\.$/);
+  for (const l of labels) expect(l).toMatch(/\d+, .* \d+, final(\/ot)?\.( FPI rank: .*\.)? Open the postgame summary\.$/);
   expect(await ticker.locator(".ticker-dup").count()).toBe(labels.length);
 });
 
@@ -73,4 +73,20 @@ test("every logo in the strip loads up front, including the ones still off to th
     .poll(() => ticker.locator("img").evaluateAll((imgs) => imgs.filter((i) => !(i as HTMLImageElement).complete || (i as HTMLImageElement).naturalWidth === 0).length), { timeout: 10_000 })
     .toBe(0);
   expect(await ticker.locator("img").evaluateAll((imgs) => imgs.every((i) => (i as HTMLImageElement).loading === "eager"))).toBe(true);
+});
+
+test("each team in the strip carries its FPI rank, and NFL teams their power rank too", async ({ page }) => {
+  await page.goto("/?league=NFL");
+  const ticker = page.getByRole("region", { name: "Final scores" });
+  const items = ticker.locator(".ticker-track > li:not([aria-hidden]) .ticker-item");
+  const nfl = items.filter({ has: page.locator(".ticker-league", { hasText: "NFL" }) }).first();
+  await expect(nfl.locator(".ticker-team")).toHaveCount(2);
+  for (const team of await nfl.locator(".ticker-team").all()) {
+    await expect(team.locator(".ticker-rank:not(.pr)")).toHaveText(/^FPI \d+$/);
+    await expect(team.locator(".ticker-rank.pr")).toHaveText(/^PR \d+$/);
+  }
+  const cfb = items.filter({ has: page.locator(".ticker-league", { hasText: "CFB" }) }).first();
+  await expect(cfb.locator(".ticker-rank:not(.pr)")).toHaveCount(2);
+  await expect(cfb.locator(".ticker-rank.pr")).toHaveCount(0); // power rank is an NFL thing
+  await expect(nfl).toHaveAttribute("aria-label", /FPI rank: .* \d+, .* \d+; the power rank is the same\./);
 });

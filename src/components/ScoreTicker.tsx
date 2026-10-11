@@ -8,10 +8,16 @@ type Item = {
   league: string;
   when: number;
   detail: string;
-  teams: { abbr: string; name: string; logoId: string; score: number }[];
+  teams: { abbr: string; name: string; logoId: string; score: number; fpi: number | null; of: number | null }[];
 };
 
 const MAX_ITEMS = 40;
+
+/** ESPN's FPI rank (the overall rank on every card) and how many teams it ranks. */
+const fpiOf = (t: unknown) => {
+  const r = (t as { ranks?: { overall?: number | null; overallOf?: number | null } }).ranks;
+  return { fpi: r?.overall ?? null, of: r?.overallOf ?? null };
+};
 
 /**
  * Completed games: the archived finals plus any game the live feed has already marked final but the hourly rebuild hasn't
@@ -26,7 +32,7 @@ function useFinals(): Item[] {
       league: r.league,
       when: Date.parse(r.date),
       detail: r.final.overtime ? "Final/OT" : "Final",
-      teams: r.teams.map((t) => ({ abbr: t.abbr, name: t.name, logoId: t.logoId, score: t.score })),
+      teams: r.teams.map((t) => ({ abbr: t.abbr, name: t.name, logoId: t.logoId, score: t.score, ...fpiOf(t) })),
     }));
     const fromLive: Item[] = slate.games
       .filter((g) => g.espnId && !archived.has(g.espnId) && live[g.espnId]?.state === "post")
@@ -37,7 +43,7 @@ function useFinals(): Item[] {
           league: g.league,
           when: Date.parse((g as { date?: string }).date ?? ""),
           detail: /ot/i.test(l.detail) ? "Final/OT" : "Final",
-          teams: g.teams.map((t, i) => ({ abbr: (t as { abbr?: string }).abbr ?? t.name, name: t.name, logoId: t.logoId, score: i === 0 ? l.away : l.home })),
+          teams: g.teams.map((t, i) => ({ abbr: (t as { abbr?: string }).abbr ?? t.name, name: t.name, logoId: t.logoId, score: i === 0 ? l.away : l.home, ...fpiOf(t) })),
         };
       });
     return [...fromLive, ...fromResults]
@@ -46,6 +52,11 @@ function useFinals(): Item[] {
       .slice(0, MAX_ITEMS);
   }, [live]);
 }
+
+const ranksSpoken = (item: Item) =>
+  item.teams.every((t) => t.fpi != null)
+    ? ` FPI rank: ${item.teams.map((t) => `${t.name} ${t.fpi}`).join(", ")}${item.league === "NFL" ? "; the power rank is the same" : ""}.`
+    : "";
 
 /** One score: both teams, the final, and a button that opens the Game Center postgame summary. */
 function Score({ item, hidden }: { item: Item; hidden?: boolean }) {
@@ -59,13 +70,23 @@ function Score({ item, hidden }: { item: Item; hidden?: boolean }) {
         className="ticker-item"
         tabIndex={hidden ? -1 : undefined}
         onClick={() => openGame(item.espnId)}
-        aria-label={`${away.name} ${away.score}, ${home.name} ${home.score}, ${item.detail.toLowerCase()}. Open the postgame summary.`}
+        aria-label={`${away.name} ${away.score}, ${home.name} ${home.score}, ${item.detail.toLowerCase()}.${ranksSpoken(item)} Open the postgame summary.`}
       >
         <span className="ticker-league">{item.league}</span>
         {item.teams.map((t, i) => (
           <span key={i} className={`ticker-team${winner === i ? " won" : winner === -1 ? "" : " lost"}`}>
             <img src={logos[t.logoId]} alt="" width="16" height="16" loading="eager" decoding="async" />
             {t.abbr} <b>{t.score}</b>
+            {t.fpi != null && (
+              <small className="ticker-rank" title={`ESPN FPI rank ${t.fpi}${t.of ? ` of ${t.of}` : ""}`}>
+                FPI {t.fpi}
+              </small>
+            )}
+            {item.league === "NFL" && t.fpi != null && (
+              <small className="ticker-rank pr" title={`NFL power rank ${t.fpi} (the NFL power rank here is ESPN's FPI rank)`}>
+                PR {t.fpi}
+              </small>
+            )}
           </span>
         ))}
         <span className="ticker-final">{item.detail}</span>
