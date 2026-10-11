@@ -275,3 +275,21 @@ test("out of the red zone the box has no red border", async ({ page }) => {
   await expect(live.locator(".lf-red")).toHaveCount(0);
   await expect(live.locator(".lf-rz")).toHaveCount(0);
 });
+
+test("a conference mark is its official logo once ESPN's CDN answers, and the lettered badge until then or if it never does", async ({ page }) => {
+  const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==", "base64");
+  await page.route("https://a.espncdn.com/i/teamlogos/nfl/500/nfc.png", (r) => r.fulfill({ contentType: "image/png", body: png }));
+  await page.route("https://a.espncdn.com/i/teamlogos/**/afc.png", (r) => r.fulfill({ status: 404, body: "no" }));
+  const live = await openWith(page, () => summary(65, "2nd & 7 at SEA 35"));
+  // Both teams in this game are NFC: their marks use the logo that loaded.
+  await expect(live.locator("svg.drive-svg g.lf-conf[data-logo='official']").first()).toBeAttached();
+  await expect(live.locator("svg.drive-svg g.lf-conf[data-conf='NFC'] image").first()).toHaveAttribute("href", /nfl\/500\/nfc\.png/);
+});
+
+test("with no answer from ESPN's CDN the conference mark stays a lettered badge", async ({ page }) => {
+  await page.route("https://a.espncdn.com/i/teamlogos/**", (r) => r.fulfill({ status: 404, body: "no" }));
+  const live = await openWith(page, () => summary(65, "2nd & 7 at SEA 35"));
+  await expect(live.locator("svg.drive-svg g.lf-conf").first()).toBeAttached();
+  await expect(live.locator("svg.drive-svg g.lf-conf[data-logo='official']")).toHaveCount(0);
+  await expect(live.locator("svg.drive-svg g.lf-conf text.lf-conf-text").first()).toBeAttached();
+});
