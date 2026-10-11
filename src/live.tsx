@@ -253,6 +253,15 @@ async function flow(league: "nfl" | "cfb", id: string): Promise<WpPoint[] | null
   }
 }
 
+/** A game's win-probability line, from the shared cache when it is younger than `maxAgeMs`, else fetched fresh. */
+export async function latestFlow(league: "NFL" | "CFB", id: string, maxAgeMs = FLOW_MS - 1000): Promise<WpPoint[] | null> {
+  const cached = flowCache.get(id);
+  if (cached && Date.now() - cached.at < maxAgeMs) return cached.wp;
+  const next = await flow(league === "NFL" ? "nfl" : "cfb", id);
+  if (next) flowCache.set(id, { at: Date.now(), wp: next });
+  return next ?? cached?.wp ?? null;
+}
+
 /**
  * A live game's win-probability line, refreshed while it is in progress (and
  * once more when it ends, before the archive catches up). Null until the game

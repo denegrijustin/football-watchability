@@ -6750,3 +6750,31 @@ select,
   font-style: normal;
   opacity: 0.8;
 }
+
+/* a game in progress in the Insanity list */
+.ic-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: rgb(255 82 82 / 0.16);
+  color: #ff8a8a;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+.ic-live::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ff5252;
+  animation: drive-blink 1.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ic-live::before {
+    animation: none;
+  }
+}
