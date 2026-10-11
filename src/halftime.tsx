@@ -132,8 +132,8 @@ export function HalftimeBand({ espnId, home, away, badge, weather }: { espnId: s
         {/* a special or neutral-site game paints its own logo here; any other game, the home team's */}
         {badge?.src ? <LogoMark src={badge.src} cx={60} cy={20} size={19} chipOpacity={0.4} imageClass="band-mid-logo" gameLogo />
           : !badge?.neutral && home.logoId && logos[home.logoId] && <LogoMark src={logos[home.logoId]} cx={60} cy={20} size={19} chipOpacity={0.4} imageClass="band-mid-logo" />}
-        <ConfMark conf={away.conf} cx={45} cy={31} size={8} />
-        <ConfMark conf={home.conf} cx={75} cy={31} size={8} />
+        <ConfMark conf={away.conf} cx={35} cy={31} size={8} />
+        <ConfMark conf={home.conf} cx={85} cy={31} size={8} />
         {hasFx(fx) && <WeatherFx fx={fx} h={40} seed={Number(espnId) || 1} />}
         {dots.map((i) => {
           const [x, y] = f.pts[i];
