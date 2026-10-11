@@ -29,6 +29,21 @@ export type LedgerGame = {
 export const rankGames = (games: LedgerGame[]) =>
   [...games].sort((a, b) => b.insanity - a.insanity || b.swing - a.swing || b.date.localeCompare(a.date));
 
+export type InsanitySort = "insanity" | "kickoff" | "margin";
+export const INSANITY_SORTS: { id: InsanitySort; label: string; note: string }[] = [
+  { id: "insanity", label: "Insanity", note: "Most insane first" },
+  { id: "kickoff", label: "Kickoff", note: "Most recent first" },
+  { id: "margin", label: "Margin", note: "Closest finish first" },
+];
+const marginOf = (g: LedgerGame) => Math.abs(g.away.score - g.home.score);
+/** The games in the chosen order. Insanity is the ranking itself; the others break ties by it. */
+export function sortGames(games: LedgerGame[], by: InsanitySort): LedgerGame[] {
+  const ranked = rankGames(games);
+  if (by === "kickoff") return [...ranked].sort((a, b) => b.date.localeCompare(a.date) || b.insanity - a.insanity);
+  if (by === "margin") return [...ranked].sort((a, b) => marginOf(a) - marginOf(b) || b.insanity - a.insanity);
+  return ranked;
+}
+
 export type WeekSummary = {
   week: string;
   /** Earliest kickoff, for ordering weeks. */

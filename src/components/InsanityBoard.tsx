@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
 import { logos, results, slate, teamColor } from "../data";
 import { fetchData } from "../data/load";
-import { rankGames, mostInsaneWeek, weekSummaries, type LedgerGame } from "../seasonRank";
+import { rankGames, mostInsaneWeek, weekSummaries, sortGames, INSANITY_SORTS, type InsanitySort, type LedgerGame } from "../seasonRank";
 import { INSANITY_TIERS } from "../insanity";
 import { useOpenGame, type GameStub } from "./GameCenterContext";
 import { Headshot } from "./Headshot";
@@ -34,6 +34,7 @@ export function InsanityBoard({ defaultLeague }: { defaultLeague: "NFL" | "CFB" 
   const [scope, setScope] = useState<Scope>("week");
   const [pick, setPick] = useState<string | null>(null);
   const [shown, setShown] = useState(PAGE);
+  const [sort, setSort] = useState<InsanitySort>("insanity");
   const openGame = useOpenGame();
 
   useEffect(() => {
@@ -48,7 +49,10 @@ export function InsanityBoard({ defaultLeague }: { defaultLeague: "NFL" | "CFB" 
   const weeks = useMemo(() => weekSummaries(mine), [mine]);
   const best = useMemo(() => mostInsaneWeek(weeks), [weeks]);
   const week = weeks.find((w) => w.week === pick)?.week ?? weeks[0]?.week ?? "";
-  const list = useMemo(() => rankGames(scope === "season" ? mine : mine.filter((g) => g.week === week)), [mine, scope, week]);
+  const pool = useMemo(() => (scope === "season" ? mine : mine.filter((g) => g.week === week)), [mine, scope, week]);
+  // Each game keeps its insanity rank (#1 is the wildest) whatever order the list is shown in.
+  const rankOf = useMemo(() => new Map(rankGames(pool).map((g, i) => [g.id, i + 1])), [pool]);
+  const list = useMemo(() => sortGames(pool, sort), [pool, sort]);
   const avg = list.length ? Math.round(list.reduce((a, g) => a + g.insanity, 0) / list.length) : 0;
   const wild = list.filter((g) => g.tier === "unhinged" || g.tier === "witching").length;
   const nameOf = league === "NFL" ? "NFL" : "College";
@@ -78,6 +82,13 @@ export function InsanityBoard({ defaultLeague }: { defaultLeague: "NFL" | "CFB" 
             Season
           </button>
         </div>
+        <div className="segmented" role="group" aria-label="Sort games by">
+          {INSANITY_SORTS.map((o) => (
+            <button key={o.id} aria-pressed={sort === o.id} onClick={() => { setSort(o.id); setShown(PAGE); }}>
+              {o.label}
+            </button>
+          ))}
+        </div>
         {scope === "week" && weeks.length > 0 && (
           <label className="tv-conf">
             <span className="sr-only">Week</span>
@@ -101,7 +112,7 @@ export function InsanityBoard({ defaultLeague }: { defaultLeague: "NFL" | "CFB" 
             ? "Loading…"
             : `${plural(list.length, "game")} · average ${avg} · ${wild} unhinged or worse`}
         </span>
-        <span className="sort-label">Most insane first</span>
+        <span className="sort-label">{INSANITY_SORTS.find((o) => o.id === sort)?.note}</span>
       </div>
 
       {ledger != null && list.length === 0 ? (
@@ -112,7 +123,7 @@ export function InsanityBoard({ defaultLeague }: { defaultLeague: "NFL" | "CFB" 
       ) : (
         <ol className="ib-cards">
           {list.slice(0, shown).map((g, i) => (
-            <InsanityCard key={g.id} g={g} rank={i + 1} showWeek={scope === "season"} onOpen={() => (known.has(g.id) ? openGame(g.id) : openGame(g.id, stubOf(g)))} />
+            <InsanityCard key={g.id} g={g} rank={rankOf.get(g.id) ?? i + 1} showWeek={scope === "season"} onOpen={() => (known.has(g.id) ? openGame(g.id) : openGame(g.id, stubOf(g)))} />
           ))}
         </ol>
       )}
@@ -251,7 +262,7 @@ function InsanityCard({ g, rank, showWeek, onOpen }: { g: LedgerGame; rank: numb
   );
   const style = { "--away": ca, "--home": ch } as CSSProperties;
   return (
-    <li className={`ic ${g.tier}`} style={style}>
+    <li className={`ic ${g.tier}`} style={style} data-insanity={g.insanity} data-date={g.date} data-margin={Math.abs(g.away.score - g.home.score)}>
       {onOpen ? (
         <button type="button" className="ic-inner" onClick={onOpen} aria-label={`${g.matchup}, insanity ${g.insanity}. Open Game Center`}>
           {body}
