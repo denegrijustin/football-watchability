@@ -55,7 +55,7 @@ function useFinals(): Item[] {
 
 const ranksSpoken = (item: Item) =>
   item.teams.every((t) => t.fpi != null)
-    ? ` FPI rank: ${item.teams.map((t) => `${t.name} ${t.fpi}`).join(", ")}${item.league === "NFL" ? "; the power rank is the same" : ""}.`
+    ? ` FPI rank: ${item.teams.map((t) => `${t.name} ${t.fpi}`).join(", ")}${item.league === "NFL" ? "; the same as the power rank" : ""}.`
     : "";
 
 /** One score: both teams, the final, and a button that opens the Game Center postgame summary. */
@@ -75,18 +75,16 @@ function Score({ item, hidden }: { item: Item; hidden?: boolean }) {
         <span className="ticker-league">{item.league}</span>
         {item.teams.map((t, i) => (
           <span key={i} className={`ticker-team${winner === i ? " won" : winner === -1 ? "" : " lost"}`}>
-            <img src={logos[t.logoId]} alt="" width="16" height="16" loading="eager" decoding="async" />
-            {t.abbr} <b>{t.score}</b>
             {t.fpi != null && (
-              <small className="ticker-rank" title={`ESPN FPI rank ${t.fpi}${t.of ? ` of ${t.of}` : ""}`}>
-                FPI {t.fpi}
+              <small
+                className="ticker-rank"
+                title={`ESPN FPI rank ${t.fpi}${t.of ? ` of ${t.of}` : ""}${item.league === "NFL" ? " (also the NFL power rank)" : ""}`}
+              >
+                #{t.fpi}
               </small>
             )}
-            {item.league === "NFL" && t.fpi != null && (
-              <small className="ticker-rank pr" title={`NFL power rank ${t.fpi} (the NFL power rank here is ESPN's FPI rank)`}>
-                PR {t.fpi}
-              </small>
-            )}
+            <img src={logos[t.logoId]} alt="" width="18" height="18" loading="eager" decoding="async" />
+            <b>{t.score}</b>
           </span>
         ))}
         <span className="ticker-final">{item.detail}</span>

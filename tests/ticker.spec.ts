@@ -75,26 +75,33 @@ test("every logo in the strip loads up front, including the ones still off to th
   expect(await ticker.locator("img").evaluateAll((imgs) => imgs.every((i) => (i as HTMLImageElement).loading === "eager"))).toBe(true);
 });
 
-test("each team in the strip carries its FPI rank, and NFL teams their power rank too", async ({ page }) => {
+test("each team in the strip is a rank, a logo and a score: no team names", async ({ page }) => {
   await page.goto("/?league=NFL");
   const ticker = page.getByRole("region", { name: "Final scores" });
   const items = ticker.locator(".ticker-track > li:not([aria-hidden]) .ticker-item");
-  const nfl = items.filter({ has: page.locator(".ticker-league", { hasText: "NFL" }) }).first();
-  await expect(nfl.locator(".ticker-team")).toHaveCount(2);
-  for (const team of await nfl.locator(".ticker-team").all()) {
-    await expect(team.locator(".ticker-rank:not(.pr)")).toHaveText(/^FPI \d+$/);
-    await expect(team.locator(".ticker-rank.pr")).toHaveText(/^PR \d+$/);
+  for (const league of ["NFL", "CFB"]) {
+    const item = items.filter({ has: page.locator(".ticker-league", { hasText: league }) }).first();
+    await expect(item.locator(".ticker-team")).toHaveCount(2);
+    for (const team of await item.locator(".ticker-team").all()) {
+      await expect(team.locator(".ticker-rank")).toHaveText(/^#\d+$/); // FPI rank, written as #12
+      await expect(team.locator("img")).toHaveCount(1);
+      await expect(team.locator("b")).toHaveText(/^\d+$/);
+      // Order: the rank, then the logo, then the score. No name or abbreviation.
+      const kinds = await team.locator("> *").evaluateAll((els) => els.map((e) => e.tagName.toLowerCase()));
+      expect(kinds).toEqual(["small", "img", "b"]);
+      expect((await team.innerText()).replace(/\s+/g, " ").trim()).toMatch(/^#\d+ \d+$/);
+    }
   }
-  const cfb = items.filter({ has: page.locator(".ticker-league", { hasText: "CFB" }) }).first();
-  await expect(cfb.locator(".ticker-rank:not(.pr)")).toHaveCount(2);
-  await expect(cfb.locator(".ticker-rank.pr")).toHaveCount(0); // power rank is an NFL thing
-  await expect(nfl).toHaveAttribute("aria-label", /FPI rank: .* \d+, .* \d+; the power rank is the same\./);
+  // The names are still there for screen readers.
+  const label = (await items.first().getAttribute("aria-label")) ?? "";
+  expect(label).toMatch(/FPI rank: .* \d+, .* \d+/);
+  expect(await ticker.locator(".ticker-rank.pr").count()).toBe(0);
 });
 
 test("the Denver Broncos are shown as the Denver Donkeys, while the team underneath is still the Broncos", async ({ page }) => {
   await page.goto("/?league=NFL");
   const ticker = page.getByRole("region", { name: "Final scores" });
-  const item = ticker.locator(".ticker-track > li:not([aria-hidden]) .ticker-item", { hasText: "DEN" }).first();
+  const item = ticker.locator(".ticker-track > li:not([aria-hidden]) .ticker-item", { has: page.locator('img[src*="denver-broncos"]') }).first();
   await expect(item).toHaveAttribute("aria-label", /Denver Donkeys \d+/);
   expect((await item.getAttribute("aria-label")) ?? "").not.toMatch(/Broncos/);
   // The logo is still the one filed under the Broncos, and the abbreviation is unchanged.
