@@ -320,6 +320,15 @@ test("a live card whose lower FPI-ranked team is ahead gets the neon outline and
   // The strip is the first thing on the card and names who leads, with both ranks.
   const first = await card.evaluate((e) => (e.querySelector(".compact-overview")?.firstElementChild as HTMLElement).className);
   expect(first).toBe("upset-banner");
+  // It is flush with the card's edges (clear of the 3px colour bar) and its text is not clipped at the top or sides.
+  const fit = await card.evaluate((e) => {
+    const c = e.getBoundingClientRect();
+    const b = (e.querySelector(".upset-banner") as HTMLElement).getBoundingClientRect();
+    return { top: b.top - c.top, left: b.left - c.left, right: c.right - b.right };
+  });
+  expect(fit.top).toBeLessThanOrEqual(2);
+  expect(Math.abs(fit.left)).toBeLessThanOrEqual(2);
+  expect(Math.abs(fit.right)).toBeLessThanOrEqual(2);
   await expect(card.locator(".upset-banner")).toContainText(new RegExp(`#${Math.max(fpi(0), fpi(1))}.*#${Math.min(fpi(0), fpi(1))}`));
 });
 
