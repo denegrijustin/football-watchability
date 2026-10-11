@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { logos, results, slate, teamColor } from "../data";
-import { fetchData } from "../data/load";
+import { fetchData, refetchData } from "../data/load";
+import { latestFlow, useLiveMap } from "../live";
 import { rankGames, mostInsaneWeek, weekSummaries, sortGames, INSANITY_SORTS, type InsanitySort, type LedgerGame } from "../seasonRank";
-import { INSANITY_TIERS } from "../insanity";
+import { INSANITY_TIERS, insanity, insanityTier, thinWp } from "../insanity";
 import { useOpenGame, type GameStub } from "./GameCenterContext";
 import { Headshot } from "./Headshot";
 
@@ -11,6 +12,8 @@ type Scope = "week" | "season";
 const tierLabel = (id: string) => INSANITY_TIERS.find((t) => t.id === id)?.label ?? id;
 const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? "" : "s"}`;
 const PAGE = 12;
+/** How often the board refreshes while a game is on. */
+export const LIVE_REFRESH_MS = 60_000;
 const known = new Set([...slate.games.map((g) => g.espnId), ...results.map((r) => r.espnId)]);
 
 export function facts(g: LedgerGame) {
@@ -21,6 +24,76 @@ export function facts(g: LedgerGame) {
     g.comebackFrom != null && g.comebackFrom <= 25 ? `winner was down to ${g.comebackFrom}%` : null,
     g.witchingPeriod && g.tier !== "calm" ? `witching hour ${g.witchingPeriod > 4 ? "in OT" : `Q${g.witchingPeriod}`}` : null,
   ].filter(Boolean);
+}
+
+type LiveLedgerGame = LedgerGame & { live: true; clock: string };
+
+/**
+ * The games in progress, scored on the same scale as finished ones from their live win-probability line, and refreshed every 60
+ * seconds while any game is on (together with the season ledger, so a game that has just ended moves to its final score).
+ * Returns nothing when no game is live, and then nothing polls.
+ */
+function useLiveInsanity(onLedger: (games: LedgerGame[]) => void) {
+  const live = useLiveMap();
+  // The scores keep arriving through the shared live feed while the timer below runs, so each rescoring reads the latest ones.
+  const liveRef = useRef(live);
+  liveRef.current = live;
+  const [scored, setScored] = useState<LiveLedgerGame[]>([]);
+  const onGoing = useMemo(() => slate.games.filter((g) => g.espnId && live[g.espnId]?.state === "in"), [live]);
+  const key = onGoing.map((g) => g.espnId).join(",");
+  useEffect(() => {
+    if (!onGoing.length) {
+      setScored([]);
+      return;
+    }
+    let stop = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const run = async (first: boolean) => {
+      const rows = await Promise.all(
+        onGoing.map(async (g): Promise<LiveLedgerGame | null> => {
+          const l = liveRef.current[g.espnId] ?? live[g.espnId]!;
+          const wp = await latestFlow(g.league as "NFL" | "CFB", g.espnId, first ? 45_000 : LIVE_REFRESH_MS - 5_000);
+          const r = wp ? insanity(thinWp(wp), { final: false }) : null;
+          if (!r) return null;
+          const [a, h] = g.teams as unknown as { abbr?: string; name: string; logoId: string; color?: string | null }[];
+          return {
+            id: g.espnId,
+            league: g.league as "NFL" | "CFB",
+            week: slate.period,
+            date: (g as { date?: string }).date ?? "",
+            matchup: g.matchup,
+            away: { abbr: a.abbr ?? a.name, logoId: a.logoId, score: l.away, color: a.color },
+            home: { abbr: h.abbr ?? h.name, logoId: h.logoId, score: l.home, color: h.color },
+            insanity: r.score,
+            tier: r.tier.id as LedgerGame["tier"],
+            flips: r.flips,
+            swing: r.biggestSwing,
+            comebackFrom: null,
+            overtime: /ot/i.test(l.detail),
+            witchingPeriod: r.witching.period,
+            mvp: null,
+            live: true as const,
+            clock: l.detail,
+          };
+        }),
+      );
+      if (stop) return;
+      setScored(rows.filter((x): x is LiveLedgerGame => x != null));
+      if (!first) {
+        // The hourly rebuild may have archived a game that just ended.
+        const m = await refetchData<{ games: LedgerGame[] }>("season").catch(() => null);
+        if (m && !stop) onLedger(m.games);
+      }
+      if (!stop) timer = setTimeout(() => run(false), LIVE_REFRESH_MS);
+    };
+    void run(true);
+    return () => {
+      stop = true;
+      clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+  return { scored, anyLive: onGoing.length > 0 };
 }
 
 /**
@@ -45,7 +118,21 @@ export function InsanityBoard({ defaultLeague }: { defaultLeague: "NFL" | "CFB" 
     };
   }, []);
 
-  const mine = useMemo(() => (ledger ?? []).filter((g) => g.league === league), [ledger, league]);
+  const { scored, anyLive } = useLiveInsanity((games) => setLedger(games));
+  const liveMap = useLiveMap();
+  // Games in progress join their week's list (and the season's) on the same scale, until they are archived as finals.
+  const mine = useMemo(() => {
+    const done = (ledger ?? []).filter((g) => g.league === league);
+    const have = new Set(done.map((g) => g.id));
+    // The score and clock follow the live feed as it updates; the insanity itself is rescored every 60 seconds.
+    const now = scored
+      .filter((g) => g.league === league && !have.has(g.id))
+      .map((g) => {
+        const l = liveMap[g.id];
+        return l ? { ...g, away: { ...g.away, score: l.away }, home: { ...g.home, score: l.home }, clock: l.detail } : g;
+      });
+    return [...done, ...now] as LedgerGame[];
+  }, [ledger, league, scored, liveMap]);
   const weeks = useMemo(() => weekSummaries(mine), [mine]);
   const best = useMemo(() => mostInsaneWeek(weeks), [weeks]);
   const week = weeks.find((w) => w.week === pick)?.week ?? weeks[0]?.week ?? "";
@@ -53,6 +140,9 @@ export function InsanityBoard({ defaultLeague }: { defaultLeague: "NFL" | "CFB" 
   // Each game keeps its insanity rank (#1 is the wildest) whatever order the list is shown in.
   const rankOf = useMemo(() => new Map(rankGames(pool).map((g, i) => [g.id, i + 1])), [pool]);
   const list = useMemo(() => sortGames(pool, sort), [pool, sort]);
+  const isLiveRow = (g: LedgerGame) => !!(g as Partial<LiveLedgerGame>).live;
+  const liveRows = list.filter(isLiveRow);
+  const finished = list.filter((g) => !isLiveRow(g));
   const avg = list.length ? Math.round(list.reduce((a, g) => a + g.insanity, 0) / list.length) : 0;
   const wild = list.filter((g) => g.tier === "unhinged" || g.tier === "witching").length;
   const nameOf = league === "NFL" ? "NFL" : "College";
@@ -110,7 +200,7 @@ export function InsanityBoard({ defaultLeague }: { defaultLeague: "NFL" | "CFB" 
         <span role="status">
           {ledger == null
             ? "Loading…"
-            : `${plural(list.length, "game")} · average ${avg} · ${wild} unhinged or worse`}
+            : `${plural(list.length, "game")} · average ${avg} · ${wild} unhinged or worse${anyLive ? " · live games refresh every 60 seconds" : ""}`}
         </span>
         <span className="sort-label">{INSANITY_SORTS.find((o) => o.id === sort)?.note}</span>
       </div>
@@ -121,15 +211,27 @@ export function InsanityBoard({ defaultLeague }: { defaultLeague: "NFL" | "CFB" 
           <p>Games are ranked once they finish and the board refreshes.</p>
         </div>
       ) : (
+        <>
+        {liveRows.length > 0 && (
+          <>
+            <h3 className="micro-label ib-live-head">Live now · rescored every 60 seconds</h3>
+            <ol className="ib-cards ib-live-cards">
+              {liveRows.map((g) => (
+                <InsanityCard key={g.id} g={g} rank={rankOf.get(g.id) ?? 0} live={(g as LiveLedgerGame).clock} showWeek={scope === "season"} onOpen={() => (known.has(g.id) ? openGame(g.id) : openGame(g.id, stubOf(g)))} />
+              ))}
+            </ol>
+          </>
+        )}
         <ol className="ib-cards">
-          {list.slice(0, shown).map((g, i) => (
+          {finished.slice(0, shown).map((g, i) => (
             <InsanityCard key={g.id} g={g} rank={rankOf.get(g.id) ?? i + 1} showWeek={scope === "season"} onOpen={() => (known.has(g.id) ? openGame(g.id) : openGame(g.id, stubOf(g)))} />
           ))}
         </ol>
+        </>
       )}
-      {list.length > shown && (
+      {finished.length > shown && (
         <button className="ib-more" onClick={() => setShown((n) => n + 25)}>
-          Show more ({list.length - shown} left)
+          Show more ({finished.length - shown} left)
         </button>
       )}
 
@@ -208,7 +310,7 @@ export function insanityStory(g: LedgerGame) {
   }
 }
 
-function InsanityCard({ g, rank, showWeek, onOpen }: { g: LedgerGame; rank: number; showWeek: boolean; onOpen: (() => void) | null }) {
+function InsanityCard({ g, rank, showWeek, onOpen, live }: { g: LedgerGame; rank: number; showWeek: boolean; onOpen: (() => void) | null; live?: string | null }) {
   const ca = teamColor(g.away.color ?? null) ?? "#1d2a35";
   const ch = teamColor(g.home.color ?? null) ?? "#1d2a35";
   const mvpTeam = g.mvp?.side === "away" ? g.away : g.mvp?.side === "home" ? g.home : null;
@@ -219,6 +321,7 @@ function InsanityCard({ g, rank, showWeek, onOpen }: { g: LedgerGame; rank: numb
         <span className="ic-ins" title="Insanity score">
           <strong>{g.insanity}</strong> {tierLabel(g.tier)}
         </span>
+        {live != null && <span className="ic-live" title="In progress: scored from the live win-probability line">LIVE{live ? ` · ${live}` : ""}</span>}
         {showWeek && <span className="ic-week">{g.week}</span>}
       </div>
       <div className="ic-teams">
@@ -262,7 +365,7 @@ function InsanityCard({ g, rank, showWeek, onOpen }: { g: LedgerGame; rank: numb
   );
   const style = { "--away": ca, "--home": ch } as CSSProperties;
   return (
-    <li className={`ic ${g.tier}`} style={style} data-insanity={g.insanity} data-date={g.date} data-margin={Math.abs(g.away.score - g.home.score)}>
+    <li className={`ic ${g.tier}${live != null ? " is-live" : ""}`} style={style} data-insanity={g.insanity} data-date={g.date} data-margin={Math.abs(g.away.score - g.home.score)}>
       {onOpen ? (
         <button type="button" className="ic-inner" onClick={onOpen} aria-label={`${g.matchup}, insanity ${g.insanity}. Open Game Center`}>
           {body}

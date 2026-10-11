@@ -33,3 +33,9 @@ export function fetchData<T>(name: string): Promise<T> {
   }
   return hit;
 }
+
+/** The same file again, ignoring what was fetched earlier (for views that keep up with the hourly rebuild while games are on). */
+export function refetchData<T>(name: string): Promise<T> {
+  cache.delete(name);
+  return fetchData<T>(name);
+}
