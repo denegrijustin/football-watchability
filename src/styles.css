@@ -6795,3 +6795,197 @@ select,
   letter-spacing: 0.06em;
   white-space: nowrap;
 }
+
+/* ---------- NFL halftime: one act, looping for the twelve minutes ---------- */
+.halftime-act {
+  margin: 0 0 10px;
+}
+.ha-scene {
+  --L: 14s;
+}
+.ha-scene * {
+  animation-duration: var(--L);
+  animation-iteration-count: infinite;
+  animation-timing-function: linear;
+  animation-fill-mode: backwards;
+}
+.ha-tag {
+  font: 700 2.2px system-ui, sans-serif;
+  letter-spacing: 0.2px;
+  fill: rgb(255 255 255 / 70%);
+}
+.ha-word {
+  font: 900 4.4px system-ui, sans-serif;
+  fill: #ffe03a;
+  stroke: rgb(0 0 0 / 70%);
+  stroke-width: 0.5px;
+  paint-order: stroke;
+}
+.ha-word.big {
+  font-size: 5.6px;
+  fill: #7fe3a0;
+}
+.ha-sub {
+  font: 700 2.4px system-ui, sans-serif;
+  fill: #fff;
+  stroke: rgb(0 0 0 / 70%);
+  stroke-width: 0.35px;
+  paint-order: stroke;
+}
+.ha-pop {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation-name: ha-pop;
+}
+@keyframes ha-pop {
+  0% { opacity: 0; transform: scale(0.6); }
+  3% { opacity: 1; transform: scale(1.18); }
+  6%, 20% { opacity: 1; transform: scale(1); }
+  26%, 100% { opacity: 0; transform: scale(1); }
+}
+.ha-finish {
+  stroke: #fff;
+  stroke-width: 0.8;
+  stroke-dasharray: 1.2 1.2;
+  opacity: 0.75;
+}
+.ha-line-gold {
+  stroke: #f2d23c;
+  stroke-width: 0.35;
+  stroke-dasharray: 1.4 1;
+}
+.ha-spot { fill: rgb(0 0 0 / 35%); }
+.ha-wobble { animation-name: ha-wobble; animation-duration: 0.45s !important; animation-direction: alternate; animation-timing-function: ease-in-out !important; }
+@keyframes ha-wobble { from { transform: rotate(-9deg); } to { transform: rotate(9deg); } }
+.ha-sway { animation-name: ha-sway; animation-duration: 0.5s !important; animation-direction: alternate; animation-timing-function: ease-in-out !important; }
+@keyframes ha-sway { from { transform: rotate(-9deg); } to { transform: rotate(9deg); } }
+.ha-legs { animation-name: ha-legs; animation-duration: 0.22s !important; animation-direction: alternate; }
+@keyframes ha-legs { from { transform: translateX(-0.6px); } to { transform: translateX(0.6px); } }
+
+/* a ball in flight: it travels in a line and swells at the top of its arc */
+.ha-fly { opacity: 0; animation-name: ha-fly; }
+@keyframes ha-fly {
+  0% { opacity: 0; transform: translate(0, 0); }
+  1% { opacity: 1; }
+  15% { opacity: 1; transform: translate(var(--dx), var(--dy)); }
+  20%, 100% { opacity: 0; transform: translate(var(--dx), var(--dy)); }
+}
+.ha-arc { animation-name: ha-arc; animation-delay: inherit; }
+.ha-arc.big { animation-name: ha-arc-big; }
+@keyframes ha-arc { 0%, 15%, 100% { transform: scale(1); } 7% { transform: scale(1.7); } }
+@keyframes ha-arc-big { 0%, 15%, 100% { transform: scale(1); } 7% { transform: scale(2.3); } }
+
+/* shoe scramble */
+.ha-shoe-run { animation-name: ha-shoe-run; }
+@keyframes ha-shoe-run {
+  0% { opacity: 0; transform: translate(0, 0); }
+  3%, 8% { opacity: 1; transform: translate(0, 0); }
+  32% { transform: translate(-26px, var(--a)); }
+  40% { transform: translate(-30px, var(--b)); }
+  48% { transform: translate(-28px, var(--c)); }
+  56%, 74% { transform: translate(-30px, var(--a)); }
+  92% { opacity: 1; transform: translate(var(--ex), var(--y)); }
+  97% { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--ex), var(--y)); }
+}
+.ha-face { animation-name: ha-face; }
+@keyframes ha-face { 0%, 74% { transform: rotate(180deg); } 78%, 100% { transform: rotate(0deg); } }
+
+/* inflatable race */
+.ha-infl-run { animation-name: ha-infl-run; }
+@keyframes ha-infl-run {
+  0% { opacity: 0; transform: translate(0, 0) rotate(0deg); }
+  3% { opacity: 1; transform: translate(0, 0) rotate(0deg); }
+  30% { transform: translate(calc(var(--k) * 20px), 0) rotate(0deg); }
+  34%, 48% { transform: translate(calc(var(--k) * 22px), calc(var(--fall) * 1.5px)) rotate(calc(var(--fall) * 95deg)); }
+  56% { transform: translate(calc(var(--k) * 23px), 0) rotate(0deg); }
+  92% { opacity: 1; transform: translate(calc(var(--k) * 72px), 0) rotate(0deg); }
+  97% { opacity: 1; }
+  100% { opacity: 0; transform: translate(calc(var(--k) * 72px), 0) rotate(0deg); }
+}
+
+/* dizzy bat */
+.ha-orbit { transform-origin: 24px 20px; animation-name: ha-orbit; }
+@keyframes ha-orbit {
+  0% { opacity: 1; transform: rotate(0deg); }
+  36% { opacity: 1; transform: rotate(3600deg); }
+  36.5%, 100% { opacity: 0; transform: rotate(3600deg); }
+}
+.ha-stagger { opacity: 0; animation-name: ha-stagger; }
+@keyframes ha-stagger {
+  0%, 36% { opacity: 0; transform: translate(0, 0) rotate(0deg); }
+  36.5% { opacity: 1; }
+  42% { transform: translate(-2px, -3px) rotate(-20deg); }
+  48% { transform: translate(-5px, 3px) rotate(25deg); }
+  54% { transform: translate(-8px, -4px) rotate(-30deg); }
+  60% { transform: translate(-11px, 2px) rotate(40deg); }
+  66%, 80% { transform: translate(-14px, 6px) rotate(95deg); }
+  86% { transform: translate(-14px, 6px) rotate(10deg); }
+  94% { opacity: 1; transform: translate(-14px, 6px) rotate(10deg); }
+  98%, 100% { opacity: 0; transform: translate(-14px, 6px) rotate(10deg); }
+}
+.ha-stars circle { fill: #ffe03a; }
+.ha-stars { animation-name: ha-spin; animation-duration: 0.8s !important; }
+@keyframes ha-spin { to { transform: rotate(360deg); } }
+.ha-skid { animation-name: ha-skid; }
+@keyframes ha-skid {
+  0%, 62% { opacity: 1; transform: translate(0, 0); }
+  70%, 94% { opacity: 1; transform: translate(-3px, -13px); }
+  98%, 100% { opacity: 0; transform: translate(-3px, -13px); }
+}
+
+/* progressive cash kick */
+.ha-target { fill: none; stroke: #ff7a30; stroke-width: 0.6; }
+.ha-fan-walk { animation-name: ha-fan-walk; }
+@keyframes ha-fan-walk {
+  0%, 56% { transform: translate(0, 0); }
+  62%, 96% { transform: translate(55px, 0); }
+  100% { transform: translate(0, 0); }
+}
+
+/* air cannon */
+.ha-cannon { fill: #7d8791; stroke: #2b3239; stroke-width: 0.3; }
+.ha-cannon-bore { fill: #4c555d; stroke: #2b3239; stroke-width: 0.3; }
+.ha-ring { fill: none; stroke: #ffe03a; stroke-width: 0.3; stroke-dasharray: 0.9 0.7; }
+.ha-catcher { animation-name: ha-catcher; }
+@keyframes ha-catcher {
+  0%, 8% { transform: translate(0, 0) rotate(0deg); }
+  23% { transform: translate(-2px, -4px) rotate(0deg); }
+  30% { transform: translate(-2px, -4px) rotate(70deg); }
+  38%, 45% { transform: translate(0, 0) rotate(0deg); }
+  56%, 66% { transform: translate(-1px, 8px) rotate(0deg); }
+  70% { transform: translate(-1px, 6px) rotate(0deg); }
+  74% { transform: translate(-1px, 8px) rotate(0deg); }
+  78% { transform: translate(-1px, 6px) rotate(0deg); }
+  90%, 100% { transform: translate(0, 0) rotate(0deg); }
+}
+.ha-confetti { opacity: 0; animation-name: ha-confetti-box; }
+@keyframes ha-confetti-box { 0% { opacity: 0; } 1%, 14% { opacity: 1; } 20%, 100% { opacity: 0; } }
+.ha-confetti circle { animation-name: ha-confetti; animation-delay: inherit; }
+@keyframes ha-confetti { 0% { transform: translate(0, 0); } 18%, 100% { transform: translate(var(--cx), var(--cy)); } }
+
+/* wiener dogs */
+.ha-dash { animation-name: ha-dash; animation-timing-function: var(--ease) !important; }
+@keyframes ha-dash {
+  0% { opacity: 0; transform: translate(0, 0); }
+  2%, 6% { opacity: 1; transform: translate(0, 0); }
+  30% { transform: translate(calc(var(--k) * 44px), var(--vy)); }
+  60%, 92% { opacity: 1; transform: translate(calc(var(--k) * 96px), 0); }
+  97% { opacity: 1; }
+  100% { opacity: 0; transform: translate(calc(var(--k) * 96px), 0); }
+}
+
+/* LED light show */
+.ha-dark { fill: #01040b; opacity: 0.76; }
+.ha-led-grid path { fill: none; stroke: #31e8ff; stroke-width: 0.25; opacity: 0.3; }
+.ha-led-man { fill: none; stroke-width: 0.4; stroke-linecap: round; animation-name: ha-blink; animation-duration: 1.2s !important; animation-direction: alternate; animation-timing-function: ease-in-out !important; }
+.ha-led-man * { animation: none !important; }
+@keyframes ha-blink { from { opacity: 0.5; } to { opacity: 1; } }
+.ha-led-spin.a { animation-name: ha-rot; }
+.ha-led-spin.b { animation-name: ha-rot; animation-direction: reverse; animation-duration: 9s !important; }
+@keyframes ha-rot { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .ha-scene * { animation: none !important; }
+}

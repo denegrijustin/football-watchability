@@ -24,6 +24,7 @@ import { dayOf, timeOf, tzAbbr } from "../tz";
 import { NetChip } from "./NetChip";
 import { LiveDrive } from "../liveDrive";
 import { HalftimeBand } from "../halftime";
+import { HalftimeAct } from "../nflHalftime";
 import { GameBadgeRow } from "./GameBadge";
 import { gameBadge } from "../gameLogo";
 import { upsetBy } from "../upset";
@@ -115,8 +116,9 @@ export function GameCard({
         loser={{ abbr: abbrOf(game.teams[1 - upsetNow.winner]), fpi: fpis[1 - upsetNow.winner]! }}
       />
     ) : null;
-  const atHalf = live?.state === "in" && !!game.espnId && game.league === "CFB" && isHalftime(live.detail);
-  const bandTop = atHalf ? <HalftimeBand badge={badge} weather={game.weather} espnId={game.espnId} away={{ ...(game.teams[0] as { abbr?: string; name: string; color?: string | null; logoId?: string }), conf: (game.teams[0] as { ranks?: { confName?: string } }).ranks?.confName }} home={{ ...(game.teams[1] as { abbr?: string; name: string; color?: string | null; logoId?: string }), conf: (game.teams[1] as { ranks?: { confName?: string } }).ranks?.confName }} /> : null;
+  const atHalf = live?.state === "in" && !!game.espnId && (game.league === "CFB" || game.league === "NFL") && isHalftime(live.detail);
+  const Halftime = game.league === "NFL" ? HalftimeAct : HalftimeBand;
+  const bandTop = atHalf ? <Halftime badge={badge} weather={game.weather} espnId={game.espnId} away={{ ...(game.teams[0] as { abbr?: string; name: string; color?: string | null; logoId?: string }), conf: (game.teams[0] as { ranks?: { confName?: string } }).ranks?.confName }} home={{ ...(game.teams[1] as { abbr?: string; name: string; color?: string | null; logoId?: string }), conf: (game.teams[1] as { ranks?: { confName?: string } }).ranks?.confName }} /> : null;
   return (
     <article
       ref={cardRef}

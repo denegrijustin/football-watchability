@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { readFileSync } from "node:fs";
-import { FORMATIONS, STEP_MS, clockText, halftimeLeft, isHalftime } from "../src/halftimeLogic";
+import { FORMATIONS, NFL_ACTS, NFL_HALFTIME_MS, STEP_MS, actFor, clockText, halftimeLeft, isHalftime } from "../src/halftimeLogic";
 
 const slate = JSON.parse(readFileSync("src/data/slate.json", "utf8"));
 const cfb = slate.games.filter((g: any) => g.league === "CFB");
@@ -89,10 +89,56 @@ test("the clock keeps its place across a reload", async ({ page }) => {
   await expect(live(page).locator(".halftime-band")).toContainText(/Second half in 1[34]:\d\d/); // not back at 19:00
 });
 
-test("only college games get the band: the NFL and a college game mid-quarter do not", async ({ page }) => {
+test("NFL halftime is twelve minutes, and every act is in the rotation", () => {
+  const t0 = 1_000_000_000_000;
+  expect(NFL_HALFTIME_MS).toBe(12 * 60_000);
+  expect(clockText(halftimeLeft(t0, t0, NFL_HALFTIME_MS))).toBe("11:00");
+  expect(halftimeLeft(t0, t0 + 11 * 60_000, NFL_HALFTIME_MS)).toBe(0);
+  expect(NFL_ACTS.map((a) => a.id).sort()).toEqual(["cash", "dizzy", "inflatable", "shoe", "slingshot", "tron", "wiener"]);
+  // The slate's games rotate through all of them, and a game always gets the same one.
+  const seen = new Set(nfl.map((g: any) => actFor(g.espnId).id));
+  expect(seen.size).toBe(NFL_ACTS.length);
+  expect(actFor("401872990")).toBe(actFor("401872990"));
+});
+
+test("an NFL game at halftime gets one act, not the band, and keeps it for the whole twelve minutes", async ({ page }) => {
   await open(page, "NFL", "Halftime");
   await expect(live(page)).toBeVisible();
   await expect(page.locator(".halftime-band")).toHaveCount(0);
+  const act = live(page).locator(".halftime-act");
+  await expect(act).toContainText("Second half in 11:00");
+  const first = await act.getAttribute("data-act");
+  expect(first).toBe(actFor(nfl[0].espnId).id);
+  await expect(act.locator(".ha-scene")).toBeVisible();
+  await page.clock.fastForward(6 * 60_000);
+  await expect(act).toContainText(/Second half in 5:\d\d/);
+  expect(await act.getAttribute("data-act")).toBe(first); // still the same act
+  await page.clock.fastForward(7 * 60_000);
+  await expect(act).toContainText("Second half starting");
+});
+
+test("every act's scene animates, and holds still for reduced motion", async ({ page }) => {
+  await open(page, "NFL", "Halftime");
+  const el = live(page).locator(".halftime-act .ha-scene *");
+  await expect(el.first()).toBeAttached();
+  const names = await live(page).locator(".halftime-act .ha-scene *").evaluateAll((els) => els.map((e) => getComputedStyle(e).animationName).filter((n) => n !== "none"));
+  expect(names.length).toBeGreaterThan(0);
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  const still = await live(page).locator(".halftime-act .ha-scene *").evaluateAll((els) => els.map((e) => getComputedStyle(e).animationName).filter((n) => n !== "none"));
+  expect(still).toHaveLength(0);
+});
+
+test("the Game Center shows the same act at the top for an NFL game", async ({ page }) => {
+  await open(page, "NFL", "Halftime");
+  const g = (n: number) => ({ id: String(n), abbr: "T" + n, name: "Team " + n, homeAway: n ? "home" : "away", score: 10, linescores: [7, 3], possession: false });
+  await page.route("**/api/game**", (r) =>
+    r.fulfill({ json: { id: "x", status: { state: "in", detail: "Halftime", period: 2, clock: "0:00" }, teams: [g(0), g(1)], situation: null, wp: [], drives: [], plays: [], allOffense: [], scoring: [], teamStats: {}, players: {} } }),
+  );
+  await live(page).locator(".cc-gc").first().click();
+  await page.clock.resume();
+  const gc = page.locator("dialog.gc .gc-body > .halftime-act");
+  await expect(gc).toContainText("Second half in");
+  expect(await gc.getAttribute("data-act")).toBe(actFor(nfl[0].espnId).id);
 });
 
 test("a college game that is not at halftime shows the drive chart slot, not the band", async ({ page }) => {
