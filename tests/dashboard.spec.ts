@@ -604,7 +604,8 @@ test("cards show the broadcast crew when the announcing schedule lists the game"
   await page.goto("/?league=NFL");
   const g = games[0];
   const card = page.locator(".game-card").filter({ hasText: g.teams[0].name }).filter({ hasText: g.teams[1].name }).first();
-  // On the opened card, with play-by-play first.
+  // In the opened card (the strip leaves the booth out), with play-by-play first.
+  await expect(card.locator('.card-toggle[aria-expanded="false"]')).toBeVisible();
   await expand(card);
   await expect(card.locator(".booth")).toContainText(g.announcers[0].name);
   // Each announcer has a small photo, or initials when there's no free one.
@@ -972,15 +973,21 @@ test("@smoke game cards show a full compact overview and concise first expansion
   await expect(card).toHaveClass(/compact/);
   expect((await card.boundingBox())!.height).toBeLessThan(640);
   await expect(card.locator(".cc-team")).toHaveCount(2);
-  await expect(card.locator(".facts")).toContainText("Announcers:");
-  await expect(card.locator(".rank-line").first()).toBeVisible();
+  // The strip is quiet: names and records only, one line for the venue, and the booth, betting line and rank lines wait in Details.
+  await expect(card.locator(".facts li")).toHaveCount(1);
+  await expect(card.locator(".facts")).toContainText("📍");
+  await expect(card.locator(".booth, .rank-line")).toHaveCount(0);
+  await expect(card.locator(".facts")).not.toContainText("⚖️");
   await expect(card.locator(".cc-team img")).toHaveCount(2);
   const title = (await card.locator("h3.sr-only").innerText()).trim();
   const game = slate.games.find((g: any) => g.matchup === title)!;
   expect(game, title).toBeTruthy();
   await expect(card.locator(".cc-rate strong")).toHaveText(String(game.score));
   await expect(card.locator(".cc-network")).toContainText(game.broadcast);
-  await expect(card.locator(".cc-weather")).toContainText(game.weather.title);
+  // Weather shows on the strip only when it will matter to the game.
+  const notable = !/^(none|low)\b/i.test(game.weather.impact);
+  await expect(card.locator(".cc-weather")).toHaveCount(notable ? 1 : 0);
+  if (notable) await expect(card.locator(".cc-weather")).toContainText(game.weather.title);
   await expect(card.locator(".cc-when")).toBeVisible(); // kickoff time, or LIVE with the quarter and clock
   // Everything else is hidden until it is opened.
   await expect(card.locator(".card-more, .attendance, .insanity")).toHaveCount(0);
@@ -991,6 +998,7 @@ test("@smoke game cards show a full compact overview and concise first expansion
   await expect(card.locator(".game-details")).toHaveCount(0);
   await expect(card.getByRole("button", { name: /Game Center/ })).toBeVisible();
   await expect(card.locator(".booth")).toContainText("Announcers:");
+  await expect(card.locator(".rank-line").first()).toBeVisible();
   await expect(card.locator(".tv")).toBeVisible();
   await expect(card.locator(".card-more .take")).toBeVisible();
   // "Less" puts it back to the strip.

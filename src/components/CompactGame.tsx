@@ -1,5 +1,4 @@
-import { broadcastExtra, logos, networkLogo, rankLine, rankTitle, recordLine, tierLabel, type Ranks, type League } from "../data";
-import { Booth, type CrewMember } from "./Booth";
+import { broadcastExtra, logos, networkLogo, recordLine, tierLabel, type League } from "../data";
 import type { ReactNode } from "react";
 import { dayOf, timeOf, tzAbbr } from "../tz";
 import { NetChip } from "./NetChip";
@@ -7,10 +6,10 @@ import { useOpenGame } from "./GameCenterContext";
 import { SquareActivity } from "lucide-react";
 
 type Team = { name: string; logoId: string; record: string; ranks?: unknown };
-export function CompactGame({ titleId, matchup, date, broadcast, network, espnId, teams, league, score, tier, venue, line, crew, driveChart, top, badge, weather, status, scores, momentum, onExpand }: {
+export function CompactGame({ titleId, matchup, date, broadcast, network, espnId, teams, league, score, tier, venue, driveChart, top, badge, weather, status, scores, momentum, onExpand }: {
   titleId: string; matchup: string; date: string; broadcast: string; network?: string | null; espnId?: string | null;
-  teams: Team[]; league: string; score: number; tier: string; venue: string; line?: string | null;
-  crew?: CrewMember[]; driveChart?: ReactNode; top?: ReactNode; badge?: ReactNode; weather?: { icon: string; title: string; detail: string; impact: string };
+  teams: Team[]; league: string; score: number; tier: string; venue: string;
+  driveChart?: ReactNode; top?: ReactNode; badge?: ReactNode; weather?: { icon: string; title: string; detail: string; impact: string };
   status?: ReactNode; scores?: ReactNode[]; momentum?: ReactNode; onExpand: () => void;
 }) {
   const openGame = useOpenGame();
@@ -28,18 +27,16 @@ export function CompactGame({ titleId, matchup, date, broadcast, network, espnId
       <div className="matchup-teams">{teams.map((team, i) => <div className="team-heading cc-team" key={team.name}>
         <img src={logos[team.logoId]} alt="" width="36" height="36" loading="lazy" decoding="async" />
         <div><h4>{team.name}{i === 1 && <span className="home-tag">Home</span>}</h4>
-          <p>{recordLine(team.record, league as League)}</p>
-          {rankLine(team.ranks as Ranks) && <p className="rank-line" title={rankTitle(team.ranks as Ranks)}>{rankLine(team.ranks as Ranks)}</p>}
+          <p>{recordLine(team.record, league as League).split(" · ")[0]}</p>
         </div>{scores?.[i]}
       </div>)}</div>
       <div className="score cc-rate" aria-label={`Watchability ${score} out of 100, ${tierLabel(tier)}`}><strong>{score}</strong><span className="score-tier">{tierLabel(tier)}</span></div>
     </div>
     {driveChart}
+    {/* one quiet line: where it is, and the weather only when it will matter. The betting line, booth and full forecast are in Details. */}
     <ul className="facts" aria-label="Game info">
-      <li><span aria-hidden="true">📍 </span>{venue}{line && <span> · ⚖️ {line}</span>}</li>
-      <Booth crew={crew} />
-      <li className="weather cc-weather"><span>{weather ? `${weather.icon} ${weather.title} · ${weather.detail}` : "Weather: archived forecast unavailable"}</span>
-        {impact && impact !== "none" && impact !== "low" && <span className={`impact-pill ${impact}`}>{impact} weather impact</span>}
+      <li className="cc-venue"><span aria-hidden="true">📍 </span>{venue}
+        {weather && impact && impact !== "none" && impact !== "low" && <span className="weather cc-weather"> · {weather.icon} {weather.title} <span className={`impact-pill ${impact}`}>{impact} weather impact</span></span>}
       </li>
     </ul>
     {momentum}
