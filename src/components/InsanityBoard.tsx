@@ -237,7 +237,7 @@ export function InsanityBoard({ defaultLeague }: { defaultLeague: "NFL" | "CFB" 
         )}
         {freshRows.length > 0 && (
           <>
-            <h3 className="micro-label ib-live-head ib-fresh-head">Just finished · scored from the live feed until the hourly rebuild archives it</h3>
+            <h3 className="micro-label ib-live-head ib-fresh-head">Final · scored from the live feed until the hourly rebuild archives it</h3>
             <ol className="ib-cards ib-live-cards">
               {freshRows.map((g) => (
                 <InsanityCard key={g.id} g={g} rank={rankOf.get(g.id) ?? 0} fresh showWeek={scope === "season"} onOpen={() => (known.has(g.id) ? openGame(g.id) : openGame(g.id, stubOf(g)))} />
@@ -345,7 +345,7 @@ function InsanityCard({ g, rank, showWeek, onOpen, live, fresh }: { g: LedgerGam
           <strong>{g.insanity}</strong> {tierLabel(g.tier)}
         </span>
         {live != null && <span className="ic-live" title="In progress: scored from the live win-probability line">LIVE{live ? ` · ${live}` : ""}</span>}
-        {fresh && <span className="ic-fresh" title="Just ended: scored from the game's win-probability line until the hourly rebuild archives it">JUST FINAL</span>}
+        {fresh && <span className="ic-fresh" title="Just ended: scored from the game's win-probability line until the hourly rebuild archives it">FINAL</span>}
         {showWeek && <span className="ic-week">{g.week}</span>}
       </div>
       <div className="ic-teams">
