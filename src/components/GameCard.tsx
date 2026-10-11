@@ -101,7 +101,7 @@ export function GameCard({
   );
   const badge = gameBadge(game as { meta?: string; event?: string | null; teams: { logoId?: string }[] });
   const atHalf = live?.state === "in" && !!game.espnId && game.league === "CFB" && isHalftime(live.detail);
-  const bandTop = atHalf ? <HalftimeBand badge={badge} weather={game.weather} espnId={game.espnId} away={game.teams[0] as { abbr?: string; name: string; color?: string | null; logoId?: string }} home={game.teams[1] as { abbr?: string; name: string; color?: string | null; logoId?: string }} /> : null;
+  const bandTop = atHalf ? <HalftimeBand badge={badge} weather={game.weather} espnId={game.espnId} away={{ ...(game.teams[0] as { abbr?: string; name: string; color?: string | null; logoId?: string }), conf: (game.teams[0] as { ranks?: { confName?: string } }).ranks?.confName }} home={{ ...(game.teams[1] as { abbr?: string; name: string; color?: string | null; logoId?: string }), conf: (game.teams[1] as { ranks?: { confName?: string } }).ranks?.confName }} /> : null;
   return (
     <article
       ref={cardRef}
