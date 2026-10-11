@@ -193,3 +193,34 @@ test("the ball marker is the offense's team logo, and the field carries end-zone
   await expect(svg.locator("g > image")).not.toHaveCount(0); // end-zone logos
   await expect(svg.locator("text.lf-conf").first()).toBeAttached(); // conference painted on the sideline
 });
+
+test("a live game with rain and wind in its forecast shows them over the field, and says so in the caption", async ({ page }) => {
+  const weather = {
+    icon: "🌧️", title: "Rain likely", detail: "x", impact: "high impact", level: "high", effects: [],
+    factors: [{ key: "rain", level: 3 }, { key: "wind", level: 3 }],
+    hours: [0, 1, 2, 3].map((i) => ({ label: "Q" + (i + 1), time: "", at: "", icon: "🌧️", tempF: 60, feelsF: 58, precip: 80, windMph: 18, gustMph: 38, dir: "E" })),
+  };
+  const start = Math.max(...games.map((g: any) => new Date(g.date).getTime()));
+  await page.clock.install({ time: start + 90 * 60e3 });
+  await page.route("**/api/scores**", (route) =>
+    route.fulfill({ json: games.map((g: any, i: number) => ({ id: g.espnId, state: i === 0 ? "in" : "pre", detail: "5:12 - 3rd", away: 14, home: 17 })) }),
+  );
+  await page.route("**/api/flow**", (route) => route.fulfill({ json: { wp: [] } }));
+  await page.route("**/api/game**", (route) => route.fulfill({ json: summary(65, "2nd & 7 at SEA 35") }));
+  // Give the first card the stormy forecast.
+  await page.route("**/data/slate.json", async (route) => {
+    const res = await route.fetch();
+    const body = await res.json();
+    const g = body.games.find((x: any) => x.espnId === games[0].espnId);
+    g.weather = weather;
+    await route.fulfill({ response: res, json: body });
+  });
+  await page.goto("/?league=NFL");
+  const live = page.locator(".board-section.live .game-card").first();
+  await expect(live.locator("svg.drive-svg .wx-drop").first()).toBeAttached();
+  await expect(live.locator("svg.drive-svg .wx-gust").first()).toBeAttached();
+  await expect(live.locator(".lf-wx")).toContainText("heavy rain");
+  await expect(live.locator(".lf-wx")).toContainText("wind E 38 mph");
+  // A card without weather impact draws none.
+  await expect(page.locator(".board-section.live .game-card").nth(1).locator(".wx")).toHaveCount(0);
+});

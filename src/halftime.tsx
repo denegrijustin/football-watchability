@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { logos, teamColor } from "./data";
 import type { GameBadge } from "./gameLogo";
+import { LogoMark } from "./logoTone";
+import { WeatherFx } from "./WeatherFx";
+import { hasFx, weatherFx, type WeatherLike } from "./weatherFx";
 import { FORMATIONS, HALFTIME_MS, mix, N, STEP_MS, anglesAt, clockText, firstSeen, halftimeLeft } from "./halftimeLogic";
 
 /**
@@ -10,7 +13,7 @@ import { FORMATIONS, HALFTIME_MS, mix, N, STEP_MS, anglesAt, clockText, firstSee
 type Side = { abbr?: string; name: string; color?: string | null; logoId?: string };
 
 
-export function HalftimeBand({ espnId, home, away, badge }: { espnId: string; home: Side; away: Side; badge?: GameBadge | null }) {
+export function HalftimeBand({ espnId, home, away, badge, weather }: { espnId: string; home: Side; away: Side; badge?: GameBadge | null; weather?: WeatherLike | null }) {
   const ref = useRef<HTMLDivElement>(null);
   const [seenAt] = useState(() => firstSeen(espnId, Date.now()));
   const [now, setNow] = useState(() => Date.now());
@@ -44,6 +47,7 @@ export function HalftimeBand({ espnId, home, away, badge }: { espnId: string; ho
   const pctLeft = Math.round((left / HALFTIME_MS) * 100);
   const dots = useMemo(() => Array.from({ length: N }, (_, i) => i), []);
   const angles = anglesAt(step);
+  const fx = weatherFx(weather, 2); // halftime: the second quarter's forecast
 
   return (
     <div ref={ref} className="halftime-band" role="img" aria-label={`${label}. The ${home.abbr ?? home.name} band is on the field in a ${f.name.toLowerCase()} formation.`}>
@@ -82,8 +86,8 @@ export function HalftimeBand({ espnId, home, away, badge }: { espnId: string; ho
             <text x={x} y="20" className="band-ez" transform={`rotate(${rot} ${x} 20)`} textAnchor="middle" dominantBaseline="central" textLength={Math.min(26, Math.max(14, t.name.length * 3))} lengthAdjust="spacingAndGlyphs">
               {t.name.toUpperCase()}
             </text>
-            {t.logoId && logos[t.logoId] && <image href={logos[t.logoId]} x={x - 3.4} y={k === 0 ? 31 : 3} width="6.8" height="6.8" preserveAspectRatio="xMidYMid meet" />}
-            {t.logoId && logos[t.logoId] && <image href={logos[t.logoId]} x={x - 3.4} y={k === 0 ? 2.2 : 31} width="6.8" height="6.8" preserveAspectRatio="xMidYMid meet" opacity="0.9" />}
+            {t.logoId && logos[t.logoId] && <LogoMark src={logos[t.logoId]} cx={x} cy={k === 0 ? 34.4 : 6.4} size={6} />}
+            {t.logoId && logos[t.logoId] && <LogoMark src={logos[t.logoId]} cx={x} cy={k === 0 ? 5.6 : 34.4} size={6} />}
           </g>
         ))}
         {/* goal lines, end lines, sidelines and the orange pylons */}
@@ -125,8 +129,9 @@ export function HalftimeBand({ espnId, home, away, badge }: { espnId: string; ho
         {/* midfield: the home team's logo, painted on the turf */}
         <circle cx="60" cy="20" r="9.4" className="band-mid-ring" />
         {/* a special or neutral-site game paints its own logo here; any other game, the home team's */}
-        {badge?.src ? <image href={badge.src} x="50" y="10" width="20" height="20" preserveAspectRatio="xMidYMid meet" className="band-mid-logo" data-game-logo />
-          : !badge?.neutral && home.logoId && logos[home.logoId] && <image href={logos[home.logoId]} x="50" y="10" width="20" height="20" preserveAspectRatio="xMidYMid meet" className="band-mid-logo" />}
+        {badge?.src ? <LogoMark src={badge.src} cx={60} cy={20} size={19} chipOpacity={0.4} imageClass="band-mid-logo" gameLogo />
+          : !badge?.neutral && home.logoId && logos[home.logoId] && <LogoMark src={logos[home.logoId]} cx={60} cy={20} size={19} chipOpacity={0.4} imageClass="band-mid-logo" />}
+        {hasFx(fx) && <WeatherFx fx={fx} h={40} seed={Number(espnId) || 1} />}
         {dots.map((i) => {
           const [x, y] = f.pts[i];
           const major = i === 0; // the drum major leads the band

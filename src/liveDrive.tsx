@@ -2,11 +2,14 @@ import { useEffect, useRef, useState } from "react";
 import { logos, teamColor } from "./data";
 import { FootballIcon } from "./live";
 import { mix } from "./halftimeLogic";
+import { LogoMark } from "./logoTone";
+import { WeatherFx } from "./WeatherFx";
+import { fxText, hasFx, weatherFx, type WeatherLike } from "./weatherFx";
 import type { GameBadge } from "./gameLogo";
 
 /** The slice of /api/game (see functions/api/game.js) the drive animation uses. */
 type Summary = {
-  status: { state: "pre" | "in" | "post" };
+  status: { state: "pre" | "in" | "post"; period?: number };
   teams: { id: string; abbr: string; name?: string }[];
   situation: { text: string; possession: string | null; toGo: number | null; redZone: boolean; lastPlay: string; spotText?: string; yardLine?: number | null } | null;
   drives: { team: string; period?: number | null; clock?: string; from: number | null; to: number | null; yards: number; plays: number; result: string; score: boolean; time: string; current: boolean }[];
@@ -138,7 +141,7 @@ const signed = (n: number) => (n > 0 ? `+${n}` : String(n));
  * the plays of the drive in progress. Shown on live cards (compact, plays folded away) and in the Game Center.
  * Static for visitors who ask for reduced motion.
  */
-export function FieldView({ data, teams, variant, rootRef, badge }: { data: Summary | null; teams: FieldTeam[]; variant: "card" | "center"; rootRef?: React.Ref<HTMLDivElement>; badge?: GameBadge | null }) {
+export function FieldView({ data, teams, variant, rootRef, badge, weather }: { data: Summary | null; teams: FieldTeam[]; variant: "card" | "center"; rootRef?: React.Ref<HTMLDivElement>; badge?: GameBadge | null; weather?: WeatherLike | null }) {
   const [away, home] = teams;
   const ids = [away.espnId ?? "", home.espnId ?? ""];
   const colors = [teamColor(away.color) ?? "#c1403d", teamColor(home.color) ?? "#2f7de1"];
@@ -169,6 +172,8 @@ export function FieldView({ data, teams, variant, rootRef, badge }: { data: Summ
   const past = data.drives.filter((d) => !d.current && d.from != null && d.to != null).slice(-3);
   const X = (yd: number) => 10 + yd; // 10-yard end zones either side
   const plays = data.curPlays ?? [];
+  const fx = weatherFx(weather, data.status.period);
+  const wxText = hasFx(fx) ? fxText(fx) : "";
   const logo = teams[side].logoId ? logos[teams[side].logoId!] : undefined;
   // The ball's tag sits on the side with room.
   const tagLeft = ball > 70;
@@ -212,11 +217,11 @@ export function FieldView({ data, teams, variant, rootRef, badge }: { data: Summ
         {[[away, 5, -90] as const, [home, 115, 90] as const].map(([t, x, rot], k) => (
           <g key={k}>
             <text x={x} y="22" className="lf-ez" transform={`rotate(${rot} ${x} 22)`} textAnchor="middle" dominantBaseline="central">{(t.abbr ?? t.name).toUpperCase()}</text>
-            {t.logoId && logos[t.logoId] && <image href={logos[t.logoId]} x={x - 3.5} y="8" width="7" height="7" preserveAspectRatio="xMidYMid meet" />}
+            {t.logoId && logos[t.logoId] && <LogoMark src={logos[t.logoId]} cx={x} cy={11.5} size={6} />}
           </g>
         ))}
         {(badge?.src ?? (!badge?.neutral && home.logoId ? logos[home.logoId] : null)) && (
-          <image href={badge?.src ?? logos[home.logoId!]} x="52" y="9" width="16" height="16" preserveAspectRatio="xMidYMid meet" opacity="0.55" className="lf-mid" />
+          <LogoMark src={badge?.src ?? logos[home.logoId!]} cx={60} cy={17} size={15} chipOpacity={0.4} imageClass="lf-mid" />
         )}
         {[[away, 35] as const, [home, 95] as const].map(([t, x], k) =>
           confMark(t.conf) ? (
@@ -230,6 +235,7 @@ export function FieldView({ data, teams, variant, rootRef, badge }: { data: Summ
         {[1, 2, 3, 4, 5, 4, 3, 2, 1].map((n, i) => (
           <text key={i} x={20 + i * 10} y="32" className="df-num" textAnchor="middle">{n * 10}</text>
         ))}
+        {hasFx(fx) && <WeatherFx fx={fx} h={variant === "card" ? 23 : 34} y0={variant === "card" ? 6 : 0} seed={Number(ids[0]) || 1} compact={variant === "card"} />}
         {past.map((d, i) => {
           const a = spot(d.from!, d.team === ids[0]);
           const b = spot(d.to!, d.team === ids[0]);
@@ -251,10 +257,7 @@ export function FieldView({ data, teams, variant, rootRef, badge }: { data: Summ
           <line x1="0" x2="0" y1="0" y2="34" className="df-los" />
           <circle cx="0" cy="17" r="4.6" className="df-pulse" stroke={colors[side]} />
           {logo ? (
-            <>
-              <circle cx="0" cy="17" r="3.6" className="lf-chip" stroke={colors[side]} />
-              <image href={logos[teams[side].logoId!]} x="-2.8" y="14.2" width="5.6" height="5.6" preserveAspectRatio="xMidYMid meet" className="lf-ball-logo" />
-            </>
+            <LogoMark src={logos[teams[side].logoId!]} cx={0} cy={17} size={5.4} chipOpacity={1} chipClass="lf-chip" imageClass="lf-ball-logo" />
           ) : (
             <ellipse cx="0" cy="17" rx="2.4" ry="1.5" className="df-pigskin" />
           )}
@@ -266,6 +269,7 @@ export function FieldView({ data, teams, variant, rootRef, badge }: { data: Summ
         <b>{label}</b>
         {stats && <span> · {stats}</span>}
         <span className="lf-started"> · drive started {startedAt}</span>
+        {wxText && <span className="lf-wx"> · {weather?.icon ?? ""} {wxText}</span>}
       </p>
       {list &&
         (variant === "center" ? (
@@ -284,11 +288,11 @@ export function FieldView({ data, teams, variant, rootRef, badge }: { data: Summ
 }
 
 /** The live field on a card: fetches the game summary while the card is on screen and draws it. */
-export function LiveDrive({ espnId, league, teams, badge }: { espnId: string; league: string; teams: FieldTeam[]; badge?: GameBadge | null }) {
+export function LiveDrive({ espnId, league, teams, badge, weather }: { espnId: string; league: string; teams: FieldTeam[]; badge?: GameBadge | null; weather?: WeatherLike | null }) {
   // The wrapper (and its ref, which the on-screen check watches) stays put as the field appears and disappears.
   const { ref, data, loaded } = useSummary(league, espnId, true);
   const live = data?.status.state === "in";
-  const field = FieldView({ data, teams, variant: "card", badge });
+  const field = FieldView({ data, teams, variant: "card", badge, weather });
   if (!field)
     return (
       <div ref={ref} className={`drive-live${loaded ? " empty" : " loading"}`} aria-hidden={!loaded || undefined}>

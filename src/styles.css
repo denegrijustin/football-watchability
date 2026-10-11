@@ -6443,9 +6443,95 @@ select,
   letter-spacing: 0.5px;
 }
 .lf-chip {
-  fill: #fff;
-  stroke-width: 0.8;
+  stroke: #fff;
+  stroke-width: 0.5;
 }
 .lf-ball-logo {
   filter: drop-shadow(0 0 0.3px rgb(0 0 0 / 40%));
+}
+
+/* ---------- weather over the field ---------- */
+.wx-tint.rain {
+  fill: #0b1d33;
+  opacity: 0.2;
+}
+.wx-tint.snow {
+  fill: #dce8f5;
+  opacity: 0.14;
+}
+.wx-drop {
+  stroke: #cfe6ff;
+  stroke-width: 0.22;
+  stroke-linecap: round;
+  opacity: 0.6;
+  animation: wx-fall linear infinite;
+}
+@keyframes wx-fall {
+  to {
+    transform: translate(var(--wx-dx), var(--wx-dy));
+  }
+}
+.wx-flake {
+  fill: #fff;
+  opacity: 0.85;
+  animation: wx-snow linear infinite;
+}
+@keyframes wx-snow {
+  50% {
+    transform: translate(calc(var(--wx-dx) * 0.5 + 1.5px), calc(var(--wx-dy) * 0.5));
+  }
+  to {
+    transform: translate(var(--wx-dx), var(--wx-dy));
+  }
+}
+.wx-gust {
+  stroke: #fff;
+  stroke-width: 0.18;
+  stroke-linecap: round;
+  opacity: 0.4;
+  animation: wx-blow linear infinite;
+}
+@keyframes wx-blow {
+  to {
+    transform: translateX(var(--wx-dx));
+  }
+}
+.wx-flash {
+  fill: #fff;
+  opacity: 0;
+  animation: wx-lightning 7s infinite;
+}
+@keyframes wx-lightning {
+  0%,
+  92%,
+  100% {
+    opacity: 0;
+  }
+  93% {
+    opacity: 0.45;
+  }
+  94% {
+    opacity: 0.05;
+  }
+  95% {
+    opacity: 0.35;
+  }
+}
+.lf-wx {
+  opacity: 0.85;
+}
+@media (prefers-reduced-motion: reduce) {
+  .wx-drop,
+  .wx-flake,
+  .wx-gust,
+  .wx-flash {
+    animation: none;
+  }
+  .wx-drop,
+  .wx-flake {
+    transform: translate(0, calc(var(--wx-dy) * 0.35));
+  }
+  .wx-gust {
+    transform: translateX(calc(var(--wx-dx) * 0.5));
+  }
 }
