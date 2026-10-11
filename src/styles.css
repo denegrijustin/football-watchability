@@ -6646,3 +6646,40 @@ select,
     animation: none;
   }
 }
+
+/* an upset on a game card: the team FPI ranks lower is ahead (alert) or won (final) */
+.game-card.upset-alert,
+.game-card.upset-final {
+  border-color: #39ff88;
+  box-shadow: 0 0 0 1.5px #39ff88, 0 0 12px 1px rgb(57 255 136 / 0.6), inset 0 0 10px rgb(57 255 136 / 0.14);
+}
+.game-card.upset-alert {
+  animation: upset-glow 2.6s ease-in-out infinite;
+}
+.gs-upset {
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgb(57 255 136 / 0.14);
+  box-shadow: 0 0 0 1px #39ff88, 0 0 6px rgb(57 255 136 / 0.55);
+  color: #39ff88;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+@media (prefers-reduced-motion: reduce) {
+  .game-card.upset-alert {
+    animation: none;
+  }
+}
+.game-status:has(.gs-upset) {
+  flex-wrap: wrap;
+}
+.game-status .gs-upset {
+  flex-basis: auto;
+  margin-top: 2px;
+}
+.cc-when:has(.gs-upset) {
+  flex-wrap: wrap;
+}

@@ -296,3 +296,40 @@ test("with no answer from ESPN's CDN the conference mark stays a lettered badge"
   await expect(live.locator("svg.drive-svg g.lf-conf[data-logo='official']")).toHaveCount(0);
   await expect(live.locator("svg.drive-svg g.lf-conf text.lf-conf-text").first()).toBeAttached();
 });
+
+/** A live card for NFL game 0 with these scores (state "in" or "post"); returns the card. */
+async function openScores(page: import("@playwright/test").Page, away: number, home: number, state: "in" | "post" = "in") {
+  const start = Math.max(...games.map((g: any) => new Date(g.date).getTime()));
+  await page.clock.install({ time: start + 90 * 60e3 });
+  await page.route("**/api/scores**", (route) =>
+    route.fulfill({ json: games.map((g: any, i: number) => ({ id: g.espnId, state: i === 0 ? state : "pre", detail: state === "post" ? "Final" : "5:12 - 3rd", away, home })) }),
+  );
+  await page.route("**/api/flow**", (route) => route.fulfill({ json: { wp: [] } }));
+  await page.route("**/api/game**", (route) => route.fulfill({ json: summary(65, "2nd & 7 at SEA 35") }));
+  await page.goto("/?league=NFL");
+  return page.locator(`.game-card[data-game-id="${games[0].id}"]`);
+}
+const fpi = (i: number) => games[0].teams[i].ranks.overall as number;
+
+test("a live card whose lower FPI-ranked team is ahead gets the neon outline and an UPSET ALERT", async ({ page }) => {
+  const worse = fpi(0) > fpi(1) ? 0 : 1; // the team with the bigger rank number
+  const card = await openScores(page, worse === 0 ? 24 : 10, worse === 0 ? 10 : 24);
+  await expect(card).toHaveClass(/upset-alert/);
+  await expect(card.locator(".gs-upset")).toHaveText(/upset alert/i);
+  expect(await card.evaluate((e) => getComputedStyle(e).boxShadow)).toContain("57, 255, 136");
+});
+
+test("no alert when the higher-ranked team is ahead, or the game is tied", async ({ page }) => {
+  const better = fpi(0) < fpi(1) ? 0 : 1;
+  const card = await openScores(page, better === 0 ? 24 : 10, better === 0 ? 10 : 24);
+  await expect(card.locator(".gs-pill")).toBeVisible();
+  await expect(card).not.toHaveClass(/upset/);
+  await expect(card.locator(".gs-upset")).toHaveCount(0);
+});
+
+test("if the lower-ranked team holds on, the card becomes an upset final", async ({ page }) => {
+  const worse = fpi(0) > fpi(1) ? 0 : 1;
+  const card = await openScores(page, worse === 0 ? 27 : 13, worse === 0 ? 13 : 27, "post");
+  await expect(card).toHaveClass(/upset-final/);
+  await expect(card.locator(".gs-upset")).toHaveText(/upset final/i);
+});

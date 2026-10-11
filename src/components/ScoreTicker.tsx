@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { logos, results, slate } from "../data";
 import { useLiveMap } from "../live";
 import { useOpenGame } from "./GameCenterContext";
+import { upsetBy } from "../upset";
 
 type Item = {
   espnId: string;
@@ -59,14 +60,9 @@ const ranksSpoken = (item: Item) =>
     : "";
 
 /** One score: both teams, the final, and a button that opens the Game Center postgame summary. */
-/** An upset final: the team ranked lower by FPI (a bigger number) beat the higher-ranked one. Needs both ranks and a winner. */
-export function upsetOf(item: Pick<Item, "teams">): { winner: number; gap: number } | null {
-  const [a, b] = item.teams;
-  if (a.fpi == null || b.fpi == null || a.score === b.score) return null;
-  const winner = a.score > b.score ? 0 : 1;
-  const w = item.teams[winner].fpi!;
-  const l = item.teams[1 - winner].fpi!;
-  return w > l ? { winner, gap: w - l } : null;
+/** An upset final: the team ranked lower by FPI (a bigger number) beat the higher-ranked one. */
+export function upsetOf(item: Pick<Item, "teams">) {
+  return upsetBy(item.teams.map((t) => t.fpi), [item.teams[0].score, item.teams[1].score]);
 }
 
 function Score({ item, hidden }: { item: Item; hidden?: boolean }) {
