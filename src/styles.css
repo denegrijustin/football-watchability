@@ -6622,3 +6622,27 @@ select,
   background: rgb(127 227 160 / 14%);
   color: #9be3b4;
 }
+
+/* an upset final: the team FPI ranks lower beat the higher-ranked one */
+.ticker-item.upset {
+  border-radius: 8px;
+  box-shadow: 0 0 0 1.5px #39ff88, 0 0 9px 1px rgb(57 255 136 / 0.65), inset 0 0 7px rgb(57 255 136 / 0.22);
+  animation: upset-glow 2.6s ease-in-out infinite;
+}
+.ticker-item.upset .ticker-final {
+  color: #39ff88;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-shadow: 0 0 6px rgb(57 255 136 / 0.7);
+}
+@keyframes upset-glow {
+  50% {
+    box-shadow: 0 0 0 1.5px #7dffb4, 0 0 14px 2px rgb(57 255 136 / 0.85), inset 0 0 9px rgb(57 255 136 / 0.32);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ticker-item.upset {
+    animation: none;
+  }
+}
