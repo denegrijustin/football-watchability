@@ -108,3 +108,15 @@ test("on a computer the links stay plain web links (no app attempt)", async ({ p
   await page.locator(".net-chip a.ch-num").first().click();
   await expect(page.locator("iframe[data-app-link]")).toHaveCount(0);
 });
+
+test("no Paramount+ listing: CBS games say CBS and the chip has no Paramount+ link", async ({ page }) => {
+  const { watchLink } = await import("../src/watchLinks");
+  expect(watchLink({ network: "cbs", broadcast: "CBS", league: "NFL", espnId: "1" })).toBeNull();
+  expect(watchLink({ network: "cbssn", broadcast: "CBS Sports Network", league: "CFB", espnId: "1" })).toBeNull();
+  for (const league of ["NFL", "CFB"]) {
+    await page.goto(`/?league=${league}`);
+    await expect(page.locator(".game-card").first()).toBeVisible();
+    expect(await page.locator("body").innerText()).not.toContain("Paramount");
+    expect(await page.locator('a[href*="paramountplus"]').count()).toBe(0);
+  }
+});

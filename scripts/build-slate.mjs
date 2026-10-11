@@ -129,7 +129,7 @@ const CONF_LONG = {
   "FBS Independents": "Independent",
 };
 const TV = {
-  CBS: "CBS / Paramount+",
+  CBS: "CBS",
   FOX: "FOX / FOX One",
   NBC: "NBC / Peacock",
   ABC: "ABC / ESPN App",
