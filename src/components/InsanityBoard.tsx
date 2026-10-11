@@ -26,23 +26,31 @@ export function facts(g: LedgerGame) {
   ].filter(Boolean);
 }
 
-type LiveLedgerGame = LedgerGame & { live: true; clock: string };
+/** A game not yet in the ledger: in progress (live) or just ended and waiting for the hourly rebuild to archive it (live false). */
+type LiveLedgerGame = LedgerGame & { live: boolean; clock: string };
+const archived = new Set(results.map((r) => r.espnId));
 
 /**
  * The games in progress, scored on the same scale as finished ones from their live win-probability line, and refreshed every 60
  * seconds while any game is on (together with the season ledger, so a game that has just ended moves to its final score).
  * Returns nothing when no game is live, and then nothing polls.
  */
-function useLiveInsanity(onLedger: (games: LedgerGame[]) => void) {
+function useLiveInsanity(onLedger: (games: LedgerGame[]) => void, have: Set<string> | null) {
   const live = useLiveMap();
   // The scores keep arriving through the shared live feed while the timer below runs, so each rescoring reads the latest ones.
   const liveRef = useRef(live);
   liveRef.current = live;
   const [scored, setScored] = useState<LiveLedgerGame[]>([]);
   const onGoing = useMemo(() => slate.games.filter((g) => g.espnId && live[g.espnId]?.state === "in"), [live]);
-  const key = onGoing.map((g) => g.espnId).join(",");
+  // Games that ended since the last rebuild are not in the ledger yet: they are scored from their final win-probability line.
+  const justEnded = useMemo(
+    () => (have ? slate.games.filter((g) => g.espnId && live[g.espnId]?.state === "post" && !have.has(g.espnId) && !archived.has(g.espnId)) : []),
+    [live, have],
+  );
+  const tracked = useMemo(() => [...onGoing, ...justEnded], [onGoing, justEnded]);
+  const key = tracked.map((g) => `${g.espnId}:${live[g.espnId]?.state}`).join(",");
   useEffect(() => {
-    if (!onGoing.length) {
+    if (!tracked.length) {
       setScored([]);
       return;
     }
@@ -50,10 +58,12 @@ function useLiveInsanity(onLedger: (games: LedgerGame[]) => void) {
     let timer: ReturnType<typeof setTimeout> | undefined;
     const run = async (first: boolean) => {
       const rows = await Promise.all(
-        onGoing.map(async (g): Promise<LiveLedgerGame | null> => {
+        tracked.map(async (g): Promise<LiveLedgerGame | null> => {
           const l = liveRef.current[g.espnId] ?? live[g.espnId]!;
-          const wp = await latestFlow(g.league as "NFL" | "CFB", g.espnId, first ? 45_000 : LIVE_REFRESH_MS - 5_000);
-          const r = wp ? insanity(thinWp(wp), { final: false }) : null;
+          const inPlay = l.state === "in";
+          const wp = await latestFlow(g.league as "NFL" | "CFB", g.espnId, first || !inPlay ? 45_000 : LIVE_REFRESH_MS - 5_000);
+          const over = /ot/i.test(l.detail);
+          const r = wp ? insanity(thinWp(wp), { final: !inPlay, overtime: over }) : null;
           if (!r) return null;
           const [a, h] = g.teams as unknown as { abbr?: string; name: string; logoId: string; color?: string | null }[];
           return {
@@ -68,23 +78,23 @@ function useLiveInsanity(onLedger: (games: LedgerGame[]) => void) {
             tier: r.tier.id as LedgerGame["tier"],
             flips: r.flips,
             swing: r.biggestSwing,
-            comebackFrom: null,
-            overtime: /ot/i.test(l.detail),
+            comebackFrom: r.comebackFrom,
+            overtime: over,
             witchingPeriod: r.witching.period,
             mvp: null,
-            live: true as const,
+            live: inPlay,
             clock: l.detail,
           };
         }),
       );
       if (stop) return;
       setScored(rows.filter((x): x is LiveLedgerGame => x != null));
-      if (!first) {
+      if (!first || !onGoing.length) {
         // The hourly rebuild may have archived a game that just ended.
         const m = await refetchData<{ games: LedgerGame[] }>("season").catch(() => null);
         if (m && !stop) onLedger(m.games);
       }
-      if (!stop) timer = setTimeout(() => run(false), LIVE_REFRESH_MS);
+      if (!stop && onGoing.length) timer = setTimeout(() => run(false), LIVE_REFRESH_MS);
     };
     void run(true);
     return () => {
@@ -118,7 +128,8 @@ export function InsanityBoard({ defaultLeague }: { defaultLeague: "NFL" | "CFB" 
     };
   }, []);
 
-  const { scored, anyLive } = useLiveInsanity((games) => setLedger(games));
+  const haveIds = useMemo(() => (ledger ? new Set(ledger.map((g) => g.id)) : null), [ledger]);
+  const { scored, anyLive } = useLiveInsanity((games) => setLedger(games), haveIds);
   const liveMap = useLiveMap();
   // Games in progress join their week's list (and the season's) on the same scale, until they are archived as finals.
   const mine = useMemo(() => {
@@ -140,9 +151,11 @@ export function InsanityBoard({ defaultLeague }: { defaultLeague: "NFL" | "CFB" 
   // Each game keeps its insanity rank (#1 is the wildest) whatever order the list is shown in.
   const rankOf = useMemo(() => new Map(rankGames(pool).map((g, i) => [g.id, i + 1])), [pool]);
   const list = useMemo(() => sortGames(pool, sort), [pool, sort]);
-  const isLiveRow = (g: LedgerGame) => !!(g as Partial<LiveLedgerGame>).live;
+  const isLiveRow = (g: LedgerGame) => (g as Partial<LiveLedgerGame>).live === true;
   const liveRows = list.filter(isLiveRow);
-  const finished = list.filter((g) => !isLiveRow(g));
+  const isFreshRow = (g: LedgerGame) => (g as Partial<LiveLedgerGame>).live === false;
+  const freshRows = list.filter(isFreshRow);
+  const finished = list.filter((g) => !isLiveRow(g) && !isFreshRow(g));
   const avg = list.length ? Math.round(list.reduce((a, g) => a + g.insanity, 0) / list.length) : 0;
   const wild = list.filter((g) => g.tier === "unhinged" || g.tier === "witching").length;
   const nameOf = league === "NFL" ? "NFL" : "College";
@@ -218,6 +231,16 @@ export function InsanityBoard({ defaultLeague }: { defaultLeague: "NFL" | "CFB" 
             <ol className="ib-cards ib-live-cards">
               {liveRows.map((g) => (
                 <InsanityCard key={g.id} g={g} rank={rankOf.get(g.id) ?? 0} live={(g as LiveLedgerGame).clock} showWeek={scope === "season"} onOpen={() => (known.has(g.id) ? openGame(g.id) : openGame(g.id, stubOf(g)))} />
+              ))}
+            </ol>
+          </>
+        )}
+        {freshRows.length > 0 && (
+          <>
+            <h3 className="micro-label ib-live-head ib-fresh-head">Just finished · scored from the live feed until the hourly rebuild archives it</h3>
+            <ol className="ib-cards ib-live-cards">
+              {freshRows.map((g) => (
+                <InsanityCard key={g.id} g={g} rank={rankOf.get(g.id) ?? 0} fresh showWeek={scope === "season"} onOpen={() => (known.has(g.id) ? openGame(g.id) : openGame(g.id, stubOf(g)))} />
               ))}
             </ol>
           </>
@@ -310,7 +333,7 @@ export function insanityStory(g: LedgerGame) {
   }
 }
 
-function InsanityCard({ g, rank, showWeek, onOpen, live }: { g: LedgerGame; rank: number; showWeek: boolean; onOpen: (() => void) | null; live?: string | null }) {
+function InsanityCard({ g, rank, showWeek, onOpen, live, fresh }: { g: LedgerGame; rank: number; showWeek: boolean; onOpen: (() => void) | null; live?: string | null; fresh?: boolean }) {
   const ca = teamColor(g.away.color ?? null) ?? "#1d2a35";
   const ch = teamColor(g.home.color ?? null) ?? "#1d2a35";
   const mvpTeam = g.mvp?.side === "away" ? g.away : g.mvp?.side === "home" ? g.home : null;
@@ -322,6 +345,7 @@ function InsanityCard({ g, rank, showWeek, onOpen, live }: { g: LedgerGame; rank
           <strong>{g.insanity}</strong> {tierLabel(g.tier)}
         </span>
         {live != null && <span className="ic-live" title="In progress: scored from the live win-probability line">LIVE{live ? ` · ${live}` : ""}</span>}
+        {fresh && <span className="ic-fresh" title="Just ended: scored from the game's win-probability line until the hourly rebuild archives it">JUST FINAL</span>}
         {showWeek && <span className="ic-week">{g.week}</span>}
       </div>
       <div className="ic-teams">
