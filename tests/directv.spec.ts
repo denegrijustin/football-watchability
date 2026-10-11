@@ -47,7 +47,7 @@ test("watch links: ESPN games open in the ESPN app, cable networks open the DIRE
     expect(watchLink({ network, league: "CFB", espnId: "1" })).toMatchObject({ kind: "espn", url: "https://www.espn.com/college-football/game/_/gameId/1" });
   // Any game the broadcast line says is in the ESPN App, whatever its network.
   expect(watchLink({ network: "fox", broadcast: "FOX / ESPN App", league: "NFL", espnId: "9" })?.kind).toBe("espn");
-  expect(watchLink({ network: "nbc", league: "NFL", espnId: "9" })).toMatchObject({ kind: "outlet", title: "Open Peacock" });
+  expect(watchLink({ network: "nbc", league: "NFL", espnId: "9" })).toBeNull(); // no Peacock link
   expect(watchLink({ network: "prime-video", league: "NFL", espnId: "9" })?.title).toBe("Open Prime Video");
   expect(watchLink({ network: "tnt", league: "NFL", espnId: "9" })).toBeNull(); // cable only: the channel number links instead
   expect(watchLink({ network: "espn", league: "CFB", espnId: null })).toBeNull(); // nothing to link to without a game id
@@ -109,14 +109,16 @@ test("on a computer the links stay plain web links (no app attempt)", async ({ p
   await expect(page.locator("iframe[data-app-link]")).toHaveCount(0);
 });
 
-test("no Paramount+ listing: CBS games say CBS and the chip has no Paramount+ link", async ({ page }) => {
+test("no Paramount+ or Peacock listing: CBS and NBC games say so alone and the chip has no streaming link", async ({ page }) => {
   const { watchLink } = await import("../src/watchLinks");
   expect(watchLink({ network: "cbs", broadcast: "CBS", league: "NFL", espnId: "1" })).toBeNull();
   expect(watchLink({ network: "cbssn", broadcast: "CBS Sports Network", league: "CFB", espnId: "1" })).toBeNull();
   for (const league of ["NFL", "CFB"]) {
     await page.goto(`/?league=${league}`);
     await expect(page.locator(".game-card").first()).toBeVisible();
-    expect(await page.locator("body").innerText()).not.toContain("Paramount");
-    expect(await page.locator('a[href*="paramountplus"]').count()).toBe(0);
+    const text = await page.locator("body").innerText();
+    expect(text).not.toContain("Paramount");
+    expect(text).not.toContain("NBC / Peacock");
+    expect(await page.locator('a[href*="paramountplus"], a[href*="peacocktv"]').count()).toBe(0);
   }
 });

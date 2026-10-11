@@ -10,8 +10,8 @@ const DONKEYS: [RegExp, string][] = [
   [/\bBroncos\b/g, "Donkeys"],
 ];
 export const donkeys = (s: string) => (s.includes("Broncos") ? DONKEYS.reduce((t, [re, to]) => t.replace(re, to), s) : s);
-/** CBS games are listed as CBS alone; the Paramount+ listing is not shown anywhere. */
-const noParamount = (s: string) => (s.includes("Paramount+") ? s.replace(/CBS\s*\/\s*Paramount\+/g, "CBS") : s);
+/** CBS and NBC games are listed as the network alone; the Paramount+ and Peacock listings are not shown. */
+const noParamount = (s: string) => (s.includes("Paramount+") || s.includes("Peacock") ? s.replace(/(CBS|NBC)\s*\/\s*(Paramount\+|Peacock)/g, "$1") : s);
 export function rename<T>(v: T): T {
   if (typeof v === "string") return noParamount(donkeys(v)) as T;
   if (Array.isArray(v)) return v.map(rename) as T;

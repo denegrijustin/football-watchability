@@ -131,7 +131,7 @@ const CONF_LONG = {
 const TV = {
   CBS: "CBS",
   FOX: "FOX / FOX One",
-  NBC: "NBC / Peacock",
+  NBC: "NBC",
   ABC: "ABC / ESPN App",
   ESPN: "ESPN / ESPN App",
   ESPN2: "ESPN2 / ESPN App",
