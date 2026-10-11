@@ -59,18 +59,29 @@ const ranksSpoken = (item: Item) =>
     : "";
 
 /** One score: both teams, the final, and a button that opens the Game Center postgame summary. */
+/** An upset final: the team ranked lower by FPI (a bigger number) beat the higher-ranked one. Needs both ranks and a winner. */
+export function upsetOf(item: Pick<Item, "teams">): { winner: number; gap: number } | null {
+  const [a, b] = item.teams;
+  if (a.fpi == null || b.fpi == null || a.score === b.score) return null;
+  const winner = a.score > b.score ? 0 : 1;
+  const w = item.teams[winner].fpi!;
+  const l = item.teams[1 - winner].fpi!;
+  return w > l ? { winner, gap: w - l } : null;
+}
+
 function Score({ item, hidden }: { item: Item; hidden?: boolean }) {
   const openGame = useOpenGame();
   const [away, home] = item.teams;
   const winner = away.score === home.score ? -1 : away.score > home.score ? 0 : 1;
+  const upset = upsetOf(item);
   return (
     <li aria-hidden={hidden || undefined} className={hidden ? "ticker-dup" : undefined}>
       <button
         type="button"
-        className="ticker-item"
+        className={`ticker-item${upset ? " upset" : ""}`}
         tabIndex={hidden ? -1 : undefined}
         onClick={() => openGame(item.espnId)}
-        aria-label={`${away.name} ${away.score}, ${home.name} ${home.score}, ${item.detail.toLowerCase()}.${ranksSpoken(item)} Open the postgame summary.`}
+        aria-label={`${away.name} ${away.score}, ${home.name} ${home.score}, ${item.detail.toLowerCase()}.${ranksSpoken(item)}${upset ? ` Upset: ${item.teams[upset.winner].name}, ranked ${upset.gap} places lower, beat ${item.teams[1 - upset.winner].name}.` : ""} Open the postgame summary.`}
       >
         <span className="ticker-league">{item.league}</span>
         {item.teams.map((t, i) => (
@@ -87,7 +98,7 @@ function Score({ item, hidden }: { item: Item; hidden?: boolean }) {
             <b>{t.score}</b>
           </span>
         ))}
-        <span className="ticker-final">{item.detail}</span>
+        <span className="ticker-final">{upset ? `Upset ${item.detail.toLowerCase()}` : item.detail}</span>
       </button>
     </li>
   );
