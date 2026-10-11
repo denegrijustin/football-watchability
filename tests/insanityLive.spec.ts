@@ -56,7 +56,7 @@ test("with no game in progress nothing polls and no live row or note appears", a
   expect(flows).toBe(0);
 });
 
-test("a game that ended since the last rebuild is scored from its win-probability line and listed as JUST FINAL, not left out", async ({ page }) => {
+test("a game that ended since the last rebuild is scored from its win-probability line and listed as FINAL, not left out", async ({ page }) => {
   const ledger = JSON.parse(readFileSync("src/data/season.json", "utf8")).games;
   const inLedger = new Set(ledger.map((g: any) => g.id));
   const results = JSON.parse(readFileSync("src/data/results.json", "utf8")).games;
@@ -74,11 +74,11 @@ test("a game that ended since the last rebuild is scored from its win-probabilit
   await page.getByRole("button", { name: "Insanity", exact: true }).click();
   const group = page.getByRole("group", { name: "Ranking" });
   await group.getByRole("button", { name: "Season" }).click();
-  // It is pinned above the ranked list (whatever its rank), flagged as just final, with its score.
-  await expect(page.locator(".ib-fresh-head")).toContainText("Just finished");
+  // It is pinned above the ranked list (whatever its rank), tagged FINAL, with its score.
+  await expect(page.locator(".ib-fresh-head")).toContainText("Final");
   const card = page.locator(".ib-live-cards > li", { has: page.locator(".ic-fresh") }).first();
   await expect(card).toBeVisible();
-  await expect(card.locator(".ic-fresh")).toHaveText("JUST FINAL");
+  await expect(card.locator(".ic-fresh")).toHaveText("FINAL");
   await expect(card.locator(".ic-teams")).toContainText("27");
   expect(Number(await card.getAttribute("data-insanity"))).toBeGreaterThan(50);
   await expect(page.locator(".ib-live-head:not(.ib-fresh-head)")).toHaveCount(0); // it is a final, not a live game

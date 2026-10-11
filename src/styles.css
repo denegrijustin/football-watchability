@@ -6682,19 +6682,19 @@ select,
 /* an upset final: the team FPI ranks lower beat the higher-ranked one */
 .ticker-item.upset {
   border-radius: 8px;
-  box-shadow: 0 0 0 1.5px #39ff88, 0 0 9px 1px rgb(57 255 136 / 0.65), inset 0 0 7px rgb(57 255 136 / 0.22);
-  animation: upset-glow 2.6s ease-in-out infinite;
+  /* a thin, quiet outline: a 1px line and a faint halo */
+  box-shadow: 0 0 0 1px rgb(57 255 136 / 0.55), 0 0 5px rgb(57 255 136 / 0.2);
+  animation: upset-glow 3.2s ease-in-out infinite;
 }
 .ticker-item.upset .ticker-final {
-  color: #39ff88;
-  font-weight: 800;
+  color: rgb(95 255 160 / 0.9);
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  text-shadow: 0 0 6px rgb(57 255 136 / 0.7);
 }
 @keyframes upset-glow {
   50% {
-    box-shadow: 0 0 0 1.5px #7dffb4, 0 0 14px 2px rgb(57 255 136 / 0.85), inset 0 0 9px rgb(57 255 136 / 0.32);
+    box-shadow: 0 0 0 1px rgb(57 255 136 / 0.7), 0 0 7px rgb(57 255 136 / 0.3);
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -6706,11 +6706,11 @@ select,
 /* an upset on a game card: the team FPI ranks lower is ahead (alert) or won (final) */
 .game-card.upset-alert,
 .game-card.upset-final {
-  border-color: #39ff88;
-  box-shadow: 0 0 0 1.5px #39ff88, 0 0 12px 1px rgb(57 255 136 / 0.6), inset 0 0 10px rgb(57 255 136 / 0.14);
+  border-color: rgb(57 255 136 / 0.55);
+  box-shadow: 0 0 0 1px rgb(57 255 136 / 0.45), 0 0 6px rgb(57 255 136 / 0.18);
 }
 .game-card.upset-alert {
-  animation: upset-glow 2.6s ease-in-out infinite;
+  animation: upset-glow 3.2s ease-in-out infinite;
 }
 @media (prefers-reduced-motion: reduce) {
   .game-card.upset-alert {
@@ -6725,18 +6725,17 @@ select,
   gap: 10px;
   margin: -16px -18px 12px;
   padding: 5px 12px;
-  background: rgb(57 255 136 / 0.12);
-  box-shadow: inset 0 -1px 0 rgb(57 255 136 / 0.5);
-  color: #39ff88;
-  font-size: 0.72rem;
+  background: rgb(57 255 136 / 0.07);
+  box-shadow: inset 0 -1px 0 rgb(57 255 136 / 0.3);
+  color: rgb(95 255 160 / 0.9);
+  font-size: 0.7rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  text-shadow: 0 0 6px rgb(57 255 136 / 0.6);
   white-space: nowrap;
   overflow: hidden;
 }
 .upset-banner b {
-  font-weight: 800;
+  font-weight: 700;
 }
 .upset-banner span {
   color: var(--text-2);
