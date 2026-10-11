@@ -191,11 +191,14 @@ test("the ball marker is the offense's team logo, and the field carries end-zone
   await expect(svg.locator("image.lf-mid")).toHaveCount(1); // the home logo at midfield
   await expect(svg.locator("text.lf-ez")).toHaveCount(2); // team names in the end zones
   await expect(svg.locator("g > image")).not.toHaveCount(0); // end-zone logos
-  // The conference mark on the 35 of each half: the away team's (NFC here) on the left, the home team's on the right.
+  // The conference mark on the 25-yard line of each half: the away team's (NFC here) on the left, the home team's on the right.
   const marks = svg.locator("g.lf-conf");
   await expect(marks).toHaveCount(2);
   const confs = await marks.evaluateAll((els) => els.map((e) => e.getAttribute("data-conf")));
   expect(confs.every((c) => c === "AFC" || c === "NFC")).toBe(true);
+  // The 25 from the left goal line is x=35 and from the right goal line x=85 (the 10-yard end zones put the goal lines at 10 and 110).
+  const centers = await marks.evaluateAll((els) => els.map((e) => { const b = (e as unknown as SVGGraphicsElement).getBBox(); return Math.round(b.x + b.width / 2); }));
+  expect(centers).toEqual([35, 85]);
 });
 
 test("a live game with rain and wind in its forecast shows them over the field, and says so in the caption", async ({ page }) => {

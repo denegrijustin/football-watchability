@@ -233,8 +233,8 @@ export function FieldView({ data, teams, variant, rootRef, badge, weather }: { d
         {[1, 2, 3, 4, 5, 4, 3, 2, 1].map((n, i) => (
           <text key={i} x={20 + i * 10} y="32" className="df-num" textAnchor="middle">{n * 10}</text>
         ))}
-        <ConfMark conf={away.conf} cx={45} cy={25} size={7} />
-        <ConfMark conf={home.conf} cx={75} cy={25} size={7} />
+        <ConfMark conf={away.conf} cx={35} cy={25} size={7} />
+        <ConfMark conf={home.conf} cx={85} cy={25} size={7} />
         {hasFx(fx) && <WeatherFx fx={fx} h={variant === "card" ? 23 : 34} y0={variant === "card" ? 6 : 0} seed={Number(ids[0]) || 1} compact={variant === "card"} />}
         {past.map((d, i) => {
           const a = spot(d.from!, d.team === ids[0]);
