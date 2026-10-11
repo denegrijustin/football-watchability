@@ -2,9 +2,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { logos, teamColor } from "./data";
 import type { GameBadge } from "./gameLogo";
 import { LogoMark } from "./logoTone";
-import { WeatherFx } from "./WeatherFx";
+import { WeatherLayer } from "./WeatherFx";
 import { ConfMark } from "./ConfMark";
-import { hasFx, weatherFx, type WeatherLike } from "./weatherFx";
+import type { WeatherLike } from "./weatherFx";
 import { FORMATIONS, HALFTIME_MS, mix, N, STEP_MS, anglesAt, clockText, firstSeen, halftimeLeft } from "./halftimeLogic";
 
 /**
@@ -48,7 +48,6 @@ export function HalftimeBand({ espnId, home, away, badge, weather }: { espnId: s
   const pctLeft = Math.round((left / HALFTIME_MS) * 100);
   const dots = useMemo(() => Array.from({ length: N }, (_, i) => i), []);
   const angles = anglesAt(step);
-  const fx = weatherFx(weather, 2); // halftime: the second quarter's forecast
 
   return (
     <div ref={ref} className="halftime-band" role="img" aria-label={`${label}. The ${home.abbr ?? home.name} band is on the field in a ${f.name.toLowerCase()} formation.`}>
@@ -134,7 +133,7 @@ export function HalftimeBand({ espnId, home, away, badge, weather }: { espnId: s
           : !badge?.neutral && home.logoId && logos[home.logoId] && <LogoMark src={logos[home.logoId]} cx={60} cy={20} size={19} chipOpacity={0.4} imageClass="band-mid-logo" />}
         <ConfMark conf={away.conf} cx={35} cy={31} size={8} />
         <ConfMark conf={home.conf} cx={85} cy={31} size={8} />
-        {hasFx(fx) && <WeatherFx fx={fx} h={40} seed={Number(espnId) || 1} />}
+        <WeatherLayer weather={weather} period={2} h={40} seed={Number(espnId) || 1} />
         {dots.map((i) => {
           const [x, y] = f.pts[i];
           const major = i === 0; // the drum major leads the band

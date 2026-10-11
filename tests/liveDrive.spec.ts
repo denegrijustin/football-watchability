@@ -315,8 +315,12 @@ test("a live card whose lower FPI-ranked team is ahead gets the neon outline and
   const worse = fpi(0) > fpi(1) ? 0 : 1; // the team with the bigger rank number
   const card = await openScores(page, worse === 0 ? 24 : 10, worse === 0 ? 10 : 24);
   await expect(card).toHaveClass(/upset-alert/);
-  await expect(card.locator(".gs-upset")).toHaveText(/upset alert/i);
+  await expect(card.locator(".upset-banner")).toContainText(/upset alert/i);
   expect(await card.evaluate((e) => getComputedStyle(e).boxShadow)).toContain("57, 255, 136");
+  // The strip is the first thing on the card and names who leads, with both ranks.
+  const first = await card.evaluate((e) => (e.querySelector(".compact-overview")?.firstElementChild as HTMLElement).className);
+  expect(first).toBe("upset-banner");
+  await expect(card.locator(".upset-banner")).toContainText(new RegExp(`#${Math.max(fpi(0), fpi(1))}.*#${Math.min(fpi(0), fpi(1))}`));
 });
 
 test("no alert when the higher-ranked team is ahead, or the game is tied", async ({ page }) => {
@@ -324,12 +328,12 @@ test("no alert when the higher-ranked team is ahead, or the game is tied", async
   const card = await openScores(page, better === 0 ? 24 : 10, better === 0 ? 10 : 24);
   await expect(card.locator(".gs-pill")).toBeVisible();
   await expect(card).not.toHaveClass(/upset/);
-  await expect(card.locator(".gs-upset")).toHaveCount(0);
+  await expect(card.locator(".upset-banner")).toHaveCount(0);
 });
 
 test("if the lower-ranked team holds on, the card becomes an upset final", async ({ page }) => {
   const worse = fpi(0) > fpi(1) ? 0 : 1;
   const card = await openScores(page, worse === 0 ? 27 : 13, worse === 0 ? 13 : 27, "post");
   await expect(card).toHaveClass(/upset-final/);
-  await expect(card.locator(".gs-upset")).toHaveText(/upset final/i);
+  await expect(card.locator(".upset-banner")).toContainText(/upset final/i);
 });
