@@ -11,55 +11,14 @@ import { FORMATIONS, HALFTIME_MS, mix, N, STEP_MS, anglesAt, clockText, firstSee
  * College halftime: a 20-minute countdown and the band marching through formations on the field. It stands in for the drive
  * chart while the game is at halftime (college games only). Still for visitors who ask for reduced motion.
  */
-type Side = { abbr?: string; name: string; color?: string | null; logoId?: string; conf?: string | null };
+export type Side = { abbr?: string; name: string; color?: string | null; logoId?: string; conf?: string | null };
 
 
-export function HalftimeBand({ espnId, home, away, badge, weather }: { espnId: string; home: Side; away: Side; badge?: GameBadge | null; weather?: WeatherLike | null }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [seenAt] = useState(() => firstSeen(espnId, Date.now()));
-  const [now, setNow] = useState(() => Date.now());
-  const [step, setStep] = useState(0);
-  const [visible, setVisible] = useState(true);
-  const still = typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el || typeof IntersectionObserver === "undefined") return;
-    const io = new IntersectionObserver(([e]) => setVisible(e.isIntersecting));
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
-  useEffect(() => {
-    if (!visible) return;
-    const clock = setInterval(() => !document.hidden && setNow(Date.now()), 1000);
-    const dance = still ? undefined : setInterval(() => !document.hidden && setStep((s) => s + 1), STEP_MS);
-    setNow(Date.now());
-    return () => {
-      clearInterval(clock);
-      if (dance) clearInterval(dance);
-    };
-  }, [visible, still]);
-
-  const left = halftimeLeft(seenAt, now);
-  const f = FORMATIONS[step % FORMATIONS.length];
-  const hc = teamColor(home.color) ?? "#2f7de1";
-  const ac = teamColor(away.color) ?? "#c1403d";
-  const label = left > 0 ? `Second half in ${clockText(left)}` : "Second half starting";
-  const pctLeft = Math.round((left / HALFTIME_MS) * 100);
-  const dots = useMemo(() => Array.from({ length: N }, (_, i) => i), []);
-  const angles = anglesAt(step);
-
+/** The stadium from above: turf, end zones with each school's name and logo, yard lines, hash marks and numbers, and the midfield logo. */
+export function FieldArt({ id, home, away, hc, ac, badge }: { id: string; home: Side; away: Side; hc: string; ac: string; badge?: GameBadge | null }) {
+  const espnId = id;
   return (
-    <div ref={ref} className="halftime-band" role="img" aria-label={`${label}. The ${home.abbr ?? home.name} band is on the field in a ${f.name.toLowerCase()} formation.`}>
-      <div className="band-count" aria-hidden="true">
-        <span className="band-count-k">HALFTIME</span>
-        <strong className="band-count-t">{left > 0 ? clockText(left) : "0:00"}</strong>
-        <span className="band-count-l">{left > 0 ? "until the second half" : "second half starting"}</span>
-        <i className="band-count-bar"><b style={{ width: `${pctLeft}%` }} /></i>
-      </div>
-      {/* The stadium seen from directly above: end zones with the schools' names and logos, the home logo at midfield, and the
-          home band in its uniforms — shakos with plumes, jackets with white trim, brass, drums and sousaphones. */}
-      <svg viewBox="0 0 120 40" className="band-svg" aria-hidden="true">
+    <>
         <defs>
           <radialGradient id={`turf-${espnId}`} cx="50%" cy="50%" r="70%">
             <stop offset="0%" stopColor="#2b6a3a" />
@@ -133,6 +92,57 @@ export function HalftimeBand({ espnId, home, away, badge, weather }: { espnId: s
           : !badge?.neutral && home.logoId && logos[home.logoId] && <LogoMark src={logos[home.logoId]} cx={60} cy={20} size={19} chipOpacity={0.4} imageClass="band-mid-logo" />}
         <ConfMark conf={away.conf} cx={35} cy={31} size={8} />
         <ConfMark conf={home.conf} cx={85} cy={31} size={8} />
+    </>
+  );
+}
+
+export function HalftimeBand({ espnId, home, away, badge, weather }: { espnId: string; home: Side; away: Side; badge?: GameBadge | null; weather?: WeatherLike | null }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [seenAt] = useState(() => firstSeen(espnId, Date.now()));
+  const [now, setNow] = useState(() => Date.now());
+  const [step, setStep] = useState(0);
+  const [visible, setVisible] = useState(true);
+  const still = typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(([e]) => setVisible(e.isIntersecting));
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+  useEffect(() => {
+    if (!visible) return;
+    const clock = setInterval(() => !document.hidden && setNow(Date.now()), 1000);
+    const dance = still ? undefined : setInterval(() => !document.hidden && setStep((s) => s + 1), STEP_MS);
+    setNow(Date.now());
+    return () => {
+      clearInterval(clock);
+      if (dance) clearInterval(dance);
+    };
+  }, [visible, still]);
+
+  const left = halftimeLeft(seenAt, now);
+  const f = FORMATIONS[step % FORMATIONS.length];
+  const hc = teamColor(home.color) ?? "#2f7de1";
+  const ac = teamColor(away.color) ?? "#c1403d";
+  const label = left > 0 ? `Second half in ${clockText(left)}` : "Second half starting";
+  const pctLeft = Math.round((left / HALFTIME_MS) * 100);
+  const dots = useMemo(() => Array.from({ length: N }, (_, i) => i), []);
+  const angles = anglesAt(step);
+
+  return (
+    <div ref={ref} className="halftime-band" role="img" aria-label={`${label}. The ${home.abbr ?? home.name} band is on the field in a ${f.name.toLowerCase()} formation.`}>
+      <div className="band-count" aria-hidden="true">
+        <span className="band-count-k">HALFTIME</span>
+        <strong className="band-count-t">{left > 0 ? clockText(left) : "0:00"}</strong>
+        <span className="band-count-l">{left > 0 ? "until the second half" : "second half starting"}</span>
+        <i className="band-count-bar"><b style={{ width: `${pctLeft}%` }} /></i>
+      </div>
+      {/* The stadium seen from directly above: end zones with the schools' names and logos, the home logo at midfield, and the
+          home band in its uniforms — shakos with plumes, jackets with white trim, brass, drums and sousaphones. */}
+      <svg viewBox="0 0 120 40" className="band-svg" aria-hidden="true">
+        <FieldArt id={espnId} home={home} away={away} hc={hc} ac={ac} badge={badge} />
         <WeatherLayer weather={weather} period={2} h={40} seed={Number(espnId) || 1} />
         {dots.map((i) => {
           const [x, y] = f.pts[i];
