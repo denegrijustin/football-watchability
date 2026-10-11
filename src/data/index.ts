@@ -226,7 +226,7 @@ const norm = (t: string) => t.toLowerCase().replace(/^the\s+/, "").replace(/netw
 const NETWORK_ALIASES: Record<string, string> = { cbssn: "cbssportsnet", espnews: "espnnews" };
 /**
  * The part of a broadcast listing the network logo doesn't already say: "ESPN / ESPN App" → "" (the logo is ESPN and
- * links to the app), "CBS / Paramount+" → "Paramount+", "TNT" → "". Used beside a logo so the channel isn't named twice.
+ * links to the app), "CBS" → "", "TNT" → "". Used beside a logo so the channel isn't named twice.
  */
 export function broadcastExtra(broadcast: string, slug?: string | null) {
   const own = new Set([slug ? norm(slug) : "", slug && networks[slug]?.name ? norm(networks[slug].name!) : "", slug ? NETWORK_ALIASES[slug] ?? "" : "", "espnapp"].filter(Boolean));

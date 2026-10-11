@@ -6,7 +6,7 @@
 //  - Everything else on cable: the DIRECTV guide. DIRECTV publishes no link that tunes a channel; its box can only be
 //    tuned from inside the home network, which a web page cannot do, so the channel number beside the logo is what to
 //    punch in or search for.
-//  - A few streaming outlets (Prime Video, Peacock, Paramount+, FOX One): the outlet's home page.
+//  - A few streaming outlets (Prime Video, Peacock, FOX One): the outlet's home page.
 // Edit the tables below if a link moves.
 import { directvChannel } from "./directv";
 
@@ -16,8 +16,6 @@ const SPORT: Record<string, string> = { NFL: "nfl", CFB: "college-football" };
 const OUTLETS: Record<string, { name: string; url: string }> = {
   "prime-video": { name: "Prime Video", url: "https://www.primevideo.com/" },
   nbc: { name: "Peacock", url: "https://www.peacocktv.com/" },
-  cbs: { name: "Paramount+", url: "https://www.paramountplus.com/" },
-  cbssn: { name: "Paramount+", url: "https://www.paramountplus.com/" },
   fox: { name: "FOX One", url: "https://www.foxone.com/" },
   fs1: { name: "FOX One", url: "https://www.foxone.com/" },
   btn: { name: "FOX One", url: "https://www.foxone.com/" },
