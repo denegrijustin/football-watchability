@@ -13,6 +13,7 @@ import { Headshot } from "./Headshot";
 import { GameDetails } from "./GameDetails";
 import { FootballIcon } from "../live";
 import { FieldView, fieldWhy } from "../liveDrive";
+import type { WeatherLike } from "../weatherFx";
 import { HalftimeBand } from "../halftime";
 import { GameBadgeRow } from "./GameBadge";
 import { gameBadge } from "../gameLogo";
@@ -149,7 +150,7 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
   const badge = gameBadge({ meta: (up as { meta?: string } | undefined)?.meta, event: (up as { event?: string } | undefined)?.event, teams: teams as { logoId?: string }[] });
   const liveField =
     game && state === "in" && !isHalftime(game.status.detail)
-      ? FieldView({ variant: "center", data: game, badge, teams: [away, home].map((t, i) => ({ espnId: game.teams[i]?.id, abbr: t?.abbr, name: t?.name ?? "", color: t?.color, logoId: t?.logoId, conf: t?.ranks?.confName })) })
+      ? FieldView({ variant: "center", data: game, badge, weather: (up as { weather?: WeatherLike } | undefined)?.weather, teams: [away, home].map((t, i) => ({ espnId: game.teams[i]?.id, abbr: t?.abbr, name: t?.name ?? "", color: t?.color, logoId: t?.logoId, conf: t?.ranks?.confName })) })
       : null;
   const watch = up ? { score: up.score, tier: up.tier } : fin ? { score: fin.actual.score, tier: fin.actual.tier } : null;
 
@@ -167,7 +168,7 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
           ×
         </button>
         <div className="gc-body">
-          {league === "CFB" && state === "in" && isHalftime(game?.status.detail) && <HalftimeBand badge={badge} espnId={espnId} away={{ ...away, logoId: away.logoId }} home={{ ...home, logoId: home.logoId }} />}
+          {league === "CFB" && state === "in" && isHalftime(game?.status.detail) && <HalftimeBand badge={badge} weather={(up as { weather?: WeatherLike } | undefined)?.weather} espnId={espnId} away={{ ...away, logoId: away.logoId }} home={{ ...home, logoId: home.logoId }} />}
           {/* Scoreboard */}
           <header className="gc-head" style={{ background: `linear-gradient(90deg, ${away.color ?? "#17222c"}, #111a22 42%, #111a22 58%, ${home.color ?? "#17222c"})` }}>
             <TeamHead t={away} score={scoreA} poss={!!game?.situation?.possession && game.situation.possession === game.teams[0]?.id} win={state === "post" && scoreA! > scoreH!} />

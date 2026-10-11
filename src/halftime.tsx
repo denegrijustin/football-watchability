@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { logos, teamColor } from "./data";
 import type { GameBadge } from "./gameLogo";
 import { LogoMark } from "./logoTone";
+import { WeatherFx } from "./WeatherFx";
+import { hasFx, weatherFx, type WeatherLike } from "./weatherFx";
 import { FORMATIONS, HALFTIME_MS, mix, N, STEP_MS, anglesAt, clockText, firstSeen, halftimeLeft } from "./halftimeLogic";
 
 /**
@@ -11,7 +13,7 @@ import { FORMATIONS, HALFTIME_MS, mix, N, STEP_MS, anglesAt, clockText, firstSee
 type Side = { abbr?: string; name: string; color?: string | null; logoId?: string };
 
 
-export function HalftimeBand({ espnId, home, away, badge }: { espnId: string; home: Side; away: Side; badge?: GameBadge | null }) {
+export function HalftimeBand({ espnId, home, away, badge, weather }: { espnId: string; home: Side; away: Side; badge?: GameBadge | null; weather?: WeatherLike | null }) {
   const ref = useRef<HTMLDivElement>(null);
   const [seenAt] = useState(() => firstSeen(espnId, Date.now()));
   const [now, setNow] = useState(() => Date.now());
@@ -45,6 +47,7 @@ export function HalftimeBand({ espnId, home, away, badge }: { espnId: string; ho
   const pctLeft = Math.round((left / HALFTIME_MS) * 100);
   const dots = useMemo(() => Array.from({ length: N }, (_, i) => i), []);
   const angles = anglesAt(step);
+  const fx = weatherFx(weather, 2); // halftime: the second quarter's forecast
 
   return (
     <div ref={ref} className="halftime-band" role="img" aria-label={`${label}. The ${home.abbr ?? home.name} band is on the field in a ${f.name.toLowerCase()} formation.`}>
@@ -128,6 +131,7 @@ export function HalftimeBand({ espnId, home, away, badge }: { espnId: string; ho
         {/* a special or neutral-site game paints its own logo here; any other game, the home team's */}
         {badge?.src ? <LogoMark src={badge.src} cx={60} cy={20} size={19} chipOpacity={0.4} imageClass="band-mid-logo" gameLogo />
           : !badge?.neutral && home.logoId && logos[home.logoId] && <LogoMark src={logos[home.logoId]} cx={60} cy={20} size={19} chipOpacity={0.4} imageClass="band-mid-logo" />}
+        {hasFx(fx) && <WeatherFx fx={fx} h={40} seed={Number(espnId) || 1} />}
         {dots.map((i) => {
           const [x, y] = f.pts[i];
           const major = i === 0; // the drum major leads the band
