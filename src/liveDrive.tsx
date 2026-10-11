@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { logos, teamColor } from "./data";
 import { FootballIcon } from "./live";
 import { mix } from "./halftimeLogic";
+import { LogoMark } from "./logoTone";
 import type { GameBadge } from "./gameLogo";
 
 /** The slice of /api/game (see functions/api/game.js) the drive animation uses. */
@@ -212,11 +213,11 @@ export function FieldView({ data, teams, variant, rootRef, badge }: { data: Summ
         {[[away, 5, -90] as const, [home, 115, 90] as const].map(([t, x, rot], k) => (
           <g key={k}>
             <text x={x} y="22" className="lf-ez" transform={`rotate(${rot} ${x} 22)`} textAnchor="middle" dominantBaseline="central">{(t.abbr ?? t.name).toUpperCase()}</text>
-            {t.logoId && logos[t.logoId] && <image href={logos[t.logoId]} x={x - 3.5} y="8" width="7" height="7" preserveAspectRatio="xMidYMid meet" />}
+            {t.logoId && logos[t.logoId] && <LogoMark src={logos[t.logoId]} cx={x} cy={11.5} size={6} />}
           </g>
         ))}
         {(badge?.src ?? (!badge?.neutral && home.logoId ? logos[home.logoId] : null)) && (
-          <image href={badge?.src ?? logos[home.logoId!]} x="52" y="9" width="16" height="16" preserveAspectRatio="xMidYMid meet" opacity="0.55" className="lf-mid" />
+          <LogoMark src={badge?.src ?? logos[home.logoId!]} cx={60} cy={17} size={15} chipOpacity={0.4} imageClass="lf-mid" />
         )}
         {[[away, 35] as const, [home, 95] as const].map(([t, x], k) =>
           confMark(t.conf) ? (
@@ -251,10 +252,7 @@ export function FieldView({ data, teams, variant, rootRef, badge }: { data: Summ
           <line x1="0" x2="0" y1="0" y2="34" className="df-los" />
           <circle cx="0" cy="17" r="4.6" className="df-pulse" stroke={colors[side]} />
           {logo ? (
-            <>
-              <circle cx="0" cy="17" r="3.6" className="lf-chip" stroke={colors[side]} />
-              <image href={logos[teams[side].logoId!]} x="-2.8" y="14.2" width="5.6" height="5.6" preserveAspectRatio="xMidYMid meet" className="lf-ball-logo" />
-            </>
+            <LogoMark src={logos[teams[side].logoId!]} cx={0} cy={17} size={5.4} chipOpacity={1} chipClass="lf-chip" imageClass="lf-ball-logo" />
           ) : (
             <ellipse cx="0" cy="17" rx="2.4" ry="1.5" className="df-pigskin" />
           )}
