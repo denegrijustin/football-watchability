@@ -4,6 +4,7 @@ import { FootballIcon } from "./live";
 import { mix } from "./halftimeLogic";
 import { LogoMark } from "./logoTone";
 import { WeatherFx } from "./WeatherFx";
+import { ConfMark } from "./ConfMark";
 import { fxText, hasFx, weatherFx, type WeatherLike } from "./weatherFx";
 import type { GameBadge } from "./gameLogo";
 
@@ -19,8 +20,6 @@ type Summary = {
   curPlays?: { down: string; text: string; yards: number; period: number | null; clock: string; kind: string; score: boolean; turnover: boolean }[];
 };
 export type FieldTeam = { espnId?: string | null; abbr?: string; name: string; color?: string | null; logoId?: string; conf?: string | null };
-/** The conference to paint on the sideline, if it has a short name worth painting (not independents). */
-const confMark = (c?: string | null) => (c && !/independent/i.test(c) ? c.toUpperCase() : null);
 
 // The /api/game function takes nfl or cfb (not the ESPN path), the same values the Game Center sends.
 const PATHS: Record<string, string> = { NFL: "nfl", CFB: "cfb" };
@@ -163,6 +162,10 @@ export function FieldView({ data, teams, variant, rootRef, badge, weather }: { d
   const toFirst = m ? Number(m[1]) : null;
   const firstDown = toFirst != null ? clamp(ball + dir * toFirst) : null;
   const goal = awayOffense ? 100 : 0;
+  const toGoal = Math.abs(goal - ball);
+  // ESPN's red-zone flag, or the plain fact of being inside the opponent's 20.
+  const redZone = !!sit?.redZone || toGoal <= 20;
+  const chevrons = Math.max(0, Math.min(3, Math.floor((toGoal - 7) / 4)));
   const abbr = data.teams.find((t) => t.id === possession)?.abbr ?? own;
   const downText = sit?.text ?? "";
   const label = `${abbr} ${downText ? downText : "driving"}`;
@@ -191,12 +194,14 @@ export function FieldView({ data, teams, variant, rootRef, badge, weather }: { d
   );
 
   return (
-    <div ref={rootRef} className={`lf lf-${variant}`} role="img" aria-label={`Live field: ${label}. ${stats}. Drive started at ${startedAt}.`}>
+    <div ref={rootRef} className={`lf lf-${variant}${redZone ? " lf-red" : ""}`} role="img" aria-label={`Live field: ${label}. ${stats}. Drive started at ${startedAt}.`}>
       <p className="lf-ball-team">
         {logo && <img src={logos[teams[side].logoId!]} alt="" width={variant === "card" ? 16 : 22} height={variant === "card" ? 16 : 22} />}
         <FootballIcon title="Has the ball" />
-        <b>{teams[side].name}</b>
+        <b>{variant === "card" ? (teams[side].abbr ?? teams[side].name) : teams[side].name}</b>
         <span> have the ball</span>
+        <span className="lf-heading" aria-label={`driving toward the ${opp} end zone`}>driving {dir > 0 ? "→" : "←"}</span>
+        {redZone && <span className="lf-rz">RED ZONE</span>}
       </p>
       <svg viewBox={variant === "card" ? "0 6 120 23" : "0 0 120 34"} className="drive-svg" aria-hidden="true">
         <rect x="0" y="0" width="120" height="34" className="df-turf" />
@@ -220,21 +225,15 @@ export function FieldView({ data, teams, variant, rootRef, badge, weather }: { d
             {t.logoId && logos[t.logoId] && <LogoMark src={logos[t.logoId]} cx={x} cy={11.5} size={6} />}
           </g>
         ))}
-        {(badge?.src ?? (!badge?.neutral && home.logoId ? logos[home.logoId] : null)) && (
-          <LogoMark src={badge?.src ?? logos[home.logoId!]} cx={60} cy={17} size={15} chipOpacity={0.4} imageClass="lf-mid" />
-        )}
-        {[[away, 35] as const, [home, 95] as const].map(([t, x], k) =>
-          confMark(t.conf) ? (
-            <text key={k} x={x} y="27" className="lf-conf" textAnchor="middle">{confMark(t.conf)}</text>
-          ) : null,
-        )}
-        {sit?.redZone && <rect x={awayOffense ? X(80) : X(0)} y="0" width="20" height="34" className="df-red" />}
+        {redZone && <rect x={awayOffense ? X(80) : X(0)} y="0" width="20" height="34" className="df-red" />}
         {Array.from({ length: 11 }, (_, i) => (
           <line key={i} x1={10 + i * 10} x2={10 + i * 10} y1="0" y2="34" className={i === 5 ? "df-line mid" : "df-line"} />
         ))}
         {[1, 2, 3, 4, 5, 4, 3, 2, 1].map((n, i) => (
           <text key={i} x={20 + i * 10} y="32" className="df-num" textAnchor="middle">{n * 10}</text>
         ))}
+        <ConfMark conf={away.conf} cx={45} cy={25} size={7} />
+        <ConfMark conf={home.conf} cx={75} cy={25} size={7} />
         {hasFx(fx) && <WeatherFx fx={fx} h={variant === "card" ? 23 : 34} y0={variant === "card" ? 6 : 0} seed={Number(ids[0]) || 1} compact={variant === "card"} />}
         {past.map((d, i) => {
           const a = spot(d.from!, d.team === ids[0]);
@@ -248,6 +247,19 @@ export function FieldView({ data, teams, variant, rootRef, badge, weather }: { d
         <line x1={X(start)} x2={X(ball)} y1="17" y2="17" stroke={colors[side]} className="df-path" />
         <line x1={X(start)} x2={X(ball)} y1="17" y2="17" className="df-flow" />
         <path d={`M${X(ball) + dir * 1.2} 17 l${-dir * 2.2} -1.6 v3.2z`} fill="#fff" opacity="0.9" />
+        {(badge?.src ?? (!badge?.neutral && home.logoId ? logos[home.logoId] : null)) && (
+          <LogoMark src={badge?.src ?? logos[home.logoId!]} cx={60} cy={17} size={15} chipOpacity={0.4} imageClass="lf-mid" />
+        )}
+        {/* the way the offense is headed: chevrons ahead of the ball, stepping toward the goal line it is attacking */}
+        {Array.from({ length: chevrons }, (_, i) => (
+          <path
+            key={i}
+            className="lf-chev"
+            data-dir={dir}
+            d={`M${X(ball) + dir * (7 + i * 4)} 14.2 l${dir * 2.6} 2.8 l${-dir * 2.6} 2.8`}
+            style={{ animationDelay: `${i * 0.22}s` }}
+          />
+        ))}
         <g className="lf-start">
           <line x1={X(start)} x2={X(start)} y1="9" y2="25" stroke={colors[side]} className="df-start" />
           <path d={`M${X(start)} 9 h${dir * 5} l${-dir * 1.2} 1.6 l${dir * 1.2} 1.6 h${-dir * 5}z`} fill="#fff" opacity="0.92" />

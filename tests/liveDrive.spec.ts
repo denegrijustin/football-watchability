@@ -191,7 +191,11 @@ test("the ball marker is the offense's team logo, and the field carries end-zone
   await expect(svg.locator("image.lf-mid")).toHaveCount(1); // the home logo at midfield
   await expect(svg.locator("text.lf-ez")).toHaveCount(2); // team names in the end zones
   await expect(svg.locator("g > image")).not.toHaveCount(0); // end-zone logos
-  await expect(svg.locator("text.lf-conf").first()).toBeAttached(); // conference painted on the sideline
+  // The conference mark on the 35 of each half: the away team's (NFC here) on the left, the home team's on the right.
+  const marks = svg.locator("g.lf-conf");
+  await expect(marks).toHaveCount(2);
+  const confs = await marks.evaluateAll((els) => els.map((e) => e.getAttribute("data-conf")));
+  expect(confs.every((c) => c === "AFC" || c === "NFC")).toBe(true);
 });
 
 test("a live game with rain and wind in its forecast shows them over the field, and says so in the caption", async ({ page }) => {
@@ -223,4 +227,51 @@ test("a live game with rain and wind in its forecast shows them over the field, 
   await expect(live.locator(".lf-wx")).toContainText("wind E 38 mph");
   // A card without weather impact draws none.
   await expect(page.locator(".board-section.live .game-card").nth(1).locator(".wx")).toHaveCount(0);
+});
+
+async function openWith(page: import("@playwright/test").Page, make: () => any) {
+  const start = Math.max(...games.map((g: any) => new Date(g.date).getTime()));
+  await page.clock.install({ time: start + 90 * 60e3 });
+  await page.route("**/api/scores**", (route) =>
+    route.fulfill({ json: games.map((g: any, i: number) => ({ id: g.espnId, state: i === 0 ? "in" : "pre", detail: "5:12 - 3rd", away: 14, home: 17 })) }),
+  );
+  await page.route("**/api/flow**", (route) => route.fulfill({ json: { wp: [] } }));
+  await page.route("**/api/game**", (route) => route.fulfill({ json: make() }));
+  await page.goto("/?league=NFL");
+  return page.locator(".board-section.live .game-card").first();
+}
+
+test("an arrow shows which way the drive is headed", async ({ page }) => {
+  const live = await openWith(page, () => summary(65, "2nd & 7 at SEA 35"));
+  await expect(live.locator(".lf-heading")).toContainText("→"); // the away team drives toward the right
+  await expect(live.locator(".lf-chev").first()).toHaveAttribute("data-dir", "1");
+  await expect(live.locator(".lf-chev")).toHaveCount(3);
+});
+
+test("a home-team drive points the other way", async ({ page }) => {
+  const live = await openWith(page, () => {
+    const sm = summary(70, "1st & 10 at SF 30");
+    const h = sm.teams[1].id;
+    sm.situation.possession = h;
+    sm.drives[1].team = h;
+    return sm;
+  });
+  await expect(live.locator(".lf-heading")).toContainText("←");
+  await expect(live.locator(".lf-chev").first()).toHaveAttribute("data-dir", "-1");
+});
+
+test("inside the 20 the field's box turns red, with a RED ZONE tag; outside it does not", async ({ page }) => {
+  const live = await openWith(page, () => summary(15, "1st & 10 at SEA 15"));
+  await expect(live.locator(".lf.lf-red")).toHaveCount(1);
+  await expect(live.locator(".lf-rz")).toContainText("RED ZONE");
+  const border = await live.locator(".lf").evaluate((e) => getComputedStyle(e).borderTopColor);
+  expect(border).not.toBe("rgba(0, 0, 0, 0)");
+  await expect(live.locator(".lf-chev")).toHaveCount(2); // only as many as fit before the goal line
+});
+
+test("out of the red zone the box has no red border", async ({ page }) => {
+  const live = await openWith(page, () => summary(65, "2nd & 7 at SEA 35"));
+  await expect(live.locator(".lf")).toBeVisible();
+  await expect(live.locator(".lf-red")).toHaveCount(0);
+  await expect(live.locator(".lf-rz")).toHaveCount(0);
 });

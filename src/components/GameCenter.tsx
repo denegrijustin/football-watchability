@@ -168,7 +168,7 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
           ×
         </button>
         <div className="gc-body">
-          {league === "CFB" && state === "in" && isHalftime(game?.status.detail) && <HalftimeBand badge={badge} weather={(up as { weather?: WeatherLike } | undefined)?.weather} espnId={espnId} away={{ ...away, logoId: away.logoId }} home={{ ...home, logoId: home.logoId }} />}
+          {league === "CFB" && state === "in" && isHalftime(game?.status.detail) && <HalftimeBand badge={badge} weather={(up as { weather?: WeatherLike } | undefined)?.weather} espnId={espnId} away={{ ...away, logoId: away.logoId, conf: away.ranks?.confName }} home={{ ...home, logoId: home.logoId, conf: home.ranks?.confName }} />}
           {/* Scoreboard */}
           <header className="gc-head" style={{ background: `linear-gradient(90deg, ${away.color ?? "#17222c"}, #111a22 42%, #111a22 58%, ${home.color ?? "#17222c"})` }}>
             <TeamHead t={away} score={scoreA} poss={!!game?.situation?.possession && game.situation.possession === game.teams[0]?.id} win={state === "post" && scoreA! > scoreH!} />

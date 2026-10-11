@@ -3,6 +3,7 @@ import { logos, teamColor } from "./data";
 import type { GameBadge } from "./gameLogo";
 import { LogoMark } from "./logoTone";
 import { WeatherFx } from "./WeatherFx";
+import { ConfMark } from "./ConfMark";
 import { hasFx, weatherFx, type WeatherLike } from "./weatherFx";
 import { FORMATIONS, HALFTIME_MS, mix, N, STEP_MS, anglesAt, clockText, firstSeen, halftimeLeft } from "./halftimeLogic";
 
@@ -10,7 +11,7 @@ import { FORMATIONS, HALFTIME_MS, mix, N, STEP_MS, anglesAt, clockText, firstSee
  * College halftime: a 20-minute countdown and the band marching through formations on the field. It stands in for the drive
  * chart while the game is at halftime (college games only). Still for visitors who ask for reduced motion.
  */
-type Side = { abbr?: string; name: string; color?: string | null; logoId?: string };
+type Side = { abbr?: string; name: string; color?: string | null; logoId?: string; conf?: string | null };
 
 
 export function HalftimeBand({ espnId, home, away, badge, weather }: { espnId: string; home: Side; away: Side; badge?: GameBadge | null; weather?: WeatherLike | null }) {
@@ -131,6 +132,8 @@ export function HalftimeBand({ espnId, home, away, badge, weather }: { espnId: s
         {/* a special or neutral-site game paints its own logo here; any other game, the home team's */}
         {badge?.src ? <LogoMark src={badge.src} cx={60} cy={20} size={19} chipOpacity={0.4} imageClass="band-mid-logo" gameLogo />
           : !badge?.neutral && home.logoId && logos[home.logoId] && <LogoMark src={logos[home.logoId]} cx={60} cy={20} size={19} chipOpacity={0.4} imageClass="band-mid-logo" />}
+        <ConfMark conf={away.conf} cx={45} cy={31} size={8} />
+        <ConfMark conf={home.conf} cx={75} cy={31} size={8} />
         {hasFx(fx) && <WeatherFx fx={fx} h={40} seed={Number(espnId) || 1} />}
         {dots.map((i) => {
           const [x, y] = f.pts[i];
