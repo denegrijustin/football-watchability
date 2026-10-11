@@ -90,3 +90,14 @@ test("each team in the strip carries its FPI rank, and NFL teams their power ran
   await expect(cfb.locator(".ticker-rank.pr")).toHaveCount(0); // power rank is an NFL thing
   await expect(nfl).toHaveAttribute("aria-label", /FPI rank: .* \d+, .* \d+; the power rank is the same\./);
 });
+
+test("the Denver Broncos are shown as the Denver Donkeys, while the team underneath is still the Broncos", async ({ page }) => {
+  await page.goto("/?league=NFL");
+  const ticker = page.getByRole("region", { name: "Final scores" });
+  const item = ticker.locator(".ticker-track > li:not([aria-hidden]) .ticker-item", { hasText: "DEN" }).first();
+  await expect(item).toHaveAttribute("aria-label", /Denver Donkeys \d+/);
+  expect((await item.getAttribute("aria-label")) ?? "").not.toMatch(/Broncos/);
+  // The logo is still the one filed under the Broncos, and the abbreviation is unchanged.
+  await expect(item.locator("img").first()).toHaveAttribute("src", /denver-broncos\.webp/);
+  expect(await page.locator("body").innerText()).not.toMatch(/Broncos/);
+});

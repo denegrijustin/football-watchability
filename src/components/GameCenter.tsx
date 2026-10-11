@@ -4,6 +4,7 @@ import { ART_LABEL, PlayArt } from "./PlayArt";
 import { openModal } from "../modal";
 import { broadcastExtra, logos, networkLogo, rankLine, results, slate, teamColor, tierLabel, type Ranks } from "../data";
 import { trimGame } from "../gameTrim.js";
+import { rename } from "../data/load";
 import { dayOf, timeOf, tzAbbr } from "../tz";
 import { AdvancedStats, type Advanced } from "./AdvancedStats";
 import { PregameWinProb, type WinProbData } from "./PregameWinProb";
@@ -52,13 +53,13 @@ const PATHS: Record<string, string> = { nfl: "nfl", cfb: "college-football" };
 async function fetchGame(league: string, id: string): Promise<LiveGame | null> {
   try {
     const r = await fetch(`/api/game?league=${league}&event=${id}`);
-    if (r.ok && (r.headers.get("content-type") ?? "").includes("json")) return await r.json();
+    if (r.ok && (r.headers.get("content-type") ?? "").includes("json")) return rename(await r.json());
   } catch {
     /* fall through */
   }
   try {
     const r = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/${PATHS[league]}/summary?event=${id}`);
-    if (r.ok) return trimGame(await r.json()) as LiveGame;
+    if (r.ok) return rename(trimGame(await r.json())) as LiveGame;
   } catch {
     /* offline */
   }
