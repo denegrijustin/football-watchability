@@ -26,6 +26,7 @@ import { LiveDrive } from "../liveDrive";
 import { HalftimeBand } from "../halftime";
 import { GameBadgeRow } from "./GameBadge";
 import { gameBadge } from "../gameLogo";
+import { upsetBy } from "../upset";
 import { isHalftime } from "../halftimeLogic";
 
 const impactLevel = (impact: string) =>
@@ -100,13 +101,16 @@ export function GameCard({
     </button>
   );
   const badge = gameBadge(game as { meta?: string; event?: string | null; teams: { logoId?: string }[] });
+  // An upset alert while the game is on: the team FPI ranks lower is ahead. It becomes an upset final if it holds.
+  const upsetNow = live && live.state !== "pre" && upsetBy(game.teams.map((t) => (t as { ranks?: { overall?: number | null } }).ranks?.overall), [live.away, live.home]);
+  const upset: "alert" | "final" | null = upsetNow ? (live!.state === "post" ? "final" : "alert") : null;
   const atHalf = live?.state === "in" && !!game.espnId && game.league === "CFB" && isHalftime(live.detail);
   const bandTop = atHalf ? <HalftimeBand badge={badge} weather={game.weather} espnId={game.espnId} away={{ ...(game.teams[0] as { abbr?: string; name: string; color?: string | null; logoId?: string }), conf: (game.teams[0] as { ranks?: { confName?: string } }).ranks?.confName }} home={{ ...(game.teams[1] as { abbr?: string; name: string; color?: string | null; logoId?: string }), conf: (game.teams[1] as { ranks?: { confName?: string } }).ranks?.confName }} /> : null;
   return (
     <article
       ref={cardRef}
       data-game-id={game.id}
-      className={`game-card ${game.tier}${homeColor ? " team-tinted" : ""}${expanded ? " expanded" : " compact"}`}
+      className={`game-card ${game.tier}${homeColor ? " team-tinted" : ""}${expanded ? " expanded" : " compact"}${upset ? ` upset-${upset}` : ""}`}
       style={
         homeColor ? ({ "--team-bg": homeColor } as CSSProperties) : undefined
       }
@@ -116,7 +120,7 @@ export function GameCard({
           setExpanded(true);
       }}
     >
-      {!expanded && <CompactGame titleId={`${game.id}-title`} matchup={game.matchup} date={date} broadcast={game.broadcast} network={game.network} espnId={game.espnId} teams={game.teams} league={game.league} score={game.score} tier={game.tier} venue={meta.venue} line={meta.line} crew={(game as { announcers?: CrewMember[] }).announcers} driveChart={live?.state === "in" && game.espnId && !atHalf ? (<LiveDrive espnId={game.espnId} league={game.league} badge={badge} weather={game.weather} teams={(game.teams as { espnId?: string | null; abbr?: string; name: string; color?: string | null; logoId?: string; ranks?: { confName?: string } }[]).map((t) => ({ ...t, conf: t.ranks?.confName }))} />) : undefined} top={bandTop} badge={<GameBadgeRow badge={badge} />} weather={game.weather} status={<GameStatus live={live} />} scores={[<TeamScore live={live} side="away" />, <TeamScore live={live} side="home" />]} onExpand={() => setExpanded(true)} momentum={<MomentumFlow wp={flow ?? []} away={awayAbbr} home={homeAbbr} compact status={live ? { state: live.state, period: flow?.at(-1)?.[1] ?? 1, clock: flow?.at(-1)?.[2]?.clock ?? "15:00" } : undefined} pendingLabel={live?.state === "in" ? "Awaiting play data" : live?.state === "post" ? "Play data unavailable" : "Starts at kickoff"} />} />}
+      {!expanded && <CompactGame titleId={`${game.id}-title`} matchup={game.matchup} date={date} broadcast={game.broadcast} network={game.network} espnId={game.espnId} teams={game.teams} league={game.league} score={game.score} tier={game.tier} venue={meta.venue} line={meta.line} crew={(game as { announcers?: CrewMember[] }).announcers} driveChart={live?.state === "in" && game.espnId && !atHalf ? (<LiveDrive espnId={game.espnId} league={game.league} badge={badge} weather={game.weather} teams={(game.teams as { espnId?: string | null; abbr?: string; name: string; color?: string | null; logoId?: string; ranks?: { confName?: string } }[]).map((t) => ({ ...t, conf: t.ranks?.confName }))} />) : undefined} top={bandTop} badge={<GameBadgeRow badge={badge} />} weather={game.weather} status={<GameStatus live={live} upset={upset} />} scores={[<TeamScore live={live} side="away" />, <TeamScore live={live} side="home" />]} onExpand={() => setExpanded(true)} momentum={<MomentumFlow wp={flow ?? []} away={awayAbbr} home={homeAbbr} compact status={live ? { state: live.state, period: flow?.at(-1)?.[1] ?? 1, clock: flow?.at(-1)?.[2]?.clock ?? "15:00" } : undefined} pendingLabel={live?.state === "in" ? "Awaiting play data" : live?.state === "post" ? "Play data unavailable" : "Starts at kickoff"} />} />}
       {expanded && (
         <>
       {bandTop}
@@ -191,7 +195,7 @@ export function GameCard({
           {game.matchup}
         </h3>
         <div className="matchup-teams">
-          <GameStatus live={live} />
+          <GameStatus live={live} upset={upset} />
           {[away, home].map((team, i) => (
             <div className="team-heading" key={team.name}>
               <img
