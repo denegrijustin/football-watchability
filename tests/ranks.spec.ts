@@ -50,6 +50,11 @@ test("ranks are labeled where they appear: on the cards, in the TV grid key and 
 });
 
 test("TV grid: every team shows its record, and the national rank is the AP rank when it has one, otherwise FPI", async ({ page }) => {
+  // The grid opens on today's games; pin the clock to the day of a game with an AP-ranked team, so the check doesn't depend on
+  // which day of the week the suite runs (on a Sunday the grid holds only late kickoffs).
+  const { default: slate } = await import("../src/data/slate.json", { with: { type: "json" } });
+  const ranked = (slate as any).games.filter((g: any) => g.league === "CFB" && g.teams.some((t: any) => /^AP #/.test(t.rankings?.[0] ?? "")));
+  if (ranked.length) await page.clock.setFixedTime(new Date(new Date(ranked[0].date).getTime() - 2 * 3600e3));
   await page.goto("/?league=CFB");
   await page.getByRole("button", { name: "TV grid" }).click();
   await expect(page.locator(".tv-game").first()).toBeVisible();
