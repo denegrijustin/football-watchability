@@ -168,7 +168,7 @@ export function LiveScores({ children }: { children: ReactNode }) {
  * Status line above the team names on live and just-finished cards: LIVE with the
  * quarter and clock, or FINAL. The scores sit beside each team (see TeamScore).
  */
-export function GameStatus({ live, upset }: { live?: LiveScore; upset?: "alert" | "final" | null }) {
+export function GameStatus({ live }: { live?: LiveScore }) {
   if (!live || live.state === "pre") return null;
   if (live.state === "post") {
     const extra = live.detail.replace(/^final\/?/i, "").trim();
@@ -176,7 +176,6 @@ export function GameStatus({ live, upset }: { live?: LiveScore; upset?: "alert" 
       <div className="game-status post" role="status">
         <span className="gs-pill">Final</span>
         {extra && <span className="gs-period">{extra}</span>}
-        {upset === "final" && <span className="gs-upset">Upset final</span>}
       </div>
     );
   }
@@ -187,7 +186,6 @@ export function GameStatus({ live, upset }: { live?: LiveScore; upset?: "alert" 
       {period && <span className="gs-period">{period}</span>}
       {clock && <span className="gs-clock">{clock}</span>}
       {text && <span className="gs-period">{text}</span>}
-      {upset === "alert" && <span className="gs-upset">Upset alert</span>}
     </div>
   );
 }

@@ -6656,30 +6656,41 @@ select,
 .game-card.upset-alert {
   animation: upset-glow 2.6s ease-in-out infinite;
 }
-.gs-upset {
-  padding: 1px 7px;
-  border-radius: 999px;
-  background: rgb(57 255 136 / 0.14);
-  box-shadow: 0 0 0 1px #39ff88, 0 0 6px rgb(57 255 136 / 0.55);
-  color: #39ff88;
-  font-size: 0.66rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
 @media (prefers-reduced-motion: reduce) {
   .game-card.upset-alert {
     animation: none;
   }
 }
-.game-status:has(.gs-upset) {
-  flex-wrap: wrap;
+
+.upset-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: -16px -18px 12px;
+  padding: 5px 12px;
+  background: rgb(57 255 136 / 0.12);
+  box-shadow: inset 0 -1px 0 rgb(57 255 136 / 0.5);
+  color: #39ff88;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-shadow: 0 0 6px rgb(57 255 136 / 0.6);
+  white-space: nowrap;
+  overflow: hidden;
 }
-.game-status .gs-upset {
-  flex-basis: auto;
-  margin-top: 2px;
+.upset-banner b {
+  font-weight: 800;
 }
-.cc-when:has(.gs-upset) {
-  flex-wrap: wrap;
+.upset-banner span {
+  color: var(--text-2);
+  font-weight: 700;
+  text-shadow: none;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.upset-banner i {
+  font-style: normal;
+  opacity: 0.8;
 }

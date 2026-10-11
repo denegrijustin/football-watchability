@@ -60,7 +60,7 @@ test("a college game at halftime shows the band, second under the score, with a 
   await expect(band.locator(".band-member")).toHaveCount(64);
   // The very first thing on the card.
   const order = await live(page).locator(".compact-overview > *").evaluateAll((els) => els.map((e) => e.className.split(" ")[0]));
-  expect(order[0]).toBe("halftime-band");
+  expect(order.filter((c) => c !== "upset-banner")[0]).toBe("halftime-band"); // an upset strip, if there is one, sits above it
   await expect(band).toContainText("Second half in 19:00");
   await page.clock.fastForward(60_000);
   await expect(band).toContainText("Second half in 18:00");
@@ -117,7 +117,7 @@ test("every member keeps marching, and the countdown also tops the expanded card
   expect(await step.evaluate((e) => getComputedStyle(e).animationName)).toBe("band-sway");
   expect(await live(page).locator(".band-foot.a").first().evaluate((e) => getComputedStyle(e).animationName)).toBe("band-foot");
   await live(page).locator("button.card-toggle, .cc-chevron").first().click();
-  const first = await live(page).evaluate((e) => (e.firstElementChild as HTMLElement).className);
+  const first = await live(page).evaluate((e) => ([...e.children].find((c) => !c.classList.contains("upset-banner")) as HTMLElement).className); // past any upset strip
   expect(first).toContain("halftime-band");
 });
 
