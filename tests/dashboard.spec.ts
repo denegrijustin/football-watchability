@@ -1066,3 +1066,25 @@ test("the whole-week TV grid image carries the NFL and college slate together, w
   const everything = await size(/Full weekend/);
   expect(everything).toEqual(week);
 });
+
+test("completed games run from the most insane to the least within each week", async ({ page }) => {
+  const { insanity } = await import("../src/insanity.js");
+  await page.goto("/?league=NFL");
+  await completed(page);
+  const blocks = page.locator(".week-block");
+  await expect(blocks.first()).toBeVisible();
+  const results = JSON.parse(readFileSync("src/data/results.json", "utf8")).games as any[];
+  const byId = new Map(results.map((r) => [String(r.espnId), r]));
+  const n = await blocks.count();
+  let compared = 0;
+  for (let b = 0; b < n; b++) {
+    const ids = await blocks.nth(b).locator("article[aria-labelledby^='r-']").evaluateAll((els) => els.map((e) => (e.getAttribute("aria-labelledby") ?? "").slice(2)));
+    const scores = ids.map((id) => {
+      const r = byId.get(id);
+      return r ? insanity(r.wp, { final: true, overtime: r.final?.overtime })?.score ?? -1 : -1;
+    });
+    expect(scores).toEqual([...scores].sort((a, b) => b - a));
+    if (ids.length > 1) compared++;
+  }
+  expect(compared).toBeGreaterThan(0); // at least one week had several games to put in order
+});
