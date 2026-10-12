@@ -51,7 +51,8 @@ test("a live card shows the drive animation second, directly under the score blo
   await expect(drive).toContainText("2nd & 7 at SEA 35");
   await expect(drive).toContainText("4 plays");
   await expect(drive.locator(".df-first")).toHaveCount(1); // first-down line
-  await expect(drive.locator(".df-flow")).toHaveCount(1); // the moving dashes
+  await expect(drive.locator(".df-play")).toHaveCount(3); // a line for each play of the drive
+  await expect(drive.locator(".lf-chev, .df-flow, .df-path")).toHaveCount(0); // no animated arrows
   // Games that aren't live get no drive chart.
   await expect(page.locator(".board-section.upcoming .drive-live").first()).toHaveCount(0);
 });
@@ -82,8 +83,7 @@ test("with reduced motion the drive stays drawn and nothing animates", async ({ 
   const live = page.locator(".board-section.live .game-card").first();
   await expect(live.locator(".drive-live svg.drive-svg")).toBeVisible();
   expect(await live.locator(".df-pulse").evaluate((e) => getComputedStyle(e).animationName)).toBe("none");
-  expect(await live.locator(".df-path").evaluate((e) => getComputedStyle(e).animationName)).toBe("none");
-  await expect(live.locator(".df-flow")).toBeHidden();
+  await expect(live.locator(".df-play")).toHaveCount(3); // the plays are drawn, not animated
 });
 
 test("the live field names who has the ball, where it is, where the drive started, and lists the drive's plays", async ({ page }) => {
@@ -244,11 +244,11 @@ async function openWith(page: import("@playwright/test").Page, make: () => any) 
   return page.locator(".board-section.live .game-card").first();
 }
 
-test("an arrow shows which way the drive is headed", async ({ page }) => {
+test("the heading says which way the drive is headed", async ({ page }) => {
   const live = await openWith(page, () => summary(65, "2nd & 7 at SEA 35"));
   await expect(live.locator(".lf-heading")).toContainText("→"); // the away team drives toward the right
-  await expect(live.locator(".lf-chev").first()).toHaveAttribute("data-dir", "1");
-  await expect(live.locator(".lf-chev")).toHaveCount(3);
+  await expect(live.locator(".lf-plays-chart")).toHaveAttribute("data-dir", "1");
+  await expect(live.locator(".lf-chev")).toHaveCount(0); // the heading says it; nothing animates
 });
 
 test("a home-team drive points the other way", async ({ page }) => {
@@ -260,7 +260,7 @@ test("a home-team drive points the other way", async ({ page }) => {
     return sm;
   });
   await expect(live.locator(".lf-heading")).toContainText("←");
-  await expect(live.locator(".lf-chev").first()).toHaveAttribute("data-dir", "-1");
+  await expect(live.locator(".lf-plays-chart")).toHaveAttribute("data-dir", "-1");
 });
 
 test("inside the 20 the field's box turns red, with a RED ZONE tag; outside it does not", async ({ page }) => {
@@ -269,7 +269,6 @@ test("inside the 20 the field's box turns red, with a RED ZONE tag; outside it d
   await expect(live.locator(".lf-rz")).toContainText("RED ZONE");
   const border = await live.locator(".lf").evaluate((e) => getComputedStyle(e).borderTopColor);
   expect(border).not.toBe("rgba(0, 0, 0, 0)");
-  await expect(live.locator(".lf-chev")).toHaveCount(2); // only as many as fit before the goal line
 });
 
 test("out of the red zone the box has no red border", async ({ page }) => {
@@ -348,23 +347,53 @@ test("if the lower-ranked team holds on, the card becomes an upset final", async
 });
 
 // ---------- run / pass colours on the field ----------
-test("the drive on the field is red for runs and blue for passes, with each play as its own stretch", async ({ page }) => {
+test("the drive on the field is a line per play, from the top down: red for runs, blue for passes, dashed where yards were lost", async ({ page }) => {
   const live = await openWith(page, () => summary(65, "2nd & 7 at SEA 35"));
   await expect(live.locator(".lf")).toBeVisible();
-  const segs = live.locator(".df-seg");
-  // The mocked drive: a completed pass, a run for no gain (still a stretch), a sack (a pass play).
-  await expect(live.locator(".df-seg.pass")).toHaveCount(2);
-  await expect(live.locator(".df-seg.run")).toHaveCount(1);
+  const plays = live.locator(".df-play");
+  // The mocked drive: a completed pass for 12, a run for no gain, a sack for -3 (a pass play).
+  await expect(plays).toHaveCount(3);
+  expect(await plays.evaluateAll((els) => els.map((e) => e.getAttribute("data-kind")))).toEqual(["pass", "run", "pass"]);
   expect(await live.locator(".df-seg.run").first().evaluate((e) => getComputedStyle(e).stroke)).toBe("rgb(255, 77, 79)");
   expect(await live.locator(".df-seg.pass").first().evaluate((e) => getComputedStyle(e).stroke)).toBe("rgb(59, 157, 255)");
-  // The stretches follow the plays in order and end at the ball.
-  const xs = await segs.evaluateAll((els) => els.map((e) => [Number(e.getAttribute("x1")), Number(e.getAttribute("x2"))]));
-  expect(xs).toHaveLength(3);
+  // Each play has its own row, one below the other, and the ball sits on the row after the last.
+  const ys = await live.locator(".df-seg").evaluateAll((els) => els.map((e) => Number(e.getAttribute("y1"))));
+  expect(ys[1]).toBeGreaterThan(ys[0]);
+  expect(ys[2]).toBeGreaterThan(ys[1]);
+  // They follow the ball down the field: each starts where the last ended.
+  const xs = await live.locator(".df-seg").evaluateAll((els) => els.map((e) => [Number(e.getAttribute("x1")), Number(e.getAttribute("x2"))]));
   expect(xs[0][1]).toBeCloseTo(xs[1][0], 1);
   expect(xs[1][1]).toBeCloseTo(xs[2][0], 1);
+  expect(xs[2][1]).toBeLessThan(xs[2][0]); // the sack went backwards
+  // The sack is dashed, a loss; the gain is solid. Each has its yards written beside it.
+  await expect(live.locator(".df-seg.loss")).toHaveCount(1);
+  await expect(plays.nth(0).locator(".df-play-label")).toHaveText("+12");
+  await expect(plays.nth(1).locator(".df-play-label")).toHaveText("0");
+  await expect(plays.nth(2).locator(".df-play-label")).toHaveText("\u22123");
   // The key says which colour is which.
   await expect(live.locator(".lf-key")).toContainText("run");
   await expect(live.locator(".lf-key")).toContainText("pass");
+  await expect(live.locator(".lf-key")).toContainText("punt / FG");
+});
+
+test("a punt and a field goal are on the drive too: a gold line for the kick, with its distance, and a good or missed mark", async ({ page }) => {
+  const live = await openWith(page, () => {
+    const sm = summary(40, "4th & 3 at SEA 40");
+    sm.curPlays = [
+      { down: "1st & 10 at ATL 25", text: "D.Henry up the middle for 6 yards", yards: 6, period: 3, clock: "12:30", kind: "Rush", score: false, turnover: false },
+      { down: "2nd & 4 at ATL 31", text: "J.Allen pass incomplete", yards: 0, period: 3, clock: "12:00", kind: "Pass Incompletion", score: false, turnover: false },
+      { down: "3rd & 4 at ATL 31", text: "J.Allen pass short for 5 yards", yards: 5, period: 3, clock: "11:30", kind: "Pass Reception", score: false, turnover: false },
+      { down: "4th & 3 at SEA 40", text: "T.Bass 57 yard field goal is No Good", yards: 57, period: 3, clock: "11:00", kind: "Field Goal Missed", score: false, turnover: false },
+    ];
+    return sm;
+  });
+  const plays = live.locator(".df-play");
+  await expect(plays).toHaveCount(4);
+  expect(await plays.evaluateAll((els) => els.map((e) => e.getAttribute("data-kind")))).toEqual(["run", "pass", "pass", "fg"]);
+  await expect(plays.nth(1).locator(".df-play-label")).toHaveText("inc"); // an incomplete pass
+  await expect(plays.nth(3).locator(".df-play-label")).toHaveText("FG 57 \u2717");
+  expect(await live.locator(".df-seg.fg").first().evaluate((e) => getComputedStyle(e).stroke)).toBe("rgb(242, 201, 76)");
+  await expect(plays.nth(3).locator(".df-kick-mark.post")).toHaveCount(1); // the uprights it was kicked at
 });
 
 test("a play is a run or a pass from its type, or its text when the type doesn't say", async () => {
@@ -376,24 +405,40 @@ test("a play is a run or a pass from its type, or its text when the type doesn't
   expect(playKind("Pass Incompletion", "")).toBe("pass");
   expect(playKind("Sack", "")).toBe("pass");
   expect(playKind("Penalty", "False start")).toBeNull();
-  expect(playKind("Punt", "")).toBeNull();
+  expect(playKind("Punt", "")).toBe("punt");
+  expect(playKind("Field Goal Good", "")).toBe("fg");
+  expect(playKind("", "B.Pinion punts 45 yards to the SEA 20")).toBe("punt");
+  expect(playKind("Kickoff", "")).toBeNull();
+  expect(playKind("Extra Point Good", "")).toBeNull();
   expect(playKind("", "J.Allen pass short left to S.Diggs for 7 yards")).toBe("pass");
   expect(playKind("", "D.Henry up the middle for 4 yards")).toBe("run");
   expect(playKind("", "Timeout #1")).toBeNull();
-  // Laid back from the ball: 3 yards, a 12-yard pass, then a 4-yard run, for the team going right (away).
-  const segs = driveSegments(
-    [
-      { yards: 12, kind: "Pass Reception", text: "" },
-      { yards: 4, kind: "Rush", text: "" },
-      { yards: 3, kind: "Pass Reception", text: "" },
-    ],
-    50,
-    true,
-  );
+  // Runs and passes follow from the start and the last one ends at the ball: a 12-yard pass, a 4-yard run, a 3-yard pass, for the team going right (away).
+  const plays = [
+    { yards: 12, kind: "Pass Reception", text: "" },
+    { yards: 4, kind: "Rush", text: "" },
+    { yards: 3, kind: "Pass Reception", text: "" },
+  ];
+  const segs = driveSegments(plays, { ball: 50 }, true);
   expect(segs.map((s) => [s.from, s.to, s.kind])).toEqual([[31, 43, "pass"], [43, 47, "run"], [47, 50, "pass"]]);
+  // With no ball, the drive starts where it said it did.
+  expect(driveSegments(plays, { start: 25 }, true).map((s) => s.from)).toEqual([25, 37, 41]);
   // The team going the other way (home): the stretches run toward 0.
-  const back = driveSegments([{ yards: 6, kind: "Rush", text: "" }], 40, false);
+  const back = driveSegments([{ yards: 6, kind: "Rush", text: "" }], { ball: 40 }, false);
   expect([back[0].from, back[0].to]).toEqual([46, 40]);
   // An incomplete pass is a ring, not a stretch.
-  expect(driveSegments([{ yards: 0, kind: "Pass Incompletion", text: "" }], 30, true)[0].incomplete).toBe(true);
+  expect(driveSegments([{ yards: 0, kind: "Pass Incompletion", text: "" }], { ball: 30 }, true)[0].incomplete).toBe(true);
+  // A punt starts where the drive got to and goes as far as it was kicked; a field goal goes from there to the posts, and says if it was good.
+  const kicks = driveSegments(
+    [{ yards: 8, kind: "Rush", text: "" }, { yards: 44, kind: "Punt", text: "B.Pinion punts 44 yards" }],
+    { start: 20 },
+    true,
+  );
+  expect([kicks[1].kind, kicks[1].from, kicks[1].to]).toEqual(["punt", 28, 72]);
+  const fg = driveSegments([{ yards: 30, kind: "Rush", text: "" }, { yards: 41, kind: "Field Goal Good", text: "T.Bass 41 yard field goal is GOOD" }], { start: 55 }, true);
+  expect([fg[1].kind, fg[1].from, fg[1].to, fg[1].good]).toEqual(["fg", 85, 106, true]);
+  expect(driveSegments([{ yards: 51, kind: "Field Goal Missed", text: "T.Bass 51 yard field goal is No Good" }], { start: 60 }, true)[0].good).toBe(false);
+  // Going the other way the posts are at the left, and a score is carried through.
+  const home = driveSegments([{ yards: 20, kind: "Rushing Touchdown", text: "", score: true }], { ball: 0 }, false);
+  expect([home[0].to, home[0].score]).toEqual([0, true]);
 });
