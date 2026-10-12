@@ -158,6 +158,7 @@ export type Result = {
   /** Home win probability (0–100) and quarter, thinned to ~80 points. */
   wp: [number, number | null][];
 };
+import { inConference } from "../teamConf";
 export const results = resultsData.games as unknown as Result[];
 
 /** Weeks with results, newest first. */
@@ -175,7 +176,7 @@ export function filterResults({
     .filter(
       (r) =>
         r.league === league &&
-        (league === "NFL" || !conference || conference === "all-fbs" || r.conferences.includes(conference)) &&
+        inConference(league, conference, r.teams.map((t) => t.logoId)) &&
         (day === "all" || dayOf(r.date) === day) &&
         r.actual.score >= minScore &&
         `${r.matchup} ${r.broadcast} ${r.venue}`.toLowerCase().includes(q),
@@ -204,10 +205,7 @@ export function filterGames({
     .filter(
       (game) =>
         game.league === league &&
-        (league === "NFL" ||
-          !conference ||
-          conference === "all-fbs" ||
-          (game.conferences as string[]).includes(conference)) &&
+        inConference(league, conference, (game.teams as { logoId: string }[]).map((t) => t.logoId)) &&
         (day === "all" || dayOf((game as { date?: string }).date ?? "") === day) &&
         game.score >= minScore &&
         `${game.matchup} ${game.broadcast} ${game.meta}`
