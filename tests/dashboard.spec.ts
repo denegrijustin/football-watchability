@@ -1096,3 +1096,22 @@ test("completed games run from the most insane to the least within each week", a
   }
   expect(compared).toBeGreaterThan(0); // at least one week had several games to put in order
 });
+
+test("if the board's data never loads, the grey bars give way to a message and a Reload button (after one automatic reload)", async ({ page }) => {
+  await page.clock.install();
+  await page.route("**/data/slate.json", (route) => route.fulfill({ status: 500, body: "nope" }));
+  await page.goto("/?league=NFL");
+  await expect(page.locator(".boot")).toBeVisible();
+  await page.clock.fastForward(13_000); // too long: it reloads once by itself
+  await page.waitForLoadState("domcontentloaded");
+  await expect(page.locator(".boot")).toBeVisible();
+  await page.clock.fastForward(13_000); // still nothing: it says so
+  const fail = page.locator(".boot-fail");
+  await expect(fail).toBeVisible();
+  await expect(fail).toContainText("taking too long");
+  await expect(fail.getByRole("button", { name: "Reload" })).toBeVisible();
+  // With the data back, Reload brings the board up.
+  await page.unroute("**/data/slate.json");
+  await fail.getByRole("button", { name: "Reload" }).click();
+  await expect(page.locator(".game-card").first()).toBeVisible({ timeout: 15000 });
+});

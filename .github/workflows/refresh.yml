@@ -70,6 +70,11 @@ jobs:
           git checkout origin/main -- . ':!data-raw' ':!data-raw-test' ':!data-raw-prev' ':!src/data/*.json' ':!public'
           # Keep the last published independent TV checks even if sources are down.
           git checkout origin/main -- src/data/broadcast-checks.json src/data/matchup-stats.json src/data/game-logos.json public/game-logos
+          # Any other data file that exists only on main (a new one the application imports, such as the conference logos or the
+          # team conferences) is brought over too, or the build below fails with "Cannot find module".
+          for f in $(git ls-tree -r --name-only origin/main src/data); do
+            [ -e "$f" ] || git checkout origin/main -- "$f"
+          done
 
       - name: Anything to do?
         id: go
