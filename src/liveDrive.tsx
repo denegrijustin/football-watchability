@@ -8,7 +8,7 @@ import { WeatherLayer, weatherCaption } from "./WeatherFx";
 import { ConfMark } from "./ConfMark";
 import type { WeatherLike } from "./weatherFx";
 import type { GameBadge } from "./gameLogo";
-import { driveSegments, playKind } from "./driveKinds";
+import { driveSegments, playKind, type Seg } from "./driveKinds";
 
 /** The slice of /api/game (see functions/api/game.js) the drive animation uses. */
 type Summary = {
@@ -136,6 +136,15 @@ export function fieldSpot(data: Summary | null, ids: string[], abbrs: { abbr: st
   return at == null ? null : { side, at, cur, sit };
 }
 const signed = (n: number) => (n > 0 ? `+${n}` : String(n));
+/** How many of the drive's last plays get a line of their own on the field. */
+const MAX_ROWS = 12;
+/** What is written beside a play's line: the yards gained or lost, or the kick. */
+export function playLabel(g: Seg) {
+  if (g.kind === "punt") return `Punt ${g.yards}`;
+  if (g.kind === "fg") return `FG ${g.yards} ${g.good ? "✓" : "✗"}`;
+  const yds = g.incomplete ? "inc" : g.yards > 0 ? `+${g.yards}` : g.yards < 0 ? `−${-g.yards}` : "0";
+  return `${yds}${g.score ? " TD" : ""}${g.turnover ? " ✕" : ""}`;
+}
 
 /**
  * The live field: who has the ball and where it is, where the drive started and how far it has come, the line to gain, and
@@ -167,20 +176,26 @@ export function FieldView({ data, teams, variant, rootRef, badge, weather }: { d
   const toGoal = Math.abs(goal - ball);
   // ESPN's red-zone flag, or the plain fact of being inside the opponent's 20.
   const redZone = !!sit?.redZone || toGoal <= 20;
-  const chevrons = Math.max(0, Math.min(3, Math.floor((toGoal - 7) / 4)));
   const abbr = data.teams.find((t) => t.id === possession)?.abbr ?? own;
   const downText = sit?.text ?? "";
   const label = `${abbr} ${downText ? downText : "driving"}`;
   const stats = cur ? `${cur.plays} play${cur.plays === 1 ? "" : "s"} · ${cur.yards} yd${cur.yards === 1 ? "" : "s"}${cur.time ? ` · ${cur.time}` : ""}` : "";
   const startedAt = `${spotName(startFromOwn, own, opp)}${cur?.period ? ` · Q${cur.period}${cur.clock ? ` ${cur.clock}` : ""}` : ""}`;
-  // The last few finished drives sit faintly behind it.
-  const past = data.drives.filter((d) => !d.current && d.from != null && d.to != null).slice(-3);
   const X = (yd: number) => 10 + yd; // 10-yard end zones either side
   const plays = data.curPlays ?? [];
   const wxText = weatherCaption(weather, data.status.period);
   const logo = teams[side].logoId ? logos[teams[side].logoId!] : undefined;
   // The ball's tag sits on the side with room.
   const tagLeft = ball > 70;
+
+  // The drive's last dozen plays, a line each from the top down, with the ball on a line of its own below them.
+  const segsAll = driveSegments(plays, { ball, start }, awayOffense);
+  const shown = segsAll.slice(-MAX_ROWS);
+  const earlier = segsAll.length - shown.length;
+  const TOP = 10, ROW = 4.3, BOTTOM = 7;
+  const rowY = (i: number) => TOP + i * ROW;
+  const H = Math.max(variant === "card" ? 26 : 30, TOP + (shown.length + 1) * ROW + BOTTOM);
+  const ballY = rowY(shown.length);
 
   const list = plays.length > 0 && (
     <ol className="lf-plays" aria-label="Plays in this drive">
@@ -204,10 +219,10 @@ export function FieldView({ data, teams, variant, rootRef, badge, weather }: { d
         <span className="lf-heading" aria-label={`driving toward the ${opp} end zone`}>driving {dir > 0 ? "→" : "←"}</span>
         {redZone && <span className="lf-rz">RED ZONE</span>}
       </p>
-      <svg viewBox={variant === "card" ? "0 6 120 23" : "0 0 120 34"} className="drive-svg" aria-hidden="true">
-        <rect x="0" y="0" width="120" height="34" className="df-turf" />
+      <svg viewBox={`0 0 120 ${H}`} style={{ aspectRatio: `120 / ${H}` }} className="drive-svg" aria-hidden="true">
+        <rect x="0" y="0" width="120" height={H} className="df-turf" />
         {Array.from({ length: 10 }, (_, i) => (
-          <rect key={i} x={10 + i * 10} y="0" width="10" height="34" className={i % 2 ? "df-stripe" : "df-stripe alt"} />
+          <rect key={i} x={10 + i * 10} y="0" width="10" height={H} className={i % 2 ? "df-stripe" : "df-stripe alt"} />
         ))}
         {/* end zones in team color with a woven pattern, the team's logo and name; the home logo (or the game's own) at midfield */}
         <defs>
@@ -218,71 +233,74 @@ export function FieldView({ data, teams, variant, rootRef, badge, weather }: { d
             </pattern>
           ))}
         </defs>
-        <rect x="0" y="0" width="10" height="34" fill={`url(#lf-ez-${ids.join("-")}-0-${variant})`} />
-        <rect x="110" y="0" width="10" height="34" fill={`url(#lf-ez-${ids.join("-")}-1-${variant})`} />
+        <rect x="0" y="0" width="10" height={H} fill={`url(#lf-ez-${ids.join("-")}-0-${variant})`} />
+        <rect x="110" y="0" width="10" height={H} fill={`url(#lf-ez-${ids.join("-")}-1-${variant})`} />
         {[[away, 5, -90] as const, [home, 115, 90] as const].map(([t, x, rot], k) => (
           <g key={k}>
-            <text x={x} y="22" className="lf-ez" transform={`rotate(${rot} ${x} 22)`} textAnchor="middle" dominantBaseline="central">{(t.abbr ?? t.name).toUpperCase()}</text>
-            {t.logoId && logos[t.logoId] && <LogoMark src={logos[t.logoId]} cx={x} cy={11.5} size={6} />}
+            <text x={x} y={H / 2 + 5} className="lf-ez" transform={`rotate(${rot} ${x} ${H / 2 + 5})`} textAnchor="middle" dominantBaseline="central">{(t.abbr ?? t.name).toUpperCase()}</text>
+            {t.logoId && logos[t.logoId] && <LogoMark src={logos[t.logoId]} cx={x} cy={9} size={6} />}
           </g>
         ))}
-        {redZone && <rect x={awayOffense ? X(80) : X(0)} y="0" width="20" height="34" className="df-red" />}
+        {redZone && <rect x={awayOffense ? X(80) : X(0)} y="0" width="20" height={H} className="df-red" />}
         {Array.from({ length: 11 }, (_, i) => (
-          <line key={i} x1={10 + i * 10} x2={10 + i * 10} y1="0" y2="34" className={i === 5 ? "df-line mid" : "df-line"} />
+          <line key={i} x1={10 + i * 10} x2={10 + i * 10} y1="0" y2={H} className={i === 5 ? "df-line mid" : "df-line"} />
         ))}
         {[1, 2, 3, 4, 5, 4, 3, 2, 1].map((n, i) => (
-          <text key={i} x={20 + i * 10} y="32" className="df-num" textAnchor="middle">{n * 10}</text>
+          <text key={i} x={20 + i * 10} y={H - 1.6} className="df-num" textAnchor="middle">{n * 10}</text>
         ))}
-        <ConfMark conf={away.conf} cx={35} cy={25} size={7} />
-        <ConfMark conf={home.conf} cx={85} cy={25} size={7} />
-        <WeatherLayer weather={weather} period={data.status.period} h={variant === "card" ? 23 : 34} y0={variant === "card" ? 6 : 0} seed={Number(ids[0]) || 1} compact={variant === "card"} />
-        {past.map((d, i) => {
-          const a = spot(d.from!, d.team === ids[0]);
-          const b = spot(d.to!, d.team === ids[0]);
-          const c = colors[d.team === ids[0] ? 0 : 1];
-          return <line key={i} x1={X(a)} x2={X(b)} y1={4 + i * 2} y2={4 + i * 2} stroke={c} className={`df-past${d.score ? " score" : ""}`} />;
-        })}
-        {firstDown != null && <line x1={X(firstDown)} x2={X(firstDown)} y1="0" y2="34" className="df-first" />}
-        <line x1={X(goal)} x2={X(goal)} y1="0" y2="34" className="df-goal" />
-        {/* the drive: a band from where it started to the ball, arrowed toward the goal being attacked */}
-        <line x1={X(start)} x2={X(ball)} y1="17" y2="17" stroke={colors[side]} className="df-path" />
-        {/* the plays of the drive: red for a run, blue for a pass; an incomplete pass is a hollow blue ring where it was thrown from */}
-        {driveSegments(plays, ball, awayOffense).map((g, i) =>
-          g.incomplete ? (
-            <circle key={i} cx={X(clamp(g.to))} cy="17" r="1.1" className="df-seg-inc" />
-          ) : (
-            <line key={i} x1={X(clamp(g.from))} x2={X(clamp(g.to))} y1="17" y2="17" className={`df-seg ${g.kind ?? "other"}${g.from === g.to ? " zero" : ""}`} data-kind={g.kind ?? "other"} />
-          ),
-        )}
-        <line x1={X(start)} x2={X(ball)} y1="17" y2="17" className="df-flow" />
-        <path d={`M${X(ball) + dir * 1.2} 17 l${-dir * 2.2} -1.6 v3.2z`} fill="#fff" opacity="0.9" />
+        <ConfMark conf={away.conf} cx={35} cy={H - 9} size={7} />
+        <ConfMark conf={home.conf} cx={85} cy={H - 9} size={7} />
+        <WeatherLayer weather={weather} period={data.status.period} h={H} y0={0} seed={Number(ids[0]) || 1} compact={variant === "card"} />
+        {firstDown != null && <line x1={X(firstDown)} x2={X(firstDown)} y1="0" y2={H} className="df-first" />}
+        <line x1={X(goal)} x2={X(goal)} y1="0" y2={H} className="df-goal" />
         {(badge?.src ?? (!badge?.neutral && home.logoId ? logos[home.logoId] : null)) && (
-          <LogoMark src={badge?.src ?? logos[home.logoId!]} cx={60} cy={17} size={11} chipOpacity={0.16} imageClass="lf-mid" />
+          <LogoMark src={badge?.src ?? logos[home.logoId!]} cx={60} cy={H / 2} size={11} chipOpacity={0.16} imageClass="lf-mid" />
         )}
-        {/* the way the offense is headed: chevrons ahead of the ball, stepping toward the goal line it is attacking */}
-        {Array.from({ length: chevrons }, (_, i) => (
-          <path
-            key={i}
-            className="lf-chev"
-            data-dir={dir}
-            d={`M${X(ball) + dir * (7 + i * 4)} 14.2 l${dir * 2.6} 2.8 l${-dir * 2.6} 2.8`}
-            style={{ animationDelay: `${i * 0.22}s` }}
-          />
-        ))}
+        {earlier > 0 && <text x="11.5" y="4.6" className="lf-tagtext">▲ {earlier} earlier play{earlier === 1 ? "" : "s"}</text>}
+        {/* where the drive started */}
         <g className="lf-start">
-          <line x1={X(start)} x2={X(start)} y1="9" y2="25" stroke={colors[side]} className="df-start" />
-          <path d={`M${X(start)} 9 h${dir * 5} l${-dir * 1.2} 1.6 l${dir * 1.2} 1.6 h${-dir * 5}z`} fill="#fff" opacity="0.92" />
-          <text x={X(start) + dir * 6} y="11.6" className="lf-tagtext" textAnchor={dir > 0 ? "start" : "end"}>START</text>
+          <line x1={X(start)} x2={X(start)} y1="7.5" y2={H - 5} stroke={colors[side]} className="df-start" />
+          <text x={X(start) + dir * 1.2} y="6.4" className="lf-tagtext" textAnchor={dir > 0 ? "start" : "end"}>START</text>
+        </g>
+        {/* the drive, one line per play from the top down: red for a run, blue for a pass, gold for a punt or field goal. A play that lost yards is dashed. */}
+        <g className="lf-plays-chart" data-dir={dir}>
+          {shown.map((g, i) => {
+            const y = rowY(i);
+            const kind = g.kind ?? "other";
+            const a = X(clamp(g.from)), b = g.kind === "fg" ? X(g.to) : X(clamp(g.to));
+            const loss = g.kind !== "punt" && g.kind !== "fg" && g.yards < 0;
+            const right = Math.max(a, b);
+            const labelRight = right < 104;
+            const text = playLabel(g);
+            return (
+              <g key={i} className={`df-play ${kind}${loss ? " loss" : ""}`} data-kind={kind} data-yards={g.yards}>
+                {i > 0 && <line x1={a} x2={a} y1={rowY(i - 1)} y2={y} className="df-step" />}
+                {g.incomplete ? (
+                  <>
+                    <line x1={a} x2={a + dir * 2.4} y1={y} y2={y} className="df-seg pass inc" />
+                    <circle cx={a + dir * 3.4} cy={y} r="0.9" className="df-seg-inc" />
+                  </>
+                ) : (
+                  <line x1={a} x2={b} y1={y} y2={y} className={`df-seg ${kind}${loss ? " loss" : ""}${a === b ? " zero" : ""}`} />
+                )}
+                <circle cx={a} cy={y} r="0.7" className="df-play-start" />
+                {g.kind === "punt" && <path d={`M${b} ${y - 1.3}l1.3 1.3l-1.3 1.3l-1.3 -1.3z`} className="df-kick-mark" />}
+                {g.kind === "fg" && <path d={`M${b - 0.9} ${y - 1.6}v3.2M${b + 0.9} ${y - 1.6}v3.2M${b - 0.9} ${y}h1.8`} className="df-kick-mark post" />}
+                {g.score && g.kind !== "fg" && <circle cx={b} cy={y} r="1.5" className="df-score-ring" />}
+                <text x={labelRight ? right + 1.8 : Math.min(a, b) - 1.8} y={y + 0.9} className={`df-play-label ${kind}`} textAnchor={labelRight ? "start" : "end"}>{text}</text>
+              </g>
+            );
+          })}
         </g>
         <g className="df-ball" style={{ transform: `translateX(${X(ball)}px)` }}>
-          <line x1="0" x2="0" y1="0" y2="34" className="df-los" />
-          <circle cx="0" cy="17" r="4.6" className="df-pulse" stroke={colors[side]} />
+          <line x1="0" x2="0" y1="0" y2={H} className="df-los" />
+          <circle cx="0" cy={ballY} r="4.6" className="df-pulse" stroke={colors[side]} />
           {logo ? (
-            <LogoMark src={logos[teams[side].logoId!]} cx={0} cy={17} size={5.4} chipOpacity={1} chipClass="lf-chip" imageClass="lf-ball-logo" />
+            <LogoMark src={logos[teams[side].logoId!]} cx={0} cy={ballY} size={5.4} chipOpacity={1} chipClass="lf-chip" imageClass="lf-ball-logo" />
           ) : (
-            <ellipse cx="0" cy="17" rx="2.4" ry="1.5" className="df-pigskin" />
+            <ellipse cx="0" cy={ballY} rx="2.4" ry="1.5" className="df-pigskin" />
           )}
-          <text x={tagLeft ? -4.5 : 4.5} y="9" className="lf-tagtext ball" textAnchor={tagLeft ? "end" : "start"}>{abbr} · {spotName(ballOwn, own, opp)}</text>
+          <text x={tagLeft ? -4.5 : 4.5} y="3.6" className="lf-tagtext ball" textAnchor={tagLeft ? "end" : "start"}>{abbr} · {spotName(ballOwn, own, opp)}</text>
         </g>
       </svg>
       <p className="drive-cap">
@@ -291,7 +309,7 @@ export function FieldView({ data, teams, variant, rootRef, badge, weather }: { d
         {stats && <span> · {stats}</span>}
         <span className="lf-started"> · drive started {startedAt}</span>
         {plays.length > 0 && (
-          <span className="lf-key" aria-hidden="true"><i className="run" /> run <i className="pass" /> pass</span>
+          <span className="lf-key" aria-hidden="true"><i className="run" /> run <i className="pass" /> pass <i className="kick" /> punt / FG</span>
         )}
         {wxText && <span className="lf-wx"> · {weather?.icon ?? ""} {wxText}</span>}
       </p>

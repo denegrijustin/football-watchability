@@ -5940,14 +5940,6 @@ select,
   font-weight: 700;
   opacity: 0.4;
 }
-.df-past {
-  stroke-width: 0.6;
-  stroke-linecap: round;
-  opacity: 0.4;
-}
-.df-past.score {
-  opacity: 0.75;
-}
 .df-first {
   stroke: #ffd84d;
   stroke-width: 0.6;
@@ -5957,33 +5949,6 @@ select,
   stroke: #ff6b6b;
   stroke-width: 0.5;
   opacity: 0.7;
-}
-.df-path {
-  stroke-width: 2.4;
-  stroke-linecap: round;
-  opacity: 0.5;
-  /* the drive draws itself the first time it appears */
-  stroke-dasharray: 100;
-  stroke-dashoffset: 100;
-  animation: drive-draw 1.1s ease-out forwards;
-}
-@keyframes drive-draw {
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-.df-flow {
-  stroke: #ffffff;
-  stroke-width: 0.6;
-  stroke-linecap: round;
-  stroke-dasharray: 0.8 2.4;
-  opacity: 0.85;
-  animation: drive-flow 0.9s linear infinite;
-}
-@keyframes drive-flow {
-  to {
-    stroke-dashoffset: -3.2;
-  }
 }
 .df-start {
   stroke-width: 0.8;
@@ -6049,18 +6014,10 @@ select,
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .df-path,
-  .df-flow,
   .df-pulse,
   .drive-dot,
   .drive-live.loading {
     animation: none;
-  }
-  .df-path {
-    stroke-dashoffset: 0;
-  }
-  .df-flow {
-    display: none;
   }
   .df-ball {
     transition: none;
@@ -6436,7 +6393,7 @@ select,
 
 /* the card's field is a slim strip; the Game Center's is the full field, kept to a sensible width */
 .lf-card .drive-svg {
-  aspect-ratio: 120 / 23;
+  max-height: 340px;
 }
 .lf-card .lf-ball-team {
   margin-bottom: 4px;
@@ -6628,25 +6585,7 @@ select,
   font-weight: 800;
   letter-spacing: 0.08em;
 }
-.lf-chev {
-  fill: none;
-  stroke: #fff;
-  stroke-width: 0.9;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  opacity: 0.25;
-  animation: lf-chev 1.1s ease-in-out infinite;
-}
-@keyframes lf-chev {
-  50% {
-    opacity: 0.9;
-  }
-}
 @media (prefers-reduced-motion: reduce) {
-  .lf-chev {
-    animation: none;
-    opacity: 0.6;
-  }
   .lf {
     transition: none;
   }
@@ -6994,17 +6933,30 @@ select,
   .ha-scene * { animation: none !important; }
 }
 
-/* the drive's plays on the field: red for a run, blue for a pass */
+/* the drive on the field, a line per play: red for a run, blue for a pass, gold for a punt or field goal; dashed where yards were lost */
 .df-seg {
-  stroke-width: 2.4;
-  stroke-linecap: butt;
-  opacity: 0.95;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  fill: none;
 }
 .df-seg.run { stroke: #ff4d4f; }
 .df-seg.pass { stroke: #3b9dff; }
+.df-seg.punt, .df-seg.fg { stroke: #f2c94c; stroke-dasharray: 1.4 1; }
 .df-seg.other { stroke: rgb(255 255 255 / 45%); }
+.df-seg.loss { stroke-dasharray: 1.3 0.9; opacity: 0.9; }
 .df-seg.zero { stroke-linecap: round; } /* a play for no gain still shows, as a dot */
 .df-seg-inc { fill: none; stroke: #3b9dff; stroke-width: 0.5; }
+.df-seg.inc { stroke-width: 0.8; stroke-dasharray: 0.8 0.8; }
+.df-step { stroke: rgb(255 255 255 / 25%); stroke-width: 0.3; }
+.df-play-start { fill: rgb(255 255 255 / 85%); }
+.df-play-label { font-size: 3.1px; font-weight: 700; fill: #fff; paint-order: stroke; stroke: rgb(0 0 0 / 55%); stroke-width: 0.5px; }
+.df-play-label.run { fill: #ff9a9b; }
+.df-play-label.pass { fill: #8cc4ff; }
+.df-play-label.punt, .df-play-label.fg { fill: #f6dc84; }
+.df-kick-mark { fill: #f2c94c; stroke: rgb(0 0 0 / 50%); stroke-width: 0.25; }
+.df-kick-mark.post { fill: none; stroke: #f2c94c; stroke-width: 0.5; stroke-linecap: round; }
+.df-score-ring { fill: none; stroke: #ffd24a; stroke-width: 0.6; }
+.lf-plays-chart .df-play.fg .df-seg { stroke-dasharray: 2 1; }
 .lf-key {
   display: inline-flex;
   align-items: center;
@@ -7021,5 +6973,7 @@ select,
 }
 .lf-key i.run { background: #ff4d4f; }
 .lf-key i.pass { background: #3b9dff; }
+.lf-key i.kick { background: #f2c94c; }
 .lf-plays li.run { border-left: 3px solid #ff4d4f; }
 .lf-plays li.pass { border-left: 3px solid #3b9dff; }
+.lf-plays li.punt, .lf-plays li.fg { border-left: 3px solid #f2c94c; }
