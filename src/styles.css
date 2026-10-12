@@ -3762,7 +3762,7 @@ details.proj summary strong {
   padding: 0;
   list-style: none;
 }
-.ib-weeks button {
+.ib-weeks li button {
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(80px, 1fr) auto;
   grid-template-areas: "name bar avg" "top top top";
@@ -3778,7 +3778,7 @@ details.proj summary strong {
   text-align: left;
   cursor: pointer;
 }
-.ib-weeks button[aria-pressed="true"] {
+.ib-weeks li button[aria-pressed="true"] {
   border-color: var(--line-strong);
   background: var(--surface-3);
 }
@@ -6977,3 +6977,31 @@ select,
 .lf-plays li.run { border-left: 3px solid #ff4d4f; }
 .lf-plays li.pass { border-left: 3px solid #3b9dff; }
 .lf-plays li.punt, .lf-plays li.fg { border-left: 3px solid #f2c94c; }
+
+/* ---------- Insanity: weeks view and the season's games, highest to lowest ---------- */
+.ibw-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 8px; }
+.ibw-head .micro-label { margin: 0; flex: 1 1 14rem; }
+.ibw-rank { margin-right: 6px; color: var(--lime, #b6ff3a); font-variant-numeric: tabular-nums; }
+.ibs-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.ibs button {
+  display: grid; grid-template-columns: 2.6rem 1fr auto minmax(7.5rem, 11rem); align-items: center; gap: 10px;
+  width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface, #13222e); color: inherit; font: inherit; text-align: left; cursor: pointer;
+}
+.ibs button:hover { border-color: var(--lime, #b6ff3a); }
+.ibs-rank { font-variant-numeric: tabular-nums; opacity: 0.9; }
+.ibs-teams { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-width: 0; }
+.ibs-team { display: inline-flex; align-items: center; gap: 5px; opacity: 0.8; }
+.ibs-team.won { opacity: 1; font-weight: 700; }
+.ibs-team em { font-style: normal; font-variant-numeric: tabular-nums; }
+.ibs-ot { font-size: 0.7rem; font-weight: 800; opacity: 0.75; }
+.ibs-week { font-size: 0.75rem; opacity: 0.65; white-space: nowrap; }
+.ibs-ins { position: relative; display: block; padding: 3px 8px; border-radius: 6px; overflow: hidden; background: rgb(255 255 255 / 6%); white-space: nowrap; }
+.ibs-ins i { position: absolute; inset: 0 auto 0 0; background: rgb(182 255 58 / 22%); }
+.ibs-ins strong, .ibs-ins small { position: relative; }
+.ibs-ins small { opacity: 0.8; margin-left: 4px; }
+@media (max-width: 620px) {
+  .ibs button { grid-template-columns: 2.1rem 1fr 4.6rem; gap: 8px; padding: 8px; }
+  .ibs-week, .ibs-ins small { display: none; }
+  .ibs-teams { flex-direction: column; align-items: flex-start; flex-wrap: nowrap; gap: 3px; font-size: 13px; }
+  .ibs-ins { text-align: center; }
+}

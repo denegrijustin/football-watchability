@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { logos, results, slate, teamColor } from "../data";
+import { NFL_CONFERENCES, inConference } from "../teamConf";
 import { fetchData, refetchData } from "../data/load";
 import { latestFlow, useLiveMap } from "../live";
 import { rankGames, mostInsaneWeek, weekSummaries, sortGames, INSANITY_SORTS, type InsanitySort, type LedgerGame } from "../seasonRank";
@@ -9,6 +10,8 @@ import { useOpenGame, type GameStub } from "./GameCenterContext";
 import { Headshot } from "./Headshot";
 
 type Scope = "week" | "season";
+type WeeksView = "weeks" | "games";
+type WeekSort = "recent" | "insane";
 const tierLabel = (id: string) => INSANITY_TIERS.find((t) => t.id === id)?.label ?? id;
 const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? "" : "s"}`;
 const PAGE = 12;
@@ -118,6 +121,10 @@ export function InsanityBoard({ defaultLeague }: { defaultLeague: "NFL" | "CFB" 
   const [pick, setPick] = useState<string | null>(null);
   const [shown, setShown] = useState(PAGE);
   const [sort, setSort] = useState<InsanitySort>("insanity");
+  const [conf, setConf] = useState("all-fbs");
+  const [weeksView, setWeeksView] = useState<WeeksView>("weeks");
+  const [weekSort, setWeekSort] = useState<WeekSort>("recent");
+  const [shownAll, setShownAll] = useState(25);
   const openGame = useOpenGame();
 
   useEffect(() => {
@@ -142,9 +149,13 @@ export function InsanityBoard({ defaultLeague }: { defaultLeague: "NFL" | "CFB" 
         const l = liveMap[g.id];
         return l ? { ...g, away: { ...g.away, score: l.away }, home: { ...g.home, score: l.home }, clock: l.detail } : g;
       });
-    return [...done, ...now] as LedgerGame[];
-  }, [ledger, league, scored, liveMap]);
+    return [...done, ...now].filter((g) => inConference(league, conf, [g.away.logoId, g.home.logoId])) as LedgerGame[];
+  }, [ledger, league, scored, liveMap, conf]);
   const weeks = useMemo(() => weekSummaries(mine), [mine]);
+  // The weeks as listed under the ranking: newest first, or the most insane week (highest average) first.
+  const weekRows = useMemo(() => (weekSort === "insane" ? [...weeks].sort((a, b) => b.avg - a.avg || b.wild - a.wild || b.start.localeCompare(a.start)) : weeks), [weeks, weekSort]);
+  // Every game of the season, wildest first, for the all-games view.
+  const seasonAll = useMemo(() => rankGames(mine), [mine]);
   const best = useMemo(() => mostInsaneWeek(weeks), [weeks]);
   const week = weeks.find((w) => w.week === pick)?.week ?? weeks[0]?.week ?? "";
   const pool = useMemo(() => (scope === "season" ? mine : mine.filter((g) => g.week === week)), [mine, scope, week]);
@@ -161,7 +172,10 @@ export function InsanityBoard({ defaultLeague }: { defaultLeague: "NFL" | "CFB" 
   const nameOf = league === "NFL" ? "NFL" : "College";
 
   const choose = (patch: { league?: "NFL" | "CFB"; scope?: Scope; week?: string | null }) => {
-    if (patch.league) setLeague(patch.league);
+    if (patch.league) {
+      setLeague(patch.league);
+      setConf("all-fbs");
+    }
     if (patch.scope) setScope(patch.scope);
     if (patch.week !== undefined) setPick(patch.week);
     setShown(PAGE);
@@ -192,6 +206,16 @@ export function InsanityBoard({ defaultLeague }: { defaultLeague: "NFL" | "CFB" 
             </button>
           ))}
         </div>
+        <label className="tv-conf">
+          <span className="sr-only">Conference</span>
+          <select value={conf} onChange={(e) => { setConf(e.target.value); setPick(null); setShown(PAGE); setShownAll(25); }} aria-label="Conference">
+            {(league === "NFL" ? NFL_CONFERENCES : slate.conferences).map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.id === "all-fbs" ? (league === "NFL" ? "Both conferences" : "All conferences") : c.label}
+              </option>
+            ))}
+          </select>
+        </label>
         {scope === "week" && weeks.length > 0 && (
           <label className="tv-conf">
             <span className="sr-only">Week</span>
@@ -260,26 +284,58 @@ export function InsanityBoard({ defaultLeague }: { defaultLeague: "NFL" | "CFB" 
 
       {weeks.length > 0 && (
         <section className="ib-weeks" aria-label="Week by week">
-          <h3 className="micro-label">Week by week{best && weeks.length > 1 ? " · most insane week marked" : ""}</h3>
-          <ul>
-            {weeks.map((w) => (
-              <li key={w.week} className={w === best && weeks.length > 1 ? "best" : undefined}>
-                <button onClick={() => choose({ scope: "week", week: w.week })} aria-pressed={scope === "week" && w.week === week}>
-                  <span className="ibw-name">
-                    {w.week}
-                    {w === best && weeks.length > 1 && <em>Most insane week</em>}
-                  </span>
-                  <span className="ibw-bar" aria-hidden="true">
-                    <i style={{ width: `${Math.min(100, w.avg)}%` }} />
-                  </span>
-                  <span className="ibw-avg">avg {w.avg}</span>
-                  <span className="ibw-top">
-                    wildest: {w.top.matchup} ({w.top.insanity}) · {plural(w.games, "game")}
-                  </span>
+          <div className="ibw-head">
+            <h3 className="micro-label">
+              {weeksView === "games"
+                ? `Every game this season · ${plural(seasonAll.length, "game")}, highest to lowest`
+                : `Week by week${best && weeks.length > 1 ? " · most insane week marked" : ""}`}
+            </h3>
+            <div className="segmented" role="group" aria-label="Season view">
+              <button aria-pressed={weeksView === "weeks"} onClick={() => setWeeksView("weeks")}>By week</button>
+              <button aria-pressed={weeksView === "games"} onClick={() => setWeeksView("games")}>All games</button>
+            </div>
+            {weeksView === "weeks" && (
+              <div className="segmented" role="group" aria-label="Order weeks by">
+                <button aria-pressed={weekSort === "recent"} onClick={() => setWeekSort("recent")}>Newest</button>
+                <button aria-pressed={weekSort === "insane"} onClick={() => setWeekSort("insane")}>Most insane</button>
+              </div>
+            )}
+          </div>
+          {weeksView === "games" ? (
+            <>
+              <ol className="ibs-list" aria-label="All games this season, highest insanity first">
+                {seasonAll.slice(0, shownAll).map((g, i) => (
+                  <SeasonRow key={g.id} g={g} rank={i + 1} onOpen={() => (known.has(g.id) ? openGame(g.id) : openGame(g.id, stubOf(g)))} />
+                ))}
+              </ol>
+              {seasonAll.length > shownAll && (
+                <button className="ib-more" onClick={() => setShownAll((n) => n + 50)}>
+                  Show more ({seasonAll.length - shownAll} left)
                 </button>
-              </li>
-            ))}
-          </ul>
+              )}
+            </>
+          ) : (
+            <ul>
+              {weekRows.map((w, i) => (
+                <li key={w.week} className={w === best && weeks.length > 1 ? "best" : undefined}>
+                  <button onClick={() => choose({ scope: "week", week: w.week })} aria-pressed={scope === "week" && w.week === week}>
+                    <span className="ibw-name">
+                      {weekSort === "insane" && <b className="ibw-rank">#{i + 1}</b>}
+                      {w.week}
+                      {w === best && weeks.length > 1 && <em>Most insane week</em>}
+                    </span>
+                    <span className="ibw-bar" aria-hidden="true">
+                      <i style={{ width: `${Math.min(100, w.avg)}%` }} />
+                    </span>
+                    <span className="ibw-avg">avg {w.avg}</span>
+                    <span className="ibw-top">
+                      wildest: {w.top.matchup} ({w.top.insanity}) · {plural(w.games, "game")}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       )}
     </section>
@@ -298,6 +354,31 @@ function stubOf(g: LedgerGame): GameStub {
       { name: hn ?? g.home.abbr, abbr: g.home.abbr, logoId: g.home.logoId, color: g.home.color, score: g.home.score },
     ],
   };
+}
+
+/** One game in the season-long list: its place, week, the teams and score, and the insanity. */
+function SeasonRow({ g, rank, onOpen }: { g: LedgerGame; rank: number; onOpen: () => void }) {
+  return (
+    <li className={`ibs ${g.tier}`} data-insanity={g.insanity}>
+      <button type="button" onClick={onOpen} aria-label={`Number ${rank}: ${g.matchup}, insanity ${g.insanity}. Open Game Center`}>
+        <b className="ibs-rank">#{rank}</b>
+        <span className="ibs-teams">
+          {[g.away, g.home].map((t, k) => (
+            <span key={k} className={`ibs-team${(k === 0 ? g.away.score > g.home.score : g.home.score > g.away.score) ? " won" : ""}`}>
+              {logos[t.logoId] ? <img src={logos[t.logoId]} alt="" width="20" height="20" loading="lazy" decoding="async" /> : <i className="ic-nologo" />}
+              {t.abbr} <em>{t.score}</em>
+            </span>
+          ))}
+          {g.overtime && <span className="ibs-ot">OT</span>}
+        </span>
+        <span className="ibs-week">{g.week}</span>
+        <span className="ibs-ins" title={`Insanity ${g.insanity}, ${tierLabel(g.tier)}`}>
+          <i style={{ width: `${Math.min(100, g.insanity)}%` }} />
+          <strong>{g.insanity}</strong> <small>{tierLabel(g.tier)}</small>
+        </span>
+      </button>
+    </li>
+  );
 }
 
 const qName = (p: number | null) => (p == null ? "" : p > 4 ? "overtime" : `the ${["", "1st", "2nd", "3rd", "4th"][p]} quarter`);

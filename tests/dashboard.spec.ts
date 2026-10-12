@@ -937,7 +937,9 @@ test("@smoke the persistent bar is slim and every filter is a pop-down menu", as
     await expect(page.getByLabel(menu, { exact: true })).toHaveJSProperty("tagName", "SELECT");
   }
   await expect(dock.locator("button:not(.search-clear)")).toHaveCount(0);
-  await expect(page.getByLabel("Conference", { exact: true })).toHaveCount(0); // college only
+  // The Conference menu is there for both leagues: AFC / NFC for the NFL (college conferences for college).
+  await expect(page.getByLabel("Conference", { exact: true })).toHaveJSProperty("tagName", "SELECT");
+  await expect(page.getByLabel("Conference", { exact: true }).locator("option")).toHaveText(["Both conferences", "AFC", "NFC"]);
   // Slim: the old bar took 171px on a phone and 183px on a desktop.
   const phone = testInfo.project.name === "mobile";
   expect((await dock.boundingBox())!.height).toBeLessThan(phone ? 100 : 60);
