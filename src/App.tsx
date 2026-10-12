@@ -40,7 +40,7 @@ export default function App() {
     filters.day !== "all" ||
     filters.minScore !== 0 ||
     filters.status !== "all" ||
-    (league === "CFB" && filters.conference !== "all-fbs");
+    filters.conference !== "all-fbs";
   const heading = (league === "NFL" ? "NFL" : "College") + (filters.day === "all" ? " games" : ` · ${dayName(filters.day)}`);
 
   return (

@@ -3762,7 +3762,7 @@ details.proj summary strong {
   padding: 0;
   list-style: none;
 }
-.ib-weeks button {
+.ib-weeks li button {
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(80px, 1fr) auto;
   grid-template-areas: "name bar avg" "top top top";
@@ -3778,7 +3778,7 @@ details.proj summary strong {
   text-align: left;
   cursor: pointer;
 }
-.ib-weeks button[aria-pressed="true"] {
+.ib-weeks li button[aria-pressed="true"] {
   border-color: var(--line-strong);
   background: var(--surface-3);
 }
@@ -5357,7 +5357,7 @@ html:has(dialog[open]) {
 .tv-key .k-rank::before { display: none; }
 
 .kickoff-slot { margin: 20px 0; }
-.kickoff-slot h4 { margin: 0 0 10px; padding-bottom: 8px; border-bottom: 1px solid var(--line); color: var(--text-2); }
+.kickoff-slot > h4 { margin: 0 0 10px; padding-bottom: 8px; border-bottom: 1px solid var(--line); color: var(--text-2); }
 
 .cc-outlook { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 11px; line-height: 1.3; margin-top: 5px; color: var(--text-2); }
 .cc-network { font-weight: 700; }
@@ -5834,7 +5834,7 @@ select,
 .kickoff-slot {
   margin: 12px 0;
 }
-.kickoff-slot h4 {
+.kickoff-slot > h4 {
   margin: 0 0 8px;
   padding-bottom: 6px;
   font-size: 13.5px;
@@ -6977,3 +6977,135 @@ select,
 .lf-plays li.run { border-left: 3px solid #ff4d4f; }
 .lf-plays li.pass { border-left: 3px solid #3b9dff; }
 .lf-plays li.punt, .lf-plays li.fg { border-left: 3px solid #f2c94c; }
+
+/* ---------- The small game card, laid out like the NHL's: one top row, teams with their records on a line, a small score box ---------- */
+.compact-overview.v2 .card-top.cc-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.compact-overview.v2 .cc-when { min-width: 0; flex-wrap: wrap; row-gap: 2px; }
+.cc-right { display: flex; align-items: center; gap: 8px; flex: none; }
+.cc-right .cc-network { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.compact-overview.v2 .game-card .cc-gc,
+.game-card .compact-overview.v2 .cc-gc {
+  flex-direction: column;
+  gap: 1px;
+  width: 40px;
+  min-height: 40px;
+  height: 40px;
+  padding: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+.compact-overview.v2 .matchup { margin: 0 0 6px; align-items: center; gap: 10px; }
+.compact-overview.v2 .matchup-teams { display: grid; gap: 8px; }
+.compact-overview.v2 .cc-team { grid-template-columns: 34px minmax(0, 1fr) auto; gap: 10px; }
+.compact-overview.v2 .cc-team img { width: 34px; height: 34px; }
+/* the name and the record on one line */
+.compact-overview.v2 .cc-team > div { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 9px; min-width: 0; }
+.compact-overview.v2 .cc-team h4 { font-size: 17px; line-height: 1.2; }
+.compact-overview.v2 .cc-team p { margin: 0; font-size: 13px; }
+.compact-overview.v2 .cc-rate { width: 70px; min-width: 70px; padding: 7px 4px 6px; border-radius: 12px; }
+.compact-overview.v2 .cc-rate strong { font-size: 27px; }
+.compact-overview.v2 .cc-rate span { font-size: 8.5px; }
+.compact-overview.v2 .facts { margin: 0; padding: 0; border: 0; font-size: 12px; }
+.compact-overview.v2 .facts li { padding: 2px 0; color: var(--text-2); }
+.compact-overview.v2 .cc-actions { display: block; }
+.game-card .compact-overview.v2 .card-toggle.cc-chevron {
+  min-height: 44px; /* a full-size tap target, though it looks like a quiet label */
+  margin: 0;
+  padding: 4px 10px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+}
+/* before kickoff the win-probability chart is a thin strip, not an empty plot */
+.momentum-flow.slim { padding: 4px 0 2px; }
+.momentum-flow.slim .flow-label { font-size: 11px; margin-bottom: 2px; }
+.momentum-flow.slim svg { max-height: 30px; }
+.compact-overview.v2 .momentum-flow { margin-top: 4px; }
+@media (max-width: 620px) {
+  .compact-overview.v2 .cc-team h4 { font-size: 16px; }
+}
+.compact-overview.v2 .cc-team h4 { max-width: 100%; }
+.compact-overview.v2 .home-tag { margin-left: 6px; }
+
+/* ---------- Game Center: the scoreboard on top, then one group of panels at a time ---------- */
+.gc-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  display: flex;
+  gap: 6px;
+  padding: 8px 20px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid var(--line);
+}
+.gc-tabs::-webkit-scrollbar { display: none; }
+.gc-tab {
+  flex: none;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.gc-tab:hover { color: var(--text); }
+.gc-tab[aria-selected="true"] {
+  background: var(--surface-3);
+  border-color: var(--line-strong);
+  color: var(--text);
+}
+.gc-tab:focus-visible { outline: 2px solid var(--lime); outline-offset: 1px; }
+@media (max-width: 720px) {
+  .gc-tabs { padding: 6px 12px; }
+  .gc-head { padding: 18px 16px; gap: 10px; }
+}
+@media (max-width: 720px) {
+  .gc-team img { width: 46px; height: 46px; }
+  .gc-team h2 { font-size: 19px; }
+  .gc-team p { margin: 1px 0 0; font-size: 12px; }
+  .gc-head { padding: 14px 56px 12px 14px; gap: 8px; }
+  .gc-mid { gap: 3px; }
+}
+/* ---------- Insanity: weeks view and the season's games, highest to lowest ---------- */
+.ibw-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 8px; }
+.ibw-head .micro-label { margin: 0; flex: 1 1 14rem; }
+.ibw-rank { margin-right: 6px; color: var(--lime, #b6ff3a); font-variant-numeric: tabular-nums; }
+.ibs-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.ibs button {
+  display: grid; grid-template-columns: 2.6rem 1fr auto minmax(7.5rem, 11rem); align-items: center; gap: 10px;
+  width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface, #13222e); color: inherit; font: inherit; text-align: left; cursor: pointer;
+}
+.ibs button:hover { border-color: var(--lime, #b6ff3a); }
+.ibs-rank { font-variant-numeric: tabular-nums; opacity: 0.9; }
+.ibs-teams { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-width: 0; }
+.ibs-team { display: inline-flex; align-items: center; gap: 5px; opacity: 0.8; }
+.ibs-team.won { opacity: 1; font-weight: 700; }
+.ibs-team em { font-style: normal; font-variant-numeric: tabular-nums; }
+.ibs-ot { font-size: 0.7rem; font-weight: 800; opacity: 0.75; }
+.ibs-week { font-size: 0.75rem; opacity: 0.65; white-space: nowrap; }
+.ibs-ins { position: relative; display: block; padding: 3px 8px; border-radius: 6px; overflow: hidden; background: rgb(255 255 255 / 6%); white-space: nowrap; }
+.ibs-ins i { position: absolute; inset: 0 auto 0 0; background: rgb(182 255 58 / 22%); }
+.ibs-ins strong, .ibs-ins small { position: relative; }
+.ibs-ins small { opacity: 0.8; margin-left: 4px; }
+@media (max-width: 620px) {
+  .ibs button { grid-template-columns: 2.1rem 1fr 4.6rem; gap: 8px; padding: 8px; }
+  .ibs-week, .ibs-ins small { display: none; }
+  .ibs-teams { flex-direction: column; align-items: flex-start; flex-wrap: nowrap; gap: 3px; font-size: 13px; }
+  .ibs-ins { text-align: center; }
+}

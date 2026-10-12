@@ -1,3 +1,4 @@
+import { NFL_CONFERENCES } from "../teamConf";
 import { dayName, daysFor, scoreFilters, slate, results, type FilterState, type League, type StatusFilter } from "../data";
 
 /** Games per status for the current league and filters, shown in the Status menu. */
@@ -50,14 +51,13 @@ export function Filters({ league, conference, query, day, minScore, status, coun
   const days = daysFor(league);
   const leagueCount = (l: League) =>
     slate.games.filter((g) => g.league === l).length + results.filter((r) => r.league === l).length;
-  const cfb = league === "CFB";
   return (
     <div className="filter-dock">
-      <div className={`filter-bar${cfb ? " has-conf" : ""}`} role="group" aria-label="Filters">
+      <div className="filter-bar has-conf" role="group" aria-label="Filters">
         <Menu
           label="League"
           value={league}
-          onChange={(v) => onChange({ league: v as League, day: "all" })}
+          onChange={(v) => onChange({ league: v as League, day: "all", conference: "all-fbs" })}
           options={[
             { value: "NFL", text: "NFL", title: `${leagueCount("NFL")} games` },
             { value: "CFB", text: "College", title: `${leagueCount("CFB")} games` },
@@ -82,14 +82,12 @@ export function Filters({ league, conference, query, day, minScore, status, coun
           onChange={(v) => onChange({ minScore: Number(v) })}
           options={scoreFilters.map((s) => ({ value: String(s.id), text: s.id === 0 ? "Any rating" : s.label }))}
         />
-        {cfb && (
-          <Menu
-            label="Conference"
-            value={conference}
-            onChange={(v) => onChange({ conference: v })}
-            options={slate.conferences.map((c) => ({ value: c.id, text: c.id === "all-fbs" ? "All conferences" : c.label }))}
-          />
-        )}
+        <Menu
+          label="Conference"
+          value={conference}
+          onChange={(v) => onChange({ conference: v })}
+          options={league === "NFL" ? NFL_CONFERENCES.map((c) => ({ value: c.id, text: c.label })) : slate.conferences.map((c) => ({ value: c.id, text: c.id === "all-fbs" ? "All conferences" : c.label }))}
+        />
         <label className="search">
           <svg viewBox="0 0 24 24" aria-hidden="true" width="16" height="16">
             <circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" strokeWidth="2" />

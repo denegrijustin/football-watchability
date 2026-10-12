@@ -110,6 +110,7 @@ export function positionOf(p: PlayerRow) {
 }
 
 // ---------- helpers ----------
+type GcTab = "overview" | "stats" | "plays" | "players" | "analysis";
 type SlateGame = (typeof slate.games)[number];
 type Result = (typeof results)[number];
 type TeamLike = { name: string; abbr?: string; logoId: string; color?: string | null; record: string; ranks?: Ranks; advanced?: Advanced };
@@ -154,6 +155,32 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
     game && state === "in" && !isHalftime(game.status.detail)
       ? FieldView({ variant: "center", data: game, badge, weather: (up as { weather?: WeatherLike } | undefined)?.weather, teams: [away, home].map((t, i) => ({ espnId: game.teams[i]?.id, abbr: t?.abbr, name: t?.name ?? "", color: t?.color, logoId: t?.logoId, conf: t?.ranks?.confName })) })
       : null;
+  const hasAnalysis = !!up || !!fin || !!(!up && !fin && (away?.advanced || home?.advanced));
+  const tabs: { id: GcTab; label: string }[] = [
+    { id: "overview", label: "Overview" },
+    ...(game && state !== "pre"
+      ? [
+          { id: "stats" as const, label: "Team stats" },
+          { id: "plays" as const, label: "Plays & drives" },
+          { id: "players" as const, label: "Players" },
+        ]
+      : []),
+    ...(hasAnalysis ? [{ id: "analysis" as const, label: up ? "Matchup & season" : fin ? "Forecast vs final" : "Season stats" }] : []),
+  ];
+  const [tab, setTab] = useState<GcTab>("overview");
+  useEffect(() => setTab("overview"), [espnId]);
+  // A tab that goes away (the live data has not loaded yet) falls back to the overview.
+  useEffect(() => {
+    if (!tabs.some((t) => t.id === tab)) setTab("overview");
+  }, [tabs.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  const onTabKey = (e: React.KeyboardEvent, id: GcTab) => {
+    const i = tabs.findIndex((t) => t.id === id);
+    const next = e.key === "ArrowRight" ? tabs[(i + 1) % tabs.length] : e.key === "ArrowLeft" ? tabs[(i - 1 + tabs.length) % tabs.length] : e.key === "Home" ? tabs[0] : e.key === "End" ? tabs[tabs.length - 1] : null;
+    if (!next) return;
+    e.preventDefault();
+    setTab(next.id);
+    requestAnimationFrame(() => document.getElementById(`gc-tab-${next.id}`)?.focus());
+  };
   const watch = up ? { score: up.score, tier: up.tier } : fin ? { score: fin.actual.score, tier: fin.actual.tier } : null;
 
   return (
@@ -216,19 +243,27 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
             </p>
           )}
 
-          {game && state === "in" && !isHalftime(game.status.detail) && (
-            <section className="gc-panel gc-wide gc-livefield">
-              <h3 className="micro-label">Live field</h3>
-              {liveField ?? (
-                <p className="gc-note">
-                  Waiting for field position from the feed.
-                  <small className="gc-why"> {fieldWhy(game, [game.teams[0]?.id, game.teams[1]?.id])}</small>
-                </p>
-              )}
-            </section>
-          )}
-
-          <div className="gc-grid">
+          <nav className="gc-tabs" role="tablist" aria-label="Game Center sections">
+            {tabs.map((t) => (
+              <button key={t.id} id={`gc-tab-${t.id}`} role="tab" type="button" className="gc-tab" aria-selected={tab === t.id} aria-controls="gc-tabpanel" tabIndex={tab === t.id ? 0 : -1} onClick={() => setTab(t.id)} onKeyDown={(e) => onTabKey(e, t.id)}>
+                {t.label}
+              </button>
+            ))}
+          </nav>
+          <div className="gc-grid" id="gc-tabpanel" role="tabpanel" aria-labelledby={`gc-tab-${tab}`}>
+            {tab === "overview" && (
+              <>
+                {game && state === "in" && !isHalftime(game.status.detail) && (
+                  <section className="gc-panel gc-wide gc-livefield">
+                    <h3 className="micro-label">Live field</h3>
+                    {liveField ?? (
+                      <p className="gc-note">
+                        Waiting for field position from the feed.
+                        <small className="gc-why"> {fieldWhy(game, [game.teams[0]?.id, game.teams[1]?.id])}</small>
+                      </p>
+                    )}
+                  </section>
+                )}
             {/* Projection */}
             <section className="gc-panel">
               <h3 className="micro-label">Projection</h3>
@@ -287,18 +322,29 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
               </section>
             )}
 
-            {game && state !== "pre" && (
+                {game && state !== "pre" && <Momentum game={game} away={abbr(away)} home={abbr(home)} />}
+              </>
+            )}
+            {tab === "stats" && game && state !== "pre" && (
               <>
-                <TopBottom game={game} teams={[away, home]} />
-                <Momentum game={game} away={abbr(away)} home={abbr(home)} />
-                <Tilt game={game} away={abbr(away)} home={abbr(home)} />
                 <TeamCompare game={game} away={abbr(away)} home={abbr(home)} />
+                <Tilt game={game} away={abbr(away)} home={abbr(home)} />
+              </>
+            )}
+            {tab === "plays" && game && state !== "pre" && (
+              <>
                 <Feed game={game} away={abbr(away)} home={abbr(home)} />
                 <Drives game={game} away={abbr(away)} home={abbr(home)} />
+              </>
+            )}
+            {tab === "players" && game && state !== "pre" && (
+              <>
+                <TopBottom game={game} teams={[away, home]} />
                 <Tracker game={game} teams={[away, home]} />
               </>
             )}
-
+            {tab === "analysis" && (
+              <>
             {up && <section className="gc-panel gc-wide gc-deep-analysis"><h3 className="micro-label">Matchup & season analysis</h3><WeatherLook game={up} /><Stakes game={up} /><TeamForm game={up} /><GameDetails game={up} defaultOpen={false} /></section>}
             {fin && <section className="gc-panel gc-wide"><h3 className="micro-label">Forecast & final analysis</h3><ResultAnalysis result={fin} /></section>}
             {!up && !fin && (away.advanced || home.advanced) && (
@@ -306,6 +352,8 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
                 <h3 className="micro-label">Advanced stats + rankings (season)</h3>
                 <AdvancedStats league={league ?? "NFL"} away={{ abbr: abbr(away), adv: away.advanced ?? null }} home={{ abbr: abbr(home), adv: home.advanced ?? null }} />
               </section>
+            )}
+              </>
             )}
           </div>
         </div>

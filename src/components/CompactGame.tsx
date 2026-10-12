@@ -15,11 +15,16 @@ export function CompactGame({ titleId, matchup, date, broadcast, network, espnId
   const openGame = useOpenGame();
   const logo = networkLogo(network);
   const impact = weather?.impact.replace(/\s*impact$/i, "").toLowerCase();
-  return <div className="compact-overview">
+  const gc = espnId ? <button type="button" className="cc-gc" title="Open Game Center" aria-label={`Open Game Center for ${matchup}`} onClick={e => { e.stopPropagation(); openGame(espnId); }}><SquareActivity size={16} aria-hidden="true" /><span>GC</span></button> : null;
+  return <div className="compact-overview v2">
     {top}
-    <header className="card-top">
+    {/* One row across the top, as on the NHL cards: when it is on, and where to watch it with the Game Center beside it. */}
+    <header className="card-top cc-top">
       <div className="cc-when kickoff"><span className="cc-time"><strong>{dayOf(date)}</strong> {timeOf(date)} {tzAbbr()}</span>{status}</div>
-      <div className="tv cc-network">{logo ? <><NetChip network={network} logo={logo} game={{ league, espnId, broadcast }} /><span className="sr-only">{broadcast}</span>{broadcastExtra(broadcast, network) && <span aria-hidden="true">{broadcastExtra(broadcast, network)}</span>}</> : broadcast}</div>
+      <div className="cc-right">
+        <div className="tv cc-network">{logo ? <><NetChip network={network} logo={logo} game={{ league, espnId, broadcast }} /><span className="sr-only">{broadcast}</span>{broadcastExtra(broadcast, network) && <span aria-hidden="true">{broadcastExtra(broadcast, network)}</span>}</> : broadcast}</div>
+        {gc}
+      </div>
     </header>
     {badge}
     <h3 className="sr-only" id={titleId}>{matchup}</h3>
@@ -33,13 +38,13 @@ export function CompactGame({ titleId, matchup, date, broadcast, network, espnId
       <div className="score cc-rate" aria-label={`Watchability ${score} out of 100, ${tierLabel(tier)}`}><strong>{score}</strong><span className="score-tier">{tierLabel(tier)}</span></div>
     </div>
     {driveChart}
-    {/* one quiet line: where it is, and the weather only when it will matter. The betting line, booth and full forecast are in Details. */}
+    {/* the venue on one quiet line, and the weather only when it will matter; the betting line, booth and full forecast are in Details */}
     <ul className="facts" aria-label="Game info">
       <li className="cc-venue"><span aria-hidden="true">📍 </span>{venue}
         {weather && impact && impact !== "none" && impact !== "low" && <span className="weather cc-weather"> · {weather.icon} {weather.title} <span className={`impact-pill ${impact}`}>{impact} weather impact</span></span>}
       </li>
     </ul>
     {momentum}
-    <div className="cc-actions">{espnId && <button type="button" className="cc-gc" title="Open Game Center" aria-label={`Open Game Center for ${matchup}`} onClick={e => { e.stopPropagation(); openGame(espnId); }}><SquareActivity size={16} aria-hidden="true" /><span>GC</span></button>}<button className="card-toggle cc-chevron" type="button" aria-label="Show game details" aria-expanded={false} onClick={onExpand}>Details <span aria-hidden="true">▾</span></button></div>
+    <div className="cc-actions"><button className="card-toggle cc-chevron" type="button" aria-label="Show game details" aria-expanded={false} onClick={onExpand}>Details <span aria-hidden="true">▾</span></button></div>
   </div>;
 }

@@ -11,7 +11,9 @@ export function MomentumFlow({ wp, away, home, compact = false, pendingLabel = '
   const swing = swings[points.length-1] ?? 0;
   const side = Math.abs(swing)<3 ? 'Even' : swing>0 ? home : away;
   const move = moves[selected] ?? 0, play = points[selected]?.[2];
-  const height = compact ? 58 : 140;
+  // Before kickoff there is no line yet: a compact card gets a thin strip rather than an empty chart.
+  const slim = compact && points.length < 2;
+  const height = slim ? 30 : compact ? 58 : 140;
   const lastPeriod = Math.max(4,status?.period ?? 0,...points.map(p=>p[1] ?? 0));
   const duration = lastPeriod * 15 * 60;
   const elapsed = (period:number, clock:string)=>{
@@ -23,9 +25,9 @@ export function MomentumFlow({ wp, away, home, compact = false, pendingLabel = '
   const xTime = (time:number)=>6+time/duration*288;
   const x = (i:number)=>xTime(times[i]);
   const y = (v:number)=>height/2-v/100*(height/2-6);
-  return <div className={`momentum-flow ${compact ? 'flow-mini' : ''}`}>
+  return <div className={`momentum-flow ${compact ? 'flow-mini' : ''}${slim ? ' slim' : ''}`}>
     <div className="flow-label"><strong>Momentum · {points.length < 2 ? pendingLabel : side === 'Even' ? 'Even' : `${side} gaining`}</strong><span>{points.length >= 2 ? `${Math.abs(swing).toFixed(1)} pp / last 12 plays` : "Full game timeline"}</span></div>
-    <div className="flow-legend"><span>↑ {home} advantage</span><span>↓ {away} advantage</span></div>
+    {!slim && <div className="flow-legend"><span>↑ {home} advantage</span><span>↓ {away} advantage</span></div>}
     <svg viewBox={`0 0 300 ${height}`} role="group" aria-label={`Momentum chart: above the center line favors ${home}; below favors ${away}`}>
       <rect x={xTime(current)} y="0" width={294-xTime(current)} height={height} fill="currentColor" opacity=".035" />
       {Array.from({length:lastPeriod+1},(_,q)=><line key={q} x1={xTime(q*900)} x2={xTime(q*900)} y1="2" y2={height-2} stroke="currentColor" opacity=".16" />)}
@@ -34,8 +36,8 @@ export function MomentumFlow({ wp, away, home, compact = false, pendingLabel = '
       {points.length > 0 && <circle cx={xTime(current)} cy={y(swings.at(-1) ?? 0)} r="3" fill="var(--lime)"><title>{status?.state === 'post' ? 'Final' : `Now: Q${status?.period ?? points.at(-1)?.[1]} ${status?.clock ?? points.at(-1)?.[2]?.clock ?? ''}`}</title></circle>}
       {swings.map((v,i)=> (!compact || i===shift) && <circle key={i} cx={x(i)} cy={y(v)} r={i===selected?5:4} fill={i===selected?'var(--lime)':'transparent'} tabIndex={compact?undefined:0} onMouseEnter={()=>setActive(i)} onMouseLeave={()=>setActive(null)} onFocus={()=>setActive(i)} onBlur={()=>setActive(null)} aria-label={`Play ${i+1}: ${points[i][2]?.text ?? 'Description unavailable'}`}><title>{points[i][2]?.text ?? 'Description unavailable'}</title></circle>)}
     </svg>
-    <div className="flow-time-marks" style={{ position: "relative", display: "block", height: 32, fontSize: 10 }}>{Array.from({length:lastPeriod+1},(_,q)=><span key={q} style={{ position: "absolute", left: `${2 + q / lastPeriod * 96}%`, transform: "translateX(-50%)", textAlign: "center", whiteSpace: "nowrap", lineHeight: "14px" }}>{q===0?'Start':q===lastPeriod?'End':q===2?'Half':q<4?`Q${q+1}`:'OT'}<small style={{ display: "block", fontSize: 9, lineHeight: "12px", opacity: .65 }}>{q*15}m</small></span>)}</div>
-    <p className="flow-explain">{status?.state==='post' ? 'Final · complete game' : status?.state==='in' ? `Now: Q${status.period} ${status.clock} · shaded area is still to play` : 'Start → final · line fills in as plays happen'}</p>
+    {!slim && <div className="flow-time-marks" style={{ position: "relative", display: "block", height: 32, fontSize: 10 }}>{Array.from({length:lastPeriod+1},(_,q)=><span key={q} style={{ position: "absolute", left: `${2 + q / lastPeriod * 96}%`, transform: "translateX(-50%)", textAlign: "center", whiteSpace: "nowrap", lineHeight: "14px" }}>{q===0?'Start':q===lastPeriod?'End':q===2?'Half':q<4?`Q${q+1}`:'OT'}<small style={{ display: "block", fontSize: 9, lineHeight: "12px", opacity: .65 }}>{q*15}m</small></span>)}</div>}
+    {!slim && <p className="flow-explain">{status?.state==='post' ? 'Final · complete game' : status?.state==='in' ? `Now: Q${status.period} ${status.clock} · shaded area is still to play` : 'Start → final · line fills in as plays happen'}</p>}
     {points.length >= 2 && <p className="flow-event" role="status"><strong>{compact?'Biggest recent shift':'Selected play'} · {points[selected]?.[1]?`Q${points[selected][1]} `:''}{play?.clock} · {Math.abs(move).toFixed(1)} pp toward {move>=0?home:away}</strong><span>{play?.text ?? 'Play description unavailable'}</span></p>}
     {!compact && <p className="flow-explain">Hover or focus a point for its play. Line = win-probability change over 12 plays; pp = percentage points. Highlighted event = change on that single play.</p>}
   </div>;
