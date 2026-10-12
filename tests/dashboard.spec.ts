@@ -18,6 +18,9 @@ const expand = async (card: import("@playwright/test").Locator) => {
 };
 const deep = async (page: import("@playwright/test").Page, card: import("@playwright/test").Locator) => {
   await card.getByRole("button", { name: /Game Center/ }).click();
+  // The Game Center shows one group of panels at a time; the matchup and season analysis is its own tab.
+  const analysis = page.getByRole("dialog").getByRole("tab", { name: /Matchup|Forecast|Season stats/ });
+  await analysis.click();
   return page.getByRole("dialog");
 };
 const expandAll = async (page: import("@playwright/test").Page) => {
@@ -55,6 +58,7 @@ test("@smoke all games, conferences, history and logos remain available", async 
   if (await completedToggle.count()) await completedToggle.click();
   await page.locator(CARD).first().getByRole("button", { name: /Game Center/ }).click();
   const first = page.getByRole("dialog");
+  await first.getByRole("tab", { name: /Matchup|Forecast|Season stats/ }).click();
   await first
     .locator("summary")
     .filter({ hasText: "History + key players" }).evaluate(el => { if (!(el.parentElement as HTMLDetailsElement).open) (el as HTMLElement).click(); });
@@ -120,6 +124,7 @@ test("search, empty state, league switch and responsive layout", async ({
     expect((await page.locator(".card-toggle").first().boundingBox())!.height).toBeGreaterThanOrEqual(44);
     await expand(page.locator(CARD).first());
     await page.locator(CARD).first().getByRole("button", { name: /Game Center/ }).click();
+    await page.getByRole("dialog").getByRole("tab", { name: /Matchup|Forecast|Season stats/ }).click();
     expect(
       (await page.locator(".game-details summary").first().boundingBox())!
         .height,
@@ -807,6 +812,7 @@ const openGameCenter = async (page: import("@playwright/test").Page, fixtureFile
   await page.locator(`${CARD} .card-toggle`).first().click();
   await page.locator(`${CARD} .gc-open`).first().click();
   const gc = page.locator("dialog.gc");
+  await gc.getByRole("tab", { name: "Players" }).click(); // the top 3 / bottom 3 and the tracker are the Players tab
   await expect(gc.locator(".gc-top li").first()).toBeVisible();
   return gc;
 };

@@ -6,6 +6,7 @@ test('compact shortcut opens deeper analysis without expanding the card', async 
   const dialog = page.getByRole('dialog');
   await expect(dialog).toBeVisible();
   await expect(card).toHaveClass(/compact/);
+  await dialog.getByRole('tab', {name:/Matchup|Season stats/}).click();
   await expect(dialog.locator('.matchup-engine')).toBeVisible();
   await expect(dialog.locator('.game-details details')).not.toHaveCount(0);
 });
@@ -18,6 +19,7 @@ test('first expansion is concise and puts Game Center near the top', async ({pag
   const matchup = card.locator('.matchup');
   expect((await gc.boundingBox())!.y).toBeLessThan((await matchup.boundingBox())!.y);
   await gc.click();
+  await page.getByRole('dialog').getByRole('tab', {name:/Matchup|Season stats/}).click();
   await expect(page.getByRole('dialog').locator('.matchup-engine')).toBeVisible();
   await expect(page.getByRole('dialog').getByText(/nationally/).first()).toBeVisible();
 });
