@@ -51,7 +51,7 @@ export function useBoard(filters: FilterState): Board {
 
 const SECTION_HELP = {
   live: "Kicked off and not final yet, kickoff slots in time order, best watchability first in each slot.",
-  final: "Finished games with forecast vs actual, newest week first.",
+  final: "Finished games with forecast vs actual, newest week first, and the most insane games first within each week.",
   upcoming: "Still to play, kickoff slots in time order, best watchability first in each slot.",
 };
 
@@ -167,7 +167,12 @@ export function GameBoard({
             </div>
           )}
           {weeks.map((w) => {
-            const rs = finals.filter((r) => r.week === w);
+            // Within a week, the most insane game first (a game with no play data goes last), the later kickoff first when tied.
+            const rs = finals
+              .filter((r) => r.week === w)
+              .map((r) => ({ r, i: insanity(r.wp, { final: true, overtime: r.final.overtime })?.score ?? -1 }))
+              .sort((a, b) => b.i - a.i || b.r.date.localeCompare(a.r.date))
+              .map((x) => x.r);
             const shown = rs.slice(0, Math.max(0, limit - used));
             used += shown.length;
             const best = [...rs].sort((a, b) => b.delta - a.delta)[0];

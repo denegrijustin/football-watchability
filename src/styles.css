@@ -6989,3 +6989,33 @@ select,
 @media (prefers-reduced-motion: reduce) {
   .ha-scene * { animation: none !important; }
 }
+
+/* the drive's plays on the field: red for a run, blue for a pass */
+.df-seg {
+  stroke-width: 2.4;
+  stroke-linecap: butt;
+  opacity: 0.95;
+}
+.df-seg.run { stroke: #ff4d4f; }
+.df-seg.pass { stroke: #3b9dff; }
+.df-seg.other { stroke: rgb(255 255 255 / 45%); }
+.df-seg.zero { stroke-linecap: round; } /* a play for no gain still shows, as a dot */
+.df-seg-inc { fill: none; stroke: #3b9dff; stroke-width: 0.5; }
+.lf-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  font-size: 11px;
+}
+.lf-key i {
+  display: inline-block;
+  width: 14px;
+  height: 4px;
+  border-radius: 2px;
+  margin-left: 6px;
+}
+.lf-key i.run { background: #ff4d4f; }
+.lf-key i.pass { background: #3b9dff; }
+.lf-plays li.run { border-left: 3px solid #ff4d4f; }
+.lf-plays li.pass { border-left: 3px solid #3b9dff; }

@@ -346,3 +346,54 @@ test("if the lower-ranked team holds on, the card becomes an upset final", async
   await expect(card).toHaveClass(/upset-final/);
   await expect(card.locator(".upset-banner")).toContainText(/upset final/i);
 });
+
+// ---------- run / pass colours on the field ----------
+test("the drive on the field is red for runs and blue for passes, with each play as its own stretch", async ({ page }) => {
+  const live = await openWith(page, () => summary(65, "2nd & 7 at SEA 35"));
+  await expect(live.locator(".lf")).toBeVisible();
+  const segs = live.locator(".df-seg");
+  // The mocked drive: a completed pass, a run for no gain (still a stretch), a sack (a pass play).
+  await expect(live.locator(".df-seg.pass")).toHaveCount(2);
+  await expect(live.locator(".df-seg.run")).toHaveCount(1);
+  expect(await live.locator(".df-seg.run").first().evaluate((e) => getComputedStyle(e).stroke)).toBe("rgb(255, 77, 79)");
+  expect(await live.locator(".df-seg.pass").first().evaluate((e) => getComputedStyle(e).stroke)).toBe("rgb(59, 157, 255)");
+  // The stretches follow the plays in order and end at the ball.
+  const xs = await segs.evaluateAll((els) => els.map((e) => [Number(e.getAttribute("x1")), Number(e.getAttribute("x2"))]));
+  expect(xs).toHaveLength(3);
+  expect(xs[0][1]).toBeCloseTo(xs[1][0], 1);
+  expect(xs[1][1]).toBeCloseTo(xs[2][0], 1);
+  // The key says which colour is which.
+  await expect(live.locator(".lf-key")).toContainText("run");
+  await expect(live.locator(".lf-key")).toContainText("pass");
+});
+
+test("a play is a run or a pass from its type, or its text when the type doesn't say", async () => {
+  const { playKind, driveSegments } = await import("../src/driveKinds");
+  expect(playKind("Rush", "")).toBe("run");
+  expect(playKind("Rushing Touchdown", "")).toBe("run");
+  expect(playKind("Pass Reception", "")).toBe("pass");
+  expect(playKind("Passing Touchdown", "")).toBe("pass");
+  expect(playKind("Pass Incompletion", "")).toBe("pass");
+  expect(playKind("Sack", "")).toBe("pass");
+  expect(playKind("Penalty", "False start")).toBeNull();
+  expect(playKind("Punt", "")).toBeNull();
+  expect(playKind("", "J.Allen pass short left to S.Diggs for 7 yards")).toBe("pass");
+  expect(playKind("", "D.Henry up the middle for 4 yards")).toBe("run");
+  expect(playKind("", "Timeout #1")).toBeNull();
+  // Laid back from the ball: 3 yards, a 12-yard pass, then a 4-yard run, for the team going right (away).
+  const segs = driveSegments(
+    [
+      { yards: 12, kind: "Pass Reception", text: "" },
+      { yards: 4, kind: "Rush", text: "" },
+      { yards: 3, kind: "Pass Reception", text: "" },
+    ],
+    50,
+    true,
+  );
+  expect(segs.map((s) => [s.from, s.to, s.kind])).toEqual([[31, 43, "pass"], [43, 47, "run"], [47, 50, "pass"]]);
+  // The team going the other way (home): the stretches run toward 0.
+  const back = driveSegments([{ yards: 6, kind: "Rush", text: "" }], 40, false);
+  expect([back[0].from, back[0].to]).toEqual([46, 40]);
+  // An incomplete pass is a ring, not a stretch.
+  expect(driveSegments([{ yards: 0, kind: "Pass Incompletion", text: "" }], 30, true)[0].incomplete).toBe(true);
+});

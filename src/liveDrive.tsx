@@ -8,6 +8,7 @@ import { WeatherLayer, weatherCaption } from "./WeatherFx";
 import { ConfMark } from "./ConfMark";
 import type { WeatherLike } from "./weatherFx";
 import type { GameBadge } from "./gameLogo";
+import { driveSegments, playKind } from "./driveKinds";
 
 /** The slice of /api/game (see functions/api/game.js) the drive animation uses. */
 type Summary = {
@@ -184,7 +185,7 @@ export function FieldView({ data, teams, variant, rootRef, badge, weather }: { d
   const list = plays.length > 0 && (
     <ol className="lf-plays" aria-label="Plays in this drive">
       {plays.map((p, i) => (
-        <li key={i} className={`${i === plays.length - 1 ? "latest" : ""}${p.score ? " score" : ""}${p.turnover ? " turnover" : ""}`}>
+        <li key={i} className={`${i === plays.length - 1 ? "latest" : ""}${p.score ? " score" : ""}${p.turnover ? " turnover" : ""} ${playKind(p.kind, p.text) ?? ""}`}>
           <span className="lf-down">{p.down || p.kind}</span>
           <span className="lf-text">{p.text}</span>
           <span className={`lf-yds${p.yards < 0 ? " neg" : ""}`}>{p.yards ? `${signed(p.yards)} yd${Math.abs(p.yards) === 1 ? "" : "s"}` : ""}</span>
@@ -245,6 +246,14 @@ export function FieldView({ data, teams, variant, rootRef, badge, weather }: { d
         <line x1={X(goal)} x2={X(goal)} y1="0" y2="34" className="df-goal" />
         {/* the drive: a band from where it started to the ball, arrowed toward the goal being attacked */}
         <line x1={X(start)} x2={X(ball)} y1="17" y2="17" stroke={colors[side]} className="df-path" />
+        {/* the plays of the drive: red for a run, blue for a pass; an incomplete pass is a hollow blue ring where it was thrown from */}
+        {driveSegments(plays, ball, awayOffense).map((g, i) =>
+          g.incomplete ? (
+            <circle key={i} cx={X(clamp(g.to))} cy="17" r="1.1" className="df-seg-inc" />
+          ) : (
+            <line key={i} x1={X(clamp(g.from))} x2={X(clamp(g.to))} y1="17" y2="17" className={`df-seg ${g.kind ?? "other"}${g.from === g.to ? " zero" : ""}`} data-kind={g.kind ?? "other"} />
+          ),
+        )}
         <line x1={X(start)} x2={X(ball)} y1="17" y2="17" className="df-flow" />
         <path d={`M${X(ball) + dir * 1.2} 17 l${-dir * 2.2} -1.6 v3.2z`} fill="#fff" opacity="0.9" />
         {(badge?.src ?? (!badge?.neutral && home.logoId ? logos[home.logoId] : null)) && (
@@ -281,6 +290,9 @@ export function FieldView({ data, teams, variant, rootRef, badge, weather }: { d
         <b>{label}</b>
         {stats && <span> · {stats}</span>}
         <span className="lf-started"> · drive started {startedAt}</span>
+        {plays.length > 0 && (
+          <span className="lf-key" aria-hidden="true"><i className="run" /> run <i className="pass" /> pass</span>
+        )}
         {wxText && <span className="lf-wx"> · {weather?.icon ?? ""} {wxText}</span>}
       </p>
       {list &&
