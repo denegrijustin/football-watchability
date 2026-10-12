@@ -257,7 +257,7 @@ export function FieldView({ data, teams, variant, rootRef, badge, weather }: { d
         <line x1={X(start)} x2={X(ball)} y1="17" y2="17" className="df-flow" />
         <path d={`M${X(ball) + dir * 1.2} 17 l${-dir * 2.2} -1.6 v3.2z`} fill="#fff" opacity="0.9" />
         {(badge?.src ?? (!badge?.neutral && home.logoId ? logos[home.logoId] : null)) && (
-          <LogoMark src={badge?.src ?? logos[home.logoId!]} cx={60} cy={17} size={15} chipOpacity={0.4} imageClass="lf-mid" />
+          <LogoMark src={badge?.src ?? logos[home.logoId!]} cx={60} cy={17} size={11} chipOpacity={0.16} imageClass="lf-mid" />
         )}
         {/* the way the offense is headed: chevrons ahead of the ball, stepping toward the goal line it is attacking */}
         {Array.from({ length: chevrons }, (_, i) => (

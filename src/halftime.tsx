@@ -86,10 +86,10 @@ export function FieldArt({ id, home, away, hc, ac, badge }: { id: string; home: 
           );
         })}
         {/* midfield: the home team's logo, painted on the turf */}
-        <circle cx="60" cy="20" r="9.4" className="band-mid-ring" />
+        <circle cx="60" cy="20" r="7.4" className="band-mid-ring" />
         {/* a special or neutral-site game paints its own logo here; any other game, the home team's */}
-        {badge?.src ? <LogoMark src={badge.src} cx={60} cy={20} size={19} chipOpacity={0.4} imageClass="band-mid-logo" gameLogo />
-          : !badge?.neutral && home.logoId && logos[home.logoId] && <LogoMark src={logos[home.logoId]} cx={60} cy={20} size={19} chipOpacity={0.4} imageClass="band-mid-logo" />}
+        {badge?.src ? <LogoMark src={badge.src} cx={60} cy={20} size={14} chipOpacity={0.15} imageClass="band-mid-logo" gameLogo />
+          : !badge?.neutral && home.logoId && logos[home.logoId] && <LogoMark src={logos[home.logoId]} cx={60} cy={20} size={14} chipOpacity={0.15} imageClass="band-mid-logo" />}
         <ConfMark conf={away.conf} cx={35} cy={31} size={8} />
         <ConfMark conf={home.conf} cx={85} cy={31} size={8} />
     </>
