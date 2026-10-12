@@ -5357,7 +5357,7 @@ html:has(dialog[open]) {
 .tv-key .k-rank::before { display: none; }
 
 .kickoff-slot { margin: 20px 0; }
-.kickoff-slot h4 { margin: 0 0 10px; padding-bottom: 8px; border-bottom: 1px solid var(--line); color: var(--text-2); }
+.kickoff-slot > h4 { margin: 0 0 10px; padding-bottom: 8px; border-bottom: 1px solid var(--line); color: var(--text-2); }
 
 .cc-outlook { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 11px; line-height: 1.3; margin-top: 5px; color: var(--text-2); }
 .cc-network { font-weight: 700; }
@@ -5834,7 +5834,7 @@ select,
 .kickoff-slot {
   margin: 12px 0;
 }
-.kickoff-slot h4 {
+.kickoff-slot > h4 {
   margin: 0 0 8px;
   padding-bottom: 6px;
   font-size: 13.5px;
@@ -6977,3 +6977,60 @@ select,
 .lf-plays li.run { border-left: 3px solid #ff4d4f; }
 .lf-plays li.pass { border-left: 3px solid #3b9dff; }
 .lf-plays li.punt, .lf-plays li.fg { border-left: 3px solid #f2c94c; }
+
+/* ---------- The small game card, laid out like the NHL's: one top row, teams with their records on a line, a small score box ---------- */
+.compact-overview.v2 .card-top.cc-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.compact-overview.v2 .cc-when { min-width: 0; flex-wrap: wrap; row-gap: 2px; }
+.cc-right { display: flex; align-items: center; gap: 8px; flex: none; }
+.cc-right .cc-network { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.compact-overview.v2 .game-card .cc-gc,
+.game-card .compact-overview.v2 .cc-gc {
+  flex-direction: column;
+  gap: 1px;
+  width: 40px;
+  min-height: 40px;
+  height: 40px;
+  padding: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+.compact-overview.v2 .matchup { margin: 0 0 6px; align-items: center; gap: 10px; }
+.compact-overview.v2 .matchup-teams { display: grid; gap: 8px; }
+.compact-overview.v2 .cc-team { grid-template-columns: 34px minmax(0, 1fr) auto; gap: 10px; }
+.compact-overview.v2 .cc-team img { width: 34px; height: 34px; }
+/* the name and the record on one line */
+.compact-overview.v2 .cc-team > div { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 9px; min-width: 0; }
+.compact-overview.v2 .cc-team h4 { font-size: 17px; line-height: 1.2; }
+.compact-overview.v2 .cc-team p { margin: 0; font-size: 13px; }
+.compact-overview.v2 .cc-rate { width: 70px; min-width: 70px; padding: 7px 4px 6px; border-radius: 12px; }
+.compact-overview.v2 .cc-rate strong { font-size: 27px; }
+.compact-overview.v2 .cc-rate span { font-size: 8.5px; }
+.compact-overview.v2 .facts { margin: 0; padding: 0; border: 0; font-size: 12px; }
+.compact-overview.v2 .facts li { padding: 2px 0; color: var(--text-2); }
+.compact-overview.v2 .cc-actions { display: block; }
+.game-card .compact-overview.v2 .card-toggle.cc-chevron {
+  min-height: 44px; /* a full-size tap target, though it looks like a quiet label */
+  margin: 0;
+  padding: 4px 10px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+}
+/* before kickoff the win-probability chart is a thin strip, not an empty plot */
+.momentum-flow.slim { padding: 4px 0 2px; }
+.momentum-flow.slim .flow-label { font-size: 11px; margin-bottom: 2px; }
+.momentum-flow.slim svg { max-height: 30px; }
+.compact-overview.v2 .momentum-flow { margin-top: 4px; }
+@media (max-width: 620px) {
+  .compact-overview.v2 .cc-team h4 { font-size: 16px; }
+}
+.compact-overview.v2 .cc-team h4 { max-width: 100%; }
+.compact-overview.v2 .home-tag { margin-left: 6px; }
