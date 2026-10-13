@@ -205,3 +205,56 @@ test.describe("projection logic", () => {
     expect(statSync("src/data/spplus.json").mtimeMs).toBe(before);
   });
 });
+
+test.describe("simulator: picking a game", () => {
+  const latest = model.latest;
+  const confAt = (n: string, w = latest) => model.byId.get(`FBS:${n}`)?.weeks[w]?.conf ?? null;
+  const fbsGames = (w: number) => model.projections.filter((p) => p.week === w && model.byId.has(`FBS:${p.away}`) && model.byId.has(`FBS:${p.home}`));
+  const label = (c: string) => (c === "Indies" ? "Independents" : c);
+  const goSim = async (page: Page) => {
+    await openTab(page);
+    await page.locator(".spp").getByRole("tab", { name: "Simulator" }).click();
+    await expect(page.locator(".spp .simpts")).toHaveCount(2);
+    return page.locator('.spp [aria-label="Pick a scheduled game"]');
+  };
+
+  test("a game between two conferences is listed under both; a game is chosen by week, conference and game", async ({ page }) => {
+    const inter = fbsGames(latest).find((p) => !p.neutral && confAt(p.away) && confAt(p.home) && confAt(p.away) !== confAt(p.home) && confAt(p.away) !== "Indies" && confAt(p.home) !== "Indies")!;
+    expect(inter, "an interconference game in the latest week").toBeTruthy();
+    const pick = await goSim(page);
+    for (const c of [confAt(inter.away)!, confAt(inter.home)!]) {
+      await pick.getByLabel("Conference").selectOption(c);
+      await expect(pick.getByLabel("Game").locator("option", { hasText: `${inter.away} at ${inter.home}` })).toHaveCount(1);
+    }
+    await pick.getByLabel("Game").selectOption(inter.id);
+    await expect(page.locator(".spp").getByLabel("Team A")).toHaveValue(inter.away);
+    await expect(page.locator(".spp").getByLabel("Team B")).toHaveValue(inter.home);
+    await expect(page.locator(".spp").getByText("On the schedule:")).toContainText(`${inter.away} at ${inter.home}`);
+  });
+
+  test("independents are offered as a conference of their own", async ({ page }) => {
+    const ind = fbsGames(latest).filter((p) => confAt(p.away) === "Indies" || confAt(p.home) === "Indies");
+    test.skip(ind.length === 0, "no independent plays in the latest week");
+    const pick = await goSim(page);
+    await expect(pick.getByLabel("Conference").locator("option", { hasText: "Independents" })).toHaveCount(1);
+    await pick.getByLabel("Conference").selectOption({ label: "Independents" });
+    await expect(pick.getByText(new RegExp(`^${ind.length} games?`))).toBeVisible();
+    for (const p of ind) await expect(pick.getByLabel("Game").locator("option", { hasText: `${p.away}${p.neutral ? " vs. " : " at "}${p.home}` })).toHaveCount(1);
+  });
+
+  test("the week lists that week's games; any other pairing is a custom matchup", async ({ page }) => {
+    const pick = await goSim(page);
+    const w = model.weeks[3];
+    await pick.getByLabel("Week").selectOption(String(w));
+    await expect(pick.getByText(new RegExp(`^${fbsGames(w).length} games`))).toBeVisible();
+    const g = fbsGames(w)[0];
+    await expect(page.locator(".spp").getByLabel("Team A")).toHaveValue(g.away);
+    await expect(page.locator(".spp .simpts")).toHaveCount(2);
+    // Any two teams: change a team and the list says it is no longer a scheduled game.
+    await page.locator(".spp").getByLabel("Team A").fill("Wisconsin");
+    await expect(pick.getByLabel("Game")).toHaveValue("");
+    await expect(page.locator(".spp .simpts")).toHaveCount(2);
+    await expect(page.locator(".spp").getByLabel("Team A")).toHaveValue("Wisconsin");
+  });
+});
+

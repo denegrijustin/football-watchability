@@ -36,9 +36,13 @@ export default function Simulator() {
   const away = route.p.a ?? "", home = route.p.b ?? "";
   const v = route.p.v === "n" ? "n" : "h";
   const n = Number(route.p.n) || 10000;
-  const sched = away && home ? nextGame(data, away, home) : undefined;
+  // A game picked from the list stays the game (a divisional rematch later in the season is a different game).
+  const picked = route.p.gid ? data.games.find((g) => g.id === route.p.gid) : undefined;
+  const pickedOk = !!picked && ((picked.away === away && picked.home === home) || (picked.away === home && picked.home === away));
+  const sched = pickedOk ? picked : away && home ? nextGame(data, away, home) : undefined;
   const sameOrder = sched ? sched.away === away && sched.home === home : false;
-  const weekRatings = route.week ?? (sched && sched.aS == null ? sched.week : data.ratingsThroughWeek);
+  // A scheduled game is simulated from the ratings in force before it (also after it was played); any other pairing from the week chosen below.
+  const weekRatings = sched ? sched.week : route.p.rw ? Number(route.p.rw) : data.ratingsThroughWeek;
   const userBasis = (route.p.basis as Basis | undefined) ?? "market";
   const lineHome = route.p.ln != null && route.p.ln !== "" ? Number(route.p.ln) : null;
   const totalLine = route.p.ou != null && route.p.ou !== "" ? Number(route.p.ou) : null;
@@ -47,6 +51,25 @@ export default function Simulator() {
     if (!away || !home || away === home) return null;
     return projectNfl(data, away, home, weekRatings, { neutral: v === "n", spread: marketOk ? sched!.spread : null, total: marketOk ? sched!.total : null, basis: userBasis, n, seed: reroll ? 5000 + reroll : undefined, lineHome: Number.isFinite(lineHome as number) ? lineHome : null, totalLine: Number.isFinite(totalLine as number) ? totalLine : null });
   }, [data, away, home, weekRatings, v, marketOk, sched, userBasis, n, reroll, lineHome, totalLine]);
+  // Picking a scheduled game: a week, a conference or division (an AFC-NFC game is listed under both), then the game.
+  const regular = useMemo(() => data.games.filter((g) => g.type === "REG"), [data]);
+  const firstOpenWeek = regular.find((g) => g.aS == null)?.week ?? data.lastPlayedWeek;
+  const pickWeek = route.p.sw ? Number(route.p.sw) : sched?.week ?? firstOpenWeek;
+  const groups = useMemo(() => ["AFC", "NFC", ...[...new Set(Object.values(data.teams).map((t) => t.div))].sort()], [data]);
+  const inGroup = (abbr: string, grp: string) => !grp || data.teams[abbr]?.conf === grp || data.teams[abbr]?.div === grp;
+  const gamesFor = (w: number, grp: string) => regular.filter((g) => g.week === w && (inGroup(g.away, grp) || inGroup(g.home, grp))).sort((x, y) => x.date.localeCompare(y.date) || (x.time ?? "").localeCompare(y.time ?? ""));
+  const pickGroup = route.p.sc ?? "";
+  const gameList = useMemo(() => gamesFor(pickWeek, pickGroup), [regular, pickWeek, pickGroup]);
+  const chooseGame = (g: NflGame | undefined, extra: Record<string, string | null> = {}) => {
+    if (!g) { set(extra); return; }
+    set({ ...extra, a: g.away, b: g.home, v: g.neutral ? "n" : "h", gid: g.id, basis: null, ln: null, ou: null });
+  };
+  const gameLabel = (g: NflGame) => {
+    const ca = data.teams[g.away]?.conf, ch = data.teams[g.home]?.conf;
+    const tag = ca && ch && ca !== ch ? ` (${ca} / ${ch})` : "";
+    return `${g.away} ${g.neutral ? "vs." : "@"} ${g.home}${tag} · ${dateLabel(g.date)}${g.aS != null ? ` · final ${g.aS}–${g.hS}` : ""}`;
+  };
+
   const check = useMemo(() => seasonCheck(data), [data]);
   const bt = data.backtest.calibration;
   const [aT, hT] = [data.teams[away], data.teams[home]];
@@ -67,10 +90,38 @@ export default function Simulator() {
     <div className="stack">
       <div className="panel">
         <div className="phead"><div><h2>NFL matchup simulator</h2><p className="sub" style={{ margin: 0 }}>Plays the game {n.toLocaleString()} times. Expected score comes from the closing line when there is one, otherwise from the team ratings (before week {weekRatings}); the spread of results was measured on {bt.games} games from {data.params.trainedOn.join(", ")}</p></div></div>
+        <div className="filters" style={{ padding: 0, alignItems: "end" }} role="group" aria-label="Pick a scheduled game">
+          <label className="field"><span>Week</span>
+            <select className="ctl" value={pickWeek} onChange={(e) => { const w = Number(e.target.value); chooseGame(gamesFor(w, pickGroup)[0], { sw: String(w) }); }}>
+              {Array.from({ length: 18 }, (_, i) => i + 1).map((w) => <option key={w} value={w}>Week {w}{w === firstOpenWeek ? " (next)" : ""}</option>)}
+            </select>
+          </label>
+          <label className="field"><span>Conference</span>
+            <select className="ctl" value={pickGroup} onChange={(e) => { const grp = e.target.value; chooseGame(gamesFor(pickWeek, grp)[0], { sc: grp || null, sw: String(pickWeek) }); }}>
+              <option value="">Both conferences</option>
+              {groups.map((grp) => <option key={grp} value={grp}>{grp}</option>)}
+            </select>
+          </label>
+          <label className="field"><span>Game</span>
+            <select className="ctl" style={{ maxWidth: 360 }} value={(pickedOk && gameList.some((g) => g.id === picked!.id) ? picked!.id : gameList.find((g) => g.away === away && g.home === home)?.id) ?? ""} onChange={(e) => chooseGame(gameList.find((g) => g.id === e.target.value))}>
+              <option value="" disabled>Custom matchup</option>
+              {gameList.map((g) => <option key={g.id} value={g.id}>{gameLabel(g)}</option>)}
+            </select>
+          </label>
+          <span className="sub" style={{ margin: "0 0 8px" }}>{gameList.length} game{gameList.length === 1 ? "" : "s"}</span>
+        </div>
+        <p className="sub" style={{ margin: "10px 0 4px" }}>Or pick any two teams{sched ? "" : ", with the ratings as of a week"}:</p>
         <div className="filters" style={{ padding: 0, alignItems: "end" }}>
           <TeamSelect label="Away team" value={away} exclude={home ? [home] : []} onPick={(a) => set({ a })} />
           <button type="button" className="btn" aria-label="Swap teams" title="Swap teams" onClick={() => set({ a: home, b: away })}>⇄</button>
           <TeamSelect label="Home team" value={home} exclude={away ? [away] : []} onPick={(b) => set({ b })} />
+          {!sched && (
+            <label className="field"><span>Ratings as of</span>
+              <select className="ctl" value={weekRatings} onChange={(e) => set({ rw: e.target.value })}>
+                {Array.from({ length: data.ratingsThroughWeek }, (_, i) => i + 1).map((w) => <option key={w} value={w}>Before week {w}{w === data.ratingsThroughWeek ? " (latest)" : ""}</option>)}
+              </select>
+            </label>
+          )}
           <div className="field"><span>Venue</span>
             <div className="seg" role="radiogroup" aria-label="Venue">
               <button type="button" role="radio" aria-checked={v === "h"} onClick={() => set({ v: "h" })}>{hT ? `${hT.name.split(" ").pop()} host` : "Home"}</button>
