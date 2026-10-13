@@ -37,6 +37,16 @@ const siteHeaders = (): Plugin => ({
   },
 });
 
+// Every build has an id (the commit on Cloudflare Pages, a timestamp elsewhere). The page carries its own and checks /version.json against it,
+// so a page left open across a deploy can tell it is out of date and offer to reload.
+const BUILD_ID = process.env.CF_PAGES_COMMIT_SHA ?? process.env.GITHUB_SHA ?? Date.now().toString(36);
+const versionFile = (): Plugin => ({
+  name: "version-file",
+  generateBundle() {
+    this.emitFile({ type: "asset", fileName: "version.json", source: JSON.stringify({ id: BUILD_ID }) });
+  },
+});
+
 // Logos are cached for a year; a changed logo set changes this stamp, which is appended to every logo URL.
 const logoVersion = createHash("sha1")
   .update(readdirSync(new URL("./public/logos", import.meta.url)).sort().map((f) => {
@@ -47,8 +57,8 @@ const logoVersion = createHash("sha1")
   .slice(0, 8);
 
 export default defineConfig({
-  plugins: [react(), tailwindcss(), dataFiles(), siteHeaders()],
-  define: { __LOGO_V__: JSON.stringify(logoVersion) },
+  plugins: [react(), tailwindcss(), dataFiles(), versionFile(), siteHeaders()],
+  define: { __LOGO_V__: JSON.stringify(logoVersion), __BUILD_ID__: JSON.stringify(BUILD_ID) },
   build: {
     rollupOptions: {
       input: { main: "index.html", matchup: "matchup-demo.html" },
