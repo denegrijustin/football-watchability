@@ -1443,6 +1443,8 @@ footer details[open] summary::before {
     gap: 12px;
   }
   .game-card {
+    --card-pad-y: 14px;
+    --card-pad-x: 14px;
     padding: 14px 14px 2px;
   }
   .matchup {
@@ -3760,7 +3762,7 @@ details.proj summary strong {
   padding: 0;
   list-style: none;
 }
-.ib-weeks button {
+.ib-weeks li button {
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(80px, 1fr) auto;
   grid-template-areas: "name bar avg" "top top top";
@@ -3776,7 +3778,7 @@ details.proj summary strong {
   text-align: left;
   cursor: pointer;
 }
-.ib-weeks button[aria-pressed="true"] {
+.ib-weeks li button[aria-pressed="true"] {
   border-color: var(--line-strong);
   background: var(--surface-3);
 }
@@ -5104,6 +5106,8 @@ html:has(dialog[open]) {
 
 /* ---------- Compact game cards: logos, scores, rating; the rest opens ---------- */
 .game-card.compact {
+  --card-pad-y: 10px;
+  --card-pad-x: 12px;
   padding: 10px 12px;
 }
 .cc {
@@ -5214,6 +5218,8 @@ html:has(dialog[open]) {
 }
 @media (max-width: 760px) {
   .game-card.compact {
+    --card-pad-y: 10px;
+    --card-pad-x: 12px;
     padding: 10px 12px;
   }
 }
@@ -5351,7 +5357,7 @@ html:has(dialog[open]) {
 .tv-key .k-rank::before { display: none; }
 
 .kickoff-slot { margin: 20px 0; }
-.kickoff-slot h4 { margin: 0 0 10px; padding-bottom: 8px; border-bottom: 1px solid var(--line); color: var(--text-2); }
+.kickoff-slot > h4 { margin: 0 0 10px; padding-bottom: 8px; border-bottom: 1px solid var(--line); color: var(--text-2); }
 
 .cc-outlook { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 11px; line-height: 1.3; margin-top: 5px; color: var(--text-2); }
 .cc-network { font-weight: 700; }
@@ -5390,12 +5396,19 @@ html:has(dialog[open]) {
   }
 }
 
-/* Texas and Kansas logos are shown upside down everywhere (cards, grids, results, the Empire map). The files are
+/* Texas, Kansas and the Chiefs' AFC West rivals (Broncos, Chargers, Raiders) are shown upside down everywhere (cards, grids,
+   results, the Empire map). The files are
    named by team, so the rule follows the logo wherever it is drawn; the JPG export flips them too (exportJpg.ts). */
 img[src*="/logos/texas.webp"],
 img[src*="/logos/kansas.webp"],
+img[src*="/logos/denver-broncos.webp"],
+img[src*="/logos/los-angeles-chargers.webp"],
+img[src*="/logos/las-vegas-raiders.webp"],
 image[href*="/logos/texas.webp"],
-image[href*="/logos/kansas.webp"] {
+image[href*="/logos/kansas.webp"],
+image[href*="/logos/denver-broncos.webp"],
+image[href*="/logos/los-angeles-chargers.webp"],
+image[href*="/logos/las-vegas-raiders.webp"] {
   rotate: 180deg;
   transform-box: fill-box;
   transform-origin: center;
@@ -5821,7 +5834,7 @@ select,
 .kickoff-slot {
   margin: 12px 0;
 }
-.kickoff-slot h4 {
+.kickoff-slot > h4 {
   margin: 0 0 8px;
   padding-bottom: 6px;
   font-size: 13.5px;
@@ -5927,14 +5940,6 @@ select,
   font-weight: 700;
   opacity: 0.4;
 }
-.df-past {
-  stroke-width: 0.6;
-  stroke-linecap: round;
-  opacity: 0.4;
-}
-.df-past.score {
-  opacity: 0.75;
-}
 .df-first {
   stroke: #ffd84d;
   stroke-width: 0.6;
@@ -5944,33 +5949,6 @@ select,
   stroke: #ff6b6b;
   stroke-width: 0.5;
   opacity: 0.7;
-}
-.df-path {
-  stroke-width: 3.2;
-  stroke-linecap: round;
-  opacity: 0.9;
-  /* the drive draws itself the first time it appears */
-  stroke-dasharray: 100;
-  stroke-dashoffset: 100;
-  animation: drive-draw 1.1s ease-out forwards;
-}
-@keyframes drive-draw {
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-.df-flow {
-  stroke: #ffffff;
-  stroke-width: 0.6;
-  stroke-linecap: round;
-  stroke-dasharray: 0.8 2.4;
-  opacity: 0.85;
-  animation: drive-flow 0.9s linear infinite;
-}
-@keyframes drive-flow {
-  to {
-    stroke-dashoffset: -3.2;
-  }
 }
 .df-start {
   stroke-width: 0.8;
@@ -6036,18 +6014,10 @@ select,
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .df-path,
-  .df-flow,
   .df-pulse,
   .drive-dot,
   .drive-live.loading {
     animation: none;
-  }
-  .df-path {
-    stroke-dashoffset: 0;
-  }
-  .df-flow {
-    display: none;
   }
   .df-ball {
     transition: none;
@@ -6212,13 +6182,17 @@ select,
   opacity: 0.4;
 }
 .band-mid-ring {
-  fill: rgb(255 255 255 / 7%);
+  fill: rgb(255 255 255 / 3%);
   stroke: #ffffff;
-  stroke-width: 0.35;
-  opacity: 0.8;
+  stroke-width: 0.3;
+  opacity: 0.4;
 }
+/* the midfield logo is painted on the turf: seen, but never the main image */
 .band-mid-logo {
-  filter: drop-shadow(0 0.4px 0.5px rgb(0 0 0 / 45%));
+  opacity: 0.6;
+}
+.lf-mid {
+  opacity: 0.6;
 }
 .band-epaulet {
   stroke: none;
@@ -6409,3 +6383,732 @@ select,
   flex-wrap: wrap;
   white-space: normal;
 }
+.gc-why {
+  display: block;
+  margin-top: 4px;
+  opacity: 0.6;
+  font-size: 0.7rem;
+  word-break: break-word;
+}
+
+/* the card's field is a slim strip; the Game Center's is the full field, kept to a sensible width */
+.lf-card .drive-svg {
+  max-height: 340px;
+}
+.lf-card .lf-ball-team {
+  margin-bottom: 4px;
+  font-size: 0.8rem;
+}
+.lf-center .drive-svg {
+  max-width: 520px;
+  margin-inline: auto;
+}
+.lf-center .lf-ball-team,
+.lf-center .drive-cap {
+  max-width: 520px;
+  margin-inline: auto;
+}
+
+.lf-chip {
+  stroke: #fff;
+  stroke-width: 0.5;
+}
+.lf-ball-logo {
+  filter: drop-shadow(0 0 0.3px rgb(0 0 0 / 40%));
+}
+
+/* ---------- weather over the field ---------- */
+.wx-drop {
+  stroke: #d6ebff;
+  stroke-linecap: round;
+  animation: wx-fall linear infinite;
+}
+.wx-drop.far {
+  stroke-width: 0.14;
+  opacity: 0.32;
+}
+.wx-drop.near {
+  stroke-width: 0.3;
+  opacity: 0.7;
+}
+@keyframes wx-fall {
+  to {
+    transform: translate(var(--wx-dx), var(--wx-dy));
+  }
+}
+.wx-splash {
+  fill: none;
+  stroke: #e6f2ff;
+  stroke-width: 0.12;
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: wx-splash ease-out infinite;
+}
+@keyframes wx-splash {
+  0% {
+    opacity: 0.7;
+    transform: scale(0.3);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2.2);
+  }
+}
+.wx-mist {
+  animation: wx-mist 5s ease-in-out infinite alternate;
+}
+@keyframes wx-mist {
+  to {
+    opacity: 0.65;
+  }
+}
+.wx-flake {
+  fill: #fff;
+  animation: wx-snow linear infinite;
+}
+@keyframes wx-snow {
+  25% {
+    transform: translate(calc(var(--wx-dx) * 0.25 + 1.2px), calc(var(--wx-dy) * 0.25));
+  }
+  50% {
+    transform: translate(calc(var(--wx-dx) * 0.5 - 1px), calc(var(--wx-dy) * 0.5));
+  }
+  75% {
+    transform: translate(calc(var(--wx-dx) * 0.75 + 1.2px), calc(var(--wx-dy) * 0.75));
+  }
+  to {
+    transform: translate(var(--wx-dx), var(--wx-dy));
+  }
+}
+.wx-fog {
+  fill: #e4eaf0;
+  opacity: 0.34;
+  animation: wx-drift linear infinite alternate;
+}
+@keyframes wx-drift {
+  to {
+    transform: translateX(var(--wx-dx));
+  }
+}
+.wx-gust {
+  stroke: #fff;
+  stroke-width: 0.18;
+  stroke-linecap: round;
+  opacity: 0.4;
+  animation: wx-blow linear infinite;
+}
+@keyframes wx-blow {
+  to {
+    transform: translateX(var(--wx-dx));
+  }
+}
+.wx-flash {
+  fill: #fff;
+  opacity: 0;
+  animation: wx-lightning 7s infinite;
+}
+.wx-bolt {
+  fill: none;
+  stroke: #fffbe0;
+  stroke-width: 0.5;
+  stroke-linejoin: round;
+  opacity: 0;
+  animation: wx-lightning 7s infinite;
+}
+@keyframes wx-lightning {
+  0%,
+  92%,
+  100% {
+    opacity: 0;
+  }
+  93% {
+    opacity: 0.5;
+  }
+  94% {
+    opacity: 0.05;
+  }
+  95% {
+    opacity: 0.4;
+  }
+}
+.lf-wx {
+  opacity: 0.85;
+}
+@media (prefers-reduced-motion: reduce) {
+  .wx-drop,
+  .wx-flake,
+  .wx-gust,
+  .wx-flash,
+  .wx-bolt,
+  .wx-splash,
+  .wx-fog,
+  .wx-mist {
+    animation: none;
+  }
+  .wx-drop,
+  .wx-flake {
+    transform: translate(calc(var(--wx-dx) * 0.35), calc(var(--wx-dy) * 0.35));
+  }
+  .wx-gust {
+    transform: translateX(calc(var(--wx-dx) * 0.5));
+  }
+  .wx-splash,
+  .wx-bolt {
+    opacity: 0;
+  }
+}
+
+/* ---------- which way the drive is headed, and the red zone ---------- */
+.lf {
+  border: 2px solid transparent;
+  border-radius: 12px;
+  padding: 5px 6px 4px;
+  transition: border-color 0.5s ease, box-shadow 0.5s ease;
+}
+.lf.lf-red {
+  border-color: rgb(255 92 92 / 0.8);
+  box-shadow: 0 0 10px rgb(255 70 70 / 0.22);
+}
+.lf-heading {
+  margin-left: 4px;
+  font-weight: 800;
+  opacity: 0.9;
+}
+.lf-rz {
+  margin-left: auto;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgb(255 92 92 / 0.18);
+  color: #ff9d9d;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lf {
+    transition: none;
+  }
+}
+.lf-ball-team {
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  min-width: 0;
+}
+.lf-ball-team b {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lf-ball-team span {
+  flex: none;
+}
+
+.lf-conf-text {
+  fill: #fff;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+}
+
+.ticker-rank {
+  margin-right: 4px;
+  padding: 0 4px;
+  border-radius: 4px;
+  background: rgb(255 255 255 / 10%);
+  color: var(--muted);
+  font-size: 0.66em;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  vertical-align: 1px;
+  white-space: nowrap;
+}
+.ticker-rank.pr {
+  margin-left: 2px;
+  background: rgb(127 227 160 / 14%);
+  color: #9be3b4;
+}
+
+/* an upset final: the team FPI ranks lower beat the higher-ranked one */
+.ticker-item.upset {
+  border-radius: 8px;
+  /* a thin, quiet outline: a 1px line and a faint halo */
+  box-shadow: 0 0 0 1px rgb(57 255 136 / 0.55), 0 0 5px rgb(57 255 136 / 0.2);
+  animation: upset-glow 3.2s ease-in-out infinite;
+}
+.ticker-item.upset .ticker-final {
+  color: rgb(95 255 160 / 0.9);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+@keyframes upset-glow {
+  50% {
+    box-shadow: 0 0 0 1px rgb(57 255 136 / 0.7), 0 0 7px rgb(57 255 136 / 0.3);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ticker-item.upset {
+    animation: none;
+  }
+}
+
+/* an upset on a game card: the team FPI ranks lower is ahead (alert) or won (final) */
+.game-card.upset-alert,
+.game-card.upset-final {
+  border-color: rgb(57 255 136 / 0.55);
+  box-shadow: 0 0 0 1px rgb(57 255 136 / 0.45), 0 0 6px rgb(57 255 136 / 0.18);
+}
+.game-card.upset-alert {
+  animation: upset-glow 3.2s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .game-card.upset-alert {
+    animation: none;
+  }
+}
+
+.upset-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: calc(-1 * var(--card-pad-y, 16px)) calc(-1 * var(--card-pad-x, 18px)) 12px;
+  padding: 7px 12px 6px;
+  line-height: 1.2;
+  background: rgb(57 255 136 / 0.07);
+  box-shadow: inset 0 -1px 0 rgb(57 255 136 / 0.3);
+  color: rgb(95 255 160 / 0.9);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.upset-banner b {
+  font-weight: 700;
+}
+.upset-banner span {
+  color: var(--text-2);
+  font-weight: 700;
+  text-shadow: none;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.upset-banner i {
+  font-style: normal;
+  opacity: 0.8;
+}
+
+/* a game in progress in the Insanity list */
+.ic-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: rgb(255 82 82 / 0.16);
+  color: #ff8a8a;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+.ic-live::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #ff5252;
+  animation: drive-blink 1.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ic-live::before {
+    animation: none;
+  }
+}
+.ic-fresh {
+  display: inline-flex;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.1);
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+/* ---------- NFL halftime: one act, looping for the twelve minutes ---------- */
+.halftime-act {
+  margin: 0 0 10px;
+}
+.ha-scene {
+  --L: 14s;
+}
+.ha-scene * {
+  animation-duration: var(--L);
+  animation-iteration-count: infinite;
+  animation-timing-function: linear;
+  animation-fill-mode: backwards;
+}
+.ha-tag {
+  font: 700 2.2px system-ui, sans-serif;
+  letter-spacing: 0.2px;
+  fill: rgb(255 255 255 / 70%);
+}
+.ha-word {
+  font: 900 4.4px system-ui, sans-serif;
+  fill: #ffe03a;
+  stroke: rgb(0 0 0 / 70%);
+  stroke-width: 0.5px;
+  paint-order: stroke;
+}
+.ha-word.big {
+  font-size: 5.6px;
+  fill: #7fe3a0;
+}
+.ha-sub {
+  font: 700 2.4px system-ui, sans-serif;
+  fill: #fff;
+  stroke: rgb(0 0 0 / 70%);
+  stroke-width: 0.35px;
+  paint-order: stroke;
+}
+.ha-pop {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation-name: ha-pop;
+}
+@keyframes ha-pop {
+  0% { opacity: 0; transform: scale(0.6); }
+  3% { opacity: 1; transform: scale(1.18); }
+  6%, 20% { opacity: 1; transform: scale(1); }
+  26%, 100% { opacity: 0; transform: scale(1); }
+}
+.ha-finish {
+  stroke: #fff;
+  stroke-width: 0.8;
+  stroke-dasharray: 1.2 1.2;
+  opacity: 0.75;
+}
+.ha-line-gold {
+  stroke: #f2d23c;
+  stroke-width: 0.35;
+  stroke-dasharray: 1.4 1;
+}
+.ha-spot { fill: rgb(0 0 0 / 35%); }
+.ha-wobble { animation-name: ha-wobble; animation-duration: 0.45s !important; animation-direction: alternate; animation-timing-function: ease-in-out !important; }
+@keyframes ha-wobble { from { transform: rotate(-9deg); } to { transform: rotate(9deg); } }
+.ha-sway { animation-name: ha-sway; animation-duration: 0.5s !important; animation-direction: alternate; animation-timing-function: ease-in-out !important; }
+@keyframes ha-sway { from { transform: rotate(-9deg); } to { transform: rotate(9deg); } }
+.ha-legs { animation-name: ha-legs; animation-duration: 0.22s !important; animation-direction: alternate; }
+@keyframes ha-legs { from { transform: translateX(-0.6px); } to { transform: translateX(0.6px); } }
+
+/* a ball in flight: it travels in a line and swells at the top of its arc */
+.ha-fly { opacity: 0; animation-name: ha-fly; }
+@keyframes ha-fly {
+  0% { opacity: 0; transform: translate(0, 0); }
+  1% { opacity: 1; }
+  15% { opacity: 1; transform: translate(var(--dx), var(--dy)); }
+  20%, 100% { opacity: 0; transform: translate(var(--dx), var(--dy)); }
+}
+.ha-arc { animation-name: ha-arc; animation-delay: inherit; }
+.ha-arc.big { animation-name: ha-arc-big; }
+@keyframes ha-arc { 0%, 15%, 100% { transform: scale(1); } 7% { transform: scale(1.7); } }
+@keyframes ha-arc-big { 0%, 15%, 100% { transform: scale(1); } 7% { transform: scale(2.3); } }
+
+/* shoe scramble */
+.ha-shoe-run { animation-name: ha-shoe-run; }
+@keyframes ha-shoe-run {
+  0% { opacity: 0; transform: translate(0, 0); }
+  3%, 8% { opacity: 1; transform: translate(0, 0); }
+  32% { transform: translate(-26px, var(--a)); }
+  40% { transform: translate(-30px, var(--b)); }
+  48% { transform: translate(-28px, var(--c)); }
+  56%, 74% { transform: translate(-30px, var(--a)); }
+  92% { opacity: 1; transform: translate(var(--ex), var(--y)); }
+  97% { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--ex), var(--y)); }
+}
+.ha-face { animation-name: ha-face; }
+@keyframes ha-face { 0%, 74% { transform: rotate(180deg); } 78%, 100% { transform: rotate(0deg); } }
+
+/* inflatable race */
+.ha-infl-run { animation-name: ha-infl-run; }
+@keyframes ha-infl-run {
+  0% { opacity: 0; transform: translate(0, 0) rotate(0deg); }
+  3% { opacity: 1; transform: translate(0, 0) rotate(0deg); }
+  30% { transform: translate(calc(var(--k) * 20px), 0) rotate(0deg); }
+  34%, 48% { transform: translate(calc(var(--k) * 22px), calc(var(--fall) * 1.5px)) rotate(calc(var(--fall) * 95deg)); }
+  56% { transform: translate(calc(var(--k) * 23px), 0) rotate(0deg); }
+  92% { opacity: 1; transform: translate(calc(var(--k) * 72px), 0) rotate(0deg); }
+  97% { opacity: 1; }
+  100% { opacity: 0; transform: translate(calc(var(--k) * 72px), 0) rotate(0deg); }
+}
+
+/* dizzy bat */
+.ha-orbit { transform-origin: 24px 20px; animation-name: ha-orbit; }
+@keyframes ha-orbit {
+  0% { opacity: 1; transform: rotate(0deg); }
+  36% { opacity: 1; transform: rotate(3600deg); }
+  36.5%, 100% { opacity: 0; transform: rotate(3600deg); }
+}
+.ha-stagger { opacity: 0; animation-name: ha-stagger; }
+@keyframes ha-stagger {
+  0%, 36% { opacity: 0; transform: translate(0, 0) rotate(0deg); }
+  36.5% { opacity: 1; }
+  42% { transform: translate(-2px, -3px) rotate(-20deg); }
+  48% { transform: translate(-5px, 3px) rotate(25deg); }
+  54% { transform: translate(-8px, -4px) rotate(-30deg); }
+  60% { transform: translate(-11px, 2px) rotate(40deg); }
+  66%, 80% { transform: translate(-14px, 6px) rotate(95deg); }
+  86% { transform: translate(-14px, 6px) rotate(10deg); }
+  94% { opacity: 1; transform: translate(-14px, 6px) rotate(10deg); }
+  98%, 100% { opacity: 0; transform: translate(-14px, 6px) rotate(10deg); }
+}
+.ha-stars circle { fill: #ffe03a; }
+.ha-stars { animation-name: ha-spin; animation-duration: 0.8s !important; }
+@keyframes ha-spin { to { transform: rotate(360deg); } }
+.ha-skid { animation-name: ha-skid; }
+@keyframes ha-skid {
+  0%, 62% { opacity: 1; transform: translate(0, 0); }
+  70%, 94% { opacity: 1; transform: translate(-3px, -13px); }
+  98%, 100% { opacity: 0; transform: translate(-3px, -13px); }
+}
+
+/* progressive cash kick */
+.ha-target { fill: none; stroke: #ff7a30; stroke-width: 0.6; }
+.ha-fan-walk { animation-name: ha-fan-walk; }
+@keyframes ha-fan-walk {
+  0%, 56% { transform: translate(0, 0); }
+  62%, 96% { transform: translate(55px, 0); }
+  100% { transform: translate(0, 0); }
+}
+
+/* air cannon */
+.ha-cannon { fill: #7d8791; stroke: #2b3239; stroke-width: 0.3; }
+.ha-cannon-bore { fill: #4c555d; stroke: #2b3239; stroke-width: 0.3; }
+.ha-ring { fill: none; stroke: #ffe03a; stroke-width: 0.3; stroke-dasharray: 0.9 0.7; }
+.ha-catcher { animation-name: ha-catcher; }
+@keyframes ha-catcher {
+  0%, 8% { transform: translate(0, 0) rotate(0deg); }
+  23% { transform: translate(-2px, -4px) rotate(0deg); }
+  30% { transform: translate(-2px, -4px) rotate(70deg); }
+  38%, 45% { transform: translate(0, 0) rotate(0deg); }
+  56%, 66% { transform: translate(-1px, 8px) rotate(0deg); }
+  70% { transform: translate(-1px, 6px) rotate(0deg); }
+  74% { transform: translate(-1px, 8px) rotate(0deg); }
+  78% { transform: translate(-1px, 6px) rotate(0deg); }
+  90%, 100% { transform: translate(0, 0) rotate(0deg); }
+}
+.ha-confetti { opacity: 0; animation-name: ha-confetti-box; }
+@keyframes ha-confetti-box { 0% { opacity: 0; } 1%, 14% { opacity: 1; } 20%, 100% { opacity: 0; } }
+.ha-confetti circle { animation-name: ha-confetti; animation-delay: inherit; }
+@keyframes ha-confetti { 0% { transform: translate(0, 0); } 18%, 100% { transform: translate(var(--cx), var(--cy)); } }
+
+/* wiener dogs */
+.ha-dash { animation-name: ha-dash; animation-timing-function: var(--ease) !important; }
+@keyframes ha-dash {
+  0% { opacity: 0; transform: translate(0, 0); }
+  2%, 6% { opacity: 1; transform: translate(0, 0); }
+  30% { transform: translate(calc(var(--k) * 44px), var(--vy)); }
+  60%, 92% { opacity: 1; transform: translate(calc(var(--k) * 96px), 0); }
+  97% { opacity: 1; }
+  100% { opacity: 0; transform: translate(calc(var(--k) * 96px), 0); }
+}
+
+/* LED light show */
+.ha-dark { fill: #01040b; opacity: 0.76; }
+.ha-led-grid path { fill: none; stroke: #31e8ff; stroke-width: 0.25; opacity: 0.3; }
+.ha-led-man { fill: none; stroke-width: 0.4; stroke-linecap: round; animation-name: ha-blink; animation-duration: 1.2s !important; animation-direction: alternate; animation-timing-function: ease-in-out !important; }
+.ha-led-man * { animation: none !important; }
+@keyframes ha-blink { from { opacity: 0.5; } to { opacity: 1; } }
+.ha-led-spin.a { animation-name: ha-rot; }
+.ha-led-spin.b { animation-name: ha-rot; animation-direction: reverse; animation-duration: 9s !important; }
+@keyframes ha-rot { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .ha-scene * { animation: none !important; }
+}
+
+/* the drive on the field, a line per play: red for a run, blue for a pass, gold for a punt or field goal; dashed where yards were lost */
+.df-seg {
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  fill: none;
+}
+.df-seg.run { stroke: #ff4d4f; }
+.df-seg.pass { stroke: #3b9dff; }
+.df-seg.punt, .df-seg.fg { stroke: #f2c94c; stroke-dasharray: 1.4 1; }
+.df-seg.other { stroke: rgb(255 255 255 / 45%); }
+.df-seg.loss { stroke-dasharray: 1.3 0.9; opacity: 0.9; }
+.df-seg.zero { stroke-linecap: round; } /* a play for no gain still shows, as a dot */
+.df-seg-inc { fill: none; stroke: #3b9dff; stroke-width: 0.5; }
+.df-seg.inc { stroke-width: 0.8; stroke-dasharray: 0.8 0.8; }
+.df-step { stroke: rgb(255 255 255 / 25%); stroke-width: 0.3; }
+.df-play-start { fill: rgb(255 255 255 / 85%); }
+.df-play-label { font-size: 3.1px; font-weight: 700; fill: #fff; paint-order: stroke; stroke: rgb(0 0 0 / 55%); stroke-width: 0.5px; }
+.df-play-label.run { fill: #ff9a9b; }
+.df-play-label.pass { fill: #8cc4ff; }
+.df-play-label.punt, .df-play-label.fg { fill: #f6dc84; }
+.df-kick-mark { fill: #f2c94c; stroke: rgb(0 0 0 / 50%); stroke-width: 0.25; }
+.df-kick-mark.post { fill: none; stroke: #f2c94c; stroke-width: 0.5; stroke-linecap: round; }
+.df-score-ring { fill: none; stroke: #ffd24a; stroke-width: 0.6; }
+.lf-plays-chart .df-play.fg .df-seg { stroke-dasharray: 2 1; }
+.lf-key {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  font-size: 11px;
+}
+.lf-key i {
+  display: inline-block;
+  width: 14px;
+  height: 4px;
+  border-radius: 2px;
+  margin-left: 6px;
+}
+.lf-key i.run { background: #ff4d4f; }
+.lf-key i.pass { background: #3b9dff; }
+.lf-key i.kick { background: #f2c94c; }
+.lf-plays li.run { border-left: 3px solid #ff4d4f; }
+.lf-plays li.pass { border-left: 3px solid #3b9dff; }
+.lf-plays li.punt, .lf-plays li.fg { border-left: 3px solid #f2c94c; }
+
+/* ---------- The small game card, laid out like the NHL's: one top row, teams with their records on a line, a small score box ---------- */
+.compact-overview.v2 .card-top.cc-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.compact-overview.v2 .cc-when { min-width: 0; flex-wrap: wrap; row-gap: 2px; }
+.cc-right { display: flex; align-items: center; gap: 8px; flex: none; }
+.cc-right .cc-network { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.compact-overview.v2 .game-card .cc-gc,
+.game-card .compact-overview.v2 .cc-gc {
+  flex-direction: column;
+  gap: 1px;
+  width: 40px;
+  min-height: 40px;
+  height: 40px;
+  padding: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+.compact-overview.v2 .matchup { margin: 0 0 6px; align-items: center; gap: 10px; }
+.compact-overview.v2 .matchup-teams { display: grid; gap: 8px; }
+.compact-overview.v2 .cc-team { grid-template-columns: 34px minmax(0, 1fr) auto; gap: 10px; }
+.compact-overview.v2 .cc-team img { width: 34px; height: 34px; }
+/* the name and the record on one line */
+.compact-overview.v2 .cc-team > div { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 9px; min-width: 0; }
+.compact-overview.v2 .cc-team h4 { font-size: 17px; line-height: 1.2; }
+.compact-overview.v2 .cc-team p { margin: 0; font-size: 13px; }
+.compact-overview.v2 .cc-rate { width: 70px; min-width: 70px; padding: 7px 4px 6px; border-radius: 12px; }
+.compact-overview.v2 .cc-rate strong { font-size: 27px; }
+.compact-overview.v2 .cc-rate span { font-size: 8.5px; }
+.compact-overview.v2 .facts { margin: 0; padding: 0; border: 0; font-size: 12px; }
+.compact-overview.v2 .facts li { padding: 2px 0; color: var(--text-2); }
+.compact-overview.v2 .cc-actions { display: block; }
+.game-card .compact-overview.v2 .card-toggle.cc-chevron {
+  min-height: 44px; /* a full-size tap target, though it looks like a quiet label */
+  margin: 0;
+  padding: 4px 10px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+}
+/* before kickoff the win-probability chart is a thin strip, not an empty plot */
+.momentum-flow.slim { padding: 4px 0 2px; }
+.momentum-flow.slim .flow-label { font-size: 11px; margin-bottom: 2px; }
+.momentum-flow.slim svg { max-height: 30px; }
+.compact-overview.v2 .momentum-flow { margin-top: 4px; }
+@media (max-width: 620px) {
+  .compact-overview.v2 .cc-team h4 { font-size: 16px; }
+}
+.compact-overview.v2 .cc-team h4 { max-width: 100%; }
+.compact-overview.v2 .home-tag { margin-left: 6px; }
+
+/* ---------- Game Center: the scoreboard on top, then one group of panels at a time ---------- */
+.gc-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  display: flex;
+  gap: 6px;
+  padding: 8px 20px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid var(--line);
+}
+.gc-tabs::-webkit-scrollbar { display: none; }
+.gc-tab {
+  flex: none;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.gc-tab:hover { color: var(--text); }
+.gc-tab[aria-selected="true"] {
+  background: var(--surface-3);
+  border-color: var(--line-strong);
+  color: var(--text);
+}
+.gc-tab:focus-visible { outline: 2px solid var(--lime); outline-offset: 1px; }
+@media (max-width: 720px) {
+  .gc-tabs { padding: 6px 12px; }
+  .gc-head { padding: 18px 16px; gap: 10px; }
+}
+@media (max-width: 720px) {
+  .gc-team img { width: 46px; height: 46px; }
+  .gc-team h2 { font-size: 19px; }
+  .gc-team p { margin: 1px 0 0; font-size: 12px; }
+  .gc-head { padding: 14px 56px 12px 14px; gap: 8px; }
+  .gc-mid { gap: 3px; }
+}
+/* ---------- Insanity: weeks view and the season's games, highest to lowest ---------- */
+.ibw-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 8px; }
+.ibw-head .micro-label { margin: 0; flex: 1 1 14rem; }
+.ibw-rank { margin-right: 6px; color: var(--lime, #b6ff3a); font-variant-numeric: tabular-nums; }
+.ibs-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.ibs button {
+  display: grid; grid-template-columns: 2.6rem 1fr auto minmax(7.5rem, 11rem); align-items: center; gap: 10px;
+  width: 100%; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface, #13222e); color: inherit; font: inherit; text-align: left; cursor: pointer;
+}
+.ibs button:hover { border-color: var(--lime, #b6ff3a); }
+.ibs-rank { font-variant-numeric: tabular-nums; opacity: 0.9; }
+.ibs-teams { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; min-width: 0; }
+.ibs-team { display: inline-flex; align-items: center; gap: 5px; opacity: 0.8; }
+.ibs-team.won { opacity: 1; font-weight: 700; }
+.ibs-team em { font-style: normal; font-variant-numeric: tabular-nums; }
+.ibs-ot { font-size: 0.7rem; font-weight: 800; opacity: 0.75; }
+.ibs-week { font-size: 0.75rem; opacity: 0.65; white-space: nowrap; }
+.ibs-ins { position: relative; display: block; padding: 3px 8px; border-radius: 6px; overflow: hidden; background: rgb(255 255 255 / 6%); white-space: nowrap; }
+.ibs-ins i { position: absolute; inset: 0 auto 0 0; background: rgb(182 255 58 / 22%); }
+.ibs-ins strong, .ibs-ins small { position: relative; }
+.ibs-ins small { opacity: 0.8; margin-left: 4px; }
+@media (max-width: 620px) {
+  .ibs button { grid-template-columns: 2.1rem 1fr 4.6rem; gap: 8px; padding: 8px; }
+  .ibs-week, .ibs-ins small { display: none; }
+  .ibs-teams { flex-direction: column; align-items: flex-start; flex-wrap: nowrap; gap: 3px; font-size: 13px; }
+  .ibs-ins { text-align: center; }
+}
+
+.update-bar { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 8px 12px; background: #e8c24a; color: #1a1400; font-size: 14px; font-weight: 650; }
+.update-bar button { min-height: 36px; padding: 0 16px; border: 0; border-radius: 8px; background: #1a1400; color: #f6e7a0; font: inherit; cursor: pointer; }

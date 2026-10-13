@@ -6,6 +6,28 @@ export const HALFTIME_MS = 20 * 60_000;
 /** The score feed runs about a minute behind the stadium, so halftime had already started that long before we saw it. */
 export const FEED_DELAY_MS = 60_000;
 
+/** NFL halftime runs 12 minutes. */
+export const NFL_HALFTIME_MS = 12 * 60_000;
+
+/** The acts an NFL halftime draws from. Each game gets one, and it is the only act for the whole twelve minutes. */
+export const NFL_ACTS = [
+  { id: "shoe", name: "Shoe Scramble", blurb: "blindfolded, they hunt the pile for their own shoe, then sprint to the end zone" },
+  { id: "inflatable", name: "Inflatable Race", blurb: "top-heavy inflatable suits race down the field, and mostly fall over" },
+  { id: "dizzy", name: "Dizzy Bat Field Goal", blurb: "ten spins around a bat, then try to kick a field goal" },
+  { id: "cash", name: "Progressive Cash Kick", blurb: "one fan, three kicks and throws, bigger prizes each time" },
+  { id: "slingshot", name: "Air Cannon Catch", blurb: "a fan in the end zone tries to catch a football fired from the 40" },
+  { id: "wiener", name: "Wiener Dog Dash", blurb: "a line of dachshunds runs the length of the field" },
+  { id: "tron", name: "LED Light Show", blurb: "dancers in LED suits light up the darkened field" },
+] as const;
+export type NflAct = (typeof NFL_ACTS)[number];
+
+/** The act for a game. It is fixed by the game's id, so the card and the Game Center show the same one, and different games rotate through all of them. */
+export function actFor(espnId: string): NflAct {
+  let h = 0;
+  for (const c of espnId) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return NFL_ACTS[h % NFL_ACTS.length];
+}
+
 export const isHalftime = (detail: string | undefined | null) => liveStatusParts(detail ?? "").period === "Half";
 
 const KEY = (id: string) => `fbwatch-halftime-${id}`;
@@ -23,7 +45,7 @@ export function firstSeen(id: string, now: number) {
 }
 
 /** Time left of the 20 minutes, counting the feed's delay as already elapsed. */
-export const halftimeLeft = (seenAt: number, now: number) => Math.max(0, HALFTIME_MS - (now - seenAt) - FEED_DELAY_MS);
+export const halftimeLeft = (seenAt: number, now: number, total = HALFTIME_MS) => Math.max(0, total - (now - seenAt) - FEED_DELAY_MS);
 export const clockText = (ms: number) => `${Math.floor(ms / 60_000)}:${String(Math.floor((ms % 60_000) / 1000)).padStart(2, "0")}`;
 
 // ---------- the band ----------
@@ -107,4 +129,11 @@ export function anglesAt(step: number): number[] {
   });
   angleCache.set(step, out);
   return out;
+}
+
+/** Mix a #rrggbb color toward white (t > 0) or black (t < 0). */
+export function mix(hex: string, t: number) {
+  const n = parseInt(hex.slice(1), 16);
+  const ch = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((c) => Math.round(t >= 0 ? c + (255 - c) * t : c * (1 + t)));
+  return `#${ch.map((c) => c.toString(16).padStart(2, "0")).join("")}`;
 }

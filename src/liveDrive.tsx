@@ -1,19 +1,30 @@
 import { useEffect, useRef, useState } from "react";
 import { logos, teamColor } from "./data";
+import { rename } from "./data/load";
 import { FootballIcon } from "./live";
+import { mix } from "./halftimeLogic";
+import { LogoMark } from "./logoTone";
+import { WeatherLayer, weatherCaption } from "./WeatherFx";
+import { ConfMark } from "./ConfMark";
+import type { WeatherLike } from "./weatherFx";
+import type { GameBadge } from "./gameLogo";
+import { driveSegments, playKind, type Seg } from "./driveKinds";
 
 /** The slice of /api/game (see functions/api/game.js) the drive animation uses. */
 type Summary = {
-  status: { state: "pre" | "in" | "post" };
-  teams: { id: string; abbr: string }[];
-  situation: { text: string; possession: string | null; toGo: number | null; redZone: boolean; lastPlay: string } | null;
+  status: { state: "pre" | "in" | "post"; period?: number };
+  teams: { id: string; abbr: string; name?: string }[];
+  situation: { text: string; possession: string | null; toGo: number | null; redZone: boolean; lastPlay: string; spotText?: string; yardLine?: number | null } | null;
   drives: { team: string; period?: number | null; clock?: string; from: number | null; to: number | null; yards: number; plays: number; result: string; score: boolean; time: string; current: boolean }[];
   /** Every snap of the drive in progress (older cached responses may not have it). */
+  /** Where the latest snap of the current drive left the ball, from the play data: the team it is measured for and yards from that team's goal line. */
+  ball?: { team: string | null; own: number } | null;
   curPlays?: { down: string; text: string; yards: number; period: number | null; clock: string; kind: string; score: boolean; turnover: boolean }[];
 };
-export type FieldTeam = { espnId?: string | null; abbr?: string; name: string; color?: string | null; logoId?: string };
+export type FieldTeam = { espnId?: string | null; abbr?: string; name: string; color?: string | null; logoId?: string; conf?: string | null };
 
-const PATHS: Record<string, string> = { NFL: "nfl", CFB: "college-football" };
+// The /api/game function takes nfl or cfb (not the ESPN path), the same values the Game Center sends.
+const PATHS: Record<string, string> = { NFL: "nfl", CFB: "cfb" };
 const POLL_MS = 15_000;
 const cache = new Map<string, { at: number; data: Summary | null }>();
 
@@ -23,7 +34,7 @@ async function fetchSummary(league: string, id: string): Promise<Summary | null>
   let data: Summary | null = null;
   try {
     const r = await fetch(`/api/game?league=${PATHS[league]}&event=${id}`);
-    if (r.ok && (r.headers.get("content-type") ?? "").includes("json")) data = await r.json();
+    if (r.ok && (r.headers.get("content-type") ?? "").includes("json")) data = rename(await r.json());
   } catch {
     /* offline: keep what we had */
   }
@@ -78,53 +89,118 @@ const clamp = (n: number) => Math.max(0, Math.min(100, n));
 const spot = (fromOwn: number, awayOffense: boolean) => (awayOffense ? clamp(fromOwn) : 100 - clamp(fromOwn));
 /** "ATL 34" / "50" / "SEA 35": a spot measured from the offense's own goal line, named the way the broadcast does. */
 const spotName = (fromOwn: number, own: string, opp: string) => (fromOwn === 50 ? "50" : fromOwn < 50 ? `${own} ${Math.round(fromOwn)}` : `${opp} ${Math.round(100 - fromOwn)}`);
+/**
+ * Where the ball is, in yards from the offense's own goal line. ESPN's yards-to-end-zone figure is used when it is there; the live
+ * summary often gives only text such as "2nd & 7 at SEA 35" or a spot of "SEA 35", so that is read when it is not.
+ */
+export function ballFromOwn(sit: NonNullable<Summary["situation"]> | null, own: { abbr: string; name?: string }, opp: { abbr: string; name?: string }): number | null {
+  if (!sit) return null;
+  if (sit.toGo != null) return 100 - sit.toGo;
+  const name = (t: { abbr: string; name?: string }, tag: string) => {
+    const a = tag.toUpperCase();
+    return a === t.abbr.toUpperCase() || (!!t.name && (t.name.toUpperCase().startsWith(a) || a.startsWith(t.abbr.toUpperCase())));
+  };
+  for (const text of [sit.spotText ?? "", sit.text ?? ""]) {
+    if (/\b(?:at|on)\s+50\b/i.test(text) || /^50$/.test(text.trim())) return 50;
+    const m = /(?:\b(?:at|on)\s+)?\b([A-Za-z][A-Za-z&.]{0,9})\s+(\d{1,2})\s*$/.exec(text.trim());
+    if (!m) continue;
+    const n = Number(m[2]);
+    if (name(own, m[1])) return n;
+    if (name(opp, m[1])) return 100 - n;
+  }
+  return null;
+}
+/** Why a field could not be drawn, for the Game Center's note. */
+export function fieldWhy(data: Summary | null, ids: string[]) {
+  if (!data) return "no game data yet";
+  const cur = data.drives.find((d) => d.current) ?? null;
+  const sit = data.situation;
+  return [
+    `possession ${sit?.possession ?? cur?.team ?? data.ball?.team ?? "none"} (teams ${ids.join("/")})`,
+    `situation ${sit ? JSON.stringify({ text: sit.text, toGo: sit.toGo, spot: sit.spotText }) : "none"}`,
+    `drive ${cur ? `${cur.from}→${cur.to}` : "none"}`,
+    `ball ${data.ball ? `${data.ball.team}@${data.ball.own}` : "none"}`,
+  ].join(" · ");
+}
+/** Whether a field can be drawn from this summary: a live game, a team with the ball and a spot for it. */
+export function fieldSpot(data: Summary | null, ids: string[], abbrs: { abbr: string; name?: string }[]) {
+  if (!data || data.status.state !== "in") return null;
+  const cur = data.drives.find((d) => d.current) ?? null;
+  const sit = data.situation;
+  const possession = sit?.possession ?? cur?.team ?? data.ball?.team ?? null;
+  const side = possession === ids[0] ? 0 : possession === ids[1] ? 1 : -1;
+  if (side < 0) return null;
+  // The ball from the play data counts for whichever team it was measured for.
+  const fromPlays = data.ball?.team && data.ball.team === ids[side] ? data.ball.own : data.ball?.team ? 100 - data.ball.own : null;
+  const at = ballFromOwn(sit, abbrs[side], abbrs[1 - side]) ?? fromPlays ?? cur?.to ?? null;
+  return at == null ? null : { side, at, cur, sit };
+}
 const signed = (n: number) => (n > 0 ? `+${n}` : String(n));
+/** How many of the drive's last plays get a line of their own on the field. */
+const MAX_ROWS = 12;
+/** What is written beside a play's line: the yards gained or lost, or the kick. */
+export function playLabel(g: Seg) {
+  if (g.kind === "punt") return `Punt ${g.yards}`;
+  if (g.kind === "fg") return `FG ${g.yards} ${g.good ? "✓" : "✗"}`;
+  const yds = g.incomplete ? "inc" : g.yards > 0 ? `+${g.yards}` : g.yards < 0 ? `−${-g.yards}` : "0";
+  return `${yds}${g.score ? " TD" : ""}${g.turnover ? " ✕" : ""}`;
+}
 
 /**
  * The live field: who has the ball and where it is, where the drive started and how far it has come, the line to gain, and
  * the plays of the drive in progress. Shown on live cards (compact, plays folded away) and in the Game Center.
  * Static for visitors who ask for reduced motion.
  */
-export function FieldView({ data, teams, variant, rootRef }: { data: Summary | null; teams: FieldTeam[]; variant: "card" | "center"; rootRef?: React.Ref<HTMLDivElement> }) {
+export function FieldView({ data, teams, variant, rootRef, badge, weather }: { data: Summary | null; teams: FieldTeam[]; variant: "card" | "center"; rootRef?: React.Ref<HTMLDivElement>; badge?: GameBadge | null; weather?: WeatherLike | null }) {
   const [away, home] = teams;
   const ids = [away.espnId ?? "", home.espnId ?? ""];
   const colors = [teamColor(away.color) ?? "#c1403d", teamColor(home.color) ?? "#2f7de1"];
-  const live = data?.status.state === "in";
-  const cur = data?.drives.find((d) => d.current) ?? null;
-  const sit = data?.situation ?? null;
-  const possession = sit?.possession ?? cur?.team ?? null;
-  const side = possession === ids[0] ? 0 : possession === ids[1] ? 1 : -1;
-  const drawable = !!data && live && side >= 0 && (sit?.toGo != null || cur?.to != null);
-  if (!drawable) return null;
+  const abbrs = teams.map((t) => ({ abbr: t.abbr ?? t.name, name: t.name }));
+  const found = fieldSpot(data, ids, abbrs);
+  if (!data || !found) return null;
+  const { side, cur, sit } = found;
+  const possession = ids[side];
 
   const awayOffense = side === 0;
   const own = teams[side].abbr ?? teams[side].name;
   const opp = teams[1 - side].abbr ?? teams[1 - side].name;
-  const ballFromOwn = sit?.toGo != null ? 100 - sit.toGo : (cur?.to ?? 0);
-  const startFromOwn = cur?.from ?? ballFromOwn;
-  const ball = spot(ballFromOwn, awayOffense);
+  const ballOwn = found.at;
+  const startFromOwn = cur?.from ?? ballOwn;
+  const ball = spot(ballOwn, awayOffense);
   const start = spot(startFromOwn, awayOffense);
   const dir = awayOffense ? 1 : -1;
   const m = /&\s*(\d+)/.exec(sit?.text ?? "");
   const toFirst = m ? Number(m[1]) : null;
   const firstDown = toFirst != null ? clamp(ball + dir * toFirst) : null;
   const goal = awayOffense ? 100 : 0;
+  const toGoal = Math.abs(goal - ball);
+  // ESPN's red-zone flag, or the plain fact of being inside the opponent's 20.
+  const redZone = !!sit?.redZone || toGoal <= 20;
   const abbr = data.teams.find((t) => t.id === possession)?.abbr ?? own;
-  const label = `${abbr} ${sit?.text ? sit.text : "driving"}`;
+  const downText = sit?.text ?? "";
+  const label = `${abbr} ${downText ? downText : "driving"}`;
   const stats = cur ? `${cur.plays} play${cur.plays === 1 ? "" : "s"} · ${cur.yards} yd${cur.yards === 1 ? "" : "s"}${cur.time ? ` · ${cur.time}` : ""}` : "";
   const startedAt = `${spotName(startFromOwn, own, opp)}${cur?.period ? ` · Q${cur.period}${cur.clock ? ` ${cur.clock}` : ""}` : ""}`;
-  // The last few finished drives sit faintly behind it.
-  const past = data.drives.filter((d) => !d.current && d.from != null && d.to != null).slice(-3);
   const X = (yd: number) => 10 + yd; // 10-yard end zones either side
   const plays = data.curPlays ?? [];
+  const wxText = weatherCaption(weather, data.status.period);
   const logo = teams[side].logoId ? logos[teams[side].logoId!] : undefined;
   // The ball's tag sits on the side with room.
   const tagLeft = ball > 70;
 
+  // The drive's last dozen plays, a line each from the top down, with the ball on a line of its own below them.
+  const segsAll = driveSegments(plays, { ball, start }, awayOffense);
+  const shown = segsAll.slice(-MAX_ROWS);
+  const earlier = segsAll.length - shown.length;
+  const TOP = 10, ROW = 4.3, BOTTOM = 7;
+  const rowY = (i: number) => TOP + i * ROW;
+  const H = Math.max(variant === "card" ? 26 : 30, TOP + (shown.length + 1) * ROW + BOTTOM);
+  const ballY = rowY(shown.length);
+
   const list = plays.length > 0 && (
     <ol className="lf-plays" aria-label="Plays in this drive">
       {plays.map((p, i) => (
-        <li key={i} className={`${i === plays.length - 1 ? "latest" : ""}${p.score ? " score" : ""}${p.turnover ? " turnover" : ""}`}>
+        <li key={i} className={`${i === plays.length - 1 ? "latest" : ""}${p.score ? " score" : ""}${p.turnover ? " turnover" : ""} ${playKind(p.kind, p.text) ?? ""}`}>
           <span className="lf-down">{p.down || p.kind}</span>
           <span className="lf-text">{p.text}</span>
           <span className={`lf-yds${p.yards < 0 ? " neg" : ""}`}>{p.yards ? `${signed(p.yards)} yd${Math.abs(p.yards) === 1 ? "" : "s"}` : ""}</span>
@@ -134,52 +210,97 @@ export function FieldView({ data, teams, variant, rootRef }: { data: Summary | n
   );
 
   return (
-    <div ref={rootRef} className={`lf lf-${variant}`} role="img" aria-label={`Live field: ${label}. ${stats}. Drive started at ${startedAt}.`}>
+    <div ref={rootRef} className={`lf lf-${variant}${redZone ? " lf-red" : ""}`} role="img" aria-label={`Live field: ${label}. ${stats}. Drive started at ${startedAt}.`}>
       <p className="lf-ball-team">
-        {logo && <img src={logos[teams[side].logoId!]} alt="" width="22" height="22" />}
+        {logo && <img src={logos[teams[side].logoId!]} alt="" width={variant === "card" ? 16 : 22} height={variant === "card" ? 16 : 22} />}
         <FootballIcon title="Has the ball" />
-        <b>{teams[side].name}</b>
+        <b>{variant === "card" ? (teams[side].abbr ?? teams[side].name) : teams[side].name}</b>
         <span> have the ball</span>
+        <span className="lf-heading" aria-label={`driving toward the ${opp} end zone`}>driving {dir > 0 ? "→" : "←"}</span>
+        {redZone && <span className="lf-rz">RED ZONE</span>}
       </p>
-      <svg viewBox="0 0 120 34" className="drive-svg" aria-hidden="true">
-        <rect x="0" y="0" width="120" height="34" className="df-turf" />
+      <svg viewBox={`0 0 120 ${H}`} style={{ aspectRatio: `120 / ${H}` }} className="drive-svg" aria-hidden="true">
+        <rect x="0" y="0" width="120" height={H} className="df-turf" />
         {Array.from({ length: 10 }, (_, i) => (
-          <rect key={i} x={10 + i * 10} y="0" width="10" height="34" className={i % 2 ? "df-stripe" : "df-stripe alt"} />
+          <rect key={i} x={10 + i * 10} y="0" width="10" height={H} className={i % 2 ? "df-stripe" : "df-stripe alt"} />
         ))}
-        <rect x="0" y="0" width="10" height="34" fill={colors[0]} opacity="0.6" />
-        <rect x="110" y="0" width="10" height="34" fill={colors[1]} opacity="0.6" />
+        {/* end zones in team color with a woven pattern, the team's logo and name; the home logo (or the game's own) at midfield */}
+        <defs>
+          {[0, 1].map((k) => (
+            <pattern key={k} id={`lf-ez-${ids.join("-")}-${k}-${variant}`} width="3" height="3" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+              <rect width="3" height="3" fill={colors[k]} />
+              <rect width="1.2" height="3" fill={mix(colors[k], -0.22)} />
+            </pattern>
+          ))}
+        </defs>
+        <rect x="0" y="0" width="10" height={H} fill={`url(#lf-ez-${ids.join("-")}-0-${variant})`} />
+        <rect x="110" y="0" width="10" height={H} fill={`url(#lf-ez-${ids.join("-")}-1-${variant})`} />
         {[[away, 5, -90] as const, [home, 115, 90] as const].map(([t, x, rot], k) => (
-          <text key={k} x={x} y="17" className="lf-ez" transform={`rotate(${rot} ${x} 17)`} textAnchor="middle" dominantBaseline="central">{(t.abbr ?? t.name).toUpperCase()}</text>
+          <g key={k}>
+            <text x={x} y={H / 2 + 5} className="lf-ez" transform={`rotate(${rot} ${x} ${H / 2 + 5})`} textAnchor="middle" dominantBaseline="central">{(t.abbr ?? t.name).toUpperCase()}</text>
+            {t.logoId && logos[t.logoId] && <LogoMark src={logos[t.logoId]} cx={x} cy={9} size={6} />}
+          </g>
         ))}
-        {sit?.redZone && <rect x={awayOffense ? X(80) : X(0)} y="0" width="20" height="34" className="df-red" />}
+        {redZone && <rect x={awayOffense ? X(80) : X(0)} y="0" width="20" height={H} className="df-red" />}
         {Array.from({ length: 11 }, (_, i) => (
-          <line key={i} x1={10 + i * 10} x2={10 + i * 10} y1="0" y2="34" className={i === 5 ? "df-line mid" : "df-line"} />
+          <line key={i} x1={10 + i * 10} x2={10 + i * 10} y1="0" y2={H} className={i === 5 ? "df-line mid" : "df-line"} />
         ))}
         {[1, 2, 3, 4, 5, 4, 3, 2, 1].map((n, i) => (
-          <text key={i} x={20 + i * 10} y="32" className="df-num" textAnchor="middle">{n * 10}</text>
+          <text key={i} x={20 + i * 10} y={H - 1.6} className="df-num" textAnchor="middle">{n * 10}</text>
         ))}
-        {past.map((d, i) => {
-          const a = spot(d.from!, d.team === ids[0]);
-          const b = spot(d.to!, d.team === ids[0]);
-          const c = colors[d.team === ids[0] ? 0 : 1];
-          return <line key={i} x1={X(a)} x2={X(b)} y1={4 + i * 2} y2={4 + i * 2} stroke={c} className={`df-past${d.score ? " score" : ""}`} />;
-        })}
-        {firstDown != null && <line x1={X(firstDown)} x2={X(firstDown)} y1="0" y2="34" className="df-first" />}
-        <line x1={X(goal)} x2={X(goal)} y1="0" y2="34" className="df-goal" />
-        {/* the drive: a band from where it started to the ball, arrowed toward the goal being attacked */}
-        <line x1={X(start)} x2={X(ball)} y1="17" y2="17" stroke={colors[side]} className="df-path" />
-        <line x1={X(start)} x2={X(ball)} y1="17" y2="17" className="df-flow" />
-        <path d={`M${X(ball) + dir * 1.2} 17 l${-dir * 2.2} -1.6 v3.2z`} fill="#fff" opacity="0.9" />
+        <ConfMark conf={away.conf} cx={35} cy={H - 9} size={7} />
+        <ConfMark conf={home.conf} cx={85} cy={H - 9} size={7} />
+        <WeatherLayer weather={weather} period={data.status.period} h={H} y0={0} seed={Number(ids[0]) || 1} compact={variant === "card"} />
+        {firstDown != null && <line x1={X(firstDown)} x2={X(firstDown)} y1="0" y2={H} className="df-first" />}
+        <line x1={X(goal)} x2={X(goal)} y1="0" y2={H} className="df-goal" />
+        {(badge?.src ?? (!badge?.neutral && home.logoId ? logos[home.logoId] : null)) && (
+          <LogoMark src={badge?.src ?? logos[home.logoId!]} cx={60} cy={H / 2} size={11} chipOpacity={0.16} imageClass="lf-mid" />
+        )}
+        {earlier > 0 && <text x="11.5" y="4.6" className="lf-tagtext">▲ {earlier} earlier play{earlier === 1 ? "" : "s"}</text>}
+        {/* where the drive started */}
         <g className="lf-start">
-          <line x1={X(start)} x2={X(start)} y1="9" y2="25" stroke={colors[side]} className="df-start" />
-          <path d={`M${X(start)} 9 h${dir * 5} l${-dir * 1.2} 1.6 l${dir * 1.2} 1.6 h${-dir * 5}z`} fill="#fff" opacity="0.92" />
-          <text x={X(start) + dir * 6} y="11.6" className="lf-tagtext" textAnchor={dir > 0 ? "start" : "end"}>START</text>
+          <line x1={X(start)} x2={X(start)} y1="7.5" y2={H - 5} stroke={colors[side]} className="df-start" />
+          <text x={X(start) + dir * 1.2} y="6.4" className="lf-tagtext" textAnchor={dir > 0 ? "start" : "end"}>START</text>
+        </g>
+        {/* the drive, one line per play from the top down: red for a run, blue for a pass, gold for a punt or field goal. A play that lost yards is dashed. */}
+        <g className="lf-plays-chart" data-dir={dir}>
+          {shown.map((g, i) => {
+            const y = rowY(i);
+            const kind = g.kind ?? "other";
+            const a = X(clamp(g.from)), b = g.kind === "fg" ? X(g.to) : X(clamp(g.to));
+            const loss = g.kind !== "punt" && g.kind !== "fg" && g.yards < 0;
+            const right = Math.max(a, b);
+            const labelRight = right < 104;
+            const text = playLabel(g);
+            return (
+              <g key={i} className={`df-play ${kind}${loss ? " loss" : ""}`} data-kind={kind} data-yards={g.yards}>
+                {i > 0 && <line x1={a} x2={a} y1={rowY(i - 1)} y2={y} className="df-step" />}
+                {g.incomplete ? (
+                  <>
+                    <line x1={a} x2={a + dir * 2.4} y1={y} y2={y} className="df-seg pass inc" />
+                    <circle cx={a + dir * 3.4} cy={y} r="0.9" className="df-seg-inc" />
+                  </>
+                ) : (
+                  <line x1={a} x2={b} y1={y} y2={y} className={`df-seg ${kind}${loss ? " loss" : ""}${a === b ? " zero" : ""}`} />
+                )}
+                <circle cx={a} cy={y} r="0.7" className="df-play-start" />
+                {g.kind === "punt" && <path d={`M${b} ${y - 1.3}l1.3 1.3l-1.3 1.3l-1.3 -1.3z`} className="df-kick-mark" />}
+                {g.kind === "fg" && <path d={`M${b - 0.9} ${y - 1.6}v3.2M${b + 0.9} ${y - 1.6}v3.2M${b - 0.9} ${y}h1.8`} className="df-kick-mark post" />}
+                {g.score && g.kind !== "fg" && <circle cx={b} cy={y} r="1.5" className="df-score-ring" />}
+                <text x={labelRight ? right + 1.8 : Math.min(a, b) - 1.8} y={y + 0.9} className={`df-play-label ${kind}`} textAnchor={labelRight ? "start" : "end"}>{text}</text>
+              </g>
+            );
+          })}
         </g>
         <g className="df-ball" style={{ transform: `translateX(${X(ball)}px)` }}>
-          <line x1="0" x2="0" y1="0" y2="34" className="df-los" />
-          <circle cx="0" cy="17" r="3.4" className="df-pulse" stroke={colors[side]} />
-          <ellipse cx="0" cy="17" rx="2.4" ry="1.5" className="df-pigskin" />
-          <text x={tagLeft ? -4.5 : 4.5} y="9" className="lf-tagtext ball" textAnchor={tagLeft ? "end" : "start"}>{abbr} · {spotName(ballFromOwn, own, opp)}</text>
+          <line x1="0" x2="0" y1="0" y2={H} className="df-los" />
+          <circle cx="0" cy={ballY} r="4.6" className="df-pulse" stroke={colors[side]} />
+          {logo ? (
+            <LogoMark src={logos[teams[side].logoId!]} cx={0} cy={ballY} size={5.4} chipOpacity={1} chipClass="lf-chip" imageClass="lf-ball-logo" />
+          ) : (
+            <ellipse cx="0" cy={ballY} rx="2.4" ry="1.5" className="df-pigskin" />
+          )}
+          <text x={tagLeft ? -4.5 : 4.5} y="3.6" className="lf-tagtext ball" textAnchor={tagLeft ? "end" : "start"}>{abbr} · {spotName(ballOwn, own, opp)}</text>
         </g>
       </svg>
       <p className="drive-cap">
@@ -187,6 +308,10 @@ export function FieldView({ data, teams, variant, rootRef }: { data: Summary | n
         <b>{label}</b>
         {stats && <span> · {stats}</span>}
         <span className="lf-started"> · drive started {startedAt}</span>
+        {plays.length > 0 && (
+          <span className="lf-key" aria-hidden="true"><i className="run" /> run <i className="pass" /> pass <i className="kick" /> punt / FG</span>
+        )}
+        {wxText && <span className="lf-wx"> · {weather?.icon ?? ""} {wxText}</span>}
       </p>
       {list &&
         (variant === "center" ? (
@@ -205,11 +330,11 @@ export function FieldView({ data, teams, variant, rootRef }: { data: Summary | n
 }
 
 /** The live field on a card: fetches the game summary while the card is on screen and draws it. */
-export function LiveDrive({ espnId, league, teams }: { espnId: string; league: string; teams: FieldTeam[] }) {
+export function LiveDrive({ espnId, league, teams, badge, weather }: { espnId: string; league: string; teams: FieldTeam[]; badge?: GameBadge | null; weather?: WeatherLike | null }) {
   // The wrapper (and its ref, which the on-screen check watches) stays put as the field appears and disappears.
   const { ref, data, loaded } = useSummary(league, espnId, true);
   const live = data?.status.state === "in";
-  const field = FieldView({ data, teams, variant: "card" });
+  const field = FieldView({ data, teams, variant: "card", badge, weather });
   if (!field)
     return (
       <div ref={ref} className={`drive-live${loaded ? " empty" : " loading"}`} aria-hidden={!loaded || undefined}>

@@ -183,6 +183,13 @@ export function trimGame(s, positions = {}) {
   }
 
   const sit = s.situation ?? comp.situation ?? null;
+  // Where the ball was left by the latest snap of the drive in progress, from the play data itself (the live situation block does
+  // not always carry a spot): who it belongs to and how far it is from that team's own goal line.
+  const curDrive = s.drives?.current;
+  const lastSnap = [...(curDrive?.plays ?? [])].reverse().find((p) => p.end?.yardsToEndzone != null);
+  const ball = lastSnap
+    ? { team: lastSnap.end.team?.id ?? lastSnap.start?.team?.id ?? curDrive?.team?.id ?? null, own: 100 - num(lastSnap.end.yardsToEndzone) }
+    : null;
   return {
     id: s.header?.id,
     status: { state: st.state ?? "pre", detail: st.shortDetail ?? st.detail ?? "", period: comp.status?.period ?? 0, clock: comp.status?.displayClock ?? "" },
@@ -194,12 +201,16 @@ export function trimGame(s, positions = {}) {
           toGo: sit.yardsToEndzone ?? null,
           redZone: !!sit.isRedZone,
           lastPlay: sit.lastPlay?.text ?? "",
+          // ESPN's own spot text, "SEA 35": the way to place the ball when it gives no yards-to-end-zone figure.
+          spotText: sit.possessionText ?? sit.lastPlay?.end?.possessionText ?? "",
+          yardLine: sit.yardLine ?? null,
         }
       : null,
     wp,
     drives,
     plays: plays.slice(-40),
     curPlays: curPlays.slice(-30),
+    ball,
     // Every play that can credit a player (see src/playImpact.ts), so Top 3 / Bottom 3 can show
     // the plays behind each number. Timeouts, kicks off, punts and penalty-only plays never do.
     log: plays

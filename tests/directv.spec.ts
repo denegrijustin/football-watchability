@@ -47,11 +47,16 @@ test("watch links: ESPN games open in the ESPN app, cable networks open the DIRE
     expect(watchLink({ network, league: "CFB", espnId: "1" })).toMatchObject({ kind: "espn", url: "https://www.espn.com/college-football/game/_/gameId/1" });
   // Any game the broadcast line says is in the ESPN App, whatever its network.
   expect(watchLink({ network: "fox", broadcast: "FOX / ESPN App", league: "NFL", espnId: "9" })?.kind).toBe("espn");
-  expect(watchLink({ network: "nbc", league: "NFL", espnId: "9" })).toMatchObject({ kind: "outlet", title: "Open Peacock" });
+  expect(watchLink({ network: "nbc", league: "NFL", espnId: "9" })).toBeNull(); // no Peacock link
   expect(watchLink({ network: "prime-video", league: "NFL", espnId: "9" })?.title).toBe("Open Prime Video");
   expect(watchLink({ network: "tnt", league: "NFL", espnId: "9" })).toBeNull(); // cable only: the channel number links instead
   expect(watchLink({ network: "espn", league: "CFB", espnId: null })).toBeNull(); // nothing to link to without a game id
-  expect(directvLink("espn")).toEqual({ url: DIRECTV_GUIDE, title: "Open the DIRECTV guide · channel 206 (Overland Park, KS)" });
+  expect(directvLink("espn")).toMatchObject({ url: DIRECTV_GUIDE, title: "Open the DIRECTV app · channel 206 (Overland Park, KS)" });
+  // Both open their app first on a phone, falling back to these web pages.
+  expect(directvLink("espn")?.app.ios).toBe("directvapp://");
+  expect(watchLink({ network: "espn", league: "NFL", espnId: "77" })?.app?.ios).toBe("sportscenter://x-callback-url/showGame?gameId=77&sportName=football&leagueName=nfl");
+  expect(watchLink({ network: "espn", league: "CFB", espnId: "77" })?.app?.android).toContain("package=com.espn.score_center");
+  expect(watchLink({ network: "nbc", league: "NFL", espnId: "9" })?.app).toBeUndefined(); // other outlets stay web links
   expect(directvLink("espn-plus")).toBeNull();
 });
 
@@ -65,7 +70,7 @@ test("the logo and channel number are links that open elsewhere and leave the ca
   await expect(espnChip).toHaveAttribute("rel", /noopener/);
   const num = page.locator(".game-card:not(.final) .net-chip a.ch-num").first();
   await expect(num).toHaveAttribute("href", "https://www.directv.com/guide");
-  await expect(num).toHaveAttribute("title", /Open the DIRECTV guide · channel \d+/);
+  await expect(num).toHaveAttribute("title", /Open the DIRECTV app · channel \d+/);
   // Clicking a link must not expand the compact card (the new tab is stubbed so nothing navigates).
   await page.evaluate(() => { window.open = () => null; document.addEventListener("click", (e) => { if ((e.target as Element).closest("a.net-link, a.ch-num")) e.preventDefault(); }, true); });
   await expect(card).toHaveClass(/compact/);
@@ -76,4 +81,44 @@ test("the logo and channel number are links that open elsewhere and leave the ca
   await expect(page.locator(".tv-net a.ch-num").first()).toBeAttached(); // the grid loads on first use
   expect(await page.locator(".tv-net a.ch-num").count()).toBeGreaterThan(0);
   expect(await page.locator(".tv-net a.net-link").count()).toBe(0);
+});
+
+test.describe("on a phone", () => {
+  test.use({ userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1", hasTouch: true });
+
+  test("the ESPN logo and the DIRECTV channel number try their apps first, then fall back to the web page", async ({ page }) => {
+    await page.goto("/?league=CFB");
+    const card = page.locator(".game-card:not(.final)").filter({ has: page.locator("a.net-link[data-kind='espn']") }).first();
+    await page.evaluate(() => { (window as any).__nav = []; window.open = () => null; });
+    // The app address is attempted in a hidden frame; the page itself does not navigate yet.
+    await card.locator("a.net-link[data-kind='espn']").first().evaluate((a) => (a as HTMLAnchorElement).click());
+    const frame = page.locator("iframe[data-app-link]");
+    await expect(frame).toHaveAttribute("data-app-link", /^sportscenter:\/\/x-callback-url\/showGame\?gameId=\d+&sportName=football/);
+    const urlBefore = page.url();
+    expect(page.url()).toBe(urlBefore);
+    await card.locator(".ch-num").first().evaluate((a) => (a as HTMLAnchorElement).click());
+    await expect(page.locator("iframe[data-app-link='directvapp://']")).toHaveCount(1);
+  });
+});
+
+test("on a computer the links stay plain web links (no app attempt)", async ({ page }) => {
+  await page.goto("/?league=CFB");
+  await page.evaluate(() => { window.open = () => null; document.addEventListener("click", (e) => { if ((e.target as Element).closest("a.net-link, a.ch-num")) e.preventDefault(); }, true); });
+  await page.locator("a.net-link[data-kind='espn']").first().click();
+  await page.locator(".net-chip a.ch-num").first().click();
+  await expect(page.locator("iframe[data-app-link]")).toHaveCount(0);
+});
+
+test("no Paramount+ or Peacock listing: CBS and NBC games say so alone and the chip has no streaming link", async ({ page }) => {
+  const { watchLink } = await import("../src/watchLinks");
+  expect(watchLink({ network: "cbs", broadcast: "CBS", league: "NFL", espnId: "1" })).toBeNull();
+  expect(watchLink({ network: "cbssn", broadcast: "CBS Sports Network", league: "CFB", espnId: "1" })).toBeNull();
+  for (const league of ["NFL", "CFB"]) {
+    await page.goto(`/?league=${league}`);
+    await expect(page.locator(".game-card").first()).toBeVisible();
+    const text = await page.locator("body").innerText();
+    expect(text).not.toContain("Paramount");
+    expect(text).not.toContain("NBC / Peacock");
+    expect(await page.locator('a[href*="paramountplus"], a[href*="peacocktv"]').count()).toBe(0);
+  }
 });

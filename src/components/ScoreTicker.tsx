@@ -2,16 +2,23 @@ import { useMemo, useState } from "react";
 import { logos, results, slate } from "../data";
 import { useLiveMap } from "../live";
 import { useOpenGame } from "./GameCenterContext";
+import { upsetBy } from "../upset";
 
 type Item = {
   espnId: string;
   league: string;
   when: number;
   detail: string;
-  teams: { abbr: string; name: string; logoId: string; score: number }[];
+  teams: { abbr: string; name: string; logoId: string; score: number; fpi: number | null; of: number | null }[];
 };
 
 const MAX_ITEMS = 40;
+
+/** ESPN's FPI rank (the overall rank on every card) and how many teams it ranks. */
+const fpiOf = (t: unknown) => {
+  const r = (t as { ranks?: { overall?: number | null; overallOf?: number | null } }).ranks;
+  return { fpi: r?.overall ?? null, of: r?.overallOf ?? null };
+};
 
 /**
  * Completed games: the archived finals plus any game the live feed has already marked final but the hourly rebuild hasn't
@@ -26,7 +33,7 @@ function useFinals(): Item[] {
       league: r.league,
       when: Date.parse(r.date),
       detail: r.final.overtime ? "Final/OT" : "Final",
-      teams: r.teams.map((t) => ({ abbr: t.abbr, name: t.name, logoId: t.logoId, score: t.score })),
+      teams: r.teams.map((t) => ({ abbr: t.abbr, name: t.name, logoId: t.logoId, score: t.score, ...fpiOf(t) })),
     }));
     const fromLive: Item[] = slate.games
       .filter((g) => g.espnId && !archived.has(g.espnId) && live[g.espnId]?.state === "post")
@@ -37,7 +44,7 @@ function useFinals(): Item[] {
           league: g.league,
           when: Date.parse((g as { date?: string }).date ?? ""),
           detail: /ot/i.test(l.detail) ? "Final/OT" : "Final",
-          teams: g.teams.map((t, i) => ({ abbr: (t as { abbr?: string }).abbr ?? t.name, name: t.name, logoId: t.logoId, score: i === 0 ? l.away : l.home })),
+          teams: g.teams.map((t, i) => ({ abbr: (t as { abbr?: string }).abbr ?? t.name, name: t.name, logoId: t.logoId, score: i === 0 ? l.away : l.home, ...fpiOf(t) })),
         };
       });
     return [...fromLive, ...fromResults]
@@ -47,28 +54,47 @@ function useFinals(): Item[] {
   }, [live]);
 }
 
+const ranksSpoken = (item: Item) =>
+  item.teams.every((t) => t.fpi != null)
+    ? ` FPI rank: ${item.teams.map((t) => `${t.name} ${t.fpi}`).join(", ")}${item.league === "NFL" ? "; the same as the power rank" : ""}.`
+    : "";
+
 /** One score: both teams, the final, and a button that opens the Game Center postgame summary. */
+/** An upset final: the team ranked lower by FPI (a bigger number) beat the higher-ranked one. */
+export function upsetOf(item: Pick<Item, "teams">) {
+  return upsetBy(item.teams.map((t) => t.fpi), [item.teams[0].score, item.teams[1].score]);
+}
+
 function Score({ item, hidden }: { item: Item; hidden?: boolean }) {
   const openGame = useOpenGame();
   const [away, home] = item.teams;
   const winner = away.score === home.score ? -1 : away.score > home.score ? 0 : 1;
+  const upset = upsetOf(item);
   return (
     <li aria-hidden={hidden || undefined} className={hidden ? "ticker-dup" : undefined}>
       <button
         type="button"
-        className="ticker-item"
+        className={`ticker-item${upset ? " upset" : ""}`}
         tabIndex={hidden ? -1 : undefined}
         onClick={() => openGame(item.espnId)}
-        aria-label={`${away.name} ${away.score}, ${home.name} ${home.score}, ${item.detail.toLowerCase()}. Open the postgame summary.`}
+        aria-label={`${away.name} ${away.score}, ${home.name} ${home.score}, ${item.detail.toLowerCase()}.${ranksSpoken(item)}${upset ? ` Upset: ${item.teams[upset.winner].name}, ranked ${upset.gap} places lower, beat ${item.teams[1 - upset.winner].name}.` : ""} Open the postgame summary.`}
       >
         <span className="ticker-league">{item.league}</span>
         {item.teams.map((t, i) => (
           <span key={i} className={`ticker-team${winner === i ? " won" : winner === -1 ? "" : " lost"}`}>
-            <img src={logos[t.logoId]} alt="" width="16" height="16" loading="eager" decoding="async" />
-            {t.abbr} <b>{t.score}</b>
+            {t.fpi != null && (
+              <small
+                className="ticker-rank"
+                title={`ESPN FPI rank ${t.fpi}${t.of ? ` of ${t.of}` : ""}${item.league === "NFL" ? " (also the NFL power rank)" : ""}`}
+              >
+                #{t.fpi}
+              </small>
+            )}
+            <img src={logos[t.logoId]} alt="" width="18" height="18" loading="eager" decoding="async" />
+            <b>{t.score}</b>
           </span>
         ))}
-        <span className="ticker-final">{item.detail}</span>
+        <span className="ticker-final">{upset ? `Upset ${item.detail.toLowerCase()}` : item.detail}</span>
       </button>
     </li>
   );

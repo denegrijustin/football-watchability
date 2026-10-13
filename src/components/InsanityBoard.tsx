@@ -1,16 +1,22 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { logos, results, slate, teamColor } from "../data";
-import { fetchData } from "../data/load";
-import { rankGames, mostInsaneWeek, weekSummaries, type LedgerGame } from "../seasonRank";
-import { INSANITY_TIERS } from "../insanity";
+import { NFL_CONFERENCES, inConference } from "../teamConf";
+import { fetchData, refetchData } from "../data/load";
+import { latestFlow, useLiveMap } from "../live";
+import { rankGames, mostInsaneWeek, weekSummaries, sortGames, INSANITY_SORTS, type InsanitySort, type LedgerGame } from "../seasonRank";
+import { INSANITY_TIERS, insanity, insanityTier, thinWp } from "../insanity";
 import { useOpenGame, type GameStub } from "./GameCenterContext";
 import { Headshot } from "./Headshot";
 
 type Scope = "week" | "season";
+type WeeksView = "weeks" | "games";
+type WeekSort = "recent" | "insane";
 const tierLabel = (id: string) => INSANITY_TIERS.find((t) => t.id === id)?.label ?? id;
 const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? "" : "s"}`;
 const PAGE = 12;
+/** How often the board refreshes while a game is on. */
+export const LIVE_REFRESH_MS = 60_000;
 const known = new Set([...slate.games.map((g) => g.espnId), ...results.map((r) => r.espnId)]);
 
 export function facts(g: LedgerGame) {
@@ -21,6 +27,86 @@ export function facts(g: LedgerGame) {
     g.comebackFrom != null && g.comebackFrom <= 25 ? `winner was down to ${g.comebackFrom}%` : null,
     g.witchingPeriod && g.tier !== "calm" ? `witching hour ${g.witchingPeriod > 4 ? "in OT" : `Q${g.witchingPeriod}`}` : null,
   ].filter(Boolean);
+}
+
+/** A game not yet in the ledger: in progress (live) or just ended and waiting for the hourly rebuild to archive it (live false). */
+type LiveLedgerGame = LedgerGame & { live: boolean; clock: string };
+const archived = new Set(results.map((r) => r.espnId));
+
+/**
+ * The games in progress, scored on the same scale as finished ones from their live win-probability line, and refreshed every 60
+ * seconds while any game is on (together with the season ledger, so a game that has just ended moves to its final score).
+ * Returns nothing when no game is live, and then nothing polls.
+ */
+function useLiveInsanity(onLedger: (games: LedgerGame[]) => void, have: Set<string> | null) {
+  const live = useLiveMap();
+  // The scores keep arriving through the shared live feed while the timer below runs, so each rescoring reads the latest ones.
+  const liveRef = useRef(live);
+  liveRef.current = live;
+  const [scored, setScored] = useState<LiveLedgerGame[]>([]);
+  const onGoing = useMemo(() => slate.games.filter((g) => g.espnId && live[g.espnId]?.state === "in"), [live]);
+  // Games that ended since the last rebuild are not in the ledger yet: they are scored from their final win-probability line.
+  const justEnded = useMemo(
+    () => (have ? slate.games.filter((g) => g.espnId && live[g.espnId]?.state === "post" && !have.has(g.espnId) && !archived.has(g.espnId)) : []),
+    [live, have],
+  );
+  const tracked = useMemo(() => [...onGoing, ...justEnded], [onGoing, justEnded]);
+  const key = tracked.map((g) => `${g.espnId}:${live[g.espnId]?.state}`).join(",");
+  useEffect(() => {
+    if (!tracked.length) {
+      setScored([]);
+      return;
+    }
+    let stop = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const run = async (first: boolean) => {
+      const rows = await Promise.all(
+        tracked.map(async (g): Promise<LiveLedgerGame | null> => {
+          const l = liveRef.current[g.espnId] ?? live[g.espnId]!;
+          const inPlay = l.state === "in";
+          const wp = await latestFlow(g.league as "NFL" | "CFB", g.espnId, first || !inPlay ? 45_000 : LIVE_REFRESH_MS - 5_000);
+          const over = /ot/i.test(l.detail);
+          const r = wp ? insanity(thinWp(wp), { final: !inPlay, overtime: over }) : null;
+          if (!r) return null;
+          const [a, h] = g.teams as unknown as { abbr?: string; name: string; logoId: string; color?: string | null }[];
+          return {
+            id: g.espnId,
+            league: g.league as "NFL" | "CFB",
+            week: slate.period,
+            date: (g as { date?: string }).date ?? "",
+            matchup: g.matchup,
+            away: { abbr: a.abbr ?? a.name, logoId: a.logoId, score: l.away, color: a.color },
+            home: { abbr: h.abbr ?? h.name, logoId: h.logoId, score: l.home, color: h.color },
+            insanity: r.score,
+            tier: r.tier.id as LedgerGame["tier"],
+            flips: r.flips,
+            swing: r.biggestSwing,
+            comebackFrom: r.comebackFrom,
+            overtime: over,
+            witchingPeriod: r.witching.period,
+            mvp: null,
+            live: inPlay,
+            clock: l.detail,
+          };
+        }),
+      );
+      if (stop) return;
+      setScored(rows.filter((x): x is LiveLedgerGame => x != null));
+      if (!first || !onGoing.length) {
+        // The hourly rebuild may have archived a game that just ended.
+        const m = await refetchData<{ games: LedgerGame[] }>("season").catch(() => null);
+        if (m && !stop) onLedger(m.games);
+      }
+      if (!stop && onGoing.length) timer = setTimeout(() => run(false), LIVE_REFRESH_MS);
+    };
+    void run(true);
+    return () => {
+      stop = true;
+      clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+  return { scored, anyLive: onGoing.length > 0 };
 }
 
 /**
@@ -34,6 +120,11 @@ export function InsanityBoard({ defaultLeague }: { defaultLeague: "NFL" | "CFB" 
   const [scope, setScope] = useState<Scope>("week");
   const [pick, setPick] = useState<string | null>(null);
   const [shown, setShown] = useState(PAGE);
+  const [sort, setSort] = useState<InsanitySort>("insanity");
+  const [conf, setConf] = useState("all-fbs");
+  const [weeksView, setWeeksView] = useState<WeeksView>("weeks");
+  const [weekSort, setWeekSort] = useState<WeekSort>("recent");
+  const [shownAll, setShownAll] = useState(25);
   const openGame = useOpenGame();
 
   useEffect(() => {
@@ -44,17 +135,47 @@ export function InsanityBoard({ defaultLeague }: { defaultLeague: "NFL" | "CFB" 
     };
   }, []);
 
-  const mine = useMemo(() => (ledger ?? []).filter((g) => g.league === league), [ledger, league]);
+  const haveIds = useMemo(() => (ledger ? new Set(ledger.map((g) => g.id)) : null), [ledger]);
+  const { scored, anyLive } = useLiveInsanity((games) => setLedger(games), haveIds);
+  const liveMap = useLiveMap();
+  // Games in progress join their week's list (and the season's) on the same scale, until they are archived as finals.
+  const mine = useMemo(() => {
+    const done = (ledger ?? []).filter((g) => g.league === league);
+    const have = new Set(done.map((g) => g.id));
+    // The score and clock follow the live feed as it updates; the insanity itself is rescored every 60 seconds.
+    const now = scored
+      .filter((g) => g.league === league && !have.has(g.id))
+      .map((g) => {
+        const l = liveMap[g.id];
+        return l ? { ...g, away: { ...g.away, score: l.away }, home: { ...g.home, score: l.home }, clock: l.detail } : g;
+      });
+    return [...done, ...now].filter((g) => inConference(league, conf, [g.away.logoId, g.home.logoId])) as LedgerGame[];
+  }, [ledger, league, scored, liveMap, conf]);
   const weeks = useMemo(() => weekSummaries(mine), [mine]);
+  // The weeks as listed under the ranking: newest first, or the most insane week (highest average) first.
+  const weekRows = useMemo(() => (weekSort === "insane" ? [...weeks].sort((a, b) => b.avg - a.avg || b.wild - a.wild || b.start.localeCompare(a.start)) : weeks), [weeks, weekSort]);
+  // Every game of the season, wildest first, for the all-games view.
+  const seasonAll = useMemo(() => rankGames(mine), [mine]);
   const best = useMemo(() => mostInsaneWeek(weeks), [weeks]);
   const week = weeks.find((w) => w.week === pick)?.week ?? weeks[0]?.week ?? "";
-  const list = useMemo(() => rankGames(scope === "season" ? mine : mine.filter((g) => g.week === week)), [mine, scope, week]);
+  const pool = useMemo(() => (scope === "season" ? mine : mine.filter((g) => g.week === week)), [mine, scope, week]);
+  // Each game keeps its insanity rank (#1 is the wildest) whatever order the list is shown in.
+  const rankOf = useMemo(() => new Map(rankGames(pool).map((g, i) => [g.id, i + 1])), [pool]);
+  const list = useMemo(() => sortGames(pool, sort), [pool, sort]);
+  const isLiveRow = (g: LedgerGame) => (g as Partial<LiveLedgerGame>).live === true;
+  const liveRows = list.filter(isLiveRow);
+  const isFreshRow = (g: LedgerGame) => (g as Partial<LiveLedgerGame>).live === false;
+  const freshRows = list.filter(isFreshRow);
+  const finished = list.filter((g) => !isLiveRow(g) && !isFreshRow(g));
   const avg = list.length ? Math.round(list.reduce((a, g) => a + g.insanity, 0) / list.length) : 0;
   const wild = list.filter((g) => g.tier === "unhinged" || g.tier === "witching").length;
   const nameOf = league === "NFL" ? "NFL" : "College";
 
   const choose = (patch: { league?: "NFL" | "CFB"; scope?: Scope; week?: string | null }) => {
-    if (patch.league) setLeague(patch.league);
+    if (patch.league) {
+      setLeague(patch.league);
+      setConf("all-fbs");
+    }
     if (patch.scope) setScope(patch.scope);
     if (patch.week !== undefined) setPick(patch.week);
     setShown(PAGE);
@@ -78,6 +199,23 @@ export function InsanityBoard({ defaultLeague }: { defaultLeague: "NFL" | "CFB" 
             Season
           </button>
         </div>
+        <div className="segmented" role="group" aria-label="Sort games by">
+          {INSANITY_SORTS.map((o) => (
+            <button key={o.id} aria-pressed={sort === o.id} onClick={() => { setSort(o.id); setShown(PAGE); }}>
+              {o.label}
+            </button>
+          ))}
+        </div>
+        <label className="tv-conf">
+          <span className="sr-only">Conference</span>
+          <select value={conf} onChange={(e) => { setConf(e.target.value); setPick(null); setShown(PAGE); setShownAll(25); }} aria-label="Conference">
+            {(league === "NFL" ? NFL_CONFERENCES : slate.conferences).map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.id === "all-fbs" ? (league === "NFL" ? "Both conferences" : "All conferences") : c.label}
+              </option>
+            ))}
+          </select>
+        </label>
         {scope === "week" && weeks.length > 0 && (
           <label className="tv-conf">
             <span className="sr-only">Week</span>
@@ -99,9 +237,9 @@ export function InsanityBoard({ defaultLeague }: { defaultLeague: "NFL" | "CFB" 
         <span role="status">
           {ledger == null
             ? "Loading…"
-            : `${plural(list.length, "game")} · average ${avg} · ${wild} unhinged or worse`}
+            : `${plural(list.length, "game")} · average ${avg} · ${wild} unhinged or worse${anyLive ? " · live games refresh every 60 seconds" : ""}`}
         </span>
-        <span className="sort-label">Most insane first</span>
+        <span className="sort-label">{INSANITY_SORTS.find((o) => o.id === sort)?.note}</span>
       </div>
 
       {ledger != null && list.length === 0 ? (
@@ -110,40 +248,94 @@ export function InsanityBoard({ defaultLeague }: { defaultLeague: "NFL" | "CFB" 
           <p>Games are ranked once they finish and the board refreshes.</p>
         </div>
       ) : (
+        <>
+        {liveRows.length > 0 && (
+          <>
+            <h3 className="micro-label ib-live-head">Live now · rescored every 60 seconds</h3>
+            <ol className="ib-cards ib-live-cards">
+              {liveRows.map((g) => (
+                <InsanityCard key={g.id} g={g} rank={rankOf.get(g.id) ?? 0} live={(g as LiveLedgerGame).clock} showWeek={scope === "season"} onOpen={() => (known.has(g.id) ? openGame(g.id) : openGame(g.id, stubOf(g)))} />
+              ))}
+            </ol>
+          </>
+        )}
+        {freshRows.length > 0 && (
+          <>
+            <h3 className="micro-label ib-live-head ib-fresh-head">Final · scored from the live feed until the hourly rebuild archives it</h3>
+            <ol className="ib-cards ib-live-cards">
+              {freshRows.map((g) => (
+                <InsanityCard key={g.id} g={g} rank={rankOf.get(g.id) ?? 0} fresh showWeek={scope === "season"} onOpen={() => (known.has(g.id) ? openGame(g.id) : openGame(g.id, stubOf(g)))} />
+              ))}
+            </ol>
+          </>
+        )}
         <ol className="ib-cards">
-          {list.slice(0, shown).map((g, i) => (
-            <InsanityCard key={g.id} g={g} rank={i + 1} showWeek={scope === "season"} onOpen={() => (known.has(g.id) ? openGame(g.id) : openGame(g.id, stubOf(g)))} />
+          {finished.slice(0, shown).map((g, i) => (
+            <InsanityCard key={g.id} g={g} rank={rankOf.get(g.id) ?? i + 1} showWeek={scope === "season"} onOpen={() => (known.has(g.id) ? openGame(g.id) : openGame(g.id, stubOf(g)))} />
           ))}
         </ol>
+        </>
       )}
-      {list.length > shown && (
+      {finished.length > shown && (
         <button className="ib-more" onClick={() => setShown((n) => n + 25)}>
-          Show more ({list.length - shown} left)
+          Show more ({finished.length - shown} left)
         </button>
       )}
 
       {weeks.length > 0 && (
         <section className="ib-weeks" aria-label="Week by week">
-          <h3 className="micro-label">Week by week{best && weeks.length > 1 ? " · most insane week marked" : ""}</h3>
-          <ul>
-            {weeks.map((w) => (
-              <li key={w.week} className={w === best && weeks.length > 1 ? "best" : undefined}>
-                <button onClick={() => choose({ scope: "week", week: w.week })} aria-pressed={scope === "week" && w.week === week}>
-                  <span className="ibw-name">
-                    {w.week}
-                    {w === best && weeks.length > 1 && <em>Most insane week</em>}
-                  </span>
-                  <span className="ibw-bar" aria-hidden="true">
-                    <i style={{ width: `${Math.min(100, w.avg)}%` }} />
-                  </span>
-                  <span className="ibw-avg">avg {w.avg}</span>
-                  <span className="ibw-top">
-                    wildest: {w.top.matchup} ({w.top.insanity}) · {plural(w.games, "game")}
-                  </span>
+          <div className="ibw-head">
+            <h3 className="micro-label">
+              {weeksView === "games"
+                ? `Every game this season · ${plural(seasonAll.length, "game")}, highest to lowest`
+                : `Week by week${best && weeks.length > 1 ? " · most insane week marked" : ""}`}
+            </h3>
+            <div className="segmented" role="group" aria-label="Season view">
+              <button aria-pressed={weeksView === "weeks"} onClick={() => setWeeksView("weeks")}>By week</button>
+              <button aria-pressed={weeksView === "games"} onClick={() => setWeeksView("games")}>All games</button>
+            </div>
+            {weeksView === "weeks" && (
+              <div className="segmented" role="group" aria-label="Order weeks by">
+                <button aria-pressed={weekSort === "recent"} onClick={() => setWeekSort("recent")}>Newest</button>
+                <button aria-pressed={weekSort === "insane"} onClick={() => setWeekSort("insane")}>Most insane</button>
+              </div>
+            )}
+          </div>
+          {weeksView === "games" ? (
+            <>
+              <ol className="ibs-list" aria-label="All games this season, highest insanity first">
+                {seasonAll.slice(0, shownAll).map((g, i) => (
+                  <SeasonRow key={g.id} g={g} rank={i + 1} onOpen={() => (known.has(g.id) ? openGame(g.id) : openGame(g.id, stubOf(g)))} />
+                ))}
+              </ol>
+              {seasonAll.length > shownAll && (
+                <button className="ib-more" onClick={() => setShownAll((n) => n + 50)}>
+                  Show more ({seasonAll.length - shownAll} left)
                 </button>
-              </li>
-            ))}
-          </ul>
+              )}
+            </>
+          ) : (
+            <ul>
+              {weekRows.map((w, i) => (
+                <li key={w.week} className={w === best && weeks.length > 1 ? "best" : undefined}>
+                  <button onClick={() => choose({ scope: "week", week: w.week })} aria-pressed={scope === "week" && w.week === week}>
+                    <span className="ibw-name">
+                      {weekSort === "insane" && <b className="ibw-rank">#{i + 1}</b>}
+                      {w.week}
+                      {w === best && weeks.length > 1 && <em>Most insane week</em>}
+                    </span>
+                    <span className="ibw-bar" aria-hidden="true">
+                      <i style={{ width: `${Math.min(100, w.avg)}%` }} />
+                    </span>
+                    <span className="ibw-avg">avg {w.avg}</span>
+                    <span className="ibw-top">
+                      wildest: {w.top.matchup} ({w.top.insanity}) · {plural(w.games, "game")}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </section>
       )}
     </section>
@@ -162,6 +354,31 @@ function stubOf(g: LedgerGame): GameStub {
       { name: hn ?? g.home.abbr, abbr: g.home.abbr, logoId: g.home.logoId, color: g.home.color, score: g.home.score },
     ],
   };
+}
+
+/** One game in the season-long list: its place, week, the teams and score, and the insanity. */
+function SeasonRow({ g, rank, onOpen }: { g: LedgerGame; rank: number; onOpen: () => void }) {
+  return (
+    <li className={`ibs ${g.tier}`} data-insanity={g.insanity}>
+      <button type="button" onClick={onOpen} aria-label={`Number ${rank}: ${g.matchup}, insanity ${g.insanity}. Open Game Center`}>
+        <b className="ibs-rank">#{rank}</b>
+        <span className="ibs-teams">
+          {[g.away, g.home].map((t, k) => (
+            <span key={k} className={`ibs-team${(k === 0 ? g.away.score > g.home.score : g.home.score > g.away.score) ? " won" : ""}`}>
+              {logos[t.logoId] ? <img src={logos[t.logoId]} alt="" width="20" height="20" loading="lazy" decoding="async" /> : <i className="ic-nologo" />}
+              {t.abbr} <em>{t.score}</em>
+            </span>
+          ))}
+          {g.overtime && <span className="ibs-ot">OT</span>}
+        </span>
+        <span className="ibs-week">{g.week}</span>
+        <span className="ibs-ins" title={`Insanity ${g.insanity}, ${tierLabel(g.tier)}`}>
+          <i style={{ width: `${Math.min(100, g.insanity)}%` }} />
+          <strong>{g.insanity}</strong> <small>{tierLabel(g.tier)}</small>
+        </span>
+      </button>
+    </li>
+  );
 }
 
 const qName = (p: number | null) => (p == null ? "" : p > 4 ? "overtime" : `the ${["", "1st", "2nd", "3rd", "4th"][p]} quarter`);
@@ -197,7 +414,7 @@ export function insanityStory(g: LedgerGame) {
   }
 }
 
-function InsanityCard({ g, rank, showWeek, onOpen }: { g: LedgerGame; rank: number; showWeek: boolean; onOpen: (() => void) | null }) {
+function InsanityCard({ g, rank, showWeek, onOpen, live, fresh }: { g: LedgerGame; rank: number; showWeek: boolean; onOpen: (() => void) | null; live?: string | null; fresh?: boolean }) {
   const ca = teamColor(g.away.color ?? null) ?? "#1d2a35";
   const ch = teamColor(g.home.color ?? null) ?? "#1d2a35";
   const mvpTeam = g.mvp?.side === "away" ? g.away : g.mvp?.side === "home" ? g.home : null;
@@ -208,6 +425,8 @@ function InsanityCard({ g, rank, showWeek, onOpen }: { g: LedgerGame; rank: numb
         <span className="ic-ins" title="Insanity score">
           <strong>{g.insanity}</strong> {tierLabel(g.tier)}
         </span>
+        {live != null && <span className="ic-live" title="In progress: scored from the live win-probability line">LIVE{live ? ` · ${live}` : ""}</span>}
+        {fresh && <span className="ic-fresh" title="Just ended: scored from the game's win-probability line until the hourly rebuild archives it">FINAL</span>}
         {showWeek && <span className="ic-week">{g.week}</span>}
       </div>
       <div className="ic-teams">
@@ -251,7 +470,7 @@ function InsanityCard({ g, rank, showWeek, onOpen }: { g: LedgerGame; rank: numb
   );
   const style = { "--away": ca, "--home": ch } as CSSProperties;
   return (
-    <li className={`ic ${g.tier}`} style={style}>
+    <li className={`ic ${g.tier}${live != null ? " is-live" : ""}`} style={style} data-insanity={g.insanity} data-date={g.date} data-margin={Math.abs(g.away.score - g.home.score)}>
       {onOpen ? (
         <button type="button" className="ic-inner" onClick={onOpen} aria-label={`${g.matchup}, insanity ${g.insanity}. Open Game Center`}>
           {body}

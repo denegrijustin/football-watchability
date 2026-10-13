@@ -11,6 +11,7 @@ for (const league of ['NFL', 'CFB']) test(`${league} game cards show real crosso
   const team = snapshot.teams[game.teams[0].espnId];
   await card.locator('.card-toggle[aria-expanded="false"]').first().click();
   await card.getByRole("button", { name: /Game Center/ }).click();
+  await page.getByRole("dialog").getByRole("tab", { name: /Matchup|Season stats/ }).click();
   const engine = page.getByRole("dialog").locator('.matchup-engine');
   await expect(engine).toBeVisible();
   await expect(engine.getByRole('table')).toHaveCount(2);

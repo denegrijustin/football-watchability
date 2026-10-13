@@ -1,0 +1,39 @@
+name: Fetch conference logos
+# Downloads the official conference logos (SEC, Big Ten, AFC, NFC...) from ESPN into public/conf-logos and points
+# src/data/conference-logos.json at them, then commits to the branch it was run on. Run on demand; review before merging.
+on:
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Replace logos already set (1) or only fill the missing ones (blank)"
+        required: false
+        default: ""
+permissions:
+  contents: write
+concurrency:
+  group: conference-logos
+  cancel-in-progress: false
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.19.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: node scripts/fetch-conference-logos.mjs
+        env:
+          FORCE: ${{ inputs.force }}
+      - name: Commit the logos
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898699+github-actions[bot]@users.noreply.github.com"
+          git add public/conf-logos src/data/conference-logos.json
+          git diff --cached --quiet || git commit -m "Fetch official conference logos from ESPN"
+          git pull -q --rebase -X theirs origin "${GITHUB_REF_NAME}" || true
+          git push || true

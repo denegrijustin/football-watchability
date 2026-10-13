@@ -61,8 +61,8 @@ function fit(ctx: CanvasRenderingContext2D, text: string, max: number) {
   while (t.length > 1 && ctx.measureText(`${t}…`).width > max) t = t.slice(0, -1);
   return `${t}…`;
 }
-/** Texas and Kansas logos are shown upside down everywhere on the site (see styles.css); the export matches. */
-const UPSIDE_DOWN = /\/logos\/(texas|kansas)\.webp(\?|$)/;
+/** Logos shown upside down everywhere on the site (see styles.css); the export matches. */
+const UPSIDE_DOWN = /\/logos\/(texas|kansas|denver-broncos|los-angeles-chargers|las-vegas-raiders)\.webp(\?|$)/;
 /** Draws an image scaled to fit inside a box, centered. */
 function contain(ctx: CanvasRenderingContext2D, img: HTMLImageElement, x: number, y: number, w: number, h: number) {
   const r = Math.min(w / img.width, h / img.height);

@@ -1,3 +1,4 @@
+import { donkeys } from "../src/data/load";
 import { test, expect, type Page } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { buildWeekCache, conquestPath, conferenceStatus, ownersAt, standings, type ImperialismData } from "../src/imperialism";
@@ -143,11 +144,11 @@ test("conference map hatches captured land and counts it; logos can be switched 
   await page.getByRole("button", { name: "NFL", exact: true }).click();
   await page.getByRole("button", { name: "AFC", exact: true }).click();
   const names = await page.getByTestId("imp-standings").locator(".imp-tname").allInnerTexts();
-  const afcNames = new Set(data.teams.NFL.filter((t) => t.conf === "AFC").map((t) => t.name));
+  const afcNames = new Set(data.teams.NFL.filter((t) => t.conf === "AFC").map((t) => donkeys(t.name)));
   expect(names.length).toBeGreaterThan(0);
   for (const n of names) expect(afcNames.has(n)).toBe(true);
   await page.getByRole("button", { name: "NFC", exact: true }).click();
-  const nfcNames = new Set(data.teams.NFL.filter((t) => t.conf === "NFC").map((t) => t.name));
+  const nfcNames = new Set(data.teams.NFL.filter((t) => t.conf === "NFC").map((t) => donkeys(t.name)));
   for (const n of await page.getByTestId("imp-standings").locator(".imp-tname").allInnerTexts()) expect(nfcNames.has(n)).toBe(true);
   expect(errors).toEqual([]);
 });

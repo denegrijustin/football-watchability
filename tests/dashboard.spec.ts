@@ -18,6 +18,9 @@ const expand = async (card: import("@playwright/test").Locator) => {
 };
 const deep = async (page: import("@playwright/test").Page, card: import("@playwright/test").Locator) => {
   await card.getByRole("button", { name: /Game Center/ }).click();
+  // The Game Center shows one group of panels at a time; the matchup and season analysis is its own tab.
+  const analysis = page.getByRole("dialog").getByRole("tab", { name: /Matchup|Forecast|Season stats/ });
+  await analysis.click();
   return page.getByRole("dialog");
 };
 const expandAll = async (page: import("@playwright/test").Page) => {
@@ -55,6 +58,7 @@ test("@smoke all games, conferences, history and logos remain available", async 
   if (await completedToggle.count()) await completedToggle.click();
   await page.locator(CARD).first().getByRole("button", { name: /Game Center/ }).click();
   const first = page.getByRole("dialog");
+  await first.getByRole("tab", { name: /Matchup|Forecast|Season stats/ }).click();
   await first
     .locator("summary")
     .filter({ hasText: "History + key players" }).evaluate(el => { if (!(el.parentElement as HTMLDetailsElement).open) (el as HTMLElement).click(); });
@@ -120,6 +124,7 @@ test("search, empty state, league switch and responsive layout", async ({
     expect((await page.locator(".card-toggle").first().boundingBox())!.height).toBeGreaterThanOrEqual(44);
     await expand(page.locator(CARD).first());
     await page.locator(CARD).first().getByRole("button", { name: /Game Center/ }).click();
+    await page.getByRole("dialog").getByRole("tab", { name: /Matchup|Forecast|Season stats/ }).click();
     expect(
       (await page.locator(".game-details summary").first().boundingBox())!
         .height,
@@ -604,7 +609,8 @@ test("cards show the broadcast crew when the announcing schedule lists the game"
   await page.goto("/?league=NFL");
   const g = games[0];
   const card = page.locator(".game-card").filter({ hasText: g.teams[0].name }).filter({ hasText: g.teams[1].name }).first();
-  // On the opened card, with play-by-play first.
+  // In the opened card (the strip leaves the booth out), with play-by-play first.
+  await expect(card.locator('.card-toggle[aria-expanded="false"]')).toBeVisible();
   await expand(card);
   await expect(card.locator(".booth")).toContainText(g.announcers[0].name);
   // Each announcer has a small photo, or initials when there's no free one.
@@ -806,6 +812,7 @@ const openGameCenter = async (page: import("@playwright/test").Page, fixtureFile
   await page.locator(`${CARD} .card-toggle`).first().click();
   await page.locator(`${CARD} .gc-open`).first().click();
   const gc = page.locator("dialog.gc");
+  await gc.getByRole("tab", { name: "Players" }).click(); // the top 3 / bottom 3 and the tracker are the Players tab
   await expect(gc.locator(".gc-top li").first()).toBeVisible();
   return gc;
 };
@@ -936,7 +943,9 @@ test("@smoke the persistent bar is slim and every filter is a pop-down menu", as
     await expect(page.getByLabel(menu, { exact: true })).toHaveJSProperty("tagName", "SELECT");
   }
   await expect(dock.locator("button:not(.search-clear)")).toHaveCount(0);
-  await expect(page.getByLabel("Conference", { exact: true })).toHaveCount(0); // college only
+  // The Conference menu is there for both leagues: AFC / NFC for the NFL (college conferences for college).
+  await expect(page.getByLabel("Conference", { exact: true })).toHaveJSProperty("tagName", "SELECT");
+  await expect(page.getByLabel("Conference", { exact: true }).locator("option")).toHaveText(["Both conferences", "AFC", "NFC"]);
   // Slim: the old bar took 171px on a phone and 183px on a desktop.
   const phone = testInfo.project.name === "mobile";
   expect((await dock.boundingBox())!.height).toBeLessThan(phone ? 100 : 60);
@@ -972,15 +981,22 @@ test("@smoke game cards show a full compact overview and concise first expansion
   await expect(card).toHaveClass(/compact/);
   expect((await card.boundingBox())!.height).toBeLessThan(640);
   await expect(card.locator(".cc-team")).toHaveCount(2);
-  await expect(card.locator(".facts")).toContainText("Announcers:");
-  await expect(card.locator(".rank-line").first()).toBeVisible();
+  // The strip is quiet: names and records only, one line for the venue, and the booth, betting line and rank lines wait in Details.
+  await expect(card.locator(".facts li")).toHaveCount(1);
+  await expect(card.locator(".facts")).toContainText("📍");
+  await expect(card.locator(".booth, .rank-line")).toHaveCount(0);
+  await expect(card.locator(".facts")).not.toContainText("⚖️");
   await expect(card.locator(".cc-team img")).toHaveCount(2);
   const title = (await card.locator("h3.sr-only").innerText()).trim();
-  const game = slate.games.find((g: any) => g.matchup === title)!;
+  const gameId = await card.getAttribute("data-game-id");
+  const game = slate.games.find((g: any) => g.id === gameId)!;
   expect(game, title).toBeTruthy();
   await expect(card.locator(".cc-rate strong")).toHaveText(String(game.score));
   await expect(card.locator(".cc-network")).toContainText(game.broadcast);
-  await expect(card.locator(".cc-weather")).toContainText(game.weather.title);
+  // Weather shows on the strip only when it will matter to the game.
+  const notable = !/^(none|low)\b/i.test(game.weather.impact);
+  await expect(card.locator(".cc-weather")).toHaveCount(notable ? 1 : 0);
+  if (notable) await expect(card.locator(".cc-weather")).toContainText(game.weather.title);
   await expect(card.locator(".cc-when")).toBeVisible(); // kickoff time, or LIVE with the quarter and clock
   // Everything else is hidden until it is opened.
   await expect(card.locator(".card-more, .attendance, .insanity")).toHaveCount(0);
@@ -991,6 +1007,7 @@ test("@smoke game cards show a full compact overview and concise first expansion
   await expect(card.locator(".game-details")).toHaveCount(0);
   await expect(card.getByRole("button", { name: /Game Center/ })).toBeVisible();
   await expect(card.locator(".booth")).toContainText("Announcers:");
+  await expect(card.locator(".rank-line").first()).toBeVisible();
   await expect(card.locator(".tv")).toBeVisible();
   await expect(card.locator(".card-more .take")).toBeVisible();
   // "Less" puts it back to the strip.
@@ -1014,6 +1031,9 @@ test("@smoke game cards show a full compact overview and concise first expansion
 
 
 test("compact Details button fits and outside click collapses expanded games", async ({ page }) => {
+  // Before the first kickoff, so there are upcoming games whatever day the test runs.
+  await page.clock.install({ time: Math.min(...slate.games.map((g: any) => Date.parse(g.date))) - 3600e3 });
+  await page.route("**/api/scores**", (route) => route.fulfill({ json: [] }));
   await page.goto("/?league=NFL");
   const card = page.locator(".upcoming .game-card").first();
   const button = card.getByRole("button", { name: "Show game details", exact: true });
@@ -1057,4 +1077,105 @@ test("the whole-week TV grid image carries the NFL and college slate together, w
   await page.locator(".tv-toolbar [aria-label='League'] button", { hasText: "All" }).click();
   const everything = await size(/Full weekend/);
   expect(everything).toEqual(week);
+});
+
+test("completed games run from the most insane to the least within each week", async ({ page }) => {
+  const { insanity } = await import("../src/insanity.js");
+  await page.goto("/?league=NFL");
+  await completed(page);
+  const blocks = page.locator(".week-block");
+  await expect(blocks.first()).toBeVisible();
+  const results = JSON.parse(readFileSync("src/data/results.json", "utf8")).games as any[];
+  const byId = new Map(results.map((r) => [String(r.espnId), r]));
+  const n = await blocks.count();
+  let compared = 0;
+  for (let b = 0; b < n; b++) {
+    const ids = await blocks.nth(b).locator("article[aria-labelledby^='r-']").evaluateAll((els) => els.map((e) => (e.getAttribute("aria-labelledby") ?? "").slice(2)));
+    const scores = ids.map((id) => {
+      const r = byId.get(id);
+      return r ? insanity(r.wp, { final: true, overtime: r.final?.overtime })?.score ?? -1 : -1;
+    });
+    expect(scores).toEqual([...scores].sort((a, b) => b - a));
+    if (ids.length > 1) compared++;
+  }
+  expect(compared).toBeGreaterThan(0); // at least one week had several games to put in order
+});
+
+test("if the board's data never loads, the grey bars give way to a message and a Reload button (after one automatic reload)", async ({ page }) => {
+  await page.clock.install();
+  await page.route("**/data/slate.json", (route) => route.fulfill({ status: 500, body: "nope" }));
+  await page.goto("/?league=NFL");
+  await expect(page.locator(".boot")).toBeVisible();
+  // Time runs in seconds with real pauses between, so the three tries at the data (and their failures) happen as they would for a visitor.
+  const run = async (seconds: number) => {
+    for (let i = 0; i < seconds; i++) {
+      await page.clock.fastForward(1000);
+      await page.waitForTimeout(120);
+    }
+  };
+  await run(13); // too long: it reloads once by itself
+  await page.waitForLoadState("domcontentloaded");
+  await expect(page.locator(".boot")).toBeVisible();
+  await run(13); // still nothing: it says so
+  const fail = page.locator(".boot-fail");
+  await expect(fail).toBeVisible();
+  await expect(fail).toContainText("taking too long");
+  await expect(fail).toContainText("slate"); // and what went wrong, so it can be reported
+  await expect(fail.getByRole("button", { name: "Reload" })).toBeVisible();
+  // With the data back, Reload brings the board up.
+  await page.unroute("**/data/slate.json");
+  await fail.getByRole("button", { name: "Reload" }).click();
+  await expect(page.locator(".game-card").first()).toBeVisible({ timeout: 15000 });
+});
+
+test("a data file that fails once is tried again, and the board still comes up", async ({ page }) => {
+  let calls = 0;
+  await page.route("**/data/results.json", (route) => {
+    calls++;
+    return calls === 1 ? route.fulfill({ status: 503, body: "busy" }) : route.continue();
+  });
+  await page.goto("/?league=NFL");
+  await expect(page.locator(".game-card").first()).toBeVisible({ timeout: 15000 });
+  expect(calls).toBeGreaterThanOrEqual(2);
+});
+
+test("a tab whose file is gone after an update reloads the page once and then opens", async ({ page }) => {
+  let block = false;
+  await page.route("**/assets/c-*.js", (route) => (block ? route.abort() : route.continue()));
+  await page.goto("/?league=NFL");
+  await expect(page.locator(".game-card").first()).toBeVisible();
+  block = true; // the site was updated: the files this page knows about are no longer there
+  page.once("framenavigated", () => (block = false)); // the reload fetches the new ones
+  await page.getByRole("button", { name: /^Insanity/ }).click();
+  await expect(page.locator(".ib")).toBeVisible({ timeout: 20000 });
+});
+
+test("a tab that fails twice shows what went wrong and a way to reload", async ({ page }) => {
+  await page.route("**/assets/c-*.js", async (route) => route.continue());
+  await page.goto("/?league=NFL");
+  await expect(page.locator(".game-card").first()).toBeVisible();
+  await page.evaluate(() => {
+    sessionStorage.setItem("fbwatch-view-reload-Outlook", "1"); // it has already reloaded once
+    sessionStorage.setItem("fbwatch-gc-reload", "1");
+  });
+  await page.route("**/assets/c-*.js", (route) => route.abort());
+  await page.getByRole("button", { name: /^Outlook/ }).click();
+  const note = page.getByRole("alert").filter({ hasText: "could not load" });
+  await expect(note).toBeVisible({ timeout: 10000 });
+  await expect(note.getByRole("button", { name: "Reload the page" })).toBeVisible();
+});
+
+test("a page left open across a deploy says a new version is ready, and Reload brings it up", async ({ page }) => {
+  await page.goto("/?league=NFL");
+  await expect(page.locator(".game-card").first()).toBeVisible();
+  await expect(page.locator(".update-bar")).toHaveCount(0); // this build is the current one
+  // The site is published again: its id is no longer the one this page carries.
+  await page.route("**/version.json", (route) => route.fulfill({ json: { id: "a-newer-build" } }));
+  await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+  const bar = page.locator(".update-bar");
+  await expect(bar).toContainText("new version");
+  await page.unroute("**/version.json");
+  await bar.getByRole("button", { name: "Reload" }).click();
+  await expect(page.locator(".game-card").first()).toBeVisible();
+  await expect(page.locator(".update-bar")).toHaveCount(0);
 });
