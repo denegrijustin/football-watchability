@@ -1,7 +1,6 @@
 import { MomentumFlow } from "./MomentumFlow";
 import { CompactGame } from "./CompactGame";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { nameParts } from "../teamName";
 import { deltaValue, logos, parseMeta, tierLabel, type Game } from "../data";
 import {
   broadcastExtra,
@@ -50,17 +49,20 @@ export function GameCard({
   const cardRef = useRef<HTMLElement>(null);
   useEffect(() => {
     if (!expanded || defaultExpanded) return;
-    const outside = (event: PointerEvent) => {
-      if (document.querySelector("dialog[open]")) return;
+    // A tap elsewhere closes this card, but only once that tap has finished: closing it on the press moved the page under a finger that was
+    // about to lift on a button, and the tap was lost. (A tap that was already under way when the card opened is ignored.)
+    const armedAt = performance.now();
+    const outside = (event: MouseEvent) => {
+      if (!event.isTrusted || event.timeStamp <= armedAt || document.querySelector("dialog[open]") || (event.target as Element | null)?.closest?.("dialog")) return; // (a tap inside the Game Center, even the one that closes it, is not a tap elsewhere)
       if (!cardRef.current?.contains(event.target as Node)) setExpanded(false);
     };
     const escape = (event: KeyboardEvent) => {
       if (event.key === "Escape" && !document.querySelector("dialog[open]")) setExpanded(false);
     };
-    document.addEventListener("pointerdown", outside);
+    document.addEventListener("click", outside);
     document.addEventListener("keydown", escape);
     return () => {
-      document.removeEventListener("pointerdown", outside);
+      document.removeEventListener("click", outside);
       document.removeEventListener("keydown", escape);
     };
   }, [expanded, defaultExpanded]);
@@ -88,18 +90,6 @@ export function GameCard({
     >
       {expanded ? "Less" : "Details"}{" "}
       <span aria-hidden="true">{expanded ? "▴" : "▾"}</span>
-    </button>
-  );
-  const chevron = (
-    <button
-      type="button"
-      className="card-toggle cc-chevron"
-      aria-expanded={false}
-      aria-controls={`${game.id}-more`}
-      aria-label="Show game details"
-      onClick={() => setExpanded(true)}
-    >
-      <span aria-hidden="true">▾</span>
     </button>
   );
   const badge = gameBadge(game as { meta?: string; event?: string | null; teams: { logoId?: string }[] });
