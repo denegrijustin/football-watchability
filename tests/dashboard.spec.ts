@@ -1163,3 +1163,18 @@ test("a tab that fails twice shows what went wrong and a way to reload", async (
   await expect(note).toBeVisible({ timeout: 10000 });
   await expect(note.getByRole("button", { name: "Reload the page" })).toBeVisible();
 });
+
+test("a page left open across a deploy says a new version is ready, and Reload brings it up", async ({ page }) => {
+  await page.goto("/?league=NFL");
+  await expect(page.locator(".game-card").first()).toBeVisible();
+  await expect(page.locator(".update-bar")).toHaveCount(0); // this build is the current one
+  // The site is published again: its id is no longer the one this page carries.
+  await page.route("**/version.json", (route) => route.fulfill({ json: { id: "a-newer-build" } }));
+  await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+  const bar = page.locator(".update-bar");
+  await expect(bar).toContainText("new version");
+  await page.unroute("**/version.json");
+  await bar.getByRole("button", { name: "Reload" }).click();
+  await expect(page.locator(".game-card").first()).toBeVisible();
+  await expect(page.locator(".update-bar")).toHaveCount(0);
+});

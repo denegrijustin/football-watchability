@@ -1,5 +1,6 @@
 import { Suspense, useState } from "react";
 import { lazyView } from "./lazyView";
+import { useUpdateCheck } from "./useUpdateCheck";
 import { dayName, results, slate, tiers, type FilterState, type League, type View } from "./data";
 import { Filters } from "./components/Filters";
 import { GameBoard, useBoard } from "./components/GameBoard";
@@ -27,6 +28,7 @@ const initial: FilterState = {
 
 export default function App() {
   const tz = useTz();
+  const outdated = useUpdateCheck();
   const [filters, setFilters] = useState<FilterState>(initial);
   const [view, setView] = useState<View>(() => {
     // After the automatic reload that picks up a new version, come back to the tab that was being opened.
@@ -66,6 +68,12 @@ export default function App() {
       <a className="skip-link" href="#games">
         Skip to games
       </a>
+      {outdated && (
+        <div className="update-bar" role="status">
+          A new version of the board is ready.
+          <button type="button" onClick={() => location.reload()}>Reload</button>
+        </div>
+      )}
       <ScoreTicker />
       <header className="site-header">
         <a href="/" className="brand" aria-label="Football Watchability home">
