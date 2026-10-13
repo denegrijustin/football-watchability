@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { CHIP_DARK, CHIP_LIGHT, chipFor } from "../src/logoTone";
+import { withRedRiver } from "./helpers/redRiver";
 
 const px = (rgb: [number, number, number], n = 40, a = 255) => Array.from({ length: n }, () => [...rgb, a]).flat();
 
@@ -17,9 +18,7 @@ test("transparent pixels are ignored, so a white logo on a clear background stil
 });
 
 test("on the live field, Texas's white longhorn sits on a dark chip and a dark logo on a light one", async ({ page }) => {
-  const { default: slate } = await import("../src/data/slate.json", { with: { type: "json" } });
-  const games = (slate as any).games.filter((g: any) => g.league === "CFB");
-  const g = games.find((x: any) => x.matchup === "Texas @ Oklahoma");
+  const { g, games } = await withRedRiver(page);
   const start = Math.max(...games.map((x: any) => new Date(x.date).getTime()));
   await page.clock.install({ time: start + 90 * 60e3 });
   await page.route("**/api/scores**", (r) => r.fulfill({ json: games.map((x: any) => ({ id: x.espnId, state: x === g ? "in" : "pre", detail: x === g ? "5:12 - 3rd" : "", away: 14, home: 17 })) }));

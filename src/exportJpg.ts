@@ -169,10 +169,10 @@ export async function renderGridImage({
   let lx = PAD;
   const ly = 132;
   ctx.font = `600 18px ${FONT}`;
-  for (const [label, color, dim] of [
-    ["Entertaining (74+): outlined", TIER_COLOR.elite, false],
-    ["Watchable (64–73)", TIER_COLOR.watch, false],
-    ["↓ Lower priority (<64): dashed", TIER_COLOR.bg, true],
+  for (const [label, color] of [
+    ["Entertaining (74+): outlined", TIER_COLOR.elite],
+    ["Watchable (64–73)", TIER_COLOR.watch],
+    ["↓ Lower priority (<64): dashed", TIER_COLOR.bg],
   ] as const) {
     ctx.globalAlpha = 1;
     ctx.fillStyle = color;

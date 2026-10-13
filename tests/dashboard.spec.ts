@@ -224,7 +224,9 @@ test("final view compares forecast with actual and explains the score", async ({
   // Cards group by week, newest week first, best game first within a week.
   const newest = expected[0].week;
   const top = expected.filter((r: any) => r.week === newest).sort((a: any, b: any) => b.actual.score - a.actual.score)[0];
-  const card = page.locator(".result-card").first();
+  // (The list is ordered by insanity now, so the card is found by its game.)
+  const card = page.locator(`.result-card[aria-labelledby="r-${top.espnId}"]`);
+  await expect(card).toBeVisible();
   await expect(card.locator(".fva-box.actual strong")).toHaveText(String(top.actual.score));
   await expect(card.locator(".fva-box").first().locator("strong")).toHaveText(String(top.forecast.score));
   await expect(card.locator(".readout-head")).toHaveText(top.readout.headline);
@@ -783,7 +785,8 @@ test("live and completed cards show the status above the teams and the score bes
   await expect(post.locator(".team-score.lost")).toHaveText("24");
   // Archived completed cards: FINAL, both scores beside the logos and the rating in the strip.
   await completed(page);
-  const done = page.locator(".result-card").first();
+  const decided = results.games.find((r: any) => r.league === "NFL" && r.teams[0].score !== r.teams[1].score);
+  const done = page.locator(`.result-card[aria-labelledby="r-${decided.espnId}"]`);
   await expect(done.locator(".cc-when .game-status.post")).toContainText("Final");
   await expect(done.locator(".cc-team .team-score")).toHaveCount(2);
   await expect(done.locator(".cc-team .team-score.won")).toHaveCount(1);

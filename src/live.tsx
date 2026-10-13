@@ -146,7 +146,18 @@ export function LiveScores({ children }: { children: ReactNode }) {
         timer = setTimeout(tick, 5 * POLL_MS);
         return;
       }
-      setMap((m) => ({ ...m, ...next }));
+      // Only what changed is replaced, and when nothing did the same map is kept, so a poll that brings nothing new re-renders nothing.
+      setMap((m) => {
+        let changed = false;
+        const merged: LiveMap = { ...m };
+        for (const [id, s] of Object.entries(next)) {
+          const old = m[id];
+          if (old && old.state === s.state && old.detail === s.detail && old.away === s.away && old.home === s.home && old.ball === s.ball) continue;
+          merged[id] = s;
+          changed = true;
+        }
+        return changed ? merged : m;
+      });
       const pending = started.some((g) => next[g.id]?.state !== "post");
       if (pending) timer = setTimeout(tick, POLL_MS);
       else {

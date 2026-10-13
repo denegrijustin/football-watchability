@@ -208,7 +208,7 @@ test("@smoke the page opens on the right league and the Outlook tab shows the pr
   await page.goto("/");
   await expect(page.getByLabel("League", { exact: true }).first()).toHaveValue("CFB");
   await page.getByRole("button", { name: /^Outlook/ }).click();
-  await expect(page.getByRole("button", { name: "College" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("button", { name: "College", exact: true })).toHaveAttribute("aria-pressed", "true");
   // Projected playoff: twelve seeds with a bye on the first four.
   await expect(page.locator('ol[aria-label="Projected playoff field"] > li')).toHaveCount(12);
   await expect(page.locator('ol[aria-label="Projected playoff field"] > li.bye')).toHaveCount(4);
@@ -232,7 +232,7 @@ test("@smoke the page opens on the right league and the Outlook tab shows the pr
   await page.getByRole("button", { name: "Bowls" }).click();
   await expect(page.locator(".ol-bowls > li").first()).toBeVisible();
   // NFL: seven seeds per conference.
-  await page.getByRole("button", { name: "NFL" }).click();
+  await page.getByRole("button", { name: "NFL", exact: true }).click();
   await expect(page.locator(".ol h3")).toHaveText(["AFC", "NFC"]);
   await expect(page.locator(".ol-note").first()).toContainText("Tuesday");
   const width = await page.evaluate(() => document.documentElement.scrollWidth);

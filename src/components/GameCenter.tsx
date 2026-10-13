@@ -111,8 +111,6 @@ export function positionOf(p: PlayerRow) {
 
 // ---------- helpers ----------
 type GcTab = "overview" | "stats" | "plays" | "players" | "analysis";
-type SlateGame = (typeof slate.games)[number];
-type Result = (typeof results)[number];
 type TeamLike = { name: string; abbr?: string; logoId: string; color?: string | null; record: string; ranks?: Ranks; advanced?: Advanced };
 const mmss = (t: string) => {
   const [m, s] = t.split(":").map(Number);

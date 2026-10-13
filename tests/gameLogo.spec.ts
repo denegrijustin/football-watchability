@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { gameBadge } from "../src/gameLogo";
+import { withRedRiver } from "./helpers/redRiver";
 
 const t = (a: string, b: string) => [{ logoId: a }, { logoId: b }];
 
@@ -17,6 +18,7 @@ test("an ordinary home game has no game logo; a named or neutral-site game gets 
 });
 
 test("the card shows the Red River logo and no badge on a normal game", async ({ page }) => {
+  await withRedRiver(page);
   await page.goto("/?league=CFB");
   const rr = page.locator(".game-card", { hasText: "Texas @ Oklahoma" }).first();
   await expect(rr.locator(".game-badge img")).toHaveAttribute("src", "/game-logos/red-river-rivalry.webp");
@@ -30,8 +32,7 @@ test("a registry entry can match by ESPN's event headline, for future games", ()
 });
 
 test("at halftime the game's logo is painted at midfield and tops the card", async ({ page }) => {
-  const slate = (await import("../src/data/slate.json", { with: { type: "json" } })).default as any;
-  const g = slate.games.find((x: any) => x.matchup === "Texas @ Oklahoma");
+  const { slate, g } = await withRedRiver(page);
   const T = new Date(g.date).getTime() + 90 * 60e3;
   await page.clock.install({ time: T });
   await page.route("**/api/scores**", (r) => r.fulfill({ json: slate.games.map((x: any) => ({ id: x.espnId, state: x === g ? "in" : "pre", detail: x === g ? "Halftime" : "", away: 14, home: 17 })) }));

@@ -18,8 +18,8 @@ test("DIRECTV channels: national networks, Kansas City locals, and nothing for s
   expect(new Set(nums).size).toBe(nums.length);
   // Every network the board uses either has a number or is a streaming service.
   const slate = JSON.parse(readFileSync("src/data/slate.json", "utf8"));
-  const streaming = new Set(["espn-plus", "prime-video", "mw-plus", null]);
-  for (const g of slate.games) expect(!!directvChannel(g.network) || streaming.has(g.network ?? null), `no DIRECTV channel for ${g.network}`).toBe(true);
+  const isStreaming = (n: string | null) => n === null || /plus$|nx$|prime|peacock|netflix|youtube|apple/.test(n); // a streaming service, which has no channel number
+  for (const g of slate.games) expect(!!directvChannel(g.network) || isStreaming(g.network ?? null), `no DIRECTV channel for ${g.network}`).toBe(true);
 });
 
 test("the channel number shows beside the network logo on cards and in the TV grid lanes", async ({ page }) => {
