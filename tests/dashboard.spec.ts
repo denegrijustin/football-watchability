@@ -988,7 +988,8 @@ test("@smoke game cards show a full compact overview and concise first expansion
   await expect(card.locator(".facts")).not.toContainText("⚖️");
   await expect(card.locator(".cc-team img")).toHaveCount(2);
   const title = (await card.locator("h3.sr-only").innerText()).trim();
-  const game = slate.games.find((g: any) => g.matchup === title)!;
+  const gameId = await card.getAttribute("data-game-id");
+  const game = slate.games.find((g: any) => g.id === gameId)!;
   expect(game, title).toBeTruthy();
   await expect(card.locator(".cc-rate strong")).toHaveText(String(game.score));
   await expect(card.locator(".cc-network")).toContainText(game.broadcast);
