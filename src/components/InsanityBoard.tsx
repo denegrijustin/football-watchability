@@ -5,7 +5,7 @@ import { NFL_CONFERENCES, inConference } from "../teamConf";
 import { fetchData, refetchData } from "../data/load";
 import { latestFlow, useLiveMap } from "../live";
 import { rankGames, mostInsaneWeek, weekSummaries, sortGames, INSANITY_SORTS, type InsanitySort, type LedgerGame } from "../seasonRank";
-import { INSANITY_TIERS, insanity, insanityTier, thinWp } from "../insanity";
+import { INSANITY_TIERS, insanity, thinWp } from "../insanity";
 import { useOpenGame, type GameStub } from "./GameCenterContext";
 import { Headshot } from "./Headshot";
 

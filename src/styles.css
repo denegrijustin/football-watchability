@@ -7112,3 +7112,10 @@ select,
 
 .update-bar { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 8px 12px; background: #e8c24a; color: #1a1400; font-size: 14px; font-weight: 650; }
 .update-bar button { min-height: 36px; padding: 0 16px; border: 0; border-radius: 8px; background: #1a1400; color: #f6e7a0; font: inherit; cursor: pointer; }
+
+/* Cards below the screen are not laid out or painted until they scroll near; the size they are assumed to have until then keeps the scrollbar steady. */
+.board-section .game-card.compact,
+.board-section .result-card.compact {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 330px;
+}
