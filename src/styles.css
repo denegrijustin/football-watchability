@@ -1862,6 +1862,9 @@ footer details[open] summary::before {
   .view-switch .count {
     display: none;
   }
+  .view-switch .tab-cfb {
+    display: none; /* "CFB SP+" reads "SP+" here; the button keeps its full accessible name */
+  }
 }
 
 /* ---------- Pregame win probability ---------- */
@@ -3052,6 +3055,45 @@ details.proj summary strong {
 .gc-proj > div {
   display: grid;
   gap: 2px;
+}
+.gc-spp {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+  border-radius: 10px;
+}
+.gc-spp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.gc-spp-open {
+  background: none;
+  border: 0;
+  padding: 6px 2px;
+  min-height: 32px;
+  color: var(--accent, #6da7ec);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.gc-spp-score {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  margin: 2px 0 6px;
+  font-size: 15px;
+}
+.gc-spp-score strong {
+  font-size: 26px;
+  font-variant-numeric: tabular-nums;
+}
+.gc-spp-sub {
+  margin: 0 0 2px;
+  font-size: 12.5px;
+  color: var(--text-2, var(--muted));
 }
 .gc-k {
   font-size: 11.5px;
@@ -5394,6 +5436,9 @@ html:has(dialog[open]) {
   .view-switch .count {
     display: none;
   }
+  .view-switch .tab-cfb {
+    display: none; /* "CFB SP+" reads "SP+" here; the button keeps its full accessible name */
+  }
 }
 
 /* Texas, Kansas and the Chiefs' AFC West rivals (Broncos, Chargers, Raiders) are shown upside down everywhere (cards, grids,
@@ -7118,4 +7163,18 @@ select,
 .board-section .result-card.compact {
   content-visibility: auto;
   contain-intrinsic-size: auto 330px;
+}
+
+/* Six tabs (with CFB SP+) on the narrowest phones: tighter buttons and no game count, so the row still fits beside Export. */
+@media (max-width: 380px) {
+  .view-switch button {
+    padding: 0 3px;
+    font-size: 11px;
+  }
+  .view-switch .count {
+    display: none;
+  }
+  .view-switch .tab-cfb {
+    display: none; /* "CFB SP+" reads "SP+" here; the button keeps its full accessible name */
+  }
 }

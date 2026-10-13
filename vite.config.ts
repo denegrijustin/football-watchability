@@ -4,17 +4,31 @@ import { createHash } from "node:crypto";
 import { readdirSync } from "node:fs";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import { buildLite } from "./src/spplus/liteBuild";
 
 // The board's data files are fetched at run time (/data/<name>.json) instead of being compiled into the
 // JavaScript, so a refresh changes only these small, revalidated files and the scripts stay cached.
-const DATA = ["slate", "results", "matchup-stats", "broadcast-checks", "season", "imperialism", "outlook"];
+const DATA = ["slate", "results", "matchup-stats", "broadcast-checks", "season", "imperialism", "outlook", "spplus"];
 const dataFile = (name: string) => new URL(`./src/data/${name}.json`, import.meta.url);
 const minified = (name: string) => JSON.stringify(JSON.parse(readFileSync(dataFile(name), "utf8")));
+
+// The CFB SP+ tab reads the whole sheet snapshot (spplus.json); the Game Center reads only this small file derived from it.
+const spLite = () =>
+  existsSync(dataFile("spplus"))
+    ? JSON.stringify(buildLite(JSON.parse(readFileSync(dataFile("spplus"), "utf8")), JSON.parse(readFileSync(dataFile("team-ids"), "utf8"))))
+    : null;
 
 const dataFiles = (): Plugin => ({
   name: "board-data-files",
   configureServer(server) {
     server.middlewares.use((req, res, next) => {
+      if (/^\/data\/spplus-lite\.json(\?.*)?$/.test(req.url ?? "")) {
+        const lite = spLite();
+        if (!lite) return next();
+        res.setHeader("Content-Type", "application/json");
+        res.setHeader("Cache-Control", "no-cache");
+        return res.end(lite);
+      }
       const m = /^\/data\/([\w-]+)\.json(\?.*)?$/.exec(req.url ?? "");
       if (!m || !DATA.includes(m[1]) || !existsSync(dataFile(m[1]))) return next();
       res.setHeader("Content-Type", "application/json");
@@ -24,6 +38,8 @@ const dataFiles = (): Plugin => ({
   },
   generateBundle() {
     for (const name of DATA) if (existsSync(dataFile(name))) this.emitFile({ type: "asset", fileName: `data/${name}.json`, source: minified(name) });
+    const lite = spLite();
+    if (lite) this.emitFile({ type: "asset", fileName: "data/spplus-lite.json", source: lite });
   },
 });
 

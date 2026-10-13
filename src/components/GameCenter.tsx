@@ -9,6 +9,7 @@ import { dayOf, timeOf, tzAbbr } from "../tz";
 import { AdvancedStats, type Advanced } from "./AdvancedStats";
 import { PregameWinProb, type WinProbData } from "./PregameWinProb";
 import { ProjectedScore, type Projection } from "./ProjectedScore";
+import { SpPlusProjection } from "./SpPlusProjection";
 import { InsanityMeter } from "./InsanityMeter";
 import { Headshot } from "./Headshot";
 import { GameDetails } from "./GameDetails";
@@ -265,6 +266,17 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
             {/* Projection */}
             <section className="gc-panel">
               <h3 className="micro-label">Projection</h3>
+              {league === "CFB" && date && (
+                <SpPlusProjection
+                  away={away}
+                  home={home}
+                  date={date}
+                  onOpen={() => {
+                    onClose();
+                    window.dispatchEvent(new CustomEvent("fbwatch:open-view", { detail: "spplus" }));
+                  }}
+                />
+              )}
               {proj && (
                 <div className="gc-proj">
                   <div>

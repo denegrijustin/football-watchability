@@ -18,7 +18,7 @@ for (const f of list("assets/", ".js")) {
 }
 limits.push(["all JavaScript", totalJs, 300 * KB]);
 for (const f of list("assets/", ".css")) limits.push([`assets/${f}`, gz(new URL(`assets/${f}`, dist)), 25 * KB]);
-const DATA_MAX = { slate: 220, results: 120, season: 100, imperialism: 150, "matchup-stats": 40, outlook: 40, "broadcast-checks": 20 };
+const DATA_MAX = { slate: 220, results: 120, season: 100, imperialism: 150, "matchup-stats": 40, outlook: 40, "broadcast-checks": 20, spplus: 400, "spplus-lite": 40 }; // spplus.json is the whole sheet; it loads only when the CFB SP+ tab opens
 for (const f of list("data/", ".json")) limits.push([`data/${f}`, gz(new URL(`data/${f}`, dist)), (DATA_MAX[f.replace(/\.json$/, "")] ?? 60) * KB]);
 
 let bad = 0;
