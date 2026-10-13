@@ -1863,12 +1863,6 @@ footer details[open] summary::before {
     display: none;
   }
 }
-/* Seven tabs: "CFB SP+" and "NFL Ratings" read "SP+" and "NFL" on phones and small tablets; the buttons keep their full accessible names. */
-@media (max-width: 640px) {
-  .view-switch .tab-cfb {
-    display: none;
-  }
-}
 
 /* ---------- Pregame win probability ---------- */
 .pwp {
@@ -5440,12 +5434,6 @@ html:has(dialog[open]) {
     display: none;
   }
 }
-/* Seven tabs: "CFB SP+" and "NFL Ratings" read "SP+" and "NFL" on phones and small tablets; the buttons keep their full accessible names. */
-@media (max-width: 640px) {
-  .view-switch .tab-cfb {
-    display: none;
-  }
-}
 
 /* Texas, Kansas and the Chiefs' AFC West rivals (Broncos, Chargers, Raiders) are shown upside down everywhere (cards, grids,
    results, the Empire map). The files are
@@ -7171,19 +7159,29 @@ select,
   contain-intrinsic-size: auto 330px;
 }
 
-/* Six tabs (with CFB SP+) on the narrowest phones: tighter buttons and no game count, so the row still fits beside Export. */
-@media (max-width: 380px) {
+/* Seven tabs. On phones and small tablets the long labels give way to short ones (TV grid -> TV, Empire -> War, CFB SP+ -> SP+, NFL Ratings -> NFL+)
+   and the type gets smaller; every button keeps its full accessible name. */
+.view-switch .t-short {
+  display: none;
+}
+@media (max-width: 640px) {
+  .view-switch .t-long {
+    display: none;
+  }
+  .view-switch .t-short {
+    display: inline;
+  }
   .view-switch button {
-    padding: 0 3px;
     font-size: 11px;
+    padding: 0 5px;
   }
   .view-switch .count {
     display: none;
   }
 }
-/* Seven tabs: "CFB SP+" and "NFL Ratings" read "SP+" and "NFL" on phones and small tablets; the buttons keep their full accessible names. */
-@media (max-width: 640px) {
-  .view-switch .tab-cfb {
-    display: none;
+@media (max-width: 380px) {
+  .view-switch button {
+    font-size: 10.5px;
+    padding: 0 3px;
   }
 }
