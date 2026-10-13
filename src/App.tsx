@@ -1,4 +1,5 @@
-import { lazy, Suspense, useState } from "react";
+import { Suspense, useState } from "react";
+import { lazyView } from "./lazyView";
 import { dayName, results, slate, tiers, type FilterState, type League, type View } from "./data";
 import { Filters } from "./components/Filters";
 import { GameBoard, useBoard } from "./components/GameBoard";
@@ -7,10 +8,10 @@ import { ScoreTicker } from "./components/ScoreTicker";
 import { defaultLeague } from "./league";
 
 // The map and its shapes load only when the tab is opened.
-const ImperialismMap = lazy(() => import("./components/ImperialismMap").then((m) => ({ default: m.ImperialismMap })));
-const Outlook = lazy(() => import("./components/Outlook").then((m) => ({ default: m.Outlook })));
-const InsanityBoard = lazy(() => import("./components/InsanityBoard").then((m) => ({ default: m.InsanityBoard })));
-const TvGrid = lazy(() => import("./components/TvGrid").then((m) => ({ default: m.TvGrid })));
+const ImperialismMap = lazyView(() => import("./components/ImperialismMap").then((m) => ({ default: m.ImperialismMap })), "ImperialismMap");
+const Outlook = lazyView(() => import("./components/Outlook").then((m) => ({ default: m.Outlook })), "Outlook");
+const InsanityBoard = lazyView(() => import("./components/InsanityBoard").then((m) => ({ default: m.InsanityBoard })), "InsanityBoard");
+const TvGrid = lazyView(() => import("./components/TvGrid").then((m) => ({ default: m.TvGrid })), "TvGrid");
 import { setTz, tzLabel, useTz, ZONES } from "./tz";
 
 const gameCount = (l: League) => slate.games.filter((g) => g.league === l).length + results.filter((r) => r.league === l).length;
@@ -27,12 +28,29 @@ const initial: FilterState = {
 export default function App() {
   const tz = useTz();
   const [filters, setFilters] = useState<FilterState>(initial);
-  const [view, setView] = useState<View>("board");
+  const [view, setView] = useState<View>(() => {
+    // After the automatic reload that picks up a new version, come back to the tab that was being opened.
+    try {
+      if (sessionStorage.getItem("fbwatch-resume")) {
+        sessionStorage.removeItem("fbwatch-resume");
+        const v = sessionStorage.getItem("fbwatch-view") as View | null;
+        if (v) return v;
+      }
+    } catch {
+      /* storage blocked: start on the board */
+    }
+    return "board";
+  });
   const update = (patch: Partial<FilterState>) => setFilters((f) => ({ ...f, ...patch }));
   const { league } = filters;
   const board = useBoard(filters);
   const switchView = (v: View) => {
     setView(v);
+    try {
+      sessionStorage.setItem("fbwatch-view", v);
+    } catch {
+      /* storage blocked */
+    }
     setFilters((f) => ({ ...f, day: "all" }));
   };
   const filtered =

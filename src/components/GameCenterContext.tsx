@@ -21,6 +21,7 @@ const loadGameCenter = () =>
     try {
       if (!sessionStorage.getItem("fbwatch-gc-reload")) {
         sessionStorage.setItem("fbwatch-gc-reload", "1");
+        sessionStorage.setItem("fbwatch-resume", "1"); // the page comes back on the tab that was open
         location.reload();
         return new Promise<never>(() => {});
       }
