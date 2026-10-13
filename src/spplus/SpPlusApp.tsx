@@ -23,7 +23,7 @@ const views: Record<ViewKey, React.LazyExoticComponent<() => ReactNode>> = {
 /** Which shared filters each view uses. */
 const FILTERS: Record<ViewKey, { div?: boolean; all?: boolean; week?: boolean; conf?: boolean; q?: boolean }> = {
   rankings: { div: true, all: true, week: true, conf: true, q: true },
-  simulator: { week: true },
+  simulator: {},
   ats: {},
   movement: { div: true, week: false, conf: true, q: true },
   team: {},

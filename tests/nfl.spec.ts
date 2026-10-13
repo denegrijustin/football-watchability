@@ -268,3 +268,56 @@ test.describe("NFL data and model", () => {
     expect(statSync("src/data/nfl.json").mtimeMs).toBe(before);
   });
 });
+
+test.describe("NFL simulator: picking a game", () => {
+  const regular = nfl.games.filter((g) => g.type === "REG");
+  const openWeek = regular.find((g) => g.aS == null)!.week;
+  const goSim = async (page: Page) => {
+    await openTab(page);
+    await page.locator(".spp").getByRole("tab", { name: "Simulator" }).click();
+    await expect(page.locator(".spp .simpts")).toHaveCount(2);
+    return page.locator('.spp [aria-label="Pick a scheduled game"]');
+  };
+
+  test("an AFC-NFC game is listed under both conferences and under each division", async ({ page }) => {
+    const inter = regular.find((g) => g.week === openWeek && nfl.teams[g.away].conf !== nfl.teams[g.home].conf)!;
+    const pick = await goSim(page);
+    await pick.getByLabel("Week").selectOption(String(openWeek));
+    for (const grp of [nfl.teams[inter.away].conf, nfl.teams[inter.home].conf, nfl.teams[inter.away].div, nfl.teams[inter.home].div]) {
+      await pick.getByLabel("Conference").selectOption(grp);
+      await expect(pick.getByLabel("Game").locator("option", { hasText: `${inter.away} ${inter.neutral ? "vs." : "@"} ${inter.home}` })).toHaveCount(1);
+    }
+    const expected = regular.filter((g) => g.week === openWeek && (nfl.teams[g.away].conf === "AFC" || nfl.teams[g.home].conf === "AFC")).length;
+    await pick.getByLabel("Conference").selectOption("AFC");
+    await expect(pick.getByText(new RegExp(`^${expected} games?`))).toBeVisible();
+  });
+
+  test("choosing a game fills both teams; a played game is simulated from the ratings before it, and says how it ended", async ({ page }) => {
+    const pick = await goSim(page);
+    const played = regular.find((g) => g.aS != null && g.week === 1)!;
+    await pick.getByLabel("Week").selectOption("1");
+    await pick.getByLabel("Game").selectOption(played.id);
+    await expect(page.locator(".spp").getByLabel("Away team")).toHaveValue(played.away);
+    await expect(page.locator(".spp").getByLabel("Home team")).toHaveValue(played.home);
+    await expect(page.locator(".spp").getByText("Played:")).toContainText(`final ${played.away} ${played.aS}, ${played.home} ${played.hS}`);
+    await expect(page.locator(".spp").getByText(/ratings \(before week 1\)/).first()).toBeVisible();
+  });
+
+  test("any two teams: a pairing that is not scheduled is a custom matchup with a ratings week to choose", async ({ page }) => {
+    const pairs = new Set(regular.map((g) => [g.away, g.home].sort().join("|")));
+    const abbrs = Object.keys(nfl.teams);
+    let a = "", b = "";
+    outer: for (const x of abbrs) for (const y of abbrs) if (x !== y && !pairs.has([x, y].sort().join("|"))) { a = x; b = y; break outer; }
+    const pick = await goSim(page);
+    await page.locator('.spp select[aria-label="Away team"]').selectOption(a);
+    await page.locator('.spp select[aria-label="Home team"]').selectOption(b);
+    await expect(pick.getByLabel("Game")).toHaveValue("");
+    const asOf = page.locator(".spp").getByLabel("Ratings as of");
+    await expect(asOf).toBeVisible();
+    await expect(page.locator(".spp .simpts")).toHaveCount(2);
+    await asOf.selectOption("1");
+    await expect(page.locator(".spp").getByText("team ratings (before week 1)").or(page.locator(".spp").getByText("Ratings margin = ")).first()).toBeVisible();
+    await expect(page.locator(".spp").getByText("basis: team ratings")).toBeVisible();
+  });
+});
+

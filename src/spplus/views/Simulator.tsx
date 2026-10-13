@@ -26,8 +26,26 @@ export default function Simulator() {
   const lookup = useTeamLookup();
   const [reroll, setReroll] = useState(0);
   if (!model) return null;
-  const week = resolveWeek(model, route.week);
+  const week = route.p.sw != null && model.weeks.includes(Number(route.p.sw)) ? Number(route.p.sw) : resolveWeek(model, route.week);
   const idx = gameIndex(model);
+
+  // Picking a scheduled game: a week, a conference (a game between two conferences is listed under both; Notre Dame and UConn are "Independents"),
+  // then the game. Games with an FCS side have no comparable ratings and are left out.
+  const confLabel = (c: string) => (c === "Indies" ? "Independents" : c);
+  const confAt = (name: string, w: number) => model.byId.get(`FBS:${name}`)?.weeks[w]?.conf ?? null;
+  const weekGames = useMemo(() => model.projections.filter((p) => p.week === week && model.byId.has(`FBS:${p.away}`) && model.byId.has(`FBS:${p.home}`)), [model, week]);
+  const skipped = model.projections.filter((p) => p.week === week).length - weekGames.length;
+  const confOptions = useMemo(() => [...new Set(weekGames.flatMap((p) => [confAt(p.away, week), confAt(p.home, week)]).filter((c): c is string => !!c))].sort((a, b) => confLabel(a).localeCompare(confLabel(b))), [weekGames, week]);
+  const pickConf = route.p.sc && confOptions.includes(route.p.sc) ? route.p.sc : "";
+  const gameList = useMemo(() => weekGames.filter((p) => !pickConf || confAt(p.away, week) === pickConf || confAt(p.home, week) === pickConf), [weekGames, pickConf, week]);
+  const chooseGame = (p: Projection | undefined, extra: Record<string, string | null> = {}) => {
+    if (!p) { nav({ p: extra }, { replace: true }); return; }
+    nav({ p: { ...extra, a: `FBS:${p.away}`, b: `FBS:${p.home}`, v: venueFor(p, p.away) } }, { replace: true });
+  };
+  const gameTag = (p: Projection) => {
+    const ca = confAt(p.away, week), ch = confAt(p.home, week);
+    return ca && ch && ca !== ch ? ` (${confLabel(ca)} / ${confLabel(ch)})` : "";
+  };
 
   // Start from a scheduled game: the strongest pairing of the latest week, or the chosen team's own game.
   useEffect(() => {
@@ -88,6 +106,27 @@ export default function Simulator() {
         <div className="phead">
           <div><h2>Matchup simulator</h2><p className="sub" style={{ margin: 0 }}>Plays the game {n.toLocaleString()} times from each team's SP+ offense, defense and special teams (week {week}), using home field and the scoring spreads measured on the {base.fit.games} games already played</p></div>
         </div>
+        <div className="filters" style={{ padding: 0, alignItems: "end" }} role="group" aria-label="Pick a scheduled game">
+          <label className="field"><span>Week</span>
+            <select className="ctl" value={week} onChange={(e) => { const w = Number(e.target.value); const games = model.projections.filter((p) => p.week === w && model.byId.has(`FBS:${p.away}`) && model.byId.has(`FBS:${p.home}`)); chooseGame(games[0], { sw: String(w), sc: null }); }}>
+              {model.weeks.map((w) => <option key={w} value={w}>Week {w}{w === model.latest ? " (latest)" : ""}</option>)}
+            </select>
+          </label>
+          <label className="field"><span>Conference</span>
+            <select className="ctl" value={pickConf} onChange={(e) => { const c = e.target.value; const games = weekGames.filter((p) => !c || confAt(p.away, week) === c || confAt(p.home, week) === c); chooseGame(games[0], { sc: c || null }); }}>
+              <option value="">All conferences</option>
+              {confOptions.map((c) => <option key={c} value={c}>{confLabel(c)}</option>)}
+            </select>
+          </label>
+          <label className="field"><span>Game</span>
+            <select className="ctl" style={{ maxWidth: 340 }} value={gameList.find((p) => (p.away === nameOf(aId) && p.home === nameOf(bId)) || (p.away === nameOf(bId) && p.home === nameOf(aId)))?.id ?? ""} onChange={(e) => chooseGame(gameList.find((p) => p.id === e.target.value))}>
+              <option value="" disabled>Custom matchup</option>
+              {gameList.map((p) => <option key={p.id} value={p.id}>{p.away}{p.neutral ? " vs. " : " at "}{p.home}{gameTag(p)} · {dateLabel(p.date)}</option>)}
+            </select>
+          </label>
+          <span className="sub" style={{ margin: "0 0 8px" }}>{gameList.length} game{gameList.length === 1 ? "" : "s"}{skipped ? ` · ${skipped} with an FCS team not simulated` : ""}</span>
+        </div>
+        <p className="sub" style={{ margin: "10px 0 4px" }}>Or pick any two teams:</p>
         <div className="filters" style={{ padding: 0, alignItems: "end" }}>
           <TeamPicker label="Team A" division="FBS" value={aId} exclude={bId ? [bId] : []} onPick={(id) => set({ a: id })} />
           <button type="button" className="btn" onClick={swap} aria-label="Swap teams" title="Swap teams">⇄</button>
