@@ -23,13 +23,30 @@ export function rename<T>(v: T): T {
   return v;
 }
 
+/** One data file, tried up to three times: each try gives up after 15 seconds, and a retry skips the browser's cache in case a bad copy is stuck in it. */
+async function getJson(name: string): Promise<unknown> {
+  let last: unknown;
+  for (let i = 0; i < 3; i++) {
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 15_000);
+    try {
+      const res = await fetch(`/data/${name}.json`, { signal: ctl.signal, ...(i ? { cache: "no-store" as const } : {}) });
+      if (!res.ok) throw new Error(`Could not load ${name} (${res.status})`);
+      return await res.json();
+    } catch (e) {
+      last = e instanceof DOMException && e.name === "AbortError" ? new Error(`Loading ${name} timed out`) : e;
+      if (i < 2) await new Promise((r) => setTimeout(r, 400 * (i + 1)));
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  throw last;
+}
+
 export function fetchData<T>(name: string): Promise<T> {
   let hit = cache.get(name) as Promise<T> | undefined;
   if (!hit) {
-    hit = fetch(`/data/${name}.json`).then(async (res) => {
-      if (!res.ok) throw new Error(`Could not load ${name} (${res.status})`);
-      return rename((await res.json()) as T);
-    });
+    hit = getJson(name).then((j) => rename(j as T));
     hit.catch(() => cache.delete(name));
     cache.set(name, hit);
   }

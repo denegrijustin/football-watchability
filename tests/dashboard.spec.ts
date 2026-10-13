@@ -1030,6 +1030,9 @@ test("@smoke game cards show a full compact overview and concise first expansion
 
 
 test("compact Details button fits and outside click collapses expanded games", async ({ page }) => {
+  // Before the first kickoff, so there are upcoming games whatever day the test runs.
+  await page.clock.install({ time: Math.min(...slate.games.map((g: any) => Date.parse(g.date))) - 3600e3 });
+  await page.route("**/api/scores**", (route) => route.fulfill({ json: [] }));
   await page.goto("/?league=NFL");
   const card = page.locator(".upcoming .game-card").first();
   const button = card.getByRole("button", { name: "Show game details", exact: true });
@@ -1102,16 +1105,35 @@ test("if the board's data never loads, the grey bars give way to a message and a
   await page.route("**/data/slate.json", (route) => route.fulfill({ status: 500, body: "nope" }));
   await page.goto("/?league=NFL");
   await expect(page.locator(".boot")).toBeVisible();
-  await page.clock.fastForward(13_000); // too long: it reloads once by itself
+  // Time runs in seconds with real pauses between, so the three tries at the data (and their failures) happen as they would for a visitor.
+  const run = async (seconds: number) => {
+    for (let i = 0; i < seconds; i++) {
+      await page.clock.fastForward(1000);
+      await page.waitForTimeout(120);
+    }
+  };
+  await run(13); // too long: it reloads once by itself
   await page.waitForLoadState("domcontentloaded");
   await expect(page.locator(".boot")).toBeVisible();
-  await page.clock.fastForward(13_000); // still nothing: it says so
+  await run(13); // still nothing: it says so
   const fail = page.locator(".boot-fail");
   await expect(fail).toBeVisible();
   await expect(fail).toContainText("taking too long");
+  await expect(fail).toContainText("slate"); // and what went wrong, so it can be reported
   await expect(fail.getByRole("button", { name: "Reload" })).toBeVisible();
   // With the data back, Reload brings the board up.
   await page.unroute("**/data/slate.json");
   await fail.getByRole("button", { name: "Reload" }).click();
   await expect(page.locator(".game-card").first()).toBeVisible({ timeout: 15000 });
+});
+
+test("a data file that fails once is tried again, and the board still comes up", async ({ page }) => {
+  let calls = 0;
+  await page.route("**/data/results.json", (route) => {
+    calls++;
+    return calls === 1 ? route.fulfill({ status: 503, body: "busy" }) : route.continue();
+  });
+  await page.goto("/?league=NFL");
+  await expect(page.locator(".game-card").first()).toBeVisible({ timeout: 15000 });
+  expect(calls).toBeGreaterThanOrEqual(2);
 });
