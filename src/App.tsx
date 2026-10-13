@@ -173,8 +173,9 @@ export default function App() {
             <button aria-pressed={view === "board"} onClick={() => switchView("board")}>
               Games<span className="count">{gameCount(league)}</span>
             </button>
-            <button aria-pressed={view === "grid"} onClick={() => switchView("grid")}>
-              TV grid
+            <button aria-label="TV grid" aria-pressed={view === "grid"} onClick={() => switchView("grid")}>
+              <span className="t-long">TV grid</span>
+              <span className="t-short">TV</span>
             </button>
             <button aria-pressed={view === "insanity"} onClick={() => switchView("insanity")}>
               Insanity
@@ -182,14 +183,17 @@ export default function App() {
             <button aria-pressed={view === "outlook"} onClick={() => switchView("outlook")}>
               Outlook
             </button>
-            <button aria-pressed={view === "empire"} onClick={() => switchView("empire")} title="Imperialism Map: territory changes hands as teams win">
-              Empire
+            <button aria-label="Empire" aria-pressed={view === "empire"} onClick={() => switchView("empire")} title="Imperialism Map: territory changes hands as teams win">
+              <span className="t-long">Empire</span>
+              <span className="t-short">War</span>
             </button>
             <button aria-label="CFB SP+" aria-pressed={view === "spplus"} onClick={() => switchView("spplus")} title="CFB SP+: ratings, a matchup simulator and an against-the-spread tracker for college football">
-              <span className="tab-cfb">CFB </span>SP+
+              <span className="t-long">CFB SP+</span>
+              <span className="t-short">SP+</span>
             </button>
             <button aria-label="NFL Ratings" aria-pressed={view === "nfl"} onClick={() => switchView("nfl")} title="NFL Ratings: EPA-based team ratings, a matchup simulator and an against-the-spread tracker, from nflverse">
-              NFL<span className="tab-cfb"> Ratings</span>
+              <span className="t-long">NFL Ratings</span>
+              <span className="t-short">NFL+</span>
             </button>
           </div>
           <div className="export-btns">
