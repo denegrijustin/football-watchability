@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { logos, results, slate } from "../data";
 import { useLiveMap } from "../live";
 import { useOpenGame } from "./GameCenterContext";
+import { useTz, ZONES } from "../tz";
 import { upsetBy } from "../upset";
 
 type Item = {
@@ -9,10 +10,11 @@ type Item = {
   league: string;
   when: number;
   detail: string;
+  state: "pre" | "in" | "post";
   teams: { abbr: string; name: string; logoId: string; score: number; fpi: number | null; of: number | null }[];
 };
 
-const MAX_ITEMS = 40;
+
 
 /** ESPN's FPI rank (the overall rank on every card) and how many teams it ranks. */
 const fpiOf = (t: unknown) => {
@@ -26,32 +28,33 @@ const fpiOf = (t: unknown) => {
  */
 function useFinals(): Item[] {
   const live = useLiveMap();
+  const tz = useTz();
   return useMemo(() => {
-    const archived = new Set(results.map((r) => r.espnId));
-    const fromResults: Item[] = results.map((r) => ({
+    const fromResults: Item[] = results.filter(r => r.week === slate.period).map((r) => ({
       espnId: r.espnId,
       league: r.league,
       when: Date.parse(r.date),
       detail: r.final.overtime ? "Final/OT" : "Final",
+      state: "post",
       teams: r.teams.map((t) => ({ abbr: t.abbr, name: t.name, logoId: t.logoId, score: t.score, ...fpiOf(t) })),
     }));
     const fromLive: Item[] = slate.games
-      .filter((g) => g.espnId && !archived.has(g.espnId) && live[g.espnId]?.state === "post")
+      .filter((g) => g.espnId && !results.some(r => r.espnId === g.espnId && r.week === slate.period))
       .map((g) => {
-        const l = live[g.espnId]!;
+        const l = live[g.espnId];
         return {
           espnId: g.espnId,
           league: g.league,
           when: Date.parse((g as { date?: string }).date ?? ""),
-          detail: /ot/i.test(l.detail) ? "Final/OT" : "Final",
-          teams: g.teams.map((t, i) => ({ abbr: (t as { abbr?: string }).abbr ?? t.name, name: t.name, logoId: t.logoId, score: i === 0 ? l.away : l.home, ...fpiOf(t) })),
+          state: l?.state ?? "pre",
+          detail: l?.state === "post" ? (/ot/i.test(l.detail) ? "Final/OT" : "Final") : l?.state === "in" ? `LIVE ${l.detail}` : `${new Date(g.date).toLocaleString("en-US", { timeZone: tz, weekday: "short", hour: "numeric", minute: "2-digit" })} ${ZONES.find(z=>z.id===tz)?.abbr ?? ""}`,
+          teams: g.teams.map((t, i) => ({ abbr: (t as { abbr?: string }).abbr ?? t.name, name: t.name, logoId: t.logoId, score: i === 0 ? l?.away ?? 0 : l?.home ?? 0, ...fpiOf(t) })),
         };
       });
     return [...fromLive, ...fromResults]
       .filter((i) => i.teams.length === 2)
-      .sort((a, b) => (b.when || 0) - (a.when || 0))
-      .slice(0, MAX_ITEMS);
-  }, [live]);
+      .sort((a, b) => ({in:0, pre:1, post:2}[a.state] - {in:0, pre:1, post:2}[b.state]) || (a.when || 0) - (b.when || 0));
+  }, [live, tz]);
 }
 
 const ranksSpoken = (item: Item) =>
@@ -68,16 +71,17 @@ export function upsetOf(item: Pick<Item, "teams">) {
 function Score({ item, hidden }: { item: Item; hidden?: boolean }) {
   const openGame = useOpenGame();
   const [away, home] = item.teams;
-  const winner = away.score === home.score ? -1 : away.score > home.score ? 0 : 1;
-  const upset = upsetOf(item);
+  const winner = item.state === "pre" || away.score === home.score ? -1 : away.score > home.score ? 0 : 1;
+  const upset = item.state === "post" ? upsetOf(item) : null;
   return (
     <li aria-hidden={hidden || undefined} className={hidden ? "ticker-dup" : undefined}>
       <button
         type="button"
+        data-event-id={item.espnId}
         className={`ticker-item${upset ? " upset" : ""}`}
         tabIndex={hidden ? -1 : undefined}
         onClick={() => openGame(item.espnId)}
-        aria-label={`${away.name} ${away.score}, ${home.name} ${home.score}, ${item.detail.toLowerCase()}.${ranksSpoken(item)}${upset ? ` Upset: ${item.teams[upset.winner].name}, ranked ${upset.gap} places lower, beat ${item.teams[1 - upset.winner].name}.` : ""} Open the postgame summary.`}
+        aria-label={`${away.name}${item.state === "pre" ? "" : ` ${away.score}`}, ${home.name}${item.state === "pre" ? "" : ` ${home.score}`}, ${item.detail.toLowerCase()}.${ranksSpoken(item)}${upset ? ` Upset: ${item.teams[upset.winner].name}, ranked ${upset.gap} places lower, beat ${item.teams[1 - upset.winner].name}.` : ""} Open Game Center.`}
       >
         <span className="ticker-league">{item.league}</span>
         {item.teams.map((t, i) => (
@@ -91,7 +95,7 @@ function Score({ item, hidden }: { item: Item; hidden?: boolean }) {
               </small>
             )}
             <img src={logos[t.logoId]} alt="" width="18" height="18" loading="eager" decoding="async" />
-            <b>{t.score}</b>
+            <b>{item.state === "pre" ? t.abbr : t.score}</b>
           </span>
         ))}
         <span className="ticker-final">{upset ? `Upset ${item.detail.toLowerCase()}` : item.detail}</span>
@@ -110,8 +114,8 @@ export function ScoreTicker() {
   const [paused, setPaused] = useState(false);
   if (!items.length) return null;
   return (
-    <section className={`ticker${paused ? " paused" : ""}`} aria-label="Final scores">
-      <span className="ticker-title">FINALS</span>
+    <section className={`ticker${paused ? " paused" : ""}`} aria-label="Current week games">
+      <span className="ticker-title">THIS WEEK</span>
       <div className="ticker-viewport">
         <ul className="ticker-track" style={{ ["--ticker-dur" as string]: `${items.length * 5}s` }}>
           {items.map((i) => (
