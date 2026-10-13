@@ -10,6 +10,7 @@ import { AdvancedStats, type Advanced } from "./AdvancedStats";
 import { PregameWinProb, type WinProbData } from "./PregameWinProb";
 import { ProjectedScore, type Projection } from "./ProjectedScore";
 import { SpPlusProjection } from "./SpPlusProjection";
+import { NflProjectionBlock, NflSettingPanel } from "./NflGameInfo";
 import { InsanityMeter } from "./InsanityMeter";
 import { Headshot } from "./Headshot";
 import { GameDetails } from "./GameDetails";
@@ -277,6 +278,15 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
                   }}
                 />
               )}
+              {league === "NFL" && (
+                <NflProjectionBlock
+                  espnId={espnId}
+                  onOpen={() => {
+                    onClose();
+                    window.dispatchEvent(new CustomEvent("fbwatch:open-view", { detail: "nfl" }));
+                  }}
+                />
+              )}
               {proj && (
                 <div className="gc-proj">
                   <div>
@@ -310,6 +320,8 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
               {proj?.parts && <ProjectedScore p={proj} away={abbr(away)} home={abbr(home)} listOnly />}
               {wpData && <PregameWinProb wp={wpData} away={abbr(away)} home={abbr(home)} />}
             </section>
+
+            {league === "NFL" && <NflSettingPanel espnId={espnId} />}
 
             {game && game.wp.length > 8 ? (
               <section className="gc-panel">

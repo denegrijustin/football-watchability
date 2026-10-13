@@ -14,6 +14,7 @@ const Outlook = lazyView(() => import("./components/Outlook").then((m) => ({ def
 const InsanityBoard = lazyView(() => import("./components/InsanityBoard").then((m) => ({ default: m.InsanityBoard })), "InsanityBoard");
 const TvGrid = lazyView(() => import("./components/TvGrid").then((m) => ({ default: m.TvGrid })), "TvGrid");
 const SpPlusTab = lazyView(() => import("./spplus/SpPlusTab"), "SpPlusTab");
+const NflTab = lazyView(() => import("./nfl/NflTab"), "NflTab");
 import { setTz, tzLabel, useTz, ZONES } from "./tz";
 
 const gameCount = (l: League) => slate.games.filter((g) => g.league === l).length + results.filter((r) => r.league === l).length;
@@ -187,6 +188,9 @@ export default function App() {
             <button aria-label="CFB SP+" aria-pressed={view === "spplus"} onClick={() => switchView("spplus")} title="CFB SP+: ratings, a matchup simulator and an against-the-spread tracker for college football">
               <span className="tab-cfb">CFB </span>SP+
             </button>
+            <button aria-label="NFL Ratings" aria-pressed={view === "nfl"} onClick={() => switchView("nfl")} title="NFL Ratings: EPA-based team ratings, a matchup simulator and an against-the-spread tracker, from nflverse">
+              NFL<span className="tab-cfb"> Ratings</span>
+            </button>
           </div>
           <div className="export-btns">
             <details className="export">
@@ -213,6 +217,8 @@ export default function App() {
                   <Outlook defaultLeague={league} />
                 ) : view === "spplus" ? (
                   <SpPlusTab />
+                ) : view === "nfl" ? (
+                  <NflTab />
                 ) : view === "insanity" ? (
                   <InsanityBoard defaultLeague={league === "CFB" ? "CFB" : "NFL"} />
                 ) : (

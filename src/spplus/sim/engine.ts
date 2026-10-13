@@ -116,10 +116,16 @@ export function drawGame(p: SimParams, e: Expectation, rng: { normal: () => numb
 }
 
 export function simulate(p: SimParams, a: TeamRatings, b: TeamRatings, venue: Venue, opts: SimOptions = {}): SimResult {
+  return simulateExpectation(p, expectation(p, a, b, venue), venue, opts.seed ?? hashSeed(`${a.name}|${b.name}|${venue}`), opts);
+}
+
+/**
+ * Plays a game from any expected margin and total (A minus B): the SP+ formula above, or something else entirely, such as a betting
+ * line. Only `sigmaMargin`, `sigmaTotal` and `rho` of the params are used.
+ */
+export function simulateExpectation(p: SimParams, e: Expectation, venue: Venue, seed: number, opts: SimOptions = {}): SimResult {
   const n = Math.max(1, Math.floor(opts.n ?? 10000));
-  const seed = opts.seed ?? hashSeed(`${a.name}|${b.name}|${venue}`);
   const rng = makeRng(seed);
-  const e = expectation(p, a, b, venue);
   const A = new Int16Array(n), B = new Int16Array(n);
   const marginCounts = new Map<number, number>();
   const scoreCounts = new Map<string, number>();

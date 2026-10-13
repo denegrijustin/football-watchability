@@ -84,9 +84,9 @@ export function atsGames(model: Model): AtsGame[] {
 
 export interface WeekLine { week: number; label: string; rec: AtsRecord; cumulative: AtsRecord; avgCoverBy: number | null }
 
-export function weeklyTracker(games: AtsGame[], weeks: number[]): WeekLine[] {
+export function weeklyTracker<T extends { week: number; result: AtsResult; coverBy: number }>(games: T[], weeks: number[]): WeekLine[] {
   const out: WeekLine[] = [];
-  const running: AtsGame[] = [];
+  const running: T[] = [];
   for (const w of weeks) {
     const g = games.filter((x) => x.week === w);
     if (!g.length) continue;
@@ -99,4 +99,4 @@ export function weeklyTracker(games: AtsGame[], weeks: number[]): WeekLine[] {
 export const EDGE_BUCKETS: { lo: number; hi: number; label: string }[] = [
   { lo: 0, hi: 2, label: "Under 2" }, { lo: 2, hi: 4, label: "2 to 4" }, { lo: 4, hi: 7, label: "4 to 7" }, { lo: 7, hi: Infinity, label: "7 or more" },
 ];
-export const byEdge = (games: AtsGame[]) => EDGE_BUCKETS.map((b) => ({ ...b, rec: tally(games.filter((g) => g.edge != null && g.edge >= b.lo && g.edge < b.hi)) }));
+export const byEdge = <T extends { edge: number | null; result: AtsResult }>(games: T[], buckets: { lo: number; hi: number; label: string }[] = EDGE_BUCKETS) => buckets.map((b) => ({ ...b, rec: tally(games.filter((g) => g.edge != null && g.edge >= b.lo && g.edge < b.hi)) }));

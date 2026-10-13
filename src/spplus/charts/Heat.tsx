@@ -52,7 +52,7 @@ export function HeatScale() {
       <span>Lower</span>
       <span style={{ width: 120, height: 10, borderRadius: 3, background: `linear-gradient(90deg, ${heatColor(0)}, ${heatColor(50)}, ${heatColor(100)})` }} />
       <span>Higher percentile</span>
-      <span><i style={{ background: "transparent", border: `1px dashed ${C.muted}` }} />Not in the sheet</span>
+      <span><i style={{ background: "transparent", border: `1px dashed ${C.muted}` }} />No data</span>
     </div>
   );
 }
