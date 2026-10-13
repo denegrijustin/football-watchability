@@ -1137,3 +1137,29 @@ test("a data file that fails once is tried again, and the board still comes up",
   await expect(page.locator(".game-card").first()).toBeVisible({ timeout: 15000 });
   expect(calls).toBeGreaterThanOrEqual(2);
 });
+
+test("a tab whose file is gone after an update reloads the page once and then opens", async ({ page }) => {
+  let block = false;
+  await page.route("**/assets/c-*.js", (route) => (block ? route.abort() : route.continue()));
+  await page.goto("/?league=NFL");
+  await expect(page.locator(".game-card").first()).toBeVisible();
+  block = true; // the site was updated: the files this page knows about are no longer there
+  page.once("framenavigated", () => (block = false)); // the reload fetches the new ones
+  await page.getByRole("button", { name: /^Insanity/ }).click();
+  await expect(page.locator(".ib")).toBeVisible({ timeout: 20000 });
+});
+
+test("a tab that fails twice shows what went wrong and a way to reload", async ({ page }) => {
+  await page.route("**/assets/c-*.js", async (route) => route.continue());
+  await page.goto("/?league=NFL");
+  await expect(page.locator(".game-card").first()).toBeVisible();
+  await page.evaluate(() => {
+    sessionStorage.setItem("fbwatch-view-reload-Outlook", "1"); // it has already reloaded once
+    sessionStorage.setItem("fbwatch-gc-reload", "1");
+  });
+  await page.route("**/assets/c-*.js", (route) => route.abort());
+  await page.getByRole("button", { name: /^Outlook/ }).click();
+  const note = page.getByRole("alert").filter({ hasText: "could not load" });
+  await expect(note).toBeVisible({ timeout: 10000 });
+  await expect(note.getByRole("button", { name: "Reload the page" })).toBeVisible();
+});
