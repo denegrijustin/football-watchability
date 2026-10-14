@@ -2809,6 +2809,21 @@ details.proj summary strong {
   content: "▾";
   font-size: 11px;
 }
+/* On phones the Save image button sits at the right edge of the toolbar, so a menu anchored to the button's
+   left edge ran off the screen. Anchor it to the toolbar instead so it always spans the visible width. */
+@media (max-width: 760px) {
+  .tv-toolbar {
+    position: relative;
+  }
+  .export-jpg-menu {
+    position: static;
+  }
+  .export-jpg-menu > .export-menu {
+    left: 0;
+    right: 0;
+    width: auto;
+  }
+}
 
 .tv-conf select {
   min-height: 42px;
