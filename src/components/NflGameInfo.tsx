@@ -62,7 +62,7 @@ export function NflProjectionBlock({ espnId, onOpen }: { espnId: string | null; 
             onOpen();
           }}
         >
-          Open in NFL Ratings <span aria-hidden="true">→</span>
+          Open in NFL+ <span aria-hidden="true">→</span>
         </button>
       </div>
       <div className="gc-spp-score" aria-label={`Simulation: ${g.away} ${one(p.sim.meanA)}, ${g.home} ${one(p.sim.meanB)}`}>

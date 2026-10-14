@@ -3,6 +3,9 @@ import type { Snapshot } from "./snapshotTypes";
 import { buildModel } from "./model";
 import type { Model } from "./types";
 import { fetchData } from "../../data/load";
+import { useFinals } from "../../finals";
+import { liveResults } from "./finals";
+import type { SpLite } from "../lite";
 
 interface Ctx {
   snapshot: Snapshot | null;
@@ -32,7 +35,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, [attempt]);
 
   const retry = useCallback(() => setAttempt((n) => n + 1), []);
-  const model = useMemo(() => (snapshot ? buildModel(snapshot) : null), [snapshot]);
+  const sheetModel = useMemo(() => (snapshot ? buildModel(snapshot) : null), [snapshot]);
+  // Games that have ended since the sheet was last updated: ESPN's finals, graded in the ATS tracker as soon as they land.
+  const { finals } = useFinals();
+  const [espn, setEspn] = useState<Record<string, string>>({});
+  useEffect(() => {
+    let live = true;
+    fetchData<SpLite>("spplus-lite").then((l) => live && setEspn(l.espn ?? {}), () => {});
+    return () => { live = false; };
+  }, []);
+  const model = useMemo(() => {
+    if (!sheetModel) return null;
+    const extra = liveResults(sheetModel, finals, espn);
+    return extra.length ? { ...sheetModel, liveResults: extra } : sheetModel;
+  }, [sheetModel, finals, espn]);
   const value = useMemo(() => ({ snapshot, model, loadError, retry }), [snapshot, model, loadError, retry]);
   return <DataCtx.Provider value={value}>{children}</DataCtx.Provider>;
 }

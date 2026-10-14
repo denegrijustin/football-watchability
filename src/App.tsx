@@ -191,8 +191,8 @@ export default function App() {
               <span className="t-long">CFB SP+</span>
               <span className="t-short">SP+</span>
             </button>
-            <button aria-label="NFL Ratings" aria-pressed={view === "nfl"} onClick={() => switchView("nfl")} title="NFL Ratings: EPA-based team ratings, a matchup simulator and an against-the-spread tracker, from nflverse">
-              <span className="t-long">NFL Ratings</span>
+            <button aria-label="NFL+" aria-pressed={view === "nfl"} onClick={() => switchView("nfl")} title="NFL+: EPA-based team ratings, a matchup simulator and an against-the-spread tracker, from nflverse">
+              <span className="t-long">NFL+</span>
               <span className="t-short">NFL+</span>
             </button>
           </div>

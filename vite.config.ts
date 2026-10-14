@@ -8,7 +8,7 @@ import { buildLite } from "./src/spplus/liteBuild";
 
 // The board's data files are fetched at run time (/data/<name>.json) instead of being compiled into the
 // JavaScript, so a refresh changes only these small, revalidated files and the scripts stay cached.
-const DATA = ["slate", "results", "matchup-stats", "broadcast-checks", "season", "imperialism", "outlook", "spplus", "nfl"];
+const DATA = ["slate", "results", "matchup-stats", "broadcast-checks", "season", "imperialism", "outlook", "spplus", "nfl", "finals"];
 const dataFile = (name: string) => new URL(`./src/data/${name}.json`, import.meta.url);
 const minified = (name: string) => JSON.stringify(JSON.parse(readFileSync(dataFile(name), "utf8")));
 

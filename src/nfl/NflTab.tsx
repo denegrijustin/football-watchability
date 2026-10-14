@@ -4,7 +4,7 @@ import { NflProvider } from "./useNfl";
 import { NflApp } from "./NflApp";
 import css from "../spplus/spplus.css?inline";
 
-/** The NFL Ratings tab. Like the CFB SP+ tab it renders in a shadow root, and it shares that tab's stylesheet and chart components. */
+/** The NFL+ tab. Like the CFB SP+ tab it renders in a shadow root, and it shares that tab's stylesheet and chart components. */
 export default function NflTab() {
   const host = useRef<HTMLDivElement>(null);
   useEffect(() => {
