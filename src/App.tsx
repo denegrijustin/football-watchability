@@ -1,4 +1,4 @@
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { lazyView } from "./lazyView";
 import { useUpdateCheck } from "./useUpdateCheck";
 import { dayName, results, slate, tiers, type FilterState, type League, type View } from "./data";
@@ -13,6 +13,8 @@ const ImperialismMap = lazyView(() => import("./components/ImperialismMap").then
 const Outlook = lazyView(() => import("./components/Outlook").then((m) => ({ default: m.Outlook })), "Outlook");
 const InsanityBoard = lazyView(() => import("./components/InsanityBoard").then((m) => ({ default: m.InsanityBoard })), "InsanityBoard");
 const TvGrid = lazyView(() => import("./components/TvGrid").then((m) => ({ default: m.TvGrid })), "TvGrid");
+const SpPlusTab = lazyView(() => import("./spplus/SpPlusTab"), "SpPlusTab");
+const NflTab = lazyView(() => import("./nfl/NflTab"), "NflTab");
 import { setTz, tzLabel, useTz, ZONES } from "./tz";
 
 const gameCount = (l: League) => slate.games.filter((g) => g.league === l).length + results.filter((r) => r.league === l).length;
@@ -44,6 +46,15 @@ export default function App() {
     return "board";
   });
   const update = (patch: Partial<FilterState>) => setFilters((f) => ({ ...f, ...patch }));
+  // Other parts of the page (the Game Center) can send the reader to a tab.
+  useEffect(() => {
+    const open = (e: Event) => {
+      const v = (e as CustomEvent<View>).detail;
+      if (v) switchView(v);
+    };
+    window.addEventListener("fbwatch:open-view", open);
+    return () => window.removeEventListener("fbwatch:open-view", open);
+  });
   const { league } = filters;
   const board = useBoard(filters);
   const switchView = (v: View) => {
@@ -162,8 +173,9 @@ export default function App() {
             <button aria-pressed={view === "board"} onClick={() => switchView("board")}>
               Games<span className="count">{gameCount(league)}</span>
             </button>
-            <button aria-pressed={view === "grid"} onClick={() => switchView("grid")}>
-              TV grid
+            <button aria-label="TV grid" aria-pressed={view === "grid"} onClick={() => switchView("grid")}>
+              <span className="t-long">TV grid</span>
+              <span className="t-short">TV</span>
             </button>
             <button aria-pressed={view === "insanity"} onClick={() => switchView("insanity")}>
               Insanity
@@ -171,8 +183,17 @@ export default function App() {
             <button aria-pressed={view === "outlook"} onClick={() => switchView("outlook")}>
               Outlook
             </button>
-            <button aria-pressed={view === "empire"} onClick={() => switchView("empire")} title="Imperialism Map: territory changes hands as teams win">
-              Empire
+            <button aria-label="Empire" aria-pressed={view === "empire"} onClick={() => switchView("empire")} title="Imperialism Map: territory changes hands as teams win">
+              <span className="t-long">Empire</span>
+              <span className="t-short">War</span>
+            </button>
+            <button aria-label="CFB SP+" aria-pressed={view === "spplus"} onClick={() => switchView("spplus")} title="CFB SP+: ratings, a matchup simulator and an against-the-spread tracker for college football">
+              <span className="t-long">CFB SP+</span>
+              <span className="t-short">SP+</span>
+            </button>
+            <button aria-label="NFL Ratings" aria-pressed={view === "nfl"} onClick={() => switchView("nfl")} title="NFL Ratings: EPA-based team ratings, a matchup simulator and an against-the-spread tracker, from nflverse">
+              <span className="t-long">NFL Ratings</span>
+              <span className="t-short">NFL+</span>
             </button>
           </div>
           <div className="export-btns">
@@ -198,6 +219,10 @@ export default function App() {
                   <ImperialismMap defaultLeague={league} />
                 ) : view === "outlook" ? (
                   <Outlook defaultLeague={league} />
+                ) : view === "spplus" ? (
+                  <SpPlusTab />
+                ) : view === "nfl" ? (
+                  <NflTab />
                 ) : view === "insanity" ? (
                   <InsanityBoard defaultLeague={league === "CFB" ? "CFB" : "NFL"} />
                 ) : (

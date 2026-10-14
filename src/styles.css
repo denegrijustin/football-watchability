@@ -3053,6 +3053,45 @@ details.proj summary strong {
   display: grid;
   gap: 2px;
 }
+.gc-spp {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+  border-radius: 10px;
+}
+.gc-spp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.gc-spp-open {
+  background: none;
+  border: 0;
+  padding: 6px 2px;
+  min-height: 32px;
+  color: var(--accent, #6da7ec);
+  font: inherit;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+.gc-spp-score {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  margin: 2px 0 6px;
+  font-size: 15px;
+}
+.gc-spp-score strong {
+  font-size: 26px;
+  font-variant-numeric: tabular-nums;
+}
+.gc-spp-sub {
+  margin: 0 0 2px;
+  font-size: 12.5px;
+  color: var(--text-2, var(--muted));
+}
 .gc-k {
   font-size: 11.5px;
   color: var(--muted);
@@ -7118,4 +7157,31 @@ select,
 .board-section .result-card.compact {
   content-visibility: auto;
   contain-intrinsic-size: auto 330px;
+}
+
+/* Seven tabs. On phones and small tablets the long labels give way to short ones (TV grid -> TV, Empire -> War, CFB SP+ -> SP+, NFL Ratings -> NFL+)
+   and the type gets smaller; every button keeps its full accessible name. */
+.view-switch .t-short {
+  display: none;
+}
+@media (max-width: 640px) {
+  .view-switch .t-long {
+    display: none;
+  }
+  .view-switch .t-short {
+    display: inline;
+  }
+  .view-switch button {
+    font-size: 11px;
+    padding: 0 5px;
+  }
+  .view-switch .count {
+    display: none;
+  }
+}
+@media (max-width: 380px) {
+  .view-switch button {
+    font-size: 10.5px;
+    padding: 0 3px;
+  }
 }
