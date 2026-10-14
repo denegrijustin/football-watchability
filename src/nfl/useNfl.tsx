@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { fetchData } from "../data/load";
+import { useFinals } from "../finals";
+import { withNflFinals } from "./finals";
 import type { NflData } from "./types";
 
 interface Ctx { data: NflData | null; error: string | null; retry: () => void }
@@ -20,6 +22,9 @@ export function NflProvider({ children }: { children: ReactNode }) {
     fetchData<NflData>("nfl").then((d) => live && setData(d), (e: Error) => live && setError(e.message));
     return () => { live = false; };
   }, [n]);
-  const value = useMemo(() => ({ data, error, retry: () => setN((x) => x + 1) }), [data, error]);
+  // Games that have ended since nflverse last published: ESPN's finals fill in the score, so the ATS tracker grades them at once.
+  const { finals } = useFinals();
+  const withFinals = useMemo(() => (data ? withNflFinals(data, finals) : null), [data, finals]);
+  const value = useMemo(() => ({ data: withFinals, error, retry: () => setN((x) => x + 1) }), [withFinals, error]);
   return <C.Provider value={value}>{children}</C.Provider>;
 }

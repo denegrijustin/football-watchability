@@ -120,6 +120,8 @@ export interface Model {
   projections: Projection[];
   smallGames: SmallGame[];
   results: GameResult[];
+  /** Finals from ESPN for games the sheet has not recorded yet (the ATS tracker grades with these too). Absent until they load. */
+  liveResults?: GameResult[];
   season: SeasonLine[];
   perf: PerfRow[];
   /** Conference lists per division from the latest week. */

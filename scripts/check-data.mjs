@@ -4,7 +4,7 @@
 import { existsSync, readFileSync } from "node:fs";
 
 const root = new URL("../", import.meta.url);
-const NAMES = ["slate", "results", "matchup-stats", "broadcast-checks", "season", "imperialism", "outlook", "spplus", "nfl"];
+const NAMES = ["slate", "results", "matchup-stats", "broadcast-checks", "season", "imperialism", "outlook", "spplus", "nfl", "finals"];
 const problems = [];
 const warn = (m) => console.log(`::warning title=Data check::${m}`);
 const data = {};
@@ -41,6 +41,8 @@ if (data.spplus && days(data.spplus.fetchedAt) > 21) warn(`SP+ sheet data was re
 if (data.nfl && (!Array.isArray(data.nfl.games) || data.nfl.games.length < 200 || Object.keys(data.nfl.teams ?? {}).length !== 32)) problems.push("nfl has no full schedule and 32 teams");
 if (data.nfl && days(data.nfl.updatedAt) > 10) warn(`NFL data (nflverse) was built ${Math.round(days(data.nfl.updatedAt))} days ago`);
 if (existsSync(new URL("dist/", root)) && !existsSync(new URL("dist/data/spplus-lite.json", root))) problems.push("dist/data/spplus-lite.json was not built");
+if (data.finals && (!Array.isArray(data.finals.games) || data.finals.games.some((g) => !g.id || !g.a || !g.h || !Number.isFinite(g.a.s) || !Number.isFinite(g.h.s)))) problems.push("finals has a game without an id, teams or scores");
+if (data.finals && days(data.finals.updated) > 4) warn(`finals (ESPN) were built ${Math.round(days(data.finals.updated))} days ago`);
 if (data.imperialism && !data.imperialism.leagues && !data.imperialism.counties) problems.push("imperialism snapshot has no leagues or counties");
 for (const league of ["cfb", "nfl"]) {
   const built = data.outlook?.[league]?.built;
