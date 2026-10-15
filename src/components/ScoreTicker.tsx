@@ -4,6 +4,7 @@ import { useLiveMap } from "../live";
 import { useOpenGame } from "./GameCenterContext";
 import { useTz, ZONES } from "../tz";
 import { upsetBy } from "../upset";
+import { plusRankFor, plusRankTitle, usePlusRanks } from "../plusRanks";
 
 type Item = {
   espnId: string;
@@ -11,16 +12,11 @@ type Item = {
   when: number;
   detail: string;
   state: "pre" | "in" | "post";
-  teams: { abbr: string; name: string; logoId: string; score: number; fpi: number | null; of: number | null }[];
+  teams: { abbr: string; name: string; logoId: string; espnId?: string | null; score: number; rank?: number | null; of?: number | null; kind?: string }[];
 };
 
 
 
-/** ESPN's FPI rank (the overall rank on every card) and how many teams it ranks. */
-const fpiOf = (t: unknown) => {
-  const r = (t as { ranks?: { overall?: number | null; overallOf?: number | null } }).ranks;
-  return { fpi: r?.overall ?? null, of: r?.overallOf ?? null };
-};
 
 /**
  * Completed games: the archived finals plus any game the live feed has already marked final but the hourly rebuild hasn't
@@ -29,6 +25,7 @@ const fpiOf = (t: unknown) => {
 function useFinals(): Item[] {
   const live = useLiveMap();
   const tz = useTz();
+  const plus = usePlusRanks();
   return useMemo(() => {
     const fromResults: Item[] = results.filter(r => r.week === slate.period).map((r) => ({
       espnId: r.espnId,
@@ -36,7 +33,7 @@ function useFinals(): Item[] {
       when: Date.parse(r.date),
       detail: r.final.overtime ? "Final/OT" : "Final",
       state: "post",
-      teams: r.teams.map((t) => ({ abbr: t.abbr, name: t.name, logoId: t.logoId, score: t.score, ...fpiOf(t) })),
+      teams: r.teams.map((t) => ({ abbr: t.abbr, name: t.name, logoId: t.logoId, score: t.score })),
     }));
     const fromLive: Item[] = slate.games
       .filter((g) => g.espnId && !results.some(r => r.espnId === g.espnId && r.week === slate.period))
@@ -48,24 +45,26 @@ function useFinals(): Item[] {
           when: Date.parse((g as { date?: string }).date ?? ""),
           state: l?.state ?? "pre",
           detail: l?.state === "post" ? (/ot/i.test(l.detail) ? "Final/OT" : "Final") : l?.state === "in" ? `LIVE ${l.detail}` : `${new Date(g.date).toLocaleString("en-US", { timeZone: tz, weekday: "short", hour: "numeric", minute: "2-digit" })} ${ZONES.find(z=>z.id===tz)?.abbr ?? ""}`,
-          teams: g.teams.map((t, i) => ({ abbr: (t as { abbr?: string }).abbr ?? t.name, name: t.name, logoId: t.logoId, score: i === 0 ? l?.away ?? 0 : l?.home ?? 0, ...fpiOf(t) })),
+          teams: g.teams.map((t, i) => ({ abbr: (t as { abbr?: string }).abbr ?? t.name, name: t.name, logoId: t.logoId, score: i === 0 ? l?.away ?? 0 : l?.home ?? 0 })),
         };
       });
-    return [...fromLive, ...fromResults]
+    // Each team's national SP+ (college) or NFL+ (NFL) rank, the same rankings as the two ratings tabs.
+    const ranked = (i: Item): Item => ({ ...i, teams: i.teams.map((t) => { const r = plusRankFor(plus, i.league, t); return r ? { ...t, rank: r.n, of: r.of, kind: r.kind } : t; }) });
+    return [...fromLive, ...fromResults].map(ranked)
       .filter((i) => i.teams.length === 2)
       .sort((a, b) => ({in:0, pre:1, post:2}[a.state] - {in:0, pre:1, post:2}[b.state]) || (a.when || 0) - (b.when || 0));
-  }, [live, tz]);
+  }, [live, tz, plus]);
 }
 
 const ranksSpoken = (item: Item) =>
-  item.teams.every((t) => t.fpi != null)
-    ? ` FPI rank: ${item.teams.map((t) => `${t.name} ${t.fpi}`).join(", ")}${item.league === "NFL" ? "; the same as the power rank" : ""}.`
+  item.teams.every((t) => t.rank != null)
+    ? ` National ratings rank: ${item.teams.map((t) => `${t.name} ${t.rank}`).join(", ")}.`
     : "";
 
 /** One score: both teams, the final, and a button that opens the Game Center postgame summary. */
-/** An upset final: the team ranked lower by FPI (a bigger number) beat the higher-ranked one. */
+/** An upset final: the team ranked lower by SP+ (college) or NFL+ (NFL), a bigger number, beat the higher-ranked one. */
 export function upsetOf(item: Pick<Item, "teams">) {
-  return upsetBy(item.teams.map((t) => t.fpi), [item.teams[0].score, item.teams[1].score]);
+  return upsetBy(item.teams.map((t) => t.rank), [item.teams[0].score, item.teams[1].score]);
 }
 
 function Score({ item, hidden }: { item: Item; hidden?: boolean }) {
@@ -86,12 +85,9 @@ function Score({ item, hidden }: { item: Item; hidden?: boolean }) {
         <span className="ticker-league">{item.league}</span>
         {item.teams.map((t, i) => (
           <span key={i} className={`ticker-team${winner === i ? " won" : winner === -1 ? "" : " lost"}`}>
-            {t.fpi != null && (
-              <small
-                className="ticker-rank"
-                title={`ESPN FPI rank ${t.fpi}${t.of ? ` of ${t.of}` : ""}${item.league === "NFL" ? " (also the NFL power rank)" : ""}`}
-              >
-                #{t.fpi}
+            {t.rank != null && (
+              <small className="ticker-rank" title={plusRankTitle({ n: t.rank, of: t.of ?? 0, kind: t.kind as "SP+" | "NFL+" })}>
+                #{t.rank}
               </small>
             )}
             <img src={logos[t.logoId]} alt="" width="18" height="18" loading="eager" decoding="async" />

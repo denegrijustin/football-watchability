@@ -29,7 +29,8 @@ import { gameBadge } from "../gameLogo";
 import { upsetBy } from "../upset";
 import { UpsetBanner } from "./UpsetBanner";
 import { isHalftime } from "../halftimeLogic";
-import { FpiRank } from "./FpiRank";
+import { PlusRank } from "./PlusRank";
+import { plusRankFor, usePlusRanks, type TeamRef } from "../plusRanks";
 
 const impactLevel = (impact: string) =>
   impact.replace(/\s*impact$/i, "").toLowerCase();
@@ -94,8 +95,9 @@ export function GameCard({
     </button>
   );
   const badge = gameBadge(game as { meta?: string; event?: string | null; teams: { logoId?: string }[] });
-  // An upset alert while the game is on: the team FPI ranks lower is ahead. It becomes an upset final if it holds.
-  const fpis = game.teams.map((t) => (t as { ranks?: { overall?: number | null } }).ranks?.overall);
+  // An upset alert while the game is on: the team the SP+ (college) or NFL+ (NFL) ranking puts lower is ahead. It becomes an upset final if it holds.
+  const plus = usePlusRanks();
+  const fpis = game.teams.map((t) => plusRankFor(plus, game.league, t as TeamRef)?.n);
   const upsetNow = live && live.state !== "pre" ? upsetBy(fpis, [live.away, live.home]) : null;
   const upset: "alert" | "final" | null = upsetNow ? (live!.state === "post" ? "final" : "alert") : null;
   const abbrOf = (t: unknown) => (t as { abbr?: string; name: string }).abbr ?? (t as { name: string }).name;
@@ -103,8 +105,8 @@ export function GameCard({
     upset && upsetNow ? (
       <UpsetBanner
         kind={upset}
-        winner={{ abbr: abbrOf(game.teams[upsetNow.winner]), fpi: fpis[upsetNow.winner]! }}
-        loser={{ abbr: abbrOf(game.teams[1 - upsetNow.winner]), fpi: fpis[1 - upsetNow.winner]! }}
+        winner={{ abbr: abbrOf(game.teams[upsetNow.winner]), rank: fpis[upsetNow.winner]! }}
+        loser={{ abbr: abbrOf(game.teams[1 - upsetNow.winner]), rank: fpis[1 - upsetNow.winner]! }}
       />
     ) : null;
   const atHalf = live?.state === "in" && !!game.espnId && (game.league === "CFB" || game.league === "NFL") && isHalftime(live.detail);
@@ -212,7 +214,7 @@ export function GameCard({
               />
               <div>
                 <h4>
-                  <FpiRank ranks={(team as { ranks?: Ranks }).ranks} />
+                  <PlusRank league={game.league} team={team} />
                   {team.name}
                   {i === 1 && <span className="home-tag">Home</span>}
                 </h4>
@@ -220,7 +222,7 @@ export function GameCard({
                 {rankLine((team as { ranks?: Ranks }).ranks) && (
                   <p
                     className="rank-line"
-                    title={rankTitle((team as { ranks?: Ranks }).ranks)}
+                    title={rankTitle((team as { ranks?: Ranks }).ranks, null, { overall: false })}
                   >
                     {rankLine((team as { ranks?: Ranks }).ranks)}
                   </p>

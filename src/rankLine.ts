@@ -13,35 +13,26 @@ const SHORT_CONF: Record<string, string> = { "Mountain West": "MW", "Sun Belt": 
 // The compact TV-grid line has about 100px to work with, so the longest conference names shrink further.
 const COMPACT_CONF: Record<string, string> = { ...SHORT_CONF, "Big Ten": "B1G", "Sun Belt": "SBC" };
 /**
- * "SEC #3 · #7 overall (FPI)". Compact (the TV grid): the national rank is the poll rank when the team has one
+ * "SEC #3 (FPI)". Compact (the TV grid): the national rank is the poll rank when the team has one
  * ("SEC #3 · AP #7") and the ESPN FPI rank when it doesn't ("SEC #8 · FPI #96"), so which one it is is always spelled out.
  */
 export function rankLine(r: Ranks | undefined, compact = false, poll?: string | null) {
   if (!r) return compact && poll ? poll : "";
   const name = r.confName ? (compact ? COMPACT_CONF : SHORT_CONF)[r.confName] ?? r.confName : "";
   const conf = r.conf && name ? `${name} #${r.conf}` : "";
-  const all = compact ? poll || (r.overall ? `FPI #${r.overall}` : "") : r.overall ? `#${r.overall} overall` : "";
+  // Full lines (the cards) show the conference place only: the national rank beside each team's name is its SP+ or NFL+ rank.
+  const all = compact ? poll || (r.overall ? `FPI #${r.overall}` : "") : "";
   const line = [conf, all].filter(Boolean).join(" · ");
   // Full lines name their source; the compact TV-grid one names it beside the number.
   return line && !compact ? `${line} (FPI)` : line;
 }
 /** Tooltip: "#2 in the AP poll · 3rd of 16 in the SEC by ESPN FPI · 7th of 138 overall (ESPN FPI)" */
-export function rankTitle(r: Ranks | undefined, poll?: string | null) {
+export function rankTitle(r: Ranks | undefined, poll?: string | null, opts: { overall?: boolean } = {}) {
   const bits = [];
   if (poll) bits.push(`${poll.replace(/^AP /, "")} in the AP poll`);
   if (r) {
     if (r.conf && r.confName) bits.push(`${ord(r.conf)} of ${r.confSize} in the ${r.confName}${r.confBasis === "fpi" ? " by ESPN FPI" : " standings"}`);
-    if (r.overall) bits.push(`${ord(r.overall)} of ${r.overallOf} overall (ESPN FPI)`);
+    if (r.overall && opts.overall !== false) bits.push(`${ord(r.overall)} of ${r.overallOf} overall (ESPN FPI)`);
   }
   return bits.join(" · ") || undefined;
-}
-
-/** The ESPN FPI national rank for a card's team name ("14"), or null when the team has none (an FCS opponent, say). */
-export function fpiRank(r: Ranks | undefined): number | null {
-  return r?.overall && r.overall > 0 ? r.overall : null;
-}
-/** Tooltip for the rank beside a team name: "ESPN FPI: 7th of 138 overall". */
-export function fpiTitle(r: Ranks | undefined) {
-  const n = fpiRank(r);
-  return n ? `ESPN FPI: ${ord(n)} of ${r!.overallOf} overall` : undefined;
 }

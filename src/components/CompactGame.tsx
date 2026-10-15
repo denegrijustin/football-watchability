@@ -4,9 +4,9 @@ import { dayOf, timeOf, tzAbbr } from "../tz";
 import { NetChip } from "./NetChip";
 import { useOpenGame } from "./GameCenterContext";
 import { SquareActivity } from "lucide-react";
-import { FpiRank } from "./FpiRank";
+import { PlusRank } from "./PlusRank";
 
-type Team = { name: string; logoId: string; record: string; ranks?: unknown };
+type Team = { name: string; logoId: string; record: string; ranks?: unknown; abbr?: string; espnId?: string | null };
 export function CompactGame({ titleId, matchup, date, broadcast, network, espnId, teams, league, score, tier, venue, driveChart, top, badge, weather, status, scores, momentum, onExpand }: {
   titleId: string; matchup: string; date: string; broadcast: string; network?: string | null; espnId?: string | null;
   teams: Team[]; league: string; score: number; tier: string; venue: string;
@@ -32,7 +32,7 @@ export function CompactGame({ titleId, matchup, date, broadcast, network, espnId
     <div className="matchup">
       <div className="matchup-teams">{teams.map((team, i) => <div className="team-heading cc-team" key={team.name}>
         <img src={logos[team.logoId]} alt="" width="36" height="36" loading="lazy" decoding="async" />
-        <div><h4><FpiRank ranks={team.ranks} />{team.name}{i === 1 && <span className="home-tag">Home</span>}</h4>
+        <div><h4><PlusRank league={league} team={team} />{team.name}{i === 1 && <span className="home-tag">Home</span>}</h4>
           <p>{recordLine(team.record, league as League).split(" · ")[0]}</p>
         </div>{scores?.[i]}
       </div>)}</div>

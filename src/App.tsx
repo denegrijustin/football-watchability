@@ -117,9 +117,9 @@ export default function App() {
           <div>
             <strong>Rank line</strong>
             <p>
-              “NFC #4 · #7 overall (FPI)” is the team's place in its conference and in the whole league, both by
-              ESPN's FPI power rating, not by record or the polls. The record sits beside it, and AP polls are
-              labeled AP.
+              “NFC #4 (FPI)” is the team's place in its conference by ESPN's FPI power rating, not by record or the
+              polls. The small number to the left of a team's name is its national rank: SP+ for college, NFL+ for the
+              NFL, the same rankings as those two tabs.
             </p>
           </div>
           <div>

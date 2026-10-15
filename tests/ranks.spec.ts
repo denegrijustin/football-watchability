@@ -25,12 +25,13 @@ test("conference rank is the team's place among its conference by the same FPI r
 
 test("the rank line and tooltip say what each number is", () => {
   const r = { conf: 3, confSize: 16, confName: "NFC", overall: 7, overallOf: 32, confBasis: "fpi" as const };
-  expect(rankLine(r)).toBe("NFC #3 · #7 overall (FPI)"); // full lines name their source
+  expect(rankLine(r)).toBe("NFC #3 (FPI)"); // full lines name their source; the national rank beside the team name is its SP+ or NFL+ rank
   expect(rankLine(r, true)).toBe("NFC #3 · FPI #7"); // the compact line names the source of the national rank
   expect(rankLine(r, true, "AP #5")).toBe("NFC #3 · AP #5"); // a poll rank comes first when the team has one
   expect(rankLine({ ...r, confName: "Big Ten" }, true)).toBe("B1G #3 · FPI #7"); // the longest conference names shrink to fit the grid
   expect(rankLine({ ...r, conf: null, confName: null }, true)).toBe("FPI #7");
-  expect(rankLine(r)).toBe("NFC #3 · #7 overall (FPI)"); // the full line is unchanged
+  expect(rankLine({ ...r, conf: null, confName: null })).toBe(""); // nothing left to say without a conference place
+  expect(rankTitle(r, null, { overall: false })).toBe("3rd of 16 in the NFC by ESPN FPI");
   expect(rankTitle(r, "AP #5")).toBe("#5 in the AP poll · 3rd of 16 in the NFC by ESPN FPI · 7th of 32 overall (ESPN FPI)");
   expect(rankTitle(r)).toBe("3rd of 16 in the NFC by ESPN FPI · 7th of 32 overall (ESPN FPI)");
   // Games archived before the change carry the old standings order and are still described as standings.
@@ -40,7 +41,8 @@ test("the rank line and tooltip say what each number is", () => {
 test("ranks are labeled where they appear: on the cards, in the TV grid key and in the how-to", async ({ page }) => {
   await page.goto("/?league=NFL");
   await page.getByRole("button", { name: "Show game details" }).first().click();
-  await expect(page.locator(".rank-line").first()).toContainText(/#\d+ overall \(FPI\)/);
+  await expect(page.locator(".rank-line").first()).toContainText(/#\d+ \(FPI\)/);
+  await expect(page.locator(".rank-line").first()).not.toContainText("overall");
   await expect(page.locator(".how-to")).toContainText("Rank line");
   await page.getByRole("button", { name: "TV grid" }).click();
   await expect(page.locator(".tv-key .k-rank")).toContainText("national rank (AP if ranked, otherwise ESPN FPI)");
