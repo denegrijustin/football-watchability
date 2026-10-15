@@ -82,7 +82,7 @@ export default function Ats() {
           <div>
             <h2>SP+ picks against the spread</h2>
             <p className="sub" style={{ margin: 0 }}>
-              {incl ? "Every" : "FBS-vs-FBS"} game with an early-week line, graded from the sheet's lines and the postgame results <Derived why="The sheet's “ATS Pick” and “Spread” columns graded against the final margin" /> · updates as each week's games finish
+              {incl ? "Every" : "FBS-vs-FBS"} game with an early-week line, graded from the sheet's lines and the postgame results, with ESPN's finals added the moment a game ends <Derived why="The sheet's “ATS Pick” and “Spread” columns graded against the final margin" />
             </p>
           </div>
           <div className="seg" role="group" aria-label="Games included">

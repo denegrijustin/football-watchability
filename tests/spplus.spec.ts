@@ -5,7 +5,9 @@ import { buildLite } from "../src/spplus/liteBuild";
 import { projectGame, sheetName, weekFor, type SpLite } from "../src/spplus/lite";
 import { buildModel } from "../src/spplus/data/model";
 import { atsGames, recordText, tally } from "../src/spplus/data/ats";
+import { stubFinals } from "./helpers/finals";
 
+test.beforeEach(async ({ page }) => { await stubFinals(page); });
 const snapshot = JSON.parse(readFileSync("src/data/spplus.json", "utf8"));
 const teamIds = JSON.parse(readFileSync("src/data/team-ids.json", "utf8"));
 const lite: SpLite = buildLite(snapshot, teamIds);

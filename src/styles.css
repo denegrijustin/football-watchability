@@ -5745,7 +5745,9 @@ select,
     padding: 0 10px;
     font-size: 0;
   }
-  .export summary::before {
+  /* The page-level Export menu has no icon of its own, so it gets this arrow. The TV grid's "Save image" menu
+     (.export-jpg-menu) already draws an SVG arrow, so adding this one showed the download icon twice. */
+  .export:not(.export-jpg-menu) summary::before {
     content: "⤓";
     font-size: 16px;
     line-height: 1;
@@ -7159,7 +7161,7 @@ select,
   contain-intrinsic-size: auto 330px;
 }
 
-/* Seven tabs. On phones and small tablets the long labels give way to short ones (TV grid -> TV, Empire -> War, CFB SP+ -> SP+, NFL Ratings -> NFL+)
+/* Seven tabs. On phones and small tablets the long labels give way to short ones (TV grid -> TV, Empire -> War, CFB SP+ -> SP+, NFL+ stays NFL+)
    and the type gets smaller; every button keeps its full accessible name. */
 .view-switch .t-short {
   display: none;

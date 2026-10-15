@@ -54,7 +54,7 @@ export default function Ats() {
   return (
     <div className="stack">
       <div className="panel">
-        <div className="phead"><div><h2>Ratings picks against the spread</h2><p className="sub" style={{ margin: 0 }}>Each game's pick is the side the team ratings like better than the closing spread. Graded from nflverse's lines and results <Derived why="The ratings' margin compared with the closing spread, graded against the final margin" /> · updates as each week's games finish</p></div></div>
+        <div className="phead"><div><h2>Ratings picks against the spread</h2><p className="sub" style={{ margin: 0 }}>Each game's pick is the side the team ratings like better than the closing spread. Graded from nflverse's lines and results <Derived why="The ratings' margin compared with the closing spread, graded against the final margin" /> · scores from ESPN fill in the moment a game ends</p></div></div>
         <div className="atshead">
           <div><span className="muted">{data.season} season</span><b className="num">{recordText(season)}</b></div>
           <div><span className="muted">Against the spread</span><b className="num">{season.pct == null ? "—" : fmtPct(season.pct, 1)}</b></div>

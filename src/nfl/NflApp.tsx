@@ -24,7 +24,7 @@ export function NflApp() {
     <div className="app spp">
       <header className="bar">
         <div className="bar-in">
-          <div className="bar-top"><span className="brand">NFL Ratings <small>EPA-based team ratings, simulator and against-the-spread tracker</small></span><span className="grow" /></div>
+          <div className="bar-top"><span className="brand">NFL+ <small>EPA-based team ratings, simulator and against-the-spread tracker</small></span><span className="grow" /></div>
           <nav className="tabs" role="tablist" aria-label="NFL views" onKeyDown={(e) => {
             const i = NFL_VIEWS.findIndex((v) => v.key === route.view);
             const d = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;

@@ -8,6 +8,9 @@ import { recordText, tally } from "../src/spplus/data/ats";
 import { forEachRow } from "../scripts/nflverse/csv.mjs";
 import { ols } from "../scripts/nflverse/calibrate.mjs";
 import { solve } from "../scripts/nflverse/ratings.mjs";
+import { stubFinals } from "./helpers/finals";
+
+test.beforeEach(async ({ page }) => { await stubFinals(page); });
 
 const nfl: NflData = JSON.parse(readFileSync("src/data/nfl.json", "utf8"));
 const logos = JSON.parse(readFileSync("src/data/logos.json", "utf8")) as Record<string, string>;
@@ -15,7 +18,7 @@ const upcoming = nfl.games.find((g) => g.type === "REG" && g.aS == null && g.spr
 
 const openTab = async (page: Page) => {
   await page.goto("/?league=NFL");
-  await page.getByRole("button", { name: "NFL Ratings" }).click();
+  await page.getByRole("button", { name: "NFL+" }).click();
   await expect(page.locator(".spp .tbl tbody tr").first()).toBeVisible({ timeout: 15_000 });
 };
 
@@ -34,10 +37,10 @@ async function withNflGame(page: Page, g: NflGame, espn = g.espn) {
   return x;
 }
 
-test.describe("the NFL Ratings tab", () => {
+test.describe("the NFL+ tab", () => {
   test("@smoke it sits with the other tabs and opens on the ratings table of all 32 teams", async ({ page }) => {
     await openTab(page);
-    await expect(page.getByRole("button", { name: "NFL Ratings" })).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByRole("button", { name: "NFL+" })).toHaveAttribute("aria-pressed", "true");
     await expect(page.locator(".spp .tbl tbody tr:not(.detail)")).toHaveCount(32);
     for (const name of ["Ratings", "Simulator", "ATS tracker", "Matchups", "Movement", "Team"]) await expect(page.locator(".spp").getByRole("tab", { name })).toBeVisible();
     await expect(page.locator(".spp .foot")).toContainText("nflverse");
@@ -151,9 +154,9 @@ test.describe("NFL Game Center", () => {
     await expect(dialog.getByTestId("gc-nfl-setting")).toBeVisible();
     const facts = gameFacts(nfl, upcoming);
     if (facts.length) await expect(dialog.getByTestId("gc-nfl-setting")).toContainText(facts[0][0]);
-    await block.getByRole("button", { name: /Open in NFL Ratings/ }).click();
+    await block.getByRole("button", { name: /Open in NFL+/ }).click();
     await expect(dialog).toBeHidden();
-    await expect(page.getByRole("button", { name: "NFL Ratings" })).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByRole("button", { name: "NFL+" })).toHaveAttribute("aria-pressed", "true");
     await expect(page.locator(".spp").getByRole("tab", { name: "Simulator" })).toHaveAttribute("aria-selected", "true");
     await expect(page.locator(".spp").getByLabel("Away team")).toHaveValue(upcoming.away);
     await expect(page.locator(".spp").getByLabel("Home team")).toHaveValue(upcoming.home);

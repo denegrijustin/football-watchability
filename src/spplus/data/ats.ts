@@ -1,5 +1,5 @@
 /** Against-the-spread tracking for the SP+ picks, graded game by game from the sheet's lines and the postgame results. */
-import type { GameResult, Model, Projection } from "./types";
+import type { GameResult, Model } from "./types";
 import { gameIndex } from "./games";
 
 export type AtsResult = "win" | "loss" | "push";
@@ -45,12 +45,10 @@ export const BREAK_EVEN = 110 / 210;
 
 const day = (iso: string) => Date.parse(iso) / 864e5;
 
-function resultRow(model: Model, p: Projection, pick: string): GameResult | undefined {
-  if (!p.date) return undefined;
-  const idx = gameIndex(model);
-  const other = pick === p.home ? p.away : p.home;
-  const ok = (r: GameResult) => Math.abs(day(r.date) - day(p.date!)) <= 1;
-  return idx.byTeam.get(pick)?.find((r) => r.opp === other && ok(r)) ?? undefined;
+/** A result row for `team` against `opp` on the game's date: the sheet's first, then a final from ESPN the sheet has not recorded yet. */
+function findRow(model: Model, idx: ReturnType<typeof gameIndex>, team: string, opp: string, date: string): GameResult | undefined {
+  const ok = (r: GameResult) => r.opp === opp && Math.abs(day(r.date) - day(date)) <= 1;
+  return idx.byTeam.get(team)?.find(ok) ?? model.liveResults?.find((r) => r.team === team && ok(r));
 }
 
 /** Every pick on the sheet that has a line, a pick and a final, graded against the spread. */
@@ -61,11 +59,11 @@ export function atsGames(model: Model): AtsGame[] {
     if (!p.date || !p.atsPick || p.spreadPts == null || !p.spread) continue;
     if (p.atsPick !== p.away && p.atsPick !== p.home) continue;
     let margin: number | null = null, final = "";
-    const own = resultRow(model, p, p.atsPick);
+    const other = p.atsPick === p.home ? p.away : p.home;
+    const own = findRow(model, idx, p.atsPick, other, p.date);
     if (own && own.margin != null) { margin = own.margin; final = `${p.atsPick} ${own.pts}, ${own.opp} ${own.oppPts}`; }
     else {
-      const other = p.atsPick === p.home ? p.away : p.home;
-      const r = idx.byTeam.get(other)?.find((x) => x.opp === p.atsPick && Math.abs(day(x.date) - day(p.date!)) <= 1);
+      const r = findRow(model, idx, other, p.atsPick, p.date);
       if (r && r.margin != null) { margin = -r.margin; final = `${p.atsPick} ${r.oppPts}, ${r.team} ${r.pts}`; }
     }
     if (margin == null) continue;

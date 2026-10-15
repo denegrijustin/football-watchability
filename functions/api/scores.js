@@ -1,6 +1,7 @@
-// Cloudflare Pages Function: /api/scores?league=nfl|cfb&date=YYYYMMDD
+// Cloudflare Pages Function: /api/scores?league=nfl|cfb&date=YYYYMMDD[&full=1]
 // Trimmed live scores from ESPN's scoreboard, cached at the edge for 30s so
-// every visitor's poll doesn't hit ESPN.
+// every visitor's poll doesn't hit ESPN. With full=1 it returns only the finished games, with both teams' ids, names and
+// final scores (the shape of src/data/finals.json), which the CFB SP+ and NFL+ against-the-spread trackers grade picks from.
 const PATHS = { nfl: "nfl", cfb: "college-football" };
 
 export async function onRequestGet({ request }) {
@@ -10,8 +11,9 @@ export async function onRequestGet({ request }) {
   if (!PATHS[league] || !/^\d{8}$/.test(date ?? ""))
     return new Response(JSON.stringify({ error: "league=nfl|cfb and date=YYYYMMDD required" }), { status: 400 });
 
+  const full = url.searchParams.get("full") === "1";
   const cache = caches.default;
-  const key = new Request(`https://fbwatch-cache/scores/${league}/${date}`);
+  const key = new Request(`https://fbwatch-cache/scores/${league}/${date}${full ? "/full" : ""}`);
   const hit = await cache.match(key);
   if (hit) return hit;
 
@@ -39,6 +41,28 @@ export async function onRequestGet({ request }) {
       headers: { "content-type": "application/json" },
     });
   const data = await res.json();
+  if (full) {
+    const finals = (data.events ?? []).map((ev) => {
+      const c = ev.competitions?.[0];
+      const st = ev.status?.type ?? c?.status?.type ?? {};
+      if (!c || !(st.state === "post" || st.completed)) return null;
+      const a = c.competitors?.find((x) => x.homeAway === "away");
+      const h = c.competitors?.find((x) => x.homeAway === "home");
+      const as = Number(a?.score), hs = Number(h?.score);
+      if (!a?.team?.id || !h?.team?.id || a.score === "" || h.score === "" || !Number.isFinite(as) || !Number.isFinite(hs)) return null;
+      const team = (x, s) => ({ id: String(x.team.id), n: x.team.location ?? x.team.displayName ?? "", ab: x.team.abbreviation ?? "", s });
+      return {
+        l: league, id: String(ev.id), date: ev.date, week: ev.week?.number ?? null,
+        ot: /OT/i.test(st.shortDetail ?? st.detail ?? "") ? 1 : 0, neutral: c.neutralSite ? 1 : 0,
+        a: team(a, as), h: team(h, hs),
+      };
+    }).filter(Boolean);
+    const fullResponse = new Response(JSON.stringify(finals), {
+      headers: { "content-type": "application/json", "cache-control": "public, max-age=60" },
+    });
+    await cache.put(key, fullResponse.clone());
+    return fullResponse;
+  }
   const out = (data.events ?? []).map((ev) => {
     const c = ev.competitions?.[0] ?? {};
     const side = (h) => c.competitors?.find((x) => x.homeAway === h);
