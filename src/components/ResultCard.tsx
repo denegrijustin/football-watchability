@@ -16,6 +16,7 @@ import { InsanityMeter } from "./InsanityMeter";
 import { useOpenGame } from "./GameCenterContext";
 import { Booth, type CrewMember } from "./Booth";
 import { dayOf, timeOf, tzAbbr } from "../tz";
+import { FpiRank } from "./FpiRank";
 
 const short = (r: Result, i: number) =>
   r.league === "NFL" ? r.teams[i].name.split(" ").pop()! : r.teams[i].abbr;
@@ -145,6 +146,7 @@ export function ResultCard({ result: r, defaultExpanded = false }: { result: Res
                       loading="lazy"
                     />
                     <span className="ls-name">
+                      <FpiRank ranks={t.ranks} />
                       {t.name}
                       <span className="ls-rec">{t.record}</span>
                       {rankLine(t.ranks) && (

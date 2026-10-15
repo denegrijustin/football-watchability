@@ -29,6 +29,7 @@ import { gameBadge } from "../gameLogo";
 import { upsetBy } from "../upset";
 import { UpsetBanner } from "./UpsetBanner";
 import { isHalftime } from "../halftimeLogic";
+import { FpiRank } from "./FpiRank";
 
 const impactLevel = (impact: string) =>
   impact.replace(/\s*impact$/i, "").toLowerCase();
@@ -211,6 +212,7 @@ export function GameCard({
               />
               <div>
                 <h4>
+                  <FpiRank ranks={(team as { ranks?: Ranks }).ranks} />
                   {team.name}
                   {i === 1 && <span className="home-tag">Home</span>}
                 </h4>
