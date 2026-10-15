@@ -16,6 +16,7 @@ import { InsanityMeter } from "./InsanityMeter";
 import { useOpenGame } from "./GameCenterContext";
 import { Booth, type CrewMember } from "./Booth";
 import { dayOf, timeOf, tzAbbr } from "../tz";
+import { PlusRank } from "./PlusRank";
 
 const short = (r: Result, i: number) =>
   r.league === "NFL" ? r.teams[i].name.split(" ").pop()! : r.teams[i].abbr;
@@ -145,12 +146,13 @@ export function ResultCard({ result: r, defaultExpanded = false }: { result: Res
                       loading="lazy"
                     />
                     <span className="ls-name">
+                      <PlusRank league={r.league} team={t} />
                       {t.name}
                       <span className="ls-rec">{t.record}</span>
                       {rankLine(t.ranks) && (
                         <span
                           className="ls-rec rank-line"
-                          title={rankTitle(t.ranks)}
+                          title={rankTitle(t.ranks, null, { overall: false })}
                         >
                           {rankLine(t.ranks)}
                         </span>

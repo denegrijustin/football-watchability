@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { readFileSync } from "node:fs";
+import { buildPlusRanks } from "../src/plusRanksBuild";
 
 const slate = JSON.parse(readFileSync("src/data/slate.json", "utf8"));
 const games = slate.games.filter((g: any) => g.league === "NFL");
@@ -308,9 +309,11 @@ async function openScores(page: import("@playwright/test").Page, away: number, h
   await page.goto("/?league=NFL");
   return page.locator(`.game-card[data-game-id="${games[0].id}"]`);
 }
-const fpi = (i: number) => games[0].teams[i].ranks.overall as number;
+// The upset is decided by the NFL+ rankings, the same ones shown beside the team names.
+const plusRanks = buildPlusRanks(JSON.parse(readFileSync("src/data/spplus.json", "utf8")), JSON.parse(readFileSync("src/data/nfl.json", "utf8")), JSON.parse(readFileSync("src/data/team-ids.json", "utf8")));
+const fpi = (i: number) => plusRanks.nfl.byAbbr[games[0].teams[i].abbr as string];
 
-test("a live card whose lower FPI-ranked team is ahead gets the neon outline and an UPSET ALERT", async ({ page }) => {
+test("a live card whose lower NFL+-ranked team is ahead gets the neon outline and an UPSET ALERT", async ({ page }) => {
   const worse = fpi(0) > fpi(1) ? 0 : 1; // the team with the bigger rank number
   const card = await openScores(page, worse === 0 ? 24 : 10, worse === 0 ? 10 : 24);
   await expect(card).toHaveClass(/upset-alert/);

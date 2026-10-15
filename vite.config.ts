@@ -5,6 +5,7 @@ import { readdirSync } from "node:fs";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { buildLite } from "./src/spplus/liteBuild";
+import { buildPlusRanks } from "./src/plusRanksBuild";
 
 // The board's data files are fetched at run time (/data/<name>.json) instead of being compiled into the
 // JavaScript, so a refresh changes only these small, revalidated files and the scripts stay cached.
@@ -18,6 +19,12 @@ const spLite = () =>
     ? JSON.stringify(buildLite(JSON.parse(readFileSync(dataFile("spplus"), "utf8")), JSON.parse(readFileSync(dataFile("team-ids"), "utf8"))))
     : null;
 
+// The national SP+ and NFL+ ranks shown on every game card and in the ticker: one small file built from the SP+ sheet and the NFL ratings.
+const plusRanks = () =>
+  existsSync(dataFile("spplus")) && existsSync(dataFile("nfl"))
+    ? JSON.stringify(buildPlusRanks(JSON.parse(readFileSync(dataFile("spplus"), "utf8")), JSON.parse(readFileSync(dataFile("nfl"), "utf8")), JSON.parse(readFileSync(dataFile("team-ids"), "utf8"))))
+    : null;
+
 const dataFiles = (): Plugin => ({
   name: "board-data-files",
   configureServer(server) {
@@ -28,6 +35,13 @@ const dataFiles = (): Plugin => ({
         res.setHeader("Content-Type", "application/json");
         res.setHeader("Cache-Control", "no-cache");
         return res.end(lite);
+      }
+      if (/^\/data\/plus-ranks\.json(\?.*)?$/.test(req.url ?? "")) {
+        const ranks = plusRanks();
+        if (!ranks) return next();
+        res.setHeader("Content-Type", "application/json");
+        res.setHeader("Cache-Control", "no-cache");
+        return res.end(ranks);
       }
       const m = /^\/data\/([\w-]+)\.json(\?.*)?$/.exec(req.url ?? "");
       if (!m || !DATA.includes(m[1]) || !existsSync(dataFile(m[1]))) return next();
@@ -40,6 +54,8 @@ const dataFiles = (): Plugin => ({
     for (const name of DATA) if (existsSync(dataFile(name))) this.emitFile({ type: "asset", fileName: `data/${name}.json`, source: minified(name) });
     const lite = spLite();
     if (lite) this.emitFile({ type: "asset", fileName: "data/spplus-lite.json", source: lite });
+    const ranks = plusRanks();
+    if (ranks) this.emitFile({ type: "asset", fileName: "data/plus-ranks.json", source: ranks });
   },
 });
 
