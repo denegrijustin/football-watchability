@@ -35,3 +35,13 @@ export function rankTitle(r: Ranks | undefined, poll?: string | null) {
   }
   return bits.join(" · ") || undefined;
 }
+
+/** The ESPN FPI national rank for a card's team name ("14"), or null when the team has none (an FCS opponent, say). */
+export function fpiRank(r: Ranks | undefined): number | null {
+  return r?.overall && r.overall > 0 ? r.overall : null;
+}
+/** Tooltip for the rank beside a team name: "ESPN FPI: 7th of 138 overall". */
+export function fpiTitle(r: Ranks | undefined) {
+  const n = fpiRank(r);
+  return n ? `ESPN FPI: ${ord(n)} of ${r!.overallOf} overall` : undefined;
+}
