@@ -36,7 +36,14 @@ test.describe("the SP+ and NFL+ ranks, the same numbers as the two tabs", () => 
   });
 
   test("a team is looked up by abbreviation (NFL) or logo / ESPN id (college); no rank means none, never a zero", () => {
-    expect(plusRankFor(plus, "NFL", { abbr: "SEA" })).toEqual({ n: plus.nfl.byAbbr.SEA, of: 32, kind: "NFL+" });
+    expect(plusRankFor(plus, "NFL", { abbr: "SEA" })).toMatchObject({ n: plus.nfl.byAbbr.SEA, of: 32, kind: "NFL+" });
+    // Offense and defense ranks ride along, each 1 to 32 (NFL) or 1 to 138 (college).
+    const sea = plusRankFor(plus, "NFL", { abbr: "SEA" })!;
+    expect(sea.o).toBeGreaterThanOrEqual(1);
+    expect(sea.d).toBeLessThanOrEqual(32);
+    const osu = plusRankFor(plus, "CFB", { logoId: "ohio-state" })!;
+    expect([osu.o, osu.d].every((v) => v! >= 1 && v! <= plus.cfb.of)).toBe(true);
+    expect(plusRankFor(plus, "CFB", { name: "Ohio State" })?.n).toBe(osu.n); // a school name finds it too
     expect(plusRankFor(plus, "NFL", { abbr: "LAR" })?.n).toBe(plus.nfl.byAbbr.LAR);
     expect(plusRankFor(plus, "NFL", { abbr: "XXX" })).toBeNull();
     expect(plusRankFor(plus, "CFB", { logoId: "ohio-state" })?.kind).toBe("SP+");
@@ -45,6 +52,7 @@ test.describe("the SP+ and NFL+ ranks, the same numbers as the two tabs", () => 
     expect(plusRankFor(null, "CFB", { logoId: "ohio-state" })).toBeNull();
     expect(plusRankTitle({ n: 1, of: 138, kind: "SP+" })).toBe("SP+ rank: 1st of 138 FBS teams");
     expect(plusRankTitle({ n: 22, of: 32, kind: "NFL+" })).toBe("NFL+ rank: 22nd of 32 teams (EPA-based ratings)");
+    expect(plusRankTitle({ n: 1, of: 138, kind: "SP+", o: 3, d: 12 })).toBe("SP+ rank: 1st of 138 FBS teams · offense 3rd · defense 12th");
   });
 });
 
@@ -73,7 +81,7 @@ for (const league of ["CFB", "NFL"] as const) {
       await expect(head.locator(".plus-rank")).toHaveCount(1);
       await expect(head.locator(".plus-rank [aria-hidden]")).toHaveText(String(n));
       await expect(head.locator(".plus-rank .sr-only")).toHaveText(`${kind} rank ${n}, `);
-      await expect(head.locator(".plus-rank")).toHaveAttribute("title", plusRankTitle({ n, of: league === "CFB" ? plus.cfb.of : 32, kind }));
+      await expect(head.locator(".plus-rank")).toHaveAttribute("title", plusRankTitle(plusRankFor(plus, league, t)!));
       expect(await head.evaluate((h) => (h.firstElementChild as HTMLElement | null)?.className ?? "")).toContain("plus-rank");
       await expect(head).toContainText(t.name.replace("Broncos", "Donkeys"));
     }
