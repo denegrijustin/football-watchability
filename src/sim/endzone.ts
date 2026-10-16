@@ -27,6 +27,8 @@ export interface EndzoneArt {
   border?: string;
   /** A stripe along the back line. */
   stripe?: string;
+  /** Small diamonds stacked at both ends of the end zone, top to bottom (USC's cardinal, white, cardinal). */
+  ends?: string[];
   /** A jagged ridge along the end line (Wyoming's brown mountains). */
   ridge?: string;
   /** A different word in each end zone (the Steelers: PITTSBURGH on one end, STEELERS on the other). */
@@ -65,6 +67,8 @@ const FAMOUS: Record<string, Partial<EndzoneArt>> = {
   "boise state": { base: "#d64309", ink: "#0033a0", outline: "#ffffff", word: "BRONCOS", size: 58, field: ["#0d43b3", "#0a3a9f"] },
   maryland: { base: "#111111", checker: { a: "#ffc72c", b: "#111111", size: 25 }, noWord: true },
   "florida state": { base: "#f4f0e4", ink: "#ceb888", outline: "#782f40", stripe: "#782f40", size: 44 },
+  usc: { base: "#ffc72c", ink: "#990000", outline: "#ffffff", word: "USC", ends: ["#990000", "#ffffff", "#990000"], size: 84 },
+  "southern california": { base: "#ffc72c", ink: "#990000", outline: "#ffffff", word: "USC", ends: ["#990000", "#ffffff", "#990000"], size: 84 },
   wyoming: { base: "#ffc425", ink: "#492f24", outline: "rgba(0,0,0,0)", ridge: "#492f24", words: ["WYOMING", "COWBOYS"], serif: true, size: 58 },
   // NFL
   nebraska: { base: "#e41c38", ink: "#ffffff", outline: "#a50f26", border: "#ffffff", words: ["HUSKERS", "NEBRASKA"], serif: false, size: 60 },

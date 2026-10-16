@@ -292,6 +292,11 @@ export function Stage({ cfg, plays, idx, pps }: { cfg: GameCfg; plays: PlayRec[]
             {!ez.noWord && !ez.diamonds && [[EZ / 2 + 4, -90], [FW - EZ / 2 - 4, 90]].map(([x, rot], side) => (
               <text key={rot} className="st-ez" transform={`translate(${x} ${CY}) rotate(${rot})`} {...ezText} style={{ fill: ez.ink, stroke: ez.outline, fontFamily: ez.serif ? "Georgia, 'Times New Roman', serif" : undefined, fontStyle: ez.italic ? "italic" : undefined, fontSize: ezSize }}>{ez.words?.[side] ?? ez.word}</text>
             ))}
+            {ez.ends && [0, 1].flatMap((side) => [0, 1].flatMap((bottom) => ez.ends!.map((color, i) => {
+              const cx = side === 0 ? EZ / 2 : FW - EZ / 2;
+              const cy = bottom ? FH - 34 - i * 40 : 34 + i * 40;
+              return <polygon key={`${side}-${bottom}-${i}`} points={`${cx},${cy - 19} ${cx + 17},${cy} ${cx},${cy + 19} ${cx - 17},${cy}`} fill={color} stroke="#990000" strokeWidth="2" />;
+            })))}
             {ez.diamonds && [0, 1].map((side) => {
               const letters = ez.word.replace(/\s/g, "").split("");
               const n = letters.length, step = (FH - 40) / n;
