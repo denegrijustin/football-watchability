@@ -20,7 +20,7 @@ test("the Simulator tab runs a game: forecast, stage, play feed and a final scor
   expect(errors).toEqual([]);
 });
 
-test("every tab stays visible and none overlap at any width", async ({ page }) => {
+test("all nine tabs stay visible and none overlap at any width", async ({ page }) => {
   for (const w of [320, 390, 700, 1280]) {
     await page.setViewportSize({ width: w, height: 800 });
     await page.goto("/?league=NFL");
@@ -31,6 +31,6 @@ test("every tab stays visible and none overlap at any width", async ({ page }) =
       for (let i = 0; i < bs.length; i++) for (let j = i + 1; j < bs.length; j++) if (bs[i].left < bs[j].right - 0.5 && bs[j].left < bs[i].right - 0.5 && bs[i].top < bs[j].bottom - 0.5 && bs[j].top < bs[i].bottom - 0.5) overlaps++;
       return { n: bs.length, overlaps, off: bs.filter((b) => b.right > innerWidth + 1 || b.left < -1).length };
     });
-    expect(r, `tabs at ${w}px`).toEqual({ n: 8, overlaps: 0, off: 0 });
+    expect(r, `tabs at ${w}px`).toEqual({ n: 9, overlaps: 0, off: 0 });
   }
 });

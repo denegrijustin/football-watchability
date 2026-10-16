@@ -99,7 +99,7 @@ export function daysFor(league: League) {
 }
 
 // ---------- finished games ----------
-export type View = "board" | "grid" | "insanity" | "outlook" | "empire" | "spplus" | "nfl" | "sim";
+export type View = "board" | "grid" | "insanity" | "outlook" | "empire" | "spplus" | "nfl" | "sim" | "upset";
 export type StatusFilter = "all" | "live" | "final" | "upcoming";
 export type Part = { id: string; label: string; max: number; pts: number; note: string };
 export type Breakdown = { base: number; parts: Part[] };
