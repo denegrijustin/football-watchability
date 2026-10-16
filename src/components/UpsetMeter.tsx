@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { logos, results, slate, type League } from "../data";
+import { plusRankFor, usePlusRanks, type TeamRef } from "../plusRanks";
 import { useLiveMap } from "../live";
 import { buildRows, TIERS, type MeterRow, type MeterTeam } from "../upsetMeter";
 import "../upsetMeter.css";
@@ -14,7 +15,7 @@ function Logo({ team }: { team: MeterTeam }) {
 const when = (iso: string) =>
   new Date(iso).toLocaleString("en-US", { weekday: "short", hour: "numeric", minute: "2-digit" });
 
-function Row({ r }: { r: MeterRow }) {
+function Row({ r, league }: { r: MeterRow; league: League }) {
   const [a, h] = r.teams;
   const fav = r.teams[r.favorite];
   const under = r.teams[1 - r.favorite];
@@ -23,21 +24,21 @@ function Row({ r }: { r: MeterRow }) {
   return (
     <li className={cls} style={{ ["--tier" as string]: r.tier.color }}>
       <div className="um-match" aria-label={`${a.name} at ${h.name}`}>
-        {a.rank && <span className="um-rank">{a.rank}</span>}
+        {a.rank != null && <span className="um-rank" title={`${league === "NFL" ? "NFL+" : "SP+"} rank`}>{a.rank}</span>}
         <Logo team={a} />
         <span className="um-at">@</span>
         <Logo team={h} />
-        {h.rank && <span className="um-rank">{h.rank}</span>}
+        {h.rank != null && <span className="um-rank" title={`${league === "NFL" ? "NFL+" : "SP+"} rank`}>{h.rank}</span>}
       </div>
       <div className="um-line">
-        <strong>{r.line != null ? `${fav.abbr} -${r.line}` : `${fav.abbr} favored`}</strong>
-        <span>{r.status === "pre" ? when(r.date) : ""}</span>
+        <strong>{fav.abbr} +{r.gap} {r.gap === 1 ? "spot" : "spots"}</strong>
+        <span>{[r.line != null ? `Line ${fav.abbr} -${r.line}` : "", r.status === "pre" ? when(r.date) : ""].filter(Boolean).join(" · ")}</span>
       </div>
-      <div className="um-bar" role="img" aria-label={`${under.name} win chance ${Math.round(r.upsetPct)} percent: ${r.tier.short}`}>
+      <div className="um-bar" role="img" aria-label={`${under.name} is ranked ${r.gap} places below ${fav.name}: ${r.tier.short}`}>
         <i style={{ width: `${r.tier.id * 20}%` }} />
         <b /><b /><b /><b />
       </div>
-      <div className="um-tier"><span>{under.abbr} win chance {Math.round(r.upsetPct)}%</span></div>
+      <div className="um-tier"><span>{under.abbr} {under.rank != null ? `#${under.rank}` : "unranked"} vs {fav.abbr} #{fav.rank ?? "–"} · {league === "NFL" ? "NFL+" : "SP+"} rank</span></div>
       {r.status !== "pre" && r.score && (
         <div className="um-result">
           <span className="um-state">{r.status === "final" ? r.detail || "FINAL" : r.detail || "LIVE"}</span>
@@ -58,10 +59,15 @@ export function UpsetMeter({ defaultLeague }: { defaultLeague: League }) {
   const [league, setLeague] = useState<League>(defaultLeague);
   const [show, setShow] = useState<Show>("all");
   const live = useLiveMap();
-  const rows = useMemo(
-    () => buildRows({ league, games: slate.games as never, results: results as never, live, period: slate.period }),
-    [league, live],
-  );
+  const plus = usePlusRanks();
+  const rows = useMemo(() => {
+    if (!plus) return [];
+    const of = league === "NFL" ? plus.nfl.of : plus.cfb.of;
+    return buildRows({
+      league, games: slate.games as never, results: results as never, live, period: slate.period,
+      ranks: { of, rankOf: (t) => plusRankFor(plus, league, t as TeamRef)?.n ?? null },
+    });
+  }, [league, live, plus]);
   const finals = rows.filter((r) => r.status === "final");
   const upsets = finals.filter((r) => r.upset);
   const done = rows.filter((r) => r.status === "final");
@@ -79,7 +85,7 @@ export function UpsetMeter({ defaultLeague }: { defaultLeague: League }) {
       <header className="um-head">
         <div>
           <h2>Upset Alert Meter</h2>
-          <p>How much has to go wrong for the favorite? Each bar is the underdog's chance, from the betting line and ESPN's predictor. Finished games show the score, and an upset lights up.</p>
+          <p>How much has to go wrong for the better team? Teams are compared by national rank ({league === "NFL" ? "NFL+" : "SP+"}); the bigger the gap, the fuller the bar. Finished games show the score, and when the lower-ranked team wins, it lights up.</p>
         </div>
         <span className="um-week">{slate.period}</span>
       </header>
@@ -94,6 +100,7 @@ export function UpsetMeter({ defaultLeague }: { defaultLeague: League }) {
         </div>
         {finals.length > 0 && <span className="um-tally" role="status">{upsets.length} upset{upsets.length === 1 ? "" : "s"} in {finals.length} final{finals.length === 1 ? "" : "s"}</span>}
       </div>
+      {!plus && <p className="ol-note" role="status">Loading team ranks…</p>}
       <ol className="um-legend" aria-label="Tiers">
         {TIERS.map((t) => <li key={t.id} style={{ ["--tier" as string]: t.color }}><i />{t.short}</li>)}
       </ol>
@@ -101,7 +108,7 @@ export function UpsetMeter({ defaultLeague }: { defaultLeague: League }) {
         {columns.map((c) => (
           <section key={c.id} className="um-col" aria-label={c.title}>
             <h3>{c.title}<span>{c.rows.length}</span></h3>
-            {c.rows.length ? <ol className="um-list" aria-label={`${c.title} games by upset chance, most lopsided first`}>{c.rows.map((r) => <Row key={r.key} r={r} />)}</ol> : <p className="ol-note">{c.empty}</p>}
+            {c.rows.length ? <ol className="um-list" aria-label={`${c.title} games by upset chance, most lopsided first`}>{c.rows.map((r) => <Row key={r.key} r={r} league={league} />)}</ol> : <p className="ol-note">{c.empty}</p>}
           </section>
         ))}
       </div>

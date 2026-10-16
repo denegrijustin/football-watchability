@@ -4,7 +4,7 @@ import { fetchData } from "./data/load";
 import type { PlusRanks } from "./plusRanksBuild";
 
 export type { PlusRanks };
-export type TeamRef = { abbr?: string; logoId?: string; espnId?: string | null };
+export type TeamRef = { abbr?: string; logoId?: string; espnId?: string | null; name?: string };
 export type PlusRank = { n: number; of: number; kind: "SP+" | "NFL+" };
 
 let load: Promise<PlusRanks | null> | null = null;
@@ -37,7 +37,7 @@ export function plusRankFor(ranks: PlusRanks | null, league: string, t: TeamRef)
     const n = t.abbr ? ranks.nfl.byAbbr[t.abbr] : undefined;
     return n ? { n, of: ranks.nfl.of, kind: "NFL+" } : null;
   }
-  const n = (t.logoId && ranks.cfb.byLogo[t.logoId]) || (t.espnId && ranks.cfb.byEspn[t.espnId]) || undefined;
+  const n = (t.logoId && ranks.cfb.byLogo[t.logoId]) || (t.espnId && ranks.cfb.byEspn[t.espnId]) || (t.name && ranks.cfb.byName?.[t.name.toLowerCase()]) || undefined;
   return n ? { n, of: ranks.cfb.of, kind: "SP+" } : null;
 }
 

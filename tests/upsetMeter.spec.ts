@@ -1,46 +1,55 @@
 import { expect, test } from "@playwright/test";
-import { buildRows, tierFor, type ResultLike, type SlateLike } from "../src/upsetMeter";
+import { buildRows, tierFor, type RankSource, type ResultLike, type SlateLike } from "../src/upsetMeter";
 
 const team = (abbr: string, extra = {}) => ({ name: abbr, abbr, logoId: abbr.toLowerCase(), color: null, ...extra });
-const game = (id: string, pHome: number, away = [72, 3], home = [75, 3]): SlateLike => ({
-  id, espnId: id, league: "CFB", date: "2026-10-17T16:00Z",
-  teams: [team("AAA", { rankings: ["AP #7"] }), team("HHH")],
-  winProb: { home: pHome },
-  projected: { parts: [{ id: "line", away: 20, home: 20 + (pHome > 50 ? 10.04 : -10.04) }] },
+const RANKS: Record<string, number> = { AAA: 3, HHH: 90, BBB: 50, III: 10, LLL: 40, MMM: 42 };
+const ranks: RankSource = { of: 100, rankOf: (t) => RANKS[t.abbr] ?? null };
+const game = (id: string, away: string, home: string): SlateLike => ({
+  id, espnId: id, league: "CFB", date: "2026-10-17T16:00Z", teams: [team(away), team(home)],
+  projected: { parts: [{ id: "line", away: 30, home: 20.04 }] },
 });
 
-test("tiers follow the underdog's chance", () => {
-  expect([2, 7.9, 8, 19.9, 20, 31.9, 32, 43.9, 44, 50].map((p) => tierFor(p).id)).toEqual([1, 1, 2, 2, 3, 3, 4, 4, 5, 5]);
+test("tiers follow how far apart the ranks are, as a share of the league", () => {
+  expect([0.9, 0.45, 0.449, 0.28, 0.279, 0.14, 0.139, 0.05, 0.049, 0.01].map((g) => tierFor(g).id)).toEqual([1, 1, 2, 2, 3, 3, 4, 4, 5, 5]);
 });
 
-test("the favorite, the line and the tier come from the pre-game win probability", () => {
-  const rows = buildRows({ league: "CFB", games: [game("g1", 92), game("g2", 30)], results: [], live: {}, period: "w" });
-  expect(rows.map((r) => [r.key, r.favorite, r.upsetPct, r.tier.id, r.line])).toEqual([
-    ["g-g1", 1, 8, 2, 10], // the home team is favored; the road team has 8%
-    ["g-g2", 0, 30, 3, 10], // the road team is favored; the home team has 30%
+test("the better-ranked team is the favorite, the gap sets the tier, and the line is only shown", () => {
+  const rows = buildRows({ league: "CFB", games: [game("g1", "AAA", "HHH"), game("g2", "BBB", "III"), game("g3", "LLL", "MMM")], results: [], live: {}, period: "w", ranks });
+  // Most lopsided first.
+  expect(rows.map((r) => [r.key, r.favorite, r.gap, r.tier.id])).toEqual([
+    ["g-g1", 0, 87, 1], // the road team is #3, the home team #90
+    ["g-g2", 1, 40, 2], // the home team is #10 against #50
+    ["g-g3", 0, 2, 5], // #40 at #42 is a pick'em
   ]);
-  expect(rows[1].teams[0].rank).toBe(7); // the AP rank rides along
+  expect(rows[0].line).toBe(10); // the 30-20.04 betting margin, for reference only
+  expect(rows[0].teams[0].rank).toBe(3);
 });
 
-test("a final game is graded against its pre-game number and an upset is flagged", () => {
-  const results: ResultLike[] = [
-    { espnId: "r1", league: "CFB", week: "w", date: "2026-10-15T00:00Z", teams: [{ ...team("AAA"), score: 24 }, { ...team("HHH"), score: 17 }], final: { detail: "Final" }, forecast: { pHome: 0.8, line: "HHH -7.5 • O/U 50" } },
-    { espnId: "r2", league: "CFB", week: "w", date: "2026-10-15T01:00Z", teams: [{ ...team("BBB"), score: 10 }, { ...team("III"), score: 31 }], final: { detail: "Final" }, forecast: { pHome: 80, line: "III -9" } },
-    { espnId: "r3", league: "CFB", week: "old", date: "2026-10-08T01:00Z", teams: [{ ...team("CCC"), score: 1 }, { ...team("JJJ"), score: 2 }], final: { detail: "Final" }, forecast: { pHome: 50, line: null } },
-  ];
-  const rows = buildRows({ league: "CFB", games: [], results, live: {}, period: "w" });
-  expect(rows).toHaveLength(2); // last week's game is not on this week's meter
-  const up = rows.find((r) => r.key === "r-r1")!, held = rows.find((r) => r.key === "r-r2")!;
-  expect([up.status, up.upset, up.line]).toEqual(["final", true, 7.5]); // the 20% road underdog won
-  expect([held.upset, held.score]).toEqual([false, [10, 31]]);
+test("a team without a rank (an FCS opponent) counts as just below the field; two unranked teams are skipped", () => {
+  const rows = buildRows({ league: "CFB", games: [game("g1", "AAA", "ZZZ"), game("g2", "YYY", "ZZZ")], results: [], live: {}, period: "w", ranks });
+  expect(rows).toHaveLength(1);
+  expect([rows[0].favorite, rows[0].gap, rows[0].tier.id]).toEqual([0, 98, 1]);
+});
+
+test("a final game is graded on rank: the lower-ranked team winning is an upset", () => {
+  const res = (id: string, a: [string, number], h: [string, number], week = "w"): ResultLike => ({
+    espnId: id, league: "CFB", week, date: "2026-10-15T00:00Z", teams: [{ ...team(a[0]), score: a[1] }, { ...team(h[0]), score: h[1] }], final: { detail: "Final" }, forecast: { line: "HHH -7.5 • O/U 50" },
+  });
+  const rows = buildRows({ league: "CFB", games: [], results: [res("r1", ["AAA", 17], ["HHH", 24]), res("r2", ["BBB", 31], ["III", 10]), res("r3", ["AAA", 30], ["HHH", 3]), res("old", ["AAA", 1], ["HHH", 2], "old")], live: {}, period: "w", ranks });
+  expect(rows).toHaveLength(3); // last week's game is not on this week's meter
+  const by = (k: string) => rows.find((r) => r.key === k)!;
+  expect(by("r-r1").upset).toBe(true); // #90 beat #3
+  expect(by("r-r2").upset).toBe(true); // #50 beat #10
+  expect(by("r-r3").upset).toBe(false); // #3 beat #90
+  expect(by("r-r1").line).toBe(7.5);
 });
 
 test("live and just-finished slate games update from the live feed; a game in the results is not listed twice", () => {
-  const g = game("g1", 85);
-  const live = buildRows({ league: "CFB", games: [g], results: [], live: { g1: { state: "in", detail: "Q3 4:10", away: 21, home: 14 } }, period: "w" })[0];
-  expect([live.status, live.brewing, live.upset]).toEqual(["live", true, false]); // the 15% underdog leads
-  const done = buildRows({ league: "CFB", games: [g], results: [], live: { g1: { state: "post", detail: "Final", away: 21, home: 14 } }, period: "w" })[0];
-  expect([done.status, done.upset, done.score]).toEqual(["final", true, [21, 14]]);
-  const dup = buildRows({ league: "CFB", games: [g], period: "w", live: {}, results: [{ espnId: "g1", league: "CFB", week: "w", date: "d", teams: [{ ...team("AAA"), score: 1 }, { ...team("HHH"), score: 2 }], final: { detail: "Final" }, forecast: { pHome: 85, line: null } }] });
+  const g = game("g1", "AAA", "HHH");
+  const live = buildRows({ league: "CFB", games: [g], results: [], live: { g1: { state: "in", detail: "Q3 4:10", away: 7, home: 14 } }, period: "w", ranks })[0];
+  expect([live.status, live.brewing, live.upset]).toEqual(["live", true, false]); // #90 leads #3
+  const done = buildRows({ league: "CFB", games: [g], results: [], live: { g1: { state: "post", detail: "Final", away: 7, home: 14 } }, period: "w", ranks })[0];
+  expect([done.status, done.upset, done.score]).toEqual(["final", true, [7, 14]]);
+  const dup = buildRows({ league: "CFB", games: [g], period: "w", live: {}, ranks, results: [{ espnId: "g1", league: "CFB", week: "w", date: "d", teams: [{ ...team("AAA"), score: 1 }, { ...team("HHH"), score: 2 }], final: { detail: "Final" }, forecast: { line: null } }] });
   expect(dup).toHaveLength(1);
 });
