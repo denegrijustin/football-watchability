@@ -15,7 +15,7 @@ function Logo({ team }: { team: MeterTeam }) {
 const when = (iso: string) =>
   new Date(iso).toLocaleString("en-US", { weekday: "short", hour: "numeric", minute: "2-digit" });
 
-function Row({ r, league }: { r: MeterRow; league: League }) {
+function Row({ r, league, biggest }: { r: MeterRow; league: League; biggest: boolean }) {
   const [a, h] = r.teams;
   const fav = r.teams[r.favorite];
   const under = r.teams[1 - r.favorite];
@@ -49,7 +49,7 @@ function Row({ r, league }: { r: MeterRow; league: League }) {
           <i style={{ width: `${r.tier.id * 20}%` }} />
           <b /><b /><b /><b />
         </div>
-        {r.upset ? <em className="um-flag">UPSET · {under.abbr}</em>
+        {r.upset ? <em className="um-flag">{biggest ? "★ BIGGEST" : "UPSET"} · {under.abbr} +{r.gap}</em>
           : r.brewing ? <em className="um-flag live">UPSET BREWING</em>
           : <span className="um-note">{note}{r.status === "final" && winner !== null ? " · favorite held" : ""}</span>}
       </div>
@@ -72,6 +72,8 @@ export function UpsetMeter({ defaultLeague }: { defaultLeague: League }) {
   }, [league, live, plus]);
   const finals = rows.filter((r) => r.status === "final");
   const upsets = finals.filter((r) => r.upset);
+  // The largest rank gap among the upsets so far.
+  const biggestKey = rows.filter((r) => r.upset).sort((x, y) => y.gap - x.gap)[0]?.key;
   const done = rows.filter((r) => r.status === "final");
   const todo = rows.filter((r) => r.status !== "final");
   const columns: { id: string; title: string; rows: MeterRow[]; empty: string }[] =
@@ -110,7 +112,7 @@ export function UpsetMeter({ defaultLeague }: { defaultLeague: League }) {
           <section key={c.id} className="um-col" aria-label={c.title}>
             <h3>{c.title}<span>{c.rows.length}</span></h3>
             {c.rows.length ? <div className="um-listhead" aria-hidden="true"><div className="um-hl"><span /><span /><span>Overall</span><span>Off</span><span>Def</span><span>{c.id === "todo" ? "" : "Pts"}</span></div><i>Upset gap</i></div> : null}
-            {c.rows.length ? <ol className="um-list" aria-label={`${c.title} games by upset chance, most lopsided first`}>{c.rows.map((r) => <Row key={r.key} r={r} league={league} />)}</ol> : <p className="ol-note">{c.empty}</p>}
+            {c.rows.length ? <ol className="um-list" aria-label={`${c.title} games by upset chance, most lopsided first`}>{c.rows.map((r) => <Row key={r.key} r={r} league={league} biggest={r.upset && r.key === biggestKey} />)}</ol> : <p className="ol-note">{c.empty}</p>}
           </section>
         ))}
       </div>
