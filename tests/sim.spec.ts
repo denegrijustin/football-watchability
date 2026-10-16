@@ -156,6 +156,7 @@ test("end zones: each known program's look, and a readable default for everyone 
   expect(endzoneFor({ short: "UNLV", color: "#cf0a2c" })).toMatchObject({ base: "#111111", ink: "#cc0000", word: "REBELS" });
   expect(endzoneFor({ short: "Rice", color: "#00205b" }).words).toEqual(["Rice", "Owls"]);
   expect(endzoneFor({ short: "Kentucky", color: "#0033a0" })).toMatchObject({ base: "#0033a0", ink: "#ffffff" });
+  expect(endzoneFor({ short: "Memphis", color: "#003087" })).toMatchObject({ words: ["Memphis", "Tigers"], tiger: "#0d2a5c" });
   expect(endzoneFor({ short: "California", color: "#003262" })).toMatchObject({ base: "#fdb515", ink: "#003262", italic: true });
   expect(endzoneFor({ short: "Colorado", color: "#cfb87c" })).toMatchObject({ base: "#16130f", ink: "#cfb87c" });
   expect(endzoneFor({ short: "Tulane", color: "#006747" }).words).toEqual(["GREEN WAVE", "GREEN WAVE"]);

@@ -74,6 +74,7 @@ const FAMOUS: Record<string, Partial<EndzoneArt>> = {
   "north carolina": { base: "#7bafd4", ink: "#ffffff", outline: "rgba(0,0,0,0)", word: "TAR HEELS", size: 66, border: "#ffffff" },
   rice: { base: "#00205b", ink: "#cfd3d8", outline: "rgba(0,0,0,0)", word: "Rice", words: ["Rice", "Owls"], serif: true, italic: true, size: 64 },
   unlv: { base: "#111111", ink: "#cc0000", outline: "#ffffff", word: "REBELS", size: 78 },
+  memphis: { base: "#aeb4bb", tiger: "#0d2a5c", ink: "#ffffff", outline: "#0d2a5c", words: ["Memphis", "Tigers"], size: 60 },
   usc: { base: "#ffc72c", ink: "#990000", outline: "#ffffff", word: "USC", ends: ["#990000", "#ffffff", "#990000"], size: 84 },
   "southern california": { base: "#ffc72c", ink: "#990000", outline: "#ffffff", word: "USC", ends: ["#990000", "#ffffff", "#990000"], size: 84 },
   wyoming: { base: "#ffc425", ink: "#492f24", outline: "rgba(0,0,0,0)", ridge: "#492f24", words: ["WYOMING", "COWBOYS"], serif: true, size: 58 },
