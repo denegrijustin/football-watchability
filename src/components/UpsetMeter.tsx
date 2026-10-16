@@ -33,14 +33,11 @@ function Row({ r }: { r: MeterRow }) {
         <strong>{r.line != null ? `${fav.abbr} -${r.line}` : `${fav.abbr} favored`}</strong>
         <span>{r.status === "pre" ? when(r.date) : ""}</span>
       </div>
-      <div className="um-bar" role="img" aria-label={`${under.name} win chance ${Math.round(r.upsetPct)} percent: ${r.tier.label}`}>
+      <div className="um-bar" role="img" aria-label={`${under.name} win chance ${Math.round(r.upsetPct)} percent: ${r.tier.short}`}>
         <i style={{ width: `${r.tier.id * 20}%` }} />
         <b /><b /><b /><b />
       </div>
-      <div className="um-tier">
-        <strong>{r.tier.label}</strong>
-        <span>{under.abbr} win chance {Math.round(r.upsetPct)}%</span>
-      </div>
+      <div className="um-tier"><span>{under.abbr} win chance {Math.round(r.upsetPct)}%</span></div>
       {r.status !== "pre" && r.score && (
         <div className="um-result">
           <span className="um-state">{r.status === "final" ? r.detail || "FINAL" : r.detail || "LIVE"}</span>
@@ -67,7 +64,16 @@ export function UpsetMeter({ defaultLeague }: { defaultLeague: League }) {
   );
   const finals = rows.filter((r) => r.status === "final");
   const upsets = finals.filter((r) => r.upset);
-  const shown = rows.filter((r) => (show === "all" ? true : show === "upcoming" ? r.status !== "final" : show === "final" ? r.status === "final" : r.upset || r.brewing));
+  const done = rows.filter((r) => r.status === "final");
+  const todo = rows.filter((r) => r.status !== "final");
+  const columns: { id: string; title: string; rows: MeterRow[]; empty: string }[] =
+    show === "all"
+      ? [{ id: "done", title: "Completed", rows: done, empty: "No games have finished yet." }, { id: "todo", title: "Upcoming", rows: todo, empty: "No games left to play." }]
+      : show === "upcoming"
+        ? [{ id: "todo", title: "Upcoming", rows: todo, empty: "No games left to play." }]
+        : show === "final"
+          ? [{ id: "done", title: "Completed", rows: done, empty: "No games have finished yet." }]
+          : [{ id: "ups", title: "Upsets", rows: rows.filter((r) => r.upset || r.brewing), empty: "No upsets yet this week." }];
   return (
     <div className="um">
       <header className="um-head">
@@ -89,15 +95,16 @@ export function UpsetMeter({ defaultLeague }: { defaultLeague: League }) {
         {finals.length > 0 && <span className="um-tally" role="status">{upsets.length} upset{upsets.length === 1 ? "" : "s"} in {finals.length} final{finals.length === 1 ? "" : "s"}</span>}
       </div>
       <ol className="um-legend" aria-label="Tiers">
-        {TIERS.map((t) => <li key={t.id} style={{ ["--tier" as string]: t.color }}><i />{t.label}</li>)}
+        {TIERS.map((t) => <li key={t.id} style={{ ["--tier" as string]: t.color }}><i />{t.short}</li>)}
       </ol>
-      {shown.length ? (
-        <ol className="um-list" aria-label="Games by upset chance, most lopsided first">
-          {shown.map((r) => <Row key={r.key} r={r} />)}
-        </ol>
-      ) : (
-        <p className="ol-note">{show === "upsets" ? "No upsets yet this week." : "No games to show."}</p>
-      )}
+      <div className={`um-cols${columns.length === 1 ? " one" : ""}`}>
+        {columns.map((c) => (
+          <section key={c.id} className="um-col" aria-label={c.title}>
+            <h3>{c.title}<span>{c.rows.length}</span></h3>
+            {c.rows.length ? <ol className="um-list" aria-label={`${c.title} games by upset chance, most lopsided first`}>{c.rows.map((r) => <Row key={r.key} r={r} />)}</ol> : <p className="ol-note">{c.empty}</p>}
+          </section>
+        ))}
+      </div>
     </div>
   );
 }
