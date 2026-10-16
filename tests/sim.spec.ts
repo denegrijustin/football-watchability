@@ -152,6 +152,9 @@ test("end zones: each known program's look, and a readable default for everyone 
   expect(endzoneFor({ short: "Chiefs", color: "#e31837" })).toMatchObject({ base: "#e2b72d", ink: "#a6192e" });
   expect(endzoneFor({ short: "Steelers", color: "#101820" }).words).toEqual(["PITTSBURGH", "STEELERS"]); // a different word at each end
   for (const name of ["USC", "Southern California"]) expect(endzoneFor({ short: name, color: "#990000" })).toMatchObject({ base: "#ffc72c", word: "USC", ends: ["#990000", "#ffffff", "#990000"] });
+  expect(endzoneFor({ short: "California", color: "#003262" })).toMatchObject({ base: "#fdb515", ink: "#003262", italic: true });
+  expect(endzoneFor({ short: "Colorado", color: "#cfb87c" })).toMatchObject({ base: "#16130f", ink: "#cfb87c" });
+  expect(endzoneFor({ short: "Tulane", color: "#006747" }).words).toEqual(["GREEN WAVE", "GREEN WAVE"]);
   expect(endzoneFor({ short: "Wyoming", color: "#492f24" })).toMatchObject({ words: ["WYOMING", "COWBOYS"], ridge: "#492f24" });
   expect(endzoneFor({ short: "Nebraska", color: "#e41c38" }).words).toEqual(["HUSKERS", "NEBRASKA"]);
   expect(endzoneFor({ short: "Boise State", color: "#0033a0" })).toMatchObject({ word: "BRONCOS", base: "#d64309" });
