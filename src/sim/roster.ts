@@ -9,7 +9,7 @@ import type { League } from "../data";
 const SPORT: Record<League, string> = { NFL: "nfl", CFB: "college-football" };
 const cache = new Map<string, Promise<TeamInfo>>();
 
-export interface TeamInfo { color?: string; alt?: string; roster: Roster }
+export interface TeamInfo { color?: string; alt?: string; roster: Roster; /** the team's quarterbacks on its roster, for matching a known starter by name */ qbs?: { name: string; exp: number }[] }
 
 async function getJson(url: string): Promise<any> {
   const ctl = new AbortController();
@@ -82,7 +82,7 @@ async function loadRaw(league: League, id: string, season: number): Promise<Raw>
 /** Turn ESPN's trimmed answer into colors and a weighted roster. Pure, so it can be tested with made-up data. */
 export function shape(raw: Raw): TeamInfo {
   const hex = (c?: string | null) => (c && /^[0-9a-f]{6}$/i.test(c) ? `#${c.toLowerCase()}` : undefined);
-  const info: TeamInfo = { roster: {}, color: hex(raw.color), alt: hex(raw.alt) };
+  const info: TeamInfo = { roster: {}, color: hex(raw.color), alt: hex(raw.alt), qbs: raw.people.filter((p) => p.pos === "QB").map((p) => ({ name: p.name, exp: p.exp ?? 0 })) };
   const people = new Map(raw.people.map((x) => [x.id, x]));
   const cat = (name: keyof Raw["leaders"]) => (raw.leaders?.[name] ?? []).filter((x) => people.has(x.id));
   const pass = cat("passingYards")[0];
@@ -123,4 +123,17 @@ export function fetchTeamInfo(league: League, id: string, season: number): Promi
     cache.set(key, p);
   }
   return p;
+}
+
+/**
+ * The quarterback to use when the team's current starter is known by full name ("Patrick Mahomes", from nflverse): the roster's own short name for
+ * him ("P. Mahomes") when it matches by last name and first initial, otherwise the name shortened the same way.
+ */
+export function startingQb(info: TeamInfo, full?: string | null): string | undefined {
+  if (!full) return info.roster.qb;
+  const words = full.replace(/\b(Jr|Sr|II|III|IV)\.?$/i, "").trim().split(/\s+/);
+  const last = (words[words.length - 1] ?? "").toLowerCase();
+  const initial = (words[0]?.[0] ?? "").toLowerCase();
+  const hit = info.qbs?.find((q) => q.name.toLowerCase().endsWith(last) && q.name.toLowerCase().startsWith(initial));
+  return hit?.name ?? `${words[0]?.[0] ?? ""}. ${words.slice(1).join(" ") || words[0]}`;
 }

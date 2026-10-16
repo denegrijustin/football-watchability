@@ -135,7 +135,7 @@ export function buildRows(input: { league: "NFL" | "CFB"; games: SlateLike[]; re
 
 export interface WeeklyLike {
   cfb: { of: number; starts: Record<string, string>; ranks: Record<string, Record<string, [number, number, number]>> };
-  nfl: { of: number; ranks: Record<string, Record<string, [number, number, number]>>; weekOf: Record<string, number> };
+  nfl: { of: number; ranks: Record<string, Record<string, [number, number, number]>>; weekOf: Record<string, number>; qb?: Record<string, string> };
 }
 /** One finished game from the season ledger (src/data/season.json). */
 export interface LedgerLike {

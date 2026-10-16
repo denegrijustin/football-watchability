@@ -4,7 +4,7 @@ import { fetchData } from "../data/load";
 import { playGame, type GameCfg, type PlayRec, type TeamSim } from "./engine";
 import { buildTeam, leagueAverages, statTargets, type BuiltTeam, type LeagueStats, type RawTeam, type TeamExtras } from "./profile";
 import { legacyFor, type Legacy, type LegacyBox } from "./legacy";
-import { fetchTeamInfo, type TeamInfo } from "./roster";
+import { fetchTeamInfo, startingQb, type TeamInfo } from "./roster";
 import { runForecast, type RunResult } from "./run";
 import { Stage } from "./Stage";
 import { BoxScore, PlayFeed, ScoringSummary, WinChart } from "./SimViewer";
@@ -136,7 +136,11 @@ export default function SimTab({ defaultLeague }: { defaultLeague: League }) {
     }
     if (!ra || !rh || ra.id === rh.id) return;
     setBusy(true); setPlaying(false);
-    const [ia, ih] = await Promise.all([fetchTeamInfo(league, ra.id, table.season), fetchTeamInfo(league, rh.id, table.season)]);
+    const [ia0, ih0] = await Promise.all([fetchTeamInfo(league, ra.id, table.season), fetchTeamInfo(league, rh.id, table.season)]);
+    // The NFL's starting quarterbacks come from the nflverse data the site already has (the latest game each team names a QB for), ahead of ESPN's leaders.
+    const starters = league === "NFL" ? await fetchData<{ nfl?: { qb?: Record<string, string> } }>("plus-ranks-weekly").then((w) => w.nfl?.qb ?? {}, () => ({} as Record<string, string>)) : {};
+    const withQb = (i: TeamInfo, abbr: string): TeamInfo => ({ ...i, roster: { ...i.roster, qb: startingQb(i, starters[abbr]) ?? i.roster.qb } });
+    const ia = withQb(ia0, ra.abbreviation), ih = withQb(ih0, rh.abbreviation);
     const A = buildTeam(ra, avg, resolve(ra, game, "away", ia, game?.teams[0]));
     const H = buildTeam(rh, avg, resolve(rh, game, "home", ih, game?.teams[1]));
     // Keep two similar team colors apart on the field.
@@ -243,6 +247,38 @@ export default function SimTab({ defaultLeague }: { defaultLeague: League }) {
 
       {prep && f && cfg && (
         <>
+          <section className="sim-viewer" aria-label="Simulated game">
+            <div className="sim-viewer-head">
+              <h3>Play by play</h3>
+              <span className="sim-small">Game #{seed.toString(36)}</span>
+            </div>
+            <Stage cfg={cfg} plays={plays} idx={idx} pps={SPEEDS.find((x) => x.id === speed)?.pps ?? 5} />
+            <div className="sim-transport">
+              <button onClick={() => { if (atEnd) { setIdx(-1); setPlaying(true); } else setPlaying(!playing); }} aria-label={playing ? "Pause" : atEnd ? "Replay" : "Play"}>{playing ? "Pause" : atEnd ? "Replay" : "Play"}</button>
+              <div className="segmented" role="group" aria-label="Speed">
+                {SPEEDS.map((s) => <button key={s.id} aria-pressed={speed === s.id} title={s.hint} onClick={() => setSpeed(s.id)}>{s.label}</button>)}
+              </div>
+              <button onClick={() => { setIdx(plays.length - 1); setPlaying(false); }} disabled={atEnd}>Skip to final</button>
+              <button onClick={() => startGame(prep, f.typicalSeed)}>Most likely game</button>
+              <button onClick={() => startGame(prep, (Math.random() * 2 ** 32) >>> 0)}>New random game</button>
+            </div>
+            <WinChart cfg={cfg} plays={plays} idx={Math.max(0, idx)} onSeek={(i) => { setIdx(i); setPlaying(false); }} />
+            <div className="sim-cols">
+              <div>
+                <div className="sim-feed-head">
+                  <h4>Plays</h4>
+                  <label className="sim-check"><input type="checkbox" checked={onlyKey} onChange={(e) => setOnlyKey(e.target.checked)} /> Key plays only</label>
+                </div>
+                <PlayFeed cfg={cfg} plays={plays} idx={idx} onlyKey={onlyKey} />
+              </div>
+              <div>
+                <h4>Box score</h4>
+                <BoxScore cfg={cfg} plays={plays} idx={Math.max(idx, -1)} />
+                <h4>Scoring</h4>
+                <ScoringSummary cfg={cfg} plays={plays} idx={idx} />
+              </div>
+            </div>
+          </section>
           <section className="sim-forecast" aria-label="Forecast">
             <h3>Forecast</h3>
             <div className="sim-prob" role="img" aria-label={`${cfg.away.short} ${Math.round(f.winAway * 100)} percent, ${cfg.home.short} ${Math.round(f.winHome * 100)} percent`}>
@@ -303,38 +339,6 @@ export default function SimTab({ defaultLeague }: { defaultLeague: League }) {
             )}
           </section>
 
-          <section className="sim-viewer" aria-label="Simulated game">
-            <div className="sim-viewer-head">
-              <h3>Play by play</h3>
-              <span className="sim-small">Game #{seed.toString(36)}</span>
-            </div>
-            <Stage cfg={cfg} plays={plays} idx={idx} pps={SPEEDS.find((x) => x.id === speed)?.pps ?? 5} />
-            <div className="sim-transport">
-              <button onClick={() => { if (atEnd) { setIdx(-1); setPlaying(true); } else setPlaying(!playing); }} aria-label={playing ? "Pause" : atEnd ? "Replay" : "Play"}>{playing ? "Pause" : atEnd ? "Replay" : "Play"}</button>
-              <div className="segmented" role="group" aria-label="Speed">
-                {SPEEDS.map((s) => <button key={s.id} aria-pressed={speed === s.id} title={s.hint} onClick={() => setSpeed(s.id)}>{s.label}</button>)}
-              </div>
-              <button onClick={() => { setIdx(plays.length - 1); setPlaying(false); }} disabled={atEnd}>Skip to final</button>
-              <button onClick={() => startGame(prep, f.typicalSeed)}>Most likely game</button>
-              <button onClick={() => startGame(prep, (Math.random() * 2 ** 32) >>> 0)}>New random game</button>
-            </div>
-            <WinChart cfg={cfg} plays={plays} idx={Math.max(0, idx)} onSeek={(i) => { setIdx(i); setPlaying(false); }} />
-            <div className="sim-cols">
-              <div>
-                <div className="sim-feed-head">
-                  <h4>Plays</h4>
-                  <label className="sim-check"><input type="checkbox" checked={onlyKey} onChange={(e) => setOnlyKey(e.target.checked)} /> Key plays only</label>
-                </div>
-                <PlayFeed cfg={cfg} plays={plays} idx={idx} onlyKey={onlyKey} />
-              </div>
-              <div>
-                <h4>Box score</h4>
-                <BoxScore cfg={cfg} plays={plays} idx={Math.max(idx, -1)} />
-                <h4>Scoring</h4>
-                <ScoringSummary cfg={cfg} plays={plays} idx={idx} />
-              </div>
-            </div>
-          </section>
         </>
       )}
     </div>

@@ -78,3 +78,13 @@ test("rosters: season leaders pick the players; without them the most experience
   expect(bare.roster.receivers?.length).toBeGreaterThanOrEqual(3);
   expect(bare.roster.receivers?.every((r) => r.name && !/receiver/i.test(r.name))).toBe(true);
 });
+
+import { startingQb } from "../src/sim/roster";
+
+test("a known starter wins over whoever is listed first: nflverse's Mahomes, matched to the roster's own short name", () => {
+  const info = { roster: { qb: "J. Fields" }, qbs: [{ name: "J. Fields", exp: 5 }, { name: "P. Mahomes", exp: 9 }, { name: "G. Nussmeier", exp: 0 }] };
+  expect(startingQb(info, "Patrick Mahomes")).toBe("P. Mahomes"); // the roster's spelling
+  expect(startingQb({ roster: {}, qbs: [] }, "Josh Allen")).toBe("J. Allen"); // not on the list we have: shortened the same way
+  expect(startingQb({ roster: {}, qbs: [] }, "Kenneth Walker III")).toBe("K. Walker"); // generational suffixes are dropped
+  expect(startingQb(info, null)).toBe("J. Fields"); // nothing known: whatever ESPN's leaders gave
+});

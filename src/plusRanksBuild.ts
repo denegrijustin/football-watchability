@@ -53,7 +53,7 @@ export function buildPlusRanks(sp: Snapshot, nfl: NflData, boardTeams: Record<st
 export interface WeeklyRanks {
   version: 1;
   cfb: { of: number; starts: Record<string, string>; ranks: Record<string, Record<string, [number, number, number]>> };
-  nfl: { of: number; ranks: Record<string, Record<string, [number, number, number]>>; weekOf: Record<string, number> };
+  nfl: { of: number; ranks: Record<string, Record<string, [number, number, number]>>; weekOf: Record<string, number>; /** each team's current starting quarterback (full name, from nflverse), by abbreviation */ qb: Record<string, string> };
 }
 
 export function buildWeeklyRanks(sp: Snapshot, nfl: NflData, boardTeams: Record<string, { espnId: string; name: string; league: string }>): WeeklyRanks {
@@ -78,9 +78,15 @@ export function buildWeeklyRanks(sp: Snapshot, nfl: NflData, boardTeams: Record<
   }
   const weekOf: Record<string, number> = {};
   for (const g of nfl.games) if (g.espn) weekOf[g.espn] = g.week;
+  // The quarterback named for each team's latest game, played or about to be played: its current starter.
+  const qb: Record<string, string> = {};
+  for (const g of [...nfl.games].sort((a, b) => (a.date + (a.time ?? "")).localeCompare(b.date + (b.time ?? "")))) {
+    if (g.aQB) qb[ESPN_ABBR[g.away] ?? g.away] = g.aQB;
+    if (g.hQB) qb[ESPN_ABBR[g.home] ?? g.home] = g.hQB;
+  }
   return {
     version: 1,
     cfb: { of: Object.values(lite.teams).filter((t) => t.spRk).length, starts: lite.weekStarts, ranks: cfbRanks },
-    nfl: { of: Object.keys(nflRanks[String(nfl.ratingsThroughWeek)] ?? {}).length, ranks: nflRanks, weekOf },
+    nfl: { of: Object.keys(nflRanks[String(nfl.ratingsThroughWeek)] ?? {}).length, ranks: nflRanks, weekOf, qb },
   };
 }
