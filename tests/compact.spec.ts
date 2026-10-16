@@ -11,9 +11,9 @@ test("on a phone the controls take few rows and the first game starts high", asy
   // Filters are one scrolling row, not three wrapped ones.
   const dock = await page.locator(".filter-dock").boundingBox();
   expect(dock!.height).toBeLessThan(52);
-  // Tabs and Export share a row.
-  const [tabs, exp] = await Promise.all([page.locator(".view-switch").boundingBox(), page.locator(".export-btns summary").boundingBox()]);
-  expect(Math.abs(tabs!.y + tabs!.height / 2 - (exp!.y + exp!.height / 2))).toBeLessThan(12);
+  // Export sits beside the first row of tabs (eight tabs wrap to two rows on a phone, so compare with the first tab, not the whole group).
+  const [tab, exp] = await Promise.all([page.locator(".view-switch button").first().boundingBox(), page.locator(".export-btns summary").boundingBox()]);
+  expect(Math.abs(tab!.y + tab!.height / 2 - (exp!.y + exp!.height / 2))).toBeLessThan(12);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(391);
   // Every filter is still reachable (the row scrolls sideways).
   for (const name of ["League", "Status", "Day", "Watchability", "Conference"]) await expect(page.getByLabel(name, { exact: true })).toBeAttached();

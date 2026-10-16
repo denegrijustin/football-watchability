@@ -15,6 +15,8 @@ const InsanityBoard = lazyView(() => import("./components/InsanityBoard").then((
 const TvGrid = lazyView(() => import("./components/TvGrid").then((m) => ({ default: m.TvGrid })), "TvGrid");
 const SpPlusTab = lazyView(() => import("./spplus/SpPlusTab"), "SpPlusTab");
 const NflTab = lazyView(() => import("./nfl/NflTab"), "NflTab");
+const UpsetMeter = lazyView(() => import("./components/UpsetMeter").then((m) => ({ default: m.UpsetMeter })), "UpsetMeter");
+const SimTab = lazyView(() => import("./sim/SimTab"), "SimTab");
 import { setTz, tzLabel, useTz, ZONES } from "./tz";
 
 const gameCount = (l: League) => slate.games.filter((g) => g.league === l).length + results.filter((r) => r.league === l).length;
@@ -177,6 +179,10 @@ export default function App() {
               <span className="t-long">TV grid</span>
               <span className="t-short">TV</span>
             </button>
+            <button aria-label="Upset Alert Meter" aria-pressed={view === "upset"} onClick={() => switchView("upset")} title="Upset Alert Meter: how much has to go wrong for each favorite, and which upsets have happened">
+              <span className="t-long">Upsets</span>
+              <span className="t-short">Upsets</span>
+            </button>
             <button aria-pressed={view === "insanity"} onClick={() => switchView("insanity")}>
               Insanity
             </button>
@@ -194,6 +200,10 @@ export default function App() {
             <button aria-label="NFL+" aria-pressed={view === "nfl"} onClick={() => switchView("nfl")} title="NFL+: EPA-based team ratings, a matchup simulator and an against-the-spread tracker, from nflverse">
               <span className="t-long">NFL+</span>
               <span className="t-short">NFL+</span>
+            </button>
+            <button aria-label="Simulator" aria-pressed={view === "sim"} onClick={() => switchView("sim")} title="Game simulator: a full play-by-play game built from real season stats, with a forecast from thousands of replays">
+              <span className="t-long">Simulator</span>
+              <span className="t-short">Sim</span>
             </button>
           </div>
           <div className="export-btns">
@@ -223,6 +233,10 @@ export default function App() {
                   <SpPlusTab />
                 ) : view === "nfl" ? (
                   <NflTab />
+                ) : view === "upset" ? (
+                  <UpsetMeter defaultLeague={league} />
+                ) : view === "sim" ? (
+                  <SimTab defaultLeague={league} />
                 ) : view === "insanity" ? (
                   <InsanityBoard defaultLeague={league === "CFB" ? "CFB" : "NFL"} />
                 ) : (
