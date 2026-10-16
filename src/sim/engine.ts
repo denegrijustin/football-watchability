@@ -28,6 +28,10 @@ export interface TeamSim {
   abbr: string;
   color: string;
   logo?: string;
+  /** Alternate brand color, the board logo id, and the conference name (or "NFL"), for the end zones and the logos painted on the field. */
+  alt?: string;
+  logoId?: string;
+  conf?: string | null;
   /** Strength ratios against the league average (1 = average): offense and defense, passing and rushing, third down, giveaways and takeaways. */
   passO: number; rushO: number; passD: number; rushD: number;
   thirdO: number; thirdD: number; giveO: number; takeD: number;

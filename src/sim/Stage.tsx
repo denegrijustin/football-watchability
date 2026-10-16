@@ -3,6 +3,8 @@ import { PlayArt } from "../components/PlayArt";
 import type { PlayArtKind } from "../playImpact";
 import { clockText, downText, type GameCfg, type PlayRec, type TeamSim } from "./engine";
 import { playerStats, type TeamPlayers } from "./box";
+import { ConfMark } from "../ConfMark";
+import { endzoneFor } from "./endzone";
 
 const FW = 1200, FH = 560, EZ = 100, YD = (FW - 2 * EZ) / 100, CY = FH / 2;
 const fx = (x: number) => EZ + Math.max(-4, Math.min(104, x)) * YD;
@@ -223,6 +225,11 @@ export function Stage({ cfg, plays, idx, pps }: { cfg: GameCfg; plays: PlayRec[]
   const caption = !p ? "The coin is in the air" : p.text;
   const first = p && p.nextDown > 0 && p.kind !== "kickoff" && !final ? ball + (p.nextOff === 0 ? 1 : -1) * p.nextDist : null;
   const lead = p && p.scorer !== null && p.pts > 0 ? p.scorer : null;
+  const ez = useMemo(() => endzoneFor(cfg.home), [cfg.home]);
+  // Long names are set smaller, and squeezed to fit the 560px end line if they still run long.
+  const ezSize = ez.word.length <= 6 ? 54 : ez.word.length <= 9 ? 44 : ez.word.length <= 12 ? 36 : 28;
+  const ezText = ez.word.length * (ezSize * 0.72 + 6) > 470 ? { textLength: 470, lengthAdjust: "spacingAndGlyphs" as const } : {};
+  const notreDame = cfg.home.short.toLowerCase() === "notre dame";
   const style = { ["--home" as string]: cfg.home.color, ["--away" as string]: cfg.away.color } as CSSProperties;
   const mid = (cfg.home.logo ?? cfg.away.logo) ? (cfg.home.logo ?? cfg.away.logo) : undefined;
 
@@ -246,22 +253,47 @@ export function Stage({ cfg, plays, idx, pps }: { cfg: GameCfg; plays: PlayRec[]
         <div className="st-plane">
           <svg viewBox={`0 0 ${FW} ${FH}`} role="img" aria-label={p ? p.text : "Football field"}>
             <defs>
-              <linearGradient id="st-ezshade" x1="0" x2="1"><stop offset="0" stopColor="#000" stopOpacity="0.35" /><stop offset="1" stopColor="#000" stopOpacity="0" /></linearGradient>
+              <linearGradient id="st-ezshade" x1="0" x2="1"><stop offset="0" stopColor="#000" stopOpacity="0.3" /><stop offset="1" stopColor="#000" stopOpacity="0" /></linearGradient>
+              {ez.checker && (
+                <pattern id="st-ezchk" width={ez.checker.size * 2} height={ez.checker.size * 2} patternUnits="userSpaceOnUse">
+                  <rect width={ez.checker.size * 2} height={ez.checker.size * 2} fill={ez.checker.b} />
+                  <rect width={ez.checker.size} height={ez.checker.size} fill={ez.checker.a} />
+                  <rect x={ez.checker.size} y={ez.checker.size} width={ez.checker.size} height={ez.checker.size} fill={ez.checker.a} />
+                </pattern>
+              )}
             </defs>
             <rect width={FW} height={FH} fill="#2c6b3d" />
             {Array.from({ length: 20 }, (_, i) => <rect key={i} x={EZ + i * 5 * YD} width={5 * YD} height={FH} fill={i % 2 ? "#2f7040" : "#286238"} />)}
-            <rect width={EZ} height={FH} fill={cfg.home.color} />
-            <rect x={FW - EZ} width={EZ} height={FH} fill={cfg.home.color} />
-            <rect width={EZ} height={FH} fill="url(#st-ezshade)" />
-            <rect x={FW - EZ} width={EZ} height={FH} fill="url(#st-ezshade)" />
-            <text className="st-ez" transform={`translate(${EZ / 2 + 8} ${CY}) rotate(-90)`}>{cfg.home.short.toUpperCase()}</text>
-            <text className="st-ez" transform={`translate(${FW - EZ / 2 - 8} ${CY}) rotate(90)`}>{cfg.home.short.toUpperCase()}</text>
+            {[0, FW - EZ].map((x) => (
+              <g key={x} data-endzone={cfg.home.short}>
+                <rect x={x} width={EZ} height={FH} fill={ez.base} />
+                {ez.checker && <rect x={x} width={EZ} height={FH} fill="url(#st-ezchk)" />}
+                {ez.stripe && <rect x={x === 0 ? 0 : FW - 10} width="10" height={FH} fill={ez.stripe} />}
+                <rect x={x} width={EZ} height={FH} fill="url(#st-ezshade)" opacity={x === 0 ? 1 : 0.6} />
+              </g>
+            ))}
+            {[[EZ / 2 + 4, -90], [FW - EZ / 2 - 4, 90]].map(([x, rot]) => (
+              <text key={rot} className="st-ez" transform={`translate(${x} ${CY}) rotate(${rot})`} {...ezText} style={{ fill: ez.ink, stroke: ez.outline, fontFamily: ez.serif ? "Georgia, 'Times New Roman', serif" : undefined, fontSize: ezSize }}>{ez.word}</text>
+            ))}
             {Array.from({ length: 21 }, (_, i) => i * 5).map((yd) => (
               <line key={yd} x1={fx(yd)} x2={fx(yd)} y1="0" y2={FH} stroke="#fff" strokeOpacity={yd % 10 === 0 ? 0.85 : 0.4} strokeWidth={yd % 10 === 0 ? 4 : 2} />
             ))}
             {[10, 20, 30, 40, 50, 60, 70, 80, 90].map((yd) => (
               <text key={yd} x={fx(yd)} y={FH - 40} className="st-yd">{yd > 50 ? 100 - yd : yd}</text>
             ))}
+            {cfg.home.conf && (
+              <>
+                <ConfMark conf={cfg.home.conf} cx={fx(25)} cy={104} size={118} />
+                <g transform={`rotate(180 ${fx(75)} ${FH - 104})`}><ConfMark conf={cfg.home.conf} cx={fx(75)} cy={FH - 104} size={118} /></g>
+              </>
+            )}
+            {notreDame && (
+              <g className="st-nd" aria-label="Touchdown Jesus">
+                <line x1={fx(52)} x2={FW - EZ - 28} y1="26" y2="26" stroke="#c99700" strokeWidth="5" strokeDasharray="16 12" strokeLinecap="round" />
+                <polygon points={`${FW - EZ - 6},26 ${FW - EZ - 34},12 ${FW - EZ - 34},40`} fill="#c99700" />
+                <text x={FW - EZ - 44} y="64" className="st-ndtext">TOUCHDOWN JESUS</text>
+              </g>
+            )}
             {mid && <image href={mid} x={fx(50) - 55} y={CY - 55} width="110" height="110" opacity="0.9" />}
             {lead !== null && <rect key={`g${p!.n}`} className="st-flash" x={lead === 0 ? FW - EZ : 0} width={EZ} height={FH} fill="#fff" />}
             {first !== null && first > 0 && first < 100 && <rect x={fx(first) - 3} y="0" width="6" height={FH} fill="#ffd84a" />}

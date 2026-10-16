@@ -8,7 +8,11 @@ import { fetchTeamInfo, startingQb, type TeamInfo } from "./roster";
 import { runForecast, type RunResult } from "./run";
 import { Stage } from "./Stage";
 import { BoxScore, PlayFeed, ScoringSummary, WinChart } from "./SimViewer";
+import { confOf } from "../teamConf";
 import "./sim.css";
+
+/** The conference ids in team-conferences.json, as the names the conference marks are keyed by. */
+const CONF_NAMES: Record<string, string> = { sec: "SEC", "big-ten": "Big Ten", "big-12": "Big 12", acc: "ACC", "pac-12": "Pac-12", "mountain-west": "Mountain West", american: "American", "sun-belt": "Sun Belt", "c-usa": "Conference USA", mac: "Mid-American" };
 
 type Snapshot = { leagues: Partial<Record<League, LeagueStats>> };
 const HFA: Record<League, number> = { NFL: 1.8, CFB: 2.5 };
@@ -119,7 +123,9 @@ export default function SimTab({ defaultLeague }: { defaultLeague: League }) {
     const k = known.get(`${league}:${raw.id}`);
     const short = slateTeam ? (league === "NFL" ? slateTeam.name.split(" ").pop() ?? slateTeam.name : slateTeam.name) : k?.short ?? (league === "NFL" ? raw.name.split(" ").pop() ?? raw.name : schoolName(raw.name));
     const logoId = slateTeam?.logoId ?? k?.logoId ?? [slug(raw.name), slug(schoolName(raw.name))].find((s) => logos[s]);
-    return { short, color: brandColor(info, slateTeam?.color ?? k?.color ?? hashColor(raw.name)), logo: logoId ? logos[logoId] : undefined, roster: { ...rosterFrom(game, side), ...Object.fromEntries(Object.entries(info.roster).filter(([, v]) => v !== undefined)) } };
+    // The conference painted on the field: the NFL's shield, or the school's conference (independents have none).
+    const confName = league === "NFL" ? "NFL" : (slateTeam as { ranks?: { confName?: string } } | undefined)?.ranks?.confName ?? (logoId ? CONF_NAMES[confOf("CFB", logoId) ?? ""] ?? null : null);
+    return { short, alt: info.alt, logoId, conf: confName === "Independent" ? null : confName, color: brandColor(info, slateTeam?.color ?? k?.color ?? hashColor(raw.name)), logo: logoId ? logos[logoId] : undefined, roster: { ...rosterFrom(game, side), ...Object.fromEntries(Object.entries(info.roster).filter(([, v]) => v !== undefined)) } };
   }, [known, league]);
 
   const simulate = useCallback(async (kind: "pick" | "custom") => {
@@ -144,10 +150,9 @@ export default function SimTab({ defaultLeague }: { defaultLeague: League }) {
     const A = buildTeam(ra, avg, resolve(ra, game, "away", ia, game?.teams[0]));
     const H = buildTeam(rh, avg, resolve(rh, game, "home", ih, game?.teams[1]));
     // Keep two similar team colors apart on the field.
+    // Two similar colors: the visitor changes. The end zones are the home team's, so its own colors stay.
     if (hexDist(A.team.color, H.team.color) < 130) {
-      if (ih.alt && hexDist(ih.alt, A.team.color) >= 130) H.team.color = ih.alt;
-      else if (ia.alt && hexDist(ia.alt, H.team.color) >= 130) A.team.color = ia.alt;
-      else H.team.color = "#d98a3d";
+      A.team.color = ia.alt && hexDist(ia.alt, H.team.color) >= 130 ? ia.alt : "#d98a3d";
     }
     const hfa = kind === "custom" && neutral ? 0 : HFA[league];
     const leg = game ? legacyFor(game.history?.boxes as LegacyBox[] | undefined, { name: game.teams[0].name, abbr: game.teams[0].abbr }, { name: game.teams[1].name, abbr: game.teams[1].abbr }) : legacyFor(undefined, { name: "", abbr: "" }, { name: "", abbr: "" });

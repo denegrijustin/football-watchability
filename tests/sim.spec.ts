@@ -133,3 +133,47 @@ test("the simulator names real players with ESPN and the server function both un
   await expect(panels.nth(1)).not.toContainText(/Chiefs QB|KC RB|KC receiver|B\. Smith/);
   await expect(panels.nth(0)).toContainText("J. Allen");
 });
+
+import { contrast, endzoneFor } from "../src/sim/endzone";
+
+test("end zones: Tennessee's checkerboard, Notre Dame's navy and gold, and a readable default for everyone else", () => {
+  const ten = endzoneFor({ short: "Tennessee", color: "#4b2e83" });
+  expect(ten.checker).toMatchObject({ a: "#ff8200", b: "#ffffff" });
+  expect(ten.word).toBe("TENNESSEE");
+  const nd = endzoneFor({ short: "Notre Dame", color: "#0c2340" });
+  expect([nd.base, nd.ink, nd.serif, nd.checker]).toEqual(["#0c2340", "#c99700", true, undefined]);
+  // Everyone else: the team's own color, lettered in the alternate when it stands out, otherwise white or black.
+  const packers = endzoneFor({ short: "Packers", color: "#203731", alt: "#ffb612" });
+  expect([packers.base, packers.ink]).toEqual(["#203731", "#ffb612"]);
+  const same = endzoneFor({ short: "Ohio State", color: "#bb0000", alt: "#c01010" }); // an alternate too close to the base is not used
+  expect(same.ink).toBe("#ffffff");
+  expect(endzoneFor({ short: "Light", color: "#fafafa", alt: "#f0f0f0" }).ink).toBe("#111111");
+  for (const t of [ten, nd, packers, same]) expect(contrast(t.base, t.ink)).toBeGreaterThanOrEqual(2);
+});
+
+test("the field carries the conference logo at each 25 (the second upside down), the NFL shield for NFL games, and Notre Dame's Touchdown Jesus line", async ({ page }) => {
+  const run = async (league: "CFB" | "NFL", away: string, home: string) => {
+    await page.goto(`/?league=${league}`);
+    await page.getByRole("button", { name: "Simulator" }).click();
+    await page.locator(".sim-custom summary").click();
+    const pick = async (n: number, name: string) => {
+      const sel = page.locator(".sim-custom select").nth(n);
+      await sel.selectOption(await sel.locator("option").evaluateAll((os, s) => (os as HTMLOptionElement[]).find((o) => o.textContent?.startsWith(s))?.value ?? "", name));
+    };
+    await pick(0, away);
+    await pick(1, home);
+    await page.getByRole("button", { name: "Simulate matchup" }).click();
+    await expect(page.getByRole("region", { name: "Forecast" })).toBeVisible({ timeout: 45_000 });
+  };
+  await run("CFB", "Alabama", "Tennessee");
+  await expect(page.locator(".st .lf-conf")).toHaveCount(2);
+  await expect(page.locator(".st .lf-conf").first()).toHaveAttribute("data-conf", "SEC");
+  expect(await page.locator(".st g[transform^='rotate(180']").count()).toBe(1); // the bottom-right one is turned over
+  await expect(page.locator(".st-nd")).toHaveCount(0);
+  await expect(page.locator(".st [data-endzone='Tennessee']")).toHaveCount(2); // both end zones are the home team's
+  await run("CFB", "Navy", "Notre Dame");
+  await expect(page.locator(".st-nd")).toHaveCount(1); // an independent: no conference mark, but the line to Touchdown Jesus
+  await expect(page.locator(".st .lf-conf")).toHaveCount(0);
+  await run("NFL", "Buffalo Bills", "Green Bay Packers");
+  await expect(page.locator(".st .lf-conf").first()).toHaveAttribute("data-conf", "NFL");
+});
