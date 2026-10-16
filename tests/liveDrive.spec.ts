@@ -298,24 +298,26 @@ test("with no answer from ESPN's CDN the conference mark stays a lettered badge"
 });
 
 /** A live card for NFL game 0 with these scores (state "in" or "post"); returns the card. */
-async function openScores(page: import("@playwright/test").Page, away: number, home: number, state: "in" | "post" = "in") {
+async function openScores(page: import("@playwright/test").Page, away: number, home: number, state: "in" | "post" = "in", game: any = games[0]) {
   const start = Math.max(...games.map((g: any) => new Date(g.date).getTime()));
   await page.clock.install({ time: start + 90 * 60e3 });
   await page.route("**/api/scores**", (route) =>
-    route.fulfill({ json: games.map((g: any, i: number) => ({ id: g.espnId, state: i === 0 ? state : "pre", detail: state === "post" ? "Final" : "5:12 - 3rd", away, home })) }),
+    route.fulfill({ json: games.map((g: any) => ({ id: g.espnId, state: g.espnId === game.espnId ? state : "pre", detail: state === "post" ? "Final" : "5:12 - 3rd", away, home })) }),
   );
   await page.route("**/api/flow**", (route) => route.fulfill({ json: { wp: [] } }));
   await page.route("**/api/game**", (route) => route.fulfill({ json: summary(65, "2nd & 7 at SEA 35") }));
   await page.goto("/?league=NFL");
-  return page.locator(`.game-card[data-game-id="${games[0].id}"]`);
+  return page.locator(`.game-card[data-game-id="${game.id}"]`);
 }
 // The upset is decided by the NFL+ rankings, the same ones shown beside the team names.
 const plusRanks = buildPlusRanks(JSON.parse(readFileSync("src/data/spplus.json", "utf8")), JSON.parse(readFileSync("src/data/nfl.json", "utf8")), JSON.parse(readFileSync("src/data/team-ids.json", "utf8")));
-const fpi = (i: number) => plusRanks.nfl.byAbbr[games[0].teams[i].abbr as string];
+const fpi = (i: number, g: any = games[0]) => plusRanks.nfl.byAbbr[g.teams[i].abbr as string];
+// An upset needs the two teams at least 10 places apart (#12 against #14 is a toss-up), so the upset tests use a game that qualifies.
+const wide = games.find((g: any) => Math.abs(fpi(0, g) - fpi(1, g)) >= 10) ?? games[0];
 
 test("a live card whose lower NFL+-ranked team is ahead gets the neon outline and an UPSET ALERT", async ({ page }) => {
-  const worse = fpi(0) > fpi(1) ? 0 : 1; // the team with the bigger rank number
-  const card = await openScores(page, worse === 0 ? 24 : 10, worse === 0 ? 10 : 24);
+  const worse = fpi(0, wide) > fpi(1, wide) ? 0 : 1; // the team with the bigger rank number
+  const card = await openScores(page, worse === 0 ? 24 : 10, worse === 0 ? 10 : 24, "in", wide);
   await expect(card).toHaveClass(/upset-alert/);
   await expect(card.locator(".upset-banner")).toContainText(/upset alert/i);
   expect(await card.evaluate((e) => getComputedStyle(e).boxShadow)).toContain("57, 255, 136");
@@ -331,7 +333,7 @@ test("a live card whose lower NFL+-ranked team is ahead gets the neon outline an
   expect(fit.top).toBeLessThanOrEqual(2);
   expect(Math.abs(fit.left)).toBeLessThanOrEqual(2);
   expect(Math.abs(fit.right)).toBeLessThanOrEqual(2);
-  await expect(card.locator(".upset-banner")).toContainText(new RegExp(`#${Math.max(fpi(0), fpi(1))}.*#${Math.min(fpi(0), fpi(1))}`));
+  await expect(card.locator(".upset-banner")).toContainText(new RegExp(`#${Math.max(fpi(0, wide), fpi(1, wide))}.*#${Math.min(fpi(0, wide), fpi(1, wide))}`));
 });
 
 test("no alert when the higher-ranked team is ahead, or the game is tied", async ({ page }) => {
@@ -343,10 +345,20 @@ test("no alert when the higher-ranked team is ahead, or the game is tied", async
 });
 
 test("if the lower-ranked team holds on, the card becomes an upset final", async ({ page }) => {
-  const worse = fpi(0) > fpi(1) ? 0 : 1;
-  const card = await openScores(page, worse === 0 ? 27 : 13, worse === 0 ? 13 : 27, "post");
+  const worse = fpi(0, wide) > fpi(1, wide) ? 0 : 1;
+  const card = await openScores(page, worse === 0 ? 27 : 13, worse === 0 ? 13 : 27, "post", wide);
   await expect(card).toHaveClass(/upset-final/);
   await expect(card.locator(".upset-banner")).toContainText(/upset final/i);
+});
+
+test("no alert when the lower-ranked team leads but the two are fewer than 10 places apart", async ({ page }) => {
+  const close = games.find((g: any) => Math.abs(fpi(0, g) - fpi(1, g)) < 10 && fpi(0, g) !== fpi(1, g));
+  test.skip(!close, "no NFL game this week has teams that close");
+  const worse = fpi(0, close) > fpi(1, close) ? 0 : 1;
+  const card = await openScores(page, worse === 0 ? 24 : 10, worse === 0 ? 10 : 24, "in", close);
+  await expect(card.locator(".gs-pill")).toBeVisible();
+  await expect(card).not.toHaveClass(/upset/);
+  await expect(card.locator(".upset-banner")).toHaveCount(0);
 });
 
 // ---------- run / pass colours on the field ----------

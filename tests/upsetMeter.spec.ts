@@ -1,8 +1,8 @@
 import { expect, test } from "@playwright/test";
-import { buildRows, tierFor, type RankSource, type ResultLike, type SlateLike } from "../src/upsetMeter";
+import { MIN_UPSET_GAP, buildRows, tierFor, type RankSource, type ResultLike, type SlateLike } from "../src/upsetMeter";
 
 const team = (abbr: string, extra = {}) => ({ name: abbr, abbr, logoId: abbr.toLowerCase(), color: null, ...extra });
-const RANKS: Record<string, number> = { AAA: 3, HHH: 90, BBB: 50, III: 10, LLL: 40, MMM: 42 };
+const RANKS: Record<string, number> = { AAA: 3, HHH: 90, BBB: 50, III: 10, LLL: 40, MMM: 42, PPP: 12, QQQ: 14, RRR: 13, SSS: 23 };
 const ranks: RankSource = { of: 100, rankOf: (t) => RANKS[t.abbr] ?? null };
 const game = (id: string, away: string, home: string): SlateLike => ({
   id, espnId: id, league: "CFB", date: "2026-10-17T16:00Z", teams: [team(away), team(home)],
@@ -42,6 +42,21 @@ test("a final game is graded on rank: the lower-ranked team winning is an upset"
   expect(by("r-r2").upset).toBe(true); // #50 beat #10
   expect(by("r-r3").upset).toBe(false); // #3 beat #90
   expect(by("r-r1").line).toBe(7.5);
+});
+
+test("an upset needs the teams to be at least 10 places apart: #14 beating #12 is not one, #23 beating #13 is", () => {
+  expect(MIN_UPSET_GAP).toBe(10);
+  const res = (id: string, a: [string, number], h: [string, number]): ResultLike => ({
+    espnId: id, league: "CFB", week: "w", date: "2026-10-15T00:00Z", teams: [{ ...team(a[0]), score: a[1] }, { ...team(h[0]), score: h[1] }], final: { detail: "Final" }, forecast: { line: null },
+  });
+  const rows = buildRows({ league: "CFB", games: [], results: [res("close", ["QQQ", 20], ["PPP", 17]), res("ten", ["SSS", 20], ["RRR", 17]), res("nine", ["MMM", 20], ["LLL", 17])], live: {}, period: "w", ranks });
+  const by = (k: string) => rows.find((r) => r.key === k)!;
+  expect([by("r-close").gap, by("r-close").upset]).toEqual([2, false]); // #14 over #12
+  expect([by("r-ten").gap, by("r-ten").upset]).toEqual([10, true]); // #23 over #13: exactly 10 places
+  expect(by("r-nine").upset).toBe(false); // #42 over #40
+  // And a close game in progress is never "brewing".
+  const live = buildRows({ league: "CFB", games: [game("g9", "QQQ", "PPP")], results: [], live: { g9: { state: "in", detail: "Q4", away: 14, home: 10 } }, period: "w", ranks })[0];
+  expect(live.brewing).toBe(false);
 });
 
 test("live and just-finished slate games update from the live feed; a game in the results is not listed twice", () => {

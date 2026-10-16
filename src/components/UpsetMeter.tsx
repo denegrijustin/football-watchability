@@ -51,7 +51,7 @@ function Row({ r, league, biggest }: { r: MeterRow; league: League; biggest: boo
         </div>
         {r.upset ? <em className="um-flag">{biggest ? "★ BIGGEST" : "UPSET"} · {under.abbr} +{r.gap}</em>
           : r.brewing ? <em className="um-flag live">UPSET BREWING</em>
-          : <span className="um-note">{note}{r.status === "final" && winner !== null ? " · favorite held" : ""}</span>}
+          : <span className="um-note">{note}{r.status === "final" && winner !== null ? (winner === r.favorite ? " · favorite held" : " · too close to call an upset") : ""}</span>}
       </div>
     </li>
   );

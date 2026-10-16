@@ -16,6 +16,9 @@ export const TIERS: MeterTier[] = [
   { id: 5, label: "Picking the Upset", short: "Pick", color: "#c4303f" },
 ];
 
+import { MIN_UPSET_GAP } from "./upset";
+export { MIN_UPSET_GAP };
+
 /** Rank gap as a share of the league (places apart / teams in the league) to tier. */
 export function tierFor(gapShare: number): MeterTier {
   return TIERS[gapShare >= 0.45 ? 0 : gapShare >= 0.28 ? 1 : gapShare >= 0.14 ? 2 : gapShare >= 0.05 ? 3 : 4];
@@ -40,7 +43,7 @@ export interface MeterRow {
   status: "pre" | "live" | "final";
   score: [number, number] | null;
   detail: string;
-  /** Only for final games: the lower-ranked team won. For live games: the lower-ranked team is ahead right now. */
+  /** Only for final games: the lower-ranked team won a game between teams MIN_UPSET_GAP or more places apart. For live games: the same team is ahead right now. */
   upset: boolean;
   brewing: boolean;
 }
@@ -95,7 +98,7 @@ export function buildRows(input: { league: "NFL" | "CFB"; games: SlateLike[]; re
     const under = (1 - c.favorite) as 0 | 1;
     const sc: [number, number] = [a.score, h.score];
     seen.add(r.espnId);
-    rows.push({ ...c, teams: [away, home], of, line: lineNum ? Math.abs(Number(lineNum[1])) : null, key: `r-${r.espnId}`, espnId: r.espnId, league: input.league, date: r.date, status: "final", score: sc, detail: r.final.detail, upset: sc[under] > sc[c.favorite], brewing: false });
+    rows.push({ ...c, teams: [away, home], of, line: lineNum ? Math.abs(Number(lineNum[1])) : null, key: `r-${r.espnId}`, espnId: r.espnId, league: input.league, date: r.date, status: "final", score: sc, detail: r.final.detail, upset: c.gap >= MIN_UPSET_GAP && sc[under] > sc[c.favorite], brewing: false });
   }
 
   for (const g of input.games) {
@@ -113,8 +116,8 @@ export function buildRows(input: { league: "NFL" | "CFB"; games: SlateLike[]; re
     rows.push({
       ...c, teams: [away, home], of, line, key: `g-${g.espnId}`, espnId: g.espnId, league: input.league, date: g.date, status, score: sc,
       detail: lv?.detail ?? "",
-      upset: status === "final" && !!sc && sc[under] > sc[c.favorite],
-      brewing: status === "live" && !!sc && sc[under] > sc[c.favorite],
+      upset: c.gap >= MIN_UPSET_GAP && status === "final" && !!sc && sc[under] > sc[c.favorite],
+      brewing: c.gap >= MIN_UPSET_GAP && status === "live" && !!sc && sc[under] > sc[c.favorite],
     });
   }
 
