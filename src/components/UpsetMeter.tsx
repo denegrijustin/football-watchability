@@ -3,7 +3,7 @@ import { fetchData } from "../data/load";
 import { logos, results, slate, type League } from "../data";
 import { plusRankFor, usePlusRanks, type TeamRef } from "../plusRanks";
 import { useLiveMap } from "../live";
-import { buildRows, ledgerResults, TIERS, type LedgerLike, type MeterRow, type MeterTeam, type WeeklyLike } from "../upsetMeter";
+import { buildRows, fillOf, ledgerResults, TIERS, type LedgerLike, type MeterRow, type MeterTeam, type WeeklyLike } from "../upsetMeter";
 import "../upsetMeter.css";
 
 type Show = "all" | "upcoming" | "final" | "upsets";
@@ -47,7 +47,7 @@ function Row({ r, league, biggest }: { r: MeterRow; league: League; biggest: boo
       <div className="um-side">
         <strong>{fav.abbr} +{r.gap} {r.gap === 1 ? "spot" : "spots"}</strong>
         <div className="um-bar" role="img" aria-label={`${under.name} is ranked ${r.gap} places below ${fav.name}: ${r.tier.short}`}>
-          <i style={{ width: `${r.tier.id * 20}%` }} />
+          <i style={{ width: `${fillOf(r.tier)}%` }} />
           <b /><b /><b /><b />
         </div>
         {r.upset ? <em className="um-flag">{biggest ? "★ BIGGEST" : "UPSET"} · {under.abbr} +{r.gap}</em>
@@ -147,7 +147,7 @@ export function UpsetMeter({ defaultLeague }: { defaultLeague: League }) {
       </div>
       {loading && <p className="ol-note" role="status">Loading…</p>}
       <ol className="um-legend" aria-label="Tiers">
-        {TIERS.map((t) => <li key={t.id} style={{ ["--tier" as string]: t.color }}><i />{t.short}</li>)}
+        {[...TIERS].reverse().map((t) => <li key={t.id} style={{ ["--tier" as string]: t.color }}><i />{t.short}</li>)}
       </ol>
       <div className={`um-cols${columns.length === 1 ? " one" : ""}`}>
         {columns.map((c) => (

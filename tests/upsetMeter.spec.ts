@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { MIN_UPSET_GAP, buildRows, ledgerResults, tierFor, type RankSource, type ResultLike, type SlateLike } from "../src/upsetMeter";
+import { MIN_UPSET_GAP, buildRows, fillOf, ledgerResults, tierFor, type RankSource, type ResultLike, type SlateLike } from "../src/upsetMeter";
 
 const team = (abbr: string, extra = {}) => ({ name: abbr, abbr, logoId: abbr.toLowerCase(), color: null, ...extra });
 const RANKS: Record<string, number> = { AAA: 3, HHH: 90, BBB: 50, III: 10, LLL: 40, MMM: 42, PPP: 12, QQQ: 14, RRR: 13, SSS: 23 };
@@ -11,6 +11,14 @@ const game = (id: string, away: string, home: string): SlateLike => ({
 
 test("tiers follow how far apart the ranks are, as a share of the league", () => {
   expect([0.9, 0.45, 0.449, 0.28, 0.279, 0.14, 0.139, 0.05, 0.049, 0.01].map((g) => tierFor(g).id)).toEqual([1, 1, 2, 2, 3, 3, 4, 4, 5, 5]);
+});
+
+test("the bar fills with the size of the gap: the biggest mismatch is full, a toss-up barely a fifth", () => {
+  expect([0.9, 0.3, 0.2, 0.07, 0.01].map((g) => fillOf(tierFor(g)))).toEqual([100, 80, 60, 40, 20]);
+  const rows = buildRows({ league: "CFB", games: [game("big", "AAA", "HHH"), game("close", "LLL", "MMM")], results: [], live: {}, period: "w", ranks });
+  const fill = (k: string) => fillOf(rows.find((r) => r.key === k)!.tier);
+  expect(fill("g-big")).toBeGreaterThan(fill("g-close")); // #3 against #90 fills more than #40 against #42
+  expect([fill("g-big"), fill("g-close")]).toEqual([100, 20]);
 });
 
 test("the better-ranked team is the favorite, the gap sets the tier, and the line is only shown", () => {

@@ -3,17 +3,20 @@
  *
  * Teams are compared by their national rank (SP+ for college, NFL+ for the NFL: the same ranks as the game cards). The lower-ranked team is
  * the underdog, and the tier comes from how far apart the two ranks are as a share of the league: a top-5 team against the 120th is "Act of
- * God Required", two teams a few places apart is "Picking the Upset". A game that has gone final is scored the same way: the lower-ranked
+ * God Required", two teams a few places apart is "Picking the Upset". The bar fills with the size of that gap: the biggest mismatch fills it completely, a near toss-up barely a fifth. A game that has gone final is scored the same way: the lower-ranked
  * team winning is an upset. The betting line is shown for reference but plays no part in the tier.
  */
+/** Tier 1 is the biggest gap. `fill` is how much of the bar it fills: the bigger the gap between the teams, the fuller the bar. */
+export const fillOf = (t: MeterTier) => (6 - t.id) * 20;
+
 export interface MeterTier { id: 1 | 2 | 3 | 4 | 5; label: string; color: string; short: string }
 
 export const TIERS: MeterTier[] = [
-  { id: 1, label: "Act of God Required", short: "Act of God", color: "#3f9f55" },
-  { id: 2, label: "Wizardry Needed", short: "Wizardry", color: "#86b83f" },
+  { id: 1, label: "Act of God Required", short: "Act of God", color: "#c4303f" },
+  { id: 2, label: "Wizardry Needed", short: "Wizardry", color: "#d9722f" },
   { id: 3, label: "A Few Good Bounces", short: "Good Bounces", color: "#d4a63a" },
-  { id: 4, label: "Mayhem on the Horizon", short: "Mayhem", color: "#d9722f" },
-  { id: 5, label: "Picking the Upset", short: "Pick", color: "#c4303f" },
+  { id: 4, label: "Mayhem on the Horizon", short: "Mayhem", color: "#86b83f" },
+  { id: 5, label: "Picking the Upset", short: "Pick", color: "#3f9f55" },
 ];
 
 import { MIN_UPSET_GAP } from "./upset";
