@@ -7,6 +7,7 @@ import { WeatherLayer, weatherCaption } from "./WeatherFx";
 import { ConfMark } from "./ConfMark";
 import { EndZones, EZ_H, EZ_W } from "./sim/EndZones";
 import { endzoneFor } from "./sim/endzone";
+import { MIDFIELD_ART } from "./sim/midfield";
 import type { WeatherLike } from "./weatherFx";
 import type { GameBadge } from "./gameLogo";
 import { driveSegments, playKind, type Seg } from "./driveKinds";
@@ -250,7 +251,10 @@ export function FieldView({ data, teams, variant, rootRef, badge, weather }: { d
         <WeatherLayer weather={weather} period={data.status.period} h={H} y0={0} seed={Number(ids[0]) || 1} compact={variant === "card"} />
         {firstDown != null && <line x1={X(firstDown)} x2={X(firstDown)} y1="0" y2={H} className="df-first" />}
         <line x1={X(goal)} x2={X(goal)} y1="0" y2={H} className="df-goal" />
-        {(badge?.src ?? (!badge?.neutral && home.logoId ? logos[home.logoId] : null)) && (
+        {!badge?.src && home.logoId && MIDFIELD_ART[home.logoId] && (
+          <image href={MIDFIELD_ART[home.logoId].src} data-midfield="art" x={60 - 9.5} y={H / 2 - 9.5 / MIDFIELD_ART[home.logoId].ratio} width="19" height={19 / MIDFIELD_ART[home.logoId].ratio} opacity="0.95" />
+        )}
+        {!(!badge?.src && home.logoId && MIDFIELD_ART[home.logoId]) && (badge?.src ?? (!badge?.neutral && home.logoId ? logos[home.logoId] : null)) && (
           <LogoMark src={badge?.src ?? logos[home.logoId!]} cx={60} cy={H / 2} size={11} chipOpacity={0.16} imageClass="lf-mid" />
         )}
         {earlier > 0 && <text x="11.5" y="4.6" className="lf-tagtext">▲ {earlier} earlier play{earlier === 1 ? "" : "s"}</text>}

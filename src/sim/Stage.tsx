@@ -6,6 +6,7 @@ import { playerStats, type TeamPlayers } from "./box";
 import { ConfMark } from "../ConfMark";
 import { endzoneFor } from "./endzone";
 import { EndZones } from "./EndZones";
+import { MIDFIELD_ART } from "./midfield";
 
 const FW = 1200, FH = 560, EZ = 100, YD = (FW - 2 * EZ) / 100, CY = FH / 2;
 const fx = (x: number) => EZ + Math.max(-4, Math.min(104, x)) * YD;
@@ -226,6 +227,7 @@ export function Stage({ cfg, plays, idx, pps }: { cfg: GameCfg; plays: PlayRec[]
   const caption = !p ? "The coin is in the air" : p.text;
   const first = p && p.nextDown > 0 && p.kind !== "kickoff" && !final ? ball + (p.nextOff === 0 ? 1 : -1) * p.nextDist : null;
   const lead = p && p.scorer !== null && p.pts > 0 ? p.scorer : null;
+  const midArt = cfg.home.logoId ? MIDFIELD_ART[cfg.home.logoId] : undefined;
   const ez = useMemo(() => endzoneFor(cfg.home), [cfg.home]);
   const notreDame = cfg.home.short.toLowerCase() === "notre dame";
   const style = { ["--home" as string]: cfg.home.color, ["--away" as string]: cfg.away.color } as CSSProperties;
@@ -272,7 +274,7 @@ export function Stage({ cfg, plays, idx, pps }: { cfg: GameCfg; plays: PlayRec[]
                 <text x={FW - EZ - 44} y="64" className="st-ndtext">TOUCHDOWN JESUS</text>
               </g>
             )}
-            {mid && <image href={mid} x={fx(50) - 55} y={CY - 55} width="110" height="110" opacity="0.9" />}
+            {midArt ? <image href={midArt.src} data-midfield="art" x={fx(50) - 130} y={CY - 130 / midArt.ratio} width="260" height={260 / midArt.ratio} opacity="0.95" /> : mid && <image href={mid} x={fx(50) - 55} y={CY - 55} width="110" height="110" opacity="0.9" />}
             {lead !== null && <rect key={`g${p!.n}`} className="st-flash" x={lead === 0 ? FW - EZ : 0} width={EZ} height={FH} fill="#fff" />}
             {first !== null && first > 0 && first < 100 && <rect x={fx(first) - 3} y="0" width="6" height={FH} fill="#ffd84a" />}
             {p && p.kind !== "kickoff" && <rect x={fx(ball) - 2.5} y="0" width="5" height={FH} fill="#4aa3ff" opacity="0.9" />}

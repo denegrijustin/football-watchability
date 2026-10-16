@@ -309,3 +309,23 @@ test("NFL+ has a Conf & Div view: both conferences and all eight divisions ranke
   // each division's teams run best rating first
   expect(await sh((r) => [...r.querySelectorAll(".div-card")].every((c) => { const v = [...c.querySelectorAll("li .num:not(.muted)")].map((e) => parseFloat((e.textContent ?? "").replace("−", "-"))); return v.every((x, i) => i === 0 || v[i - 1] >= x); }))).toBe(true);
 });
+
+test("the Chargers put their banner at midfield, in the simulator, when they are the home team; other teams keep their logo", async ({ page }) => {
+  const run = async (away: string, home: string) => {
+    await page.goto("/?league=NFL");
+    await page.getByRole("button", { name: "Simulator" }).click();
+    await page.locator(".sim-custom summary").click();
+    const pick = async (n: number, name: string) => {
+      const sel = page.locator(".sim-custom select").nth(n);
+      await sel.selectOption(await sel.locator("option").evaluateAll((os, s) => (os as HTMLOptionElement[]).find((o) => o.textContent === s)?.value ?? "", name));
+    };
+    await pick(0, away);
+    await pick(1, home);
+    await page.getByRole("button", { name: "Simulate matchup" }).click();
+    await expect(page.getByRole("region", { name: "Forecast" })).toBeVisible({ timeout: 45_000 });
+  };
+  await run("Kansas City Chiefs", "Los Angeles Chargers");
+  await expect(page.locator(".st image[data-midfield='art']")).toHaveAttribute("href", "/field-art/chargers.webp");
+  await run("Los Angeles Chargers", "Kansas City Chiefs");
+  await expect(page.locator(".st image[data-midfield='art']")).toHaveCount(0);
+});
