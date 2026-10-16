@@ -568,3 +568,316 @@
   margin-right: 6px;
   border: 1px solid rgb(255 255 255 / 0.5);
 }
+
+/* broadcast stage */
+.st {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  min-height: 300px;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #04070b;
+  color: #fff;
+  isolation: isolate;
+}
+.st.full {
+  border-radius: 0;
+  aspect-ratio: auto;
+  height: 100vh;
+}
+.st-glow {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(ellipse 28% 38% at 0% 12%, color-mix(in srgb, var(--away) 55%, transparent), transparent 70%),
+    radial-gradient(ellipse 28% 38% at 100% 12%, color-mix(in srgb, var(--home) 55%, transparent), transparent 70%),
+    radial-gradient(circle at 12% 30%, rgb(255 255 255 / 0.12) 0 2px, transparent 3px) 0 0 / 46px 38px,
+    radial-gradient(circle at 88% 26%, rgb(255 255 255 / 0.1) 0 2px, transparent 3px) 0 0 / 52px 44px,
+    linear-gradient(#070b10, #0a1118 70%, #03060a);
+}
+.st-bar {
+  position: absolute;
+  top: 3.5%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(52%, 640px);
+  min-width: 300px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  background: rgb(10 18 30 / 0.92);
+  border-radius: 6px;
+  overflow: hidden;
+  z-index: 3;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.5);
+}
+.st-team {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-bottom: 3px solid var(--tc);
+  min-width: 0;
+}
+.st-team.home {
+  justify-content: flex-end;
+}
+.st-team strong {
+  font-size: clamp(12px, 1.9vw, 20px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.st-team output {
+  font-size: clamp(20px, 3.4vw, 36px);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  background: #fff;
+  color: #07101a;
+  border-radius: 4px;
+  min-width: 1.5ch;
+  text-align: center;
+  padding: 0 6px;
+  margin: 0 auto 0 4px;
+}
+.st-team.home output {
+  margin: 0 4px 0 auto;
+}
+.st-clock {
+  display: grid;
+  place-content: center;
+  text-align: center;
+  padding: 4px 14px;
+  background: #0c1522;
+  min-width: 96px;
+}
+.st-clock b {
+  font-size: clamp(12px, 1.7vw, 17px);
+  font-variant-numeric: tabular-nums;
+}
+.st-clock span {
+  font-size: clamp(10px, 1.2vw, 12px);
+  color: #aab8c6;
+  white-space: nowrap;
+}
+.st-panel {
+  position: absolute;
+  top: 17%;
+  width: clamp(120px, 17%, 210px);
+  background: rgb(10 16 24 / 0.82);
+  border-top: 2px solid var(--tc);
+  border-radius: 4px 4px 8px 8px;
+  padding: 8px 10px;
+  z-index: 2;
+  font-size: clamp(10px, 1.15vw, 13px);
+}
+.st-panel.left {
+  left: 1%;
+}
+.st-panel.right {
+  right: 1%;
+}
+.st-panel header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 1.15em;
+  margin-bottom: 4px;
+}
+.st-panel dl {
+  margin: 0;
+}
+.st-panel dt {
+  color: var(--tc);
+  filter: brightness(1.5) saturate(1.2);
+  font-size: 0.85em;
+  font-weight: 700;
+  margin-top: 6px;
+}
+.st-panel dd {
+  margin: 1px 0 0;
+  display: grid;
+}
+.st-panel dd span {
+  color: #cfd9e3;
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 640px) {
+  .st-panel {
+    display: none;
+  }
+}
+.st-view {
+  position: absolute;
+  inset: 16% 3% 11%;
+  perspective: 1100px;
+  perspective-origin: 50% 8%;
+}
+.st-plane {
+  width: 100%;
+  height: 100%;
+  transform: rotateX(54deg);
+  transform-origin: 50% 100%;
+  filter: drop-shadow(0 30px 40px rgb(0 0 0 / 0.6));
+}
+.st-plane svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.st-yd {
+  fill: rgb(255 255 255 / 0.75);
+  font-size: 30px;
+  font-weight: 700;
+  text-anchor: middle;
+}
+.st-dot {
+  stroke: #fff;
+  stroke-width: 1.8;
+  transition: transform calc(var(--dur) * 1.4) ease-in-out;
+}
+.st-rest,
+.st-flight {
+  transform-box: fill-box;
+}
+.st-rest {
+  transition: transform var(--dur) ease-out;
+  animation: st-show 0.01s linear var(--dur) backwards;
+}
+.st-flight {
+  animation: st-fly var(--dur) ease-in-out forwards;
+  animation-name: st-fly;
+}
+.st-flight.run {
+  animation-timing-function: linear;
+}
+.st-shadow {
+  fill: rgb(0 0 0 / 0.35);
+}
+@keyframes st-show {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes st-fly {
+  0% {
+    transform: translate(var(--x0), var(--cy));
+  }
+  50% {
+    transform: translate(calc((var(--x0) + var(--x1)) / 2), calc(var(--cy) - var(--lift)));
+  }
+  100% {
+    transform: translate(var(--x1), var(--cy));
+  }
+}
+.st-flash {
+  animation: st-flash 0.9s ease-out forwards;
+  opacity: 0;
+}
+@keyframes st-flash {
+  0% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+.st-banner {
+  position: absolute;
+  left: 50%;
+  top: 40%;
+  translate: -50% -50%;
+  padding: 6px 28px;
+  font-size: clamp(20px, 5vw, 56px);
+  font-weight: 900;
+  font-style: italic;
+  letter-spacing: 0.04em;
+  background: rgb(8 14 22 / 0.78);
+  border-top: 3px solid #ff6a4d;
+  border-bottom: 3px solid #ff6a4d;
+  text-shadow: 0 2px 12px rgb(0 0 0 / 0.7);
+  z-index: 4;
+  white-space: nowrap;
+  animation: st-banner 1.6s ease-out forwards;
+  pointer-events: none;
+}
+.st-banner.good {
+  border-color: #ffd84a;
+}
+@keyframes st-banner {
+  0% {
+    opacity: 0;
+    scale: 0.7;
+  }
+  12% {
+    opacity: 1;
+    scale: 1.05;
+  }
+  20% {
+    scale: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+.st-caption {
+  position: absolute;
+  left: 50%;
+  bottom: 3%;
+  transform: translateX(-50%);
+  width: min(80%, 760px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-align: center;
+  font-size: clamp(12px, 1.7vw, 19px);
+  font-weight: 600;
+  padding: 8px 14px;
+  background: linear-gradient(90deg, transparent, rgb(6 10 16 / 0.8) 12%, rgb(6 10 16 / 0.8) 88%, transparent);
+  z-index: 3;
+}
+.st-art {
+  display: inline-flex;
+  color: #ffd84a;
+  flex: none;
+}
+.st-tag {
+  position: absolute;
+  right: 2%;
+  bottom: 3.5%;
+  font-size: 10px;
+  color: #8796a5;
+  z-index: 3;
+}
+.st-full {
+  position: absolute;
+  left: 2%;
+  bottom: 3%;
+  font: inherit;
+  font-size: 11px;
+  color: #cfd9e3;
+  background: rgb(10 16 24 / 0.7);
+  border: 1px solid rgb(255 255 255 / 0.2);
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+  z-index: 5;
+}
+@media (prefers-reduced-motion: reduce) {
+  .st-dot,
+  .st-rest {
+    transition: none;
+  }
+  .st-flight,
+  .st-banner,
+  .st-flash {
+    animation-duration: 0.01s;
+  }
+}

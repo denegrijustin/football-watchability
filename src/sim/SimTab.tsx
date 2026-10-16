@@ -5,7 +5,8 @@ import { playGame, type GameCfg, type PlayRec, type TeamSim } from "./engine";
 import { buildTeam, leagueAverages, statTargets, type BuiltTeam, type LeagueStats, type RawTeam, type TeamExtras } from "./profile";
 import { legacyFor, type Legacy, type LegacyBox } from "./legacy";
 import { runForecast, type RunResult } from "./run";
-import { BoxScore, Field, PlayFeed, ScoringSummary, Scoreboard, WinChart } from "./SimViewer";
+import { Stage } from "./Stage";
+import { BoxScore, PlayFeed, ScoringSummary, WinChart } from "./SimViewer";
 import "./sim.css";
 
 type Snapshot = { leagues: Partial<Record<League, LeagueStats>> };
@@ -291,8 +292,7 @@ export default function SimTab({ defaultLeague }: { defaultLeague: League }) {
               <h3>Play by play</h3>
               <span className="sim-small">Game #{seed.toString(36)}</span>
             </div>
-            <Scoreboard cfg={cfg} plays={plays} idx={idx} />
-            <Field cfg={cfg} plays={plays} idx={idx} />
+            <Stage cfg={cfg} plays={plays} idx={idx} pps={SPEEDS.find((x) => x.id === speed)?.pps ?? 5} />
             <div className="sim-transport">
               <button onClick={() => { if (atEnd) { setIdx(-1); setPlaying(true); } else setPlaying(!playing); }} aria-label={playing ? "Pause" : atEnd ? "Replay" : "Play"}>{playing ? "Pause" : atEnd ? "Replay" : "Play"}</button>
               <div className="segmented" role="group" aria-label="Speed">

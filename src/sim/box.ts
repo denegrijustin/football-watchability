@@ -58,3 +58,40 @@ export function quarterPoints(plays: PlayRec[], upto: number): [number[], number
 }
 
 export const mmss = (s: number) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, "0")}`;
+
+export interface TeamPlayers {
+  /** Passer: completions, attempts, yards. */
+  pass: { name: string; comp: number; att: number; yds: number; td: number; int: number } | null;
+  /** Leading rusher: carries, yards, touchdowns. */
+  rush: { name: string; att: number; yds: number; td: number } | null;
+  /** Leading receiver: catches, yards, touchdowns. */
+  rec: { name: string; n: number; yds: number; td: number } | null;
+}
+
+/** Individual leaders for each team through play `upto`, from the names the engine puts on each play. */
+export function playerStats(plays: PlayRec[], upto: number): [TeamPlayers, TeamPlayers] {
+  const pass: Record<string, NonNullable<TeamPlayers["pass"]>>[] = [{}, {}];
+  const rush: Record<string, NonNullable<TeamPlayers["rush"]>>[] = [{}, {}];
+  const rec: Record<string, NonNullable<TeamPlayers["rec"]>>[] = [{}, {}];
+  for (let i = 0; i <= upto && i < plays.length; i++) {
+    const p = plays[i], t = p.off;
+    const own = p.td && p.scorer === p.off;
+    if (p.kind === "pass" && p.passer) {
+      const x = (pass[t][p.passer] ??= { name: p.passer, comp: 0, att: 0, yds: 0, td: 0, int: 0 });
+      x.att++;
+      if (p.complete) { x.comp++; x.yds += p.yds; if (own) x.td++; }
+      if (p.turnover === "int") x.int++;
+      if (p.complete && p.target) {
+        const r = (rec[t][p.target] ??= { name: p.target, n: 0, yds: 0, td: 0 });
+        r.n++; r.yds += p.yds; if (own) r.td++;
+      }
+    }
+    if (p.kind === "rush" && p.runner) {
+      const r = (rush[t][p.runner] ??= { name: p.runner, att: 0, yds: 0, td: 0 });
+      r.att++; r.yds += p.yds; if (own) r.td++;
+    }
+  }
+  const top = <T,>(m: Record<string, T>, key: (v: T) => number): T | null => Object.values(m).sort((a, b) => key(b) - key(a))[0] ?? null;
+  const mk = (t: 0 | 1): TeamPlayers => ({ pass: top(pass[t], (v) => v.att), rush: top(rush[t], (v) => v.yds), rec: top(rec[t], (v) => v.yds) });
+  return [mk(0), mk(1)];
+}
