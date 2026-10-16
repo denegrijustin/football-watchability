@@ -242,3 +242,17 @@ test("on a phone the whole simulator stage fits the screen's width, with no side
     expect(m.page, `page width at ${w}px`).toBeLessThanOrEqual(m.vw);
   }
 });
+
+test("the SP+ conference summary and the NFL+ ratings carry each conference's logo", async ({ page }) => {
+  const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAFUlEQVR42mNk+M9Qz0AEYBxVSF+FABJADveWkH6oAAAAAElFTkSuQmCC", "base64");
+  await page.route(/espncdn\.com\/i\/teamlogos/, (r) => r.fulfill({ contentType: "image/png", body: png }));
+  const logos = () => page.evaluate(() => { const h = [...document.querySelectorAll("*")].find((e) => e.shadowRoot?.querySelector(".tabs")); return [...(h?.shadowRoot?.querySelectorAll("[data-conf-logo]") ?? [])].map((e) => e.getAttribute("data-conf-logo")); });
+  await page.goto("/?league=CFB");
+  await page.getByRole("button", { name: "CFB SP+" }).click();
+  await page.getByRole("tab", { name: "Conferences" }).click();
+  await expect.poll(async () => (await logos()).length, { timeout: 15_000 }).toBeGreaterThanOrEqual(9);
+  expect(await logos()).toEqual(expect.arrayContaining(["SEC", "Big Ten", "American", "Mountain West", "Mid-American"])); // sheet names map to the registry's
+  await page.getByRole("button", { name: "NFL+" }).click();
+  await expect.poll(async () => (await logos()).length, { timeout: 15_000 }).toBeGreaterThanOrEqual(32);
+  expect(new Set(await logos())).toEqual(new Set(["AFC", "NFC"]));
+});

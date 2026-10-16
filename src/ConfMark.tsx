@@ -64,3 +64,23 @@ export function ConfMark({ conf, cx, cy, size }: { conf?: string | null; cx: num
     </g>
   );
 }
+
+/** The names the SP+ sheet and the NFL ratings use for the conferences, by the name the logo registry has. */
+const ALIAS: Record<string, string> = { AAC: "American", MWC: "Mountain West", CUSA: "Conference USA", MAC: "Mid-American", "Big Ten": "Big Ten", "Indies": "" };
+
+/**
+ * A conference's official logo as a small image on a light chip (it has to read on a dark page), for tables and lists. Nothing at all for a conference
+ * with no logo (independents), so the caller keeps its own marker.
+ */
+export function ConfLogo({ conf, size = 20 }: { conf?: string | null; size?: number }) {
+  const name = conf != null ? (conf in ALIAS ? ALIAS[conf] : conf) : null;
+  const e = confEntry(name);
+  const remote = useRemote(name, e?.src ? undefined : e?.remote);
+  const src = e?.src ?? remote;
+  if (!e || !src) return null;
+  return (
+    <span data-conf-logo={name} style={{ display: "inline-grid", placeItems: "center", width: size, height: size, borderRadius: size * 0.3, background: "rgba(255,255,255,0.92)", verticalAlign: "middle", flex: "none" }}>
+      <img src={src} alt="" width={size * 0.78} height={size * 0.78} style={{ objectFit: "contain" }} />
+    </span>
+  );
+}

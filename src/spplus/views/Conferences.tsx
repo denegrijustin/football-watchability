@@ -6,6 +6,7 @@ import { Derived, Notes, TeamLink } from "../components/common";
 import { SortTable, type Col } from "../components/SortTable";
 import { StripPlot, type StripGroup } from "../charts/Strip";
 import { confColor } from "../charts/kit";
+import { ConfLogo } from "../../ConfMark";
 import { DIV_LABEL, type DivKey } from "../data/types";
 
 interface ConfStat { conf: string; n: number; mean: number; median: number; best: { name: string; v: number }; worst: { name: string; v: number }; top25: number }
@@ -64,7 +65,7 @@ export default function Conferences() {
   if (sel && selTw && selCr) notes.push(`${sel.name}: ${ord(selTw[rkKey(useMetric)])} nationally and ${ord(selCr[useMetric])} of ${selCr.size} in the ${selTw.conf}.`);
 
   const cols: Col<ConfStat>[] = [
-    { key: "c", label: "Conference", get: (s) => s.conf, render: (s) => <span><i style={{ display: "inline-block", width: 8, height: 8, borderRadius: 2, background: confColor(s.conf), marginRight: 6 }} />{s.conf}</span> },
+    { key: "c", label: "Conference", get: (s) => s.conf, render: (s) => <span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}><i style={{ display: "inline-block", width: 8, height: 8, borderRadius: 2, background: confColor(s.conf) }} /><ConfLogo conf={s.conf} size={20} />{s.conf}</span> },
     { key: "n", label: "Teams", align: "r", first: "desc", get: (s) => s.n },
     { key: "mean", label: `Mean ${mm.label}`, align: "r", first: mm.lowerBetter ? "asc" : "desc", get: (s) => s.mean, render: (s) => fmt(s.mean) },
     { key: "med", label: "Median", align: "r", first: mm.lowerBetter ? "asc" : "desc", get: (s) => s.median, render: (s) => fmt(s.median) },
