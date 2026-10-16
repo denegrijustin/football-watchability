@@ -9,7 +9,7 @@ type Show = "all" | "upcoming" | "final" | "upsets";
 
 function Logo({ team }: { team: MeterTeam }) {
   const src = logos[team.logoId];
-  return src ? <img src={src} alt="" width="34" height="34" loading="lazy" /> : <span className="um-badge" style={{ background: team.color ?? "#6b7785" }}>{team.abbr.slice(0, 3)}</span>;
+  return src ? <img src={src} alt="" width="24" height="24" loading="lazy" /> : <span className="um-badge" style={{ background: team.color ?? "#6b7785" }}>{team.abbr.slice(0, 3)}</span>;
 }
 
 const when = (iso: string) =>
@@ -21,51 +21,38 @@ function Row({ r, league }: { r: MeterRow; league: League }) {
   const under = r.teams[1 - r.favorite];
   const winner = r.score ? (r.score[0] > r.score[1] ? 0 : r.score[1] > r.score[0] ? 1 : null) : null;
   const cls = `um-row${r.status === "final" ? " final" : ""}${r.upset ? " upset" : ""}${r.brewing ? " brewing" : ""}`;
+  // The better (lower) rank in each category is highlighted; equal ranks highlight neither.
+  const best = (mine: number | null | undefined, theirs: number | null | undefined) => mine != null && (theirs == null || mine < theirs);
+  const note = r.status === "pre"
+    ? [r.line != null ? `Line ${fav.abbr} -${r.line}` : "", when(r.date)].filter(Boolean).join(" · ")
+    : r.detail || (r.status === "final" ? "Final" : "Live");
   return (
     <li className={cls} style={{ ["--tier" as string]: r.tier.color }}>
-      <div className="um-match" aria-label={`${a.name} at ${h.name}`}>
-        {a.rank != null && <span className="um-rank" title={`${league === "NFL" ? "NFL+" : "SP+"} rank`}>{a.rank}</span>}
-        <Logo team={a} />
-        <span className="um-at">@</span>
-        <Logo team={h} />
-        {h.rank != null && <span className="um-rank" title={`${league === "NFL" ? "NFL+" : "SP+"} rank`}>{h.rank}</span>}
-      </div>
-      <div className="um-line">
-        <strong>{fav.abbr} +{r.gap} {r.gap === 1 ? "spot" : "spots"}</strong>
-        <span>{[r.line != null ? `Line ${fav.abbr} -${r.line}` : "", r.status === "pre" ? when(r.date) : ""].filter(Boolean).join(" · ")}</span>
-      </div>
-      <div className="um-bar" role="img" aria-label={`${under.name} is ranked ${r.gap} places below ${fav.name}: ${r.tier.short}`}>
-        <i style={{ width: `${r.tier.id * 20}%` }} />
-        <b /><b /><b /><b />
-      </div>
-      <div className="um-tier" role="table" aria-label="Rankings, away team first">
-        <div className="um-th" role="row"><span /><span>Overall</span><span>Off</span><span>Def</span></div>
+      <div className="um-teams" role="table" aria-label={`${a.name} at ${h.name}, ${league === "NFL" ? "NFL+" : "SP+"} ranks`}>
         {([a, h] as const).map((t, i) => {
           const o = i === 0 ? h : a;
-          // The better (lower) rank in each category is highlighted; equal ranks highlight neither.
-          const best = (mine: number | undefined, theirs: number | undefined) => mine != null && (theirs == null || mine < theirs);
           return (
             <div key={i} className="um-tr" role="row">
-              <b role="rowheader">{t.abbr}</b>
-              <span role="cell" className={best(t.rank ?? undefined, o.rank ?? undefined) ? "best" : ""}>{t.rank != null ? `#${t.rank}` : "NR"}</span>
+              <Logo team={t} />
+              <b role="rowheader" title={t.name}>{t.abbr}</b>
+              <span role="cell" className={best(t.rank, o.rank) ? "best" : ""}>{t.rank != null ? `#${t.rank}` : "NR"}</span>
               <span role="cell" className={best(t.o, o.o) ? "best" : ""}>{t.o ?? "–"}</span>
               <span role="cell" className={best(t.d, o.d) ? "best" : ""}>{t.d ?? "–"}</span>
+              <em role="cell" className={`um-pts${winner === i ? " w" : ""}`}>{r.score ? r.score[i] : ""}</em>
             </div>
           );
         })}
       </div>
-      {r.status !== "pre" && r.score && (
-        <div className="um-result">
-          <span className="um-state">{r.status === "final" ? r.detail || "FINAL" : r.detail || "LIVE"}</span>
-          <span className="um-score">
-            <span className={winner === 0 ? "w" : ""}>{a.abbr} {r.score[0]}</span>
-            <span className={winner === 1 ? "w" : ""}>{h.abbr} {r.score[1]}</span>
-          </span>
-          {r.upset && <em className="um-flag">UPSET · {under.abbr} beat {fav.abbr}</em>}
-          {r.status === "final" && !r.upset && winner !== null && <em className="um-held">Favorite held</em>}
-          {r.brewing && <em className="um-flag live">UPSET BREWING</em>}
+      <div className="um-side">
+        <strong>{fav.abbr} +{r.gap} {r.gap === 1 ? "spot" : "spots"}</strong>
+        <div className="um-bar" role="img" aria-label={`${under.name} is ranked ${r.gap} places below ${fav.name}: ${r.tier.short}`}>
+          <i style={{ width: `${r.tier.id * 20}%` }} />
+          <b /><b /><b /><b />
         </div>
-      )}
+        {r.upset ? <em className="um-flag">UPSET · {under.abbr}</em>
+          : r.brewing ? <em className="um-flag live">UPSET BREWING</em>
+          : <span className="um-note">{note}{r.status === "final" && winner !== null ? " · favorite held" : ""}</span>}
+      </div>
     </li>
   );
 }
@@ -122,6 +109,7 @@ export function UpsetMeter({ defaultLeague }: { defaultLeague: League }) {
         {columns.map((c) => (
           <section key={c.id} className="um-col" aria-label={c.title}>
             <h3>{c.title}<span>{c.rows.length}</span></h3>
+            {c.rows.length ? <div className="um-listhead" aria-hidden="true"><div className="um-hl"><span /><span /><span>Overall</span><span>Off</span><span>Def</span><span>{c.id === "todo" ? "" : "Pts"}</span></div><i>Upset gap</i></div> : null}
             {c.rows.length ? <ol className="um-list" aria-label={`${c.title} games by upset chance, most lopsided first`}>{c.rows.map((r) => <Row key={r.key} r={r} league={league} />)}</ol> : <p className="ol-note">{c.empty}</p>}
           </section>
         ))}
