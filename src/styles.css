@@ -7208,3 +7208,25 @@ select,
   cursor: help;
 }
 .ls-name .fpi-rank { font-size: 10.5px; margin-right: 6px; vertical-align: 1px; }
+
+/* Eight tabs: always fully visible, never overlapping. The buttons share the row evenly and, when the row is too narrow for them, wrap to a
+   second row of equal cells instead of being squeezed or scrolled. */
+.view-row .view-switch {
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.view-row .view-switch button {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: center;
+}
+@media (max-width: 640px) {
+  .view-row {
+    align-items: flex-start;
+  }
+  .view-row .view-switch button {
+    flex: 1 1 calc(25% - 3px);
+    padding: 0 4px;
+    font-size: 12px;
+  }
+}

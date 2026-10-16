@@ -65,6 +65,10 @@ export interface PlayRec {
   /** "int", "fumble" or "downs" when the ball changed hands on the play. */
   turnover?: "int" | "fumble" | "downs";
   complete?: boolean;
+  /** Players involved, for the broadcast panels. */
+  passer?: string;
+  target?: string;
+  runner?: string;
   /** Points added on this play and to whom. */
   pts: number;
   scorer: Side | null;
@@ -453,18 +457,18 @@ export function playGame(cfg: GameCfg, seed: number, record = false): GameResult
         const rec = other(off);
         const dt = burn(7, true, hurry, false);
         if (spotY >= 100) {
-          emit({ ...b, kind: "pass", text: `${passer} intercepted in the end zone by ${D.short} — touchback.`, dt, x1: toX(100, off), turnover: "int", big: true });
+          emit({ ...b, kind: "pass", passer, target, text: `${passer} intercepted in the end zone by ${D.short} — touchback.`, dt, x1: toX(100, off), turnover: "int", big: true });
           swap(20);
           return;
         }
         if (u() < 0.055) {
           score[rec] += 6;
-          emit({ ...b, kind: "pass", text: `${passer} INTERCEPTED by ${D.short} — returned for a TOUCHDOWN!`, dt, x1: toX(0, off), turnover: "int", td: true, pts: 6, scorer: rec, big: true });
+          emit({ ...b, kind: "pass", passer, target, text: `${passer} INTERCEPTED by ${D.short} — returned for a TOUCHDOWN!`, dt, x1: toX(0, off), turnover: "int", td: true, pts: 6, scorer: rec, big: true });
           scoreTd(rec);
           return;
         }
         const oppY = clamp(100 - spotY + ln(9, 1.1), 1, 99);
-        emit({ ...b, kind: "pass", text: `${passer} pass intercepted by ${D.short}, returned to the ${spotText(Math.round(oppY), rec)}.`, dt, x1: toX(Math.round(oppY), rec), turnover: "int", big: true });
+        emit({ ...b, kind: "pass", passer, target, text: `${passer} pass intercepted by ${D.short}, returned to the ${spotText(Math.round(oppY), rec)}.`, dt, x1: toX(Math.round(oppY), rec), turnover: "int", big: true });
         swap(oppY);
         return;
       }
@@ -472,7 +476,7 @@ export function playGame(cfg: GameCfg, seed: number, record = false): GameResult
       if (u() >= compP) {
         const dt = burn(5, true, hurry, false);
         down++;
-        emit({ ...b, kind: "pass", text: `${passer} pass incomplete${u() < 0.35 ? ` intended for ${target}` : ""}.`, dt, x1: startX, complete: false });
+        emit({ ...b, kind: "pass", passer, target, text: `${passer} pass incomplete${u() < 0.35 ? ` intended for ${target}` : ""}.`, dt, x1: startX, complete: false });
         if (down > 4) turnoverOnDowns();
         return;
       }
@@ -482,19 +486,19 @@ export function playGame(cfg: GameCfg, seed: number, record = false): GameResult
       const dt = burn(gain > 15 ? 8 : 6, hurry ? u() < 0.3 : u() < 0.12, hurry, leadingLate);
       if (ny >= 100) {
         score[off] += 6;
-        emit({ ...b, kind: "pass", text: `${passer} pass complete to ${target} for ${gain} yards — TOUCHDOWN ${O.short}!`, dt, x1: toX(100, off), yds: gain, td: true, first: true, complete: true, pts: 6, scorer: off, big: true });
+        emit({ ...b, kind: "pass", passer, target, text: `${passer} pass complete to ${target} for ${gain} yards — TOUCHDOWN ${O.short}!`, dt, x1: toX(100, off), yds: gain, td: true, first: true, complete: true, pts: 6, scorer: off, big: true });
         scoreTd(off);
         return;
       }
       if (u() < 0.004 * m.tf) {
-        emit({ ...b, kind: "pass", text: `${passer} pass complete to ${target} for ${gain} — FUMBLE, recovered by ${D.short}!`, dt, x1: toX(ny, off), yds: gain, turnover: "fumble", complete: true, big: true });
+        emit({ ...b, kind: "pass", passer, target, text: `${passer} pass complete to ${target} for ${gain} — FUMBLE, recovered by ${D.short}!`, dt, x1: toX(ny, off), yds: gain, turnover: "fumble", complete: true, big: true });
         swap(100 - ny);
         return;
       }
       const first = gain >= dist;
       y = ny;
       if (first) { down = 1; dist = Math.min(10, 100 - y); } else { down++; dist -= gain; }
-      emit({ ...b, kind: "pass", text: `${passer} pass complete to ${target} for ${gain} yards${first ? ", first down" : ""}.`, dt, x1: toX(y, off), yds: gain, first, complete: true, big: gain >= 20 });
+      emit({ ...b, kind: "pass", passer, target, text: `${passer} pass complete to ${target} for ${gain} yards${first ? ", first down" : ""}.`, dt, x1: toX(y, off), yds: gain, first, complete: true, big: gain >= 20 });
       if (down > 4) turnoverOnDowns();
       return;
     }
@@ -509,12 +513,12 @@ export function playGame(cfg: GameCfg, seed: number, record = false): GameResult
     const ny = y + gain;
     if (ny >= 100) {
       score[off] += 6;
-      emit({ ...b, kind: "rush", text: `${runner} runs ${gain} yards — TOUCHDOWN ${O.short}!`, dt, x1: toX(100, off), yds: gain, td: true, first: true, pts: 6, scorer: off, big: true });
+      emit({ ...b, kind: "rush", runner, text: `${runner} runs ${gain} yard${gain === 1 ? "" : "s"} — TOUCHDOWN ${O.short}!`, dt, x1: toX(100, off), yds: gain, td: true, first: true, pts: 6, scorer: off, big: true });
       scoreTd(off);
       return;
     }
     if (ny <= 0) {
-      emit({ ...b, kind: "rush", text: `${runner} tackled in the end zone — SAFETY! ${D.short} +2`, dt, x1: toX(0, off), yds: -y, pts: 2, scorer: other(off), big: true });
+      emit({ ...b, kind: "rush", runner, text: `${runner} tackled in the end zone — SAFETY! ${D.short} +2`, dt, x1: toX(0, off), yds: -y, pts: 2, scorer: other(off), big: true });
       safety(off);
       return;
     }
@@ -522,11 +526,11 @@ export function playGame(cfg: GameCfg, seed: number, record = false): GameResult
       if (u() < 0.06) {
         const rec = other(off);
         score[rec] += 6;
-        emit({ ...b, kind: "rush", text: `${runner} FUMBLES — ${D.short} returns it for a TOUCHDOWN!`, dt, x1: toX(0, off), yds: gain, turnover: "fumble", td: true, pts: 6, scorer: rec, big: true });
+        emit({ ...b, kind: "rush", runner, text: `${runner} FUMBLES — ${D.short} returns it for a TOUCHDOWN!`, dt, x1: toX(0, off), yds: gain, turnover: "fumble", td: true, pts: 6, scorer: rec, big: true });
         scoreTd(rec);
         return;
       }
-      emit({ ...b, kind: "rush", text: `${runner} runs for ${gain} — FUMBLE, recovered by ${D.short}!`, dt, x1: toX(ny, off), yds: gain, turnover: "fumble", big: true });
+      emit({ ...b, kind: "rush", runner, text: `${runner} runs for ${gain} — FUMBLE, recovered by ${D.short}!`, dt, x1: toX(ny, off), yds: gain, turnover: "fumble", big: true });
       swap(100 - ny);
       return;
     }
@@ -534,7 +538,7 @@ export function playGame(cfg: GameCfg, seed: number, record = false): GameResult
     y = ny;
     if (first) { down = 1; dist = Math.min(10, 100 - y); } else { down++; dist -= gain; }
     const word = gain === 0 ? "no gain" : gain < 0 ? `a loss of ${-gain}` : `${gain} yard${gain === 1 ? "" : "s"}`;
-    emit({ ...b, kind: "rush", text: `${runner} runs for ${word}${first ? ", first down" : ""}.`, dt, x1: toX(y, off), yds: gain, first, big: gain >= 20 });
+    emit({ ...b, kind: "rush", runner, text: `${runner} runs for ${word}${first ? ", first down" : ""}.`, dt, x1: toX(y, off), yds: gain, first, big: gain >= 20 });
     if (down > 4) turnoverOnDowns();
   };
 
