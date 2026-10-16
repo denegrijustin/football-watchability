@@ -51,7 +51,7 @@ test("the Upset Alert Meter: filters on one line, a week selector, and an earlie
   await expect(page.locator(".um-col h3")).toHaveText(/Completed/);
   await expect(page.locator(".um-row").first()).toBeVisible();
   expect(await page.locator(".um-row.final").count()).toBe(await page.locator(".um-row").count());
-  await expect(page.getByRole("button", { name: "To play" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Next" })).toHaveCount(0);
 });
 
 import { shape, type Raw } from "../src/sim/roster";
@@ -199,4 +199,32 @@ test("the field carries the conference logo at each 25 (the second upside down),
   await expect(page.locator(".st .lf-conf")).toHaveCount(0);
   await run("NFL", "Buffalo Bills", "Green Bay Packers");
   await expect(page.locator(".st .lf-conf").first()).toHaveAttribute("data-conf", "NFL");
+});
+
+test("the Upset Alert Meter can be filtered by conference, on one line with the other filters", async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.goto("/?league=CFB");
+  await page.getByRole("button", { name: "Upset Alert Meter" }).click();
+  await expect(page.locator(".um-row").first()).toBeVisible();
+  const all = await page.locator(".um-row").count();
+  const sel = page.locator(".um-conf select");
+  const options = await sel.locator("option").allTextContents();
+  expect(options).toContain("SEC");
+  await sel.selectOption({ label: "SEC" });
+  const sec = await page.locator(".um-row").count();
+  expect(sec).toBeGreaterThan(0);
+  expect(sec).toBeLessThan(all);
+  // every game shown has a team in the SEC
+  const abbrs = await page.locator(".um-row").first().locator(".um-tr b").allTextContents();
+  expect(abbrs).toHaveLength(2);
+  // the filters share one line and nothing scrolls sideways
+  expect(await page.evaluate(() => { const c = document.querySelector(".um-controls")!; return c.scrollWidth <= c.clientWidth + 1 && new Set([...c.children].map((k) => Math.round(k.getBoundingClientRect().top))).size === 1; })).toBe(true);
+  // games are told apart by a clear line
+  const border = await page.locator(".um-row").first().evaluate((e) => parseFloat(getComputedStyle(e).borderBottomWidth));
+  expect(border).toBeGreaterThanOrEqual(2);
+  await sel.selectOption("all");
+  expect(await page.locator(".um-row").count()).toBe(all);
+  // the NFL has its two conferences
+  await page.getByRole("button", { name: "NFL", exact: true }).click();
+  expect(await sel.locator("option").allTextContents()).toEqual(expect.arrayContaining(["AFC", "NFC"]));
 });

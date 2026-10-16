@@ -2,6 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { fetchData } from "../data/load";
 import { logos, results, slate, type League } from "../data";
 import { plusRankFor, usePlusRanks, type TeamRef } from "../plusRanks";
+import { confOf } from "../teamConf";
+
+const CONF_LABEL: Record<string, string> = { sec: "SEC", "big-ten": "Big Ten", "big-12": "Big 12", acc: "ACC", "pac-12": "Pac-12", "mountain-west": "Mountain West", american: "American", "sun-belt": "Sun Belt", "c-usa": "Conference USA", mac: "MAC", independent: "Independent", afc: "AFC", nfc: "NFC" };
 import { useLiveMap } from "../live";
 import { buildRows, fillOf, ledgerResults, TIERS, type LedgerLike, type MeterRow, type MeterTeam, type WeeklyLike } from "../upsetMeter";
 import "../upsetMeter.css";
@@ -62,6 +65,7 @@ export function UpsetMeter({ defaultLeague }: { defaultLeague: League }) {
   const [league, setLeague] = useState<League>(defaultLeague);
   const [show, setShow] = useState<Show>("all");
   const [week, setWeek] = useState(slate.period);
+  const [conf, setConf] = useState("all");
   const [ledger, setLedger] = useState<LedgerLike[] | null>(null);
   const [weekly, setWeekly] = useState<WeeklyLike | null>(null);
   const live = useLiveMap();
@@ -106,10 +110,17 @@ export function UpsetMeter({ defaultLeague }: { defaultLeague: League }) {
     });
   }, [league, live, plus, current, ledger, weekly, week]);
 
+  // A game belongs to a conference when either team plays in it.
+  const confsOf = (r: MeterRow) => r.teams.map((t) => confOf(league, t.logoId)).filter((c): c is string => !!c);
+  const confOptions = useMemo(() => [...new Set(rows.flatMap(confsOf))].sort((a, b) => (CONF_LABEL[a] ?? a).localeCompare(CONF_LABEL[b] ?? b)), [rows, league]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (conf !== "all" && !confOptions.includes(conf)) setConf("all"); }, [confOptions, conf]);
+  useEffect(() => { setConf("all"); }, [league]);
+  const allRows = rows;
+  const shownRows = conf === "all" ? allRows : allRows.filter((r) => confsOf(r).includes(conf));
   // The largest rank gap among the upsets so far.
-  const biggestKey = rows.filter((r) => r.upset).sort((x, y) => y.gap - x.gap)[0]?.key;
-  const done = rows.filter((r) => r.status === "final");
-  const todo = rows.filter((r) => r.status !== "final");
+  const biggestKey = shownRows.filter((r) => r.upset).sort((x, y) => y.gap - x.gap)[0]?.key;
+  const done = shownRows.filter((r) => r.status === "final");
+  const todo = shownRows.filter((r) => r.status !== "final");
   const upsets = done.filter((r) => r.upset);
   const columns: { id: string; title: string; rows: MeterRow[]; empty: string }[] =
     !current
@@ -120,8 +131,8 @@ export function UpsetMeter({ defaultLeague }: { defaultLeague: League }) {
           ? [{ id: "todo", title: "Upcoming", rows: todo, empty: "No games left to play." }]
           : show === "final"
             ? [{ id: "done", title: "Completed", rows: done, empty: "No games have finished yet." }]
-            : [{ id: "ups", title: "Upsets", rows: rows.filter((r) => r.upset || r.brewing), empty: "No upsets yet this week." }];
-  const shows: [Show, string][] = current ? [["all", "All"], ["upcoming", "To play"], ["final", "Final"], ["upsets", "Upsets"]] : [["all", "All"], ["upsets", "Upsets"]];
+            : [{ id: "ups", title: "Upsets", rows: shownRows.filter((r) => r.upset || r.brewing), empty: "No upsets yet this week." }];
+  const shows: [Show, string][] = current ? [["all", "All"], ["upcoming", "Next"], ["final", "Final"], ["upsets", "Upsets"]] : [["all", "All"], ["upsets", "Upsets"]];
   const loading = current ? !plus : !ledger || !weekly;
 
   return (
@@ -139,6 +150,13 @@ export function UpsetMeter({ defaultLeague }: { defaultLeague: League }) {
         <div className="segmented" role="group" aria-label="League">
           {(["NFL", "CFB"] as const).map((l) => <button key={l} aria-pressed={league === l} onClick={() => setLeague(l)}>{l}</button>)}
         </div>
+        <label className="um-conf">
+          <span className="sr-only">Conference</span>
+          <select value={conf} onChange={(e) => setConf(e.target.value)} aria-label="Conference">
+            <option value="all">{league === "NFL" ? "Both conferences" : "All conferences"}</option>
+            {confOptions.map((c) => <option key={c} value={c}>{CONF_LABEL[c] ?? c}</option>)}
+          </select>
+        </label>
         <div className="segmented" role="group" aria-label="Show">
           {shows.map(([id, label]) => (
             <button key={id} aria-pressed={show === id} onClick={() => setShow(id)}>{label}{id === "upsets" && upsets.length ? <span className="um-n">{upsets.length}</span> : null}</button>
