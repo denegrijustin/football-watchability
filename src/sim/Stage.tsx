@@ -283,8 +283,8 @@ export function Stage({ cfg, plays, idx, pps }: { cfg: GameCfg; plays: PlayRec[]
             ))}
             {cfg.home.conf && (
               <>
-                <ConfMark conf={cfg.home.conf} cx={fx(25)} cy={104} size={118} />
-                <g transform={`rotate(180 ${fx(75)} ${FH - 104})`}><ConfMark conf={cfg.home.conf} cx={fx(75)} cy={FH - 104} size={118} /></g>
+                <ConfMark conf={cfg.home.conf} cx={fx(25)} cy={78} size={46} />
+                <g transform={`rotate(180 ${fx(75)} ${FH - 78})`}><ConfMark conf={cfg.home.conf} cx={fx(75)} cy={FH - 78} size={46} /></g>
               </>
             )}
             {notreDame && (
