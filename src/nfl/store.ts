@@ -1,12 +1,13 @@
 import { useCallback, useSyncExternalStore } from "react";
 
-export type NflView = "rankings" | "simulator" | "ats" | "matchups" | "movement" | "team";
+export type NflView = "rankings" | "simulator" | "ats" | "matchups" | "movement" | "standings" | "team";
 export const NFL_VIEWS: { key: NflView; label: string }[] = [
   { key: "rankings", label: "Ratings" },
   { key: "simulator", label: "Simulator" },
   { key: "ats", label: "ATS tracker" },
   { key: "matchups", label: "Matchups" },
   { key: "movement", label: "Movement" },
+  { key: "standings", label: "Conf & Div" },
   { key: "team", label: "Team" },
 ];
 

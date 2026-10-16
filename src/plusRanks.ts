@@ -5,7 +5,8 @@ import type { PlusRanks } from "./plusRanksBuild";
 
 export type { PlusRanks };
 export type TeamRef = { abbr?: string; logoId?: string; espnId?: string | null; name?: string };
-export type PlusRank = { n: number; of: number; kind: "SP+" | "NFL+" };
+/** `n` is the overall rank; `o` and `d` are the offense and defense ranks (1 = best) when known. */
+export type PlusRank = { n: number; of: number; kind: "SP+" | "NFL+"; o?: number; d?: number };
 
 let load: Promise<PlusRanks | null> | null = null;
 let loaded: PlusRanks | null = null;
@@ -35,12 +36,15 @@ export function plusRankFor(ranks: PlusRanks | null, league: string, t: TeamRef)
   if (!ranks) return null;
   if (league === "NFL") {
     const n = t.abbr ? ranks.nfl.byAbbr[t.abbr] : undefined;
-    return n ? { n, of: ranks.nfl.of, kind: "NFL+" } : null;
+    const od = t.abbr ? ranks.nfl.od?.[t.abbr] : undefined;
+    return n ? { n, of: ranks.nfl.of, kind: "NFL+", o: od?.[0], d: od?.[1] } : null;
   }
-  const n = (t.logoId && ranks.cfb.byLogo[t.logoId]) || (t.espnId && ranks.cfb.byEspn[t.espnId]) || (t.name && ranks.cfb.byName?.[t.name.toLowerCase()]) || undefined;
-  return n ? { n, of: ranks.cfb.of, kind: "SP+" } : null;
+  const c = ranks.cfb, nm = t.name?.toLowerCase();
+  const n = (t.logoId && c.byLogo[t.logoId]) || (t.espnId && c.byEspn[t.espnId]) || (nm && c.byName?.[nm]) || undefined;
+  const od = (t.logoId && c.od?.byLogo[t.logoId]) || (t.espnId && c.od?.byEspn[t.espnId]) || (nm && c.od?.byName[nm]) || undefined;
+  return n ? { n, of: c.of, kind: "SP+", o: od?.[0], d: od?.[1] } : null;
 }
 
 const ord = (n: number) => `${n}${[, "st", "nd", "rd"][(n % 100 >> 3) ^ 1 && n % 10] || "th"}`;
 export const plusRankTitle = (r: PlusRank) =>
-  `${r.kind} rank: ${ord(r.n)} of ${r.of}${r.kind === "SP+" ? " FBS teams" : " teams (EPA-based ratings)"}`;
+  `${r.kind} rank: ${ord(r.n)} of ${r.of}${r.kind === "SP+" ? " FBS teams" : " teams (EPA-based ratings)"}${r.o ? ` · offense ${ord(r.o)}` : ""}${r.d ? ` · defense ${ord(r.d)}` : ""}`;

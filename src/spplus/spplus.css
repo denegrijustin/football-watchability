@@ -176,3 +176,117 @@ ol.steps b { color: var(--ink); }
 .atshead div { display: flex; flex-direction: column; }
 .atshead b { font-size: 24px; font-weight: 650; }
 @media (max-width: 560px) { .atshead { grid-template-columns: repeat(2, minmax(0, 1fr)); } .atshead b { font-size: 20px; } }
+
+/* the team profile popup opened from a dot in the conference chart */
+.team-pop-back {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgb(4 8 12 / 0.7);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+.team-pop {
+  position: relative;
+  width: min(420px, 100%);
+  background: var(--surface, #121b23);
+  color: var(--ink, #eaf0f4);
+  border: 1px solid var(--line, #243441);
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 20px 60px rgb(0 0 0 / 0.55);
+}
+.team-pop-x {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  font-size: 22px;
+  line-height: 1;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+}
+.team-pop-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.team-pop-head h3 {
+  margin: 0;
+  font-size: 18px;
+}
+.team-pop-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 0 0 14px;
+}
+.team-pop-grid > div {
+  background: rgb(255 255 255 / 0.04);
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+.team-pop-grid dt {
+  font-size: 11px;
+  opacity: 0.7;
+}
+.team-pop-grid dd {
+  margin: 2px 0 0;
+  font-size: 16px;
+  font-weight: 650;
+}
+.team-pop-actions {
+  display: flex;
+  gap: 8px;
+}
+.team-pop-actions button {
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid var(--line, #33475a);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.team-pop-actions .primary {
+  background: rgb(192 237 128 / 0.16);
+  border-color: #c0ed80;
+  color: #c0ed80;
+  font-weight: 650;
+}
+
+/* NFL+ standings: each division's teams in order */
+.div-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+.div-card {
+  border: 1px solid var(--line, #243441);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+.div-card h3 {
+  margin: 0 0 6px;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.div-card ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.div-card li {
+  display: grid;
+  grid-template-columns: 16px 1fr auto auto auto;
+  gap: 8px;
+  align-items: center;
+  font-size: 13px;
+}

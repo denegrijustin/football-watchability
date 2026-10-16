@@ -6,6 +6,7 @@ import { NflTeamLink, Notes } from "../common";
 import { SortTable, type Col } from "../../spplus/components/SortTable";
 import { Spark } from "../../spplus/charts/Spark";
 import { fmt, ord } from "../../spplus/data/derive";
+import { ConfLogo } from "../../ConfMark";
 
 type Metric = "sp" | "off" | "def" | "st";
 const METRICS: { key: Metric; label: string; long: string; idx: 0 | 1 | 2 | 3; low: boolean }[] = [
@@ -45,6 +46,7 @@ export default function Ratings() {
   const cols: Col<TeamRow>[] = [
     { key: "rk", label: "Rank", align: "r", get: rkOf, render: (r) => <span className="num">{rkOf(r)}</span> },
     { key: "team", label: "Team", get: (r) => r.name, render: (r) => <NflTeamLink abbr={r.abbr} /> },
+    { key: "conf", label: "Conference", get: (r) => r.conf, render: (r) => <span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}><ConfLogo conf={r.conf} size={20} />{r.conf} <span className="muted">· {r.confRank}/{all.filter((x) => x.conf === r.conf).length}</span></span> },
     { key: "div", label: "Division", hideSm: true, get: (r) => r.div, render: (r) => <span>{r.div} <span className="muted">· {r.divRank}/{all.filter((x) => x.div === r.div).length}</span></span> },
     { key: "rec", label: "Record", hideSm: true, get: (r) => r.rec.w - r.rec.l, first: "desc", render: (r) => <span className="num">{r.rec.w}-{r.rec.l}{r.rec.t ? `-${r.rec.t}` : ""}</span> },
     { key: "val", label: mm.label, title: mm.long, first: mm.low ? "asc" : "desc", get: (r) => rel(r, mm.idx), render: (r) => <Bar v={rel(r, mm.idx)} domain={domain} low={mm.low} /> },
@@ -84,7 +86,7 @@ export default function Ratings() {
               <div><dt>Offense / rank</dt><dd>{fmt(r.r[1])} / {r.rank.off}</dd></div>
               <div><dt>Defense / rank</dt><dd>{fmt(r.r[2])} / {r.rank.def}</dd></div>
               <div><dt>Special teams / rank</dt><dd>{fmt(r.r[3])} / {r.rank.st}</dd></div>
-              <div><dt>Conference rank</dt><dd>{r.confRank} of {all.filter((x) => x.conf === r.conf).length} in the {r.conf}</dd></div>
+              <div><dt>Conference rank</dt><dd><span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}><ConfLogo conf={r.conf} size={20} />{r.confRank} of {all.filter((x) => x.conf === r.conf).length} in the {r.conf}</span></dd></div>
               <div><dt>Division rank</dt><dd>{r.divRank} of 4 in the {r.div}</dd></div>
               <div><dt>Record before week {week}</dt><dd>{r.rec.w}-{r.rec.l}{r.rec.t ? `-${r.rec.t}` : ""}</dd></div>
               <div><dt></dt><dd><button type="button" className="btn small" onClick={() => nav({ view: "team", team: r.abbr })}>Open team</button> <button type="button" className="btn small" onClick={() => nav({ view: "simulator", p: { a: r.abbr } })}>Simulate a game</button></dd></div>

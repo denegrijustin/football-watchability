@@ -4,11 +4,15 @@ import { fetchData } from "../data/load";
 import { playGame, type GameCfg, type PlayRec, type TeamSim } from "./engine";
 import { buildTeam, leagueAverages, statTargets, type BuiltTeam, type LeagueStats, type RawTeam, type TeamExtras } from "./profile";
 import { legacyFor, type Legacy, type LegacyBox } from "./legacy";
-import { fetchTeamInfo, type TeamInfo } from "./roster";
+import { fetchTeamInfo, startingQb, type TeamInfo } from "./roster";
 import { runForecast, type RunResult } from "./run";
 import { Stage } from "./Stage";
 import { BoxScore, PlayFeed, ScoringSummary, WinChart } from "./SimViewer";
+import { confOf } from "../teamConf";
 import "./sim.css";
+
+/** The conference ids in team-conferences.json, as the names the conference marks are keyed by. */
+const CONF_NAMES: Record<string, string> = { sec: "SEC", "big-ten": "Big Ten", "big-12": "Big 12", acc: "ACC", "pac-12": "Pac-12", "mountain-west": "Mountain West", american: "American", "sun-belt": "Sun Belt", "c-usa": "Conference USA", mac: "Mid-American" };
 
 type Snapshot = { leagues: Partial<Record<League, LeagueStats>> };
 const HFA: Record<League, number> = { NFL: 1.8, CFB: 2.5 };
@@ -118,8 +122,10 @@ export default function SimTab({ defaultLeague }: { defaultLeague: League }) {
   const resolve = useCallback((raw: RawTeam, game: Game | undefined, side: "away" | "home", info: TeamInfo, slateTeam?: Game["teams"][number]): TeamExtras => {
     const k = known.get(`${league}:${raw.id}`);
     const short = slateTeam ? (league === "NFL" ? slateTeam.name.split(" ").pop() ?? slateTeam.name : slateTeam.name) : k?.short ?? (league === "NFL" ? raw.name.split(" ").pop() ?? raw.name : schoolName(raw.name));
-    const logoId = slateTeam?.logoId ?? k?.logoId ?? [slug(raw.name), slug(schoolName(raw.name))].find((s) => logos[s]);
-    return { short, color: brandColor(info, slateTeam?.color ?? k?.color ?? hashColor(raw.name)), logo: logoId ? logos[logoId] : undefined, roster: { ...rosterFrom(game, side), ...info.roster } };
+    const logoId = slateTeam?.logoId ?? k?.logoId ?? [slug(raw.name.replace("Donkeys", "Broncos")), slug(schoolName(raw.name))].find((s) => logos[s]);
+    // The conference painted on the field: the NFL's shield, or the school's conference (independents have none).
+    const confName = league === "NFL" ? "NFL" : (slateTeam as { ranks?: { confName?: string } } | undefined)?.ranks?.confName ?? (logoId ? CONF_NAMES[confOf("CFB", logoId) ?? ""] ?? null : null);
+    return { short, alt: info.alt, logoId, conf: confName === "Independent" ? null : confName, color: brandColor(info, slateTeam?.color ?? k?.color ?? hashColor(raw.name)), logo: logoId ? logos[logoId] : undefined, roster: { ...rosterFrom(game, side), ...Object.fromEntries(Object.entries(info.roster).filter(([, v]) => v !== undefined)) } };
   }, [known, league]);
 
   const simulate = useCallback(async (kind: "pick" | "custom") => {
@@ -136,14 +142,17 @@ export default function SimTab({ defaultLeague }: { defaultLeague: League }) {
     }
     if (!ra || !rh || ra.id === rh.id) return;
     setBusy(true); setPlaying(false);
-    const [ia, ih] = await Promise.all([fetchTeamInfo(league, ra.id, table.season), fetchTeamInfo(league, rh.id, table.season)]);
+    const [ia0, ih0] = await Promise.all([fetchTeamInfo(league, ra.id, table.season), fetchTeamInfo(league, rh.id, table.season)]);
+    // The NFL's starting quarterbacks come from the nflverse data the site already has (the latest game each team names a QB for), ahead of ESPN's leaders.
+    const starters = league === "NFL" ? await fetchData<{ nfl?: { qb?: Record<string, string> } }>("plus-ranks-weekly").then((w) => w.nfl?.qb ?? {}, () => ({} as Record<string, string>)) : {};
+    const withQb = (i: TeamInfo, abbr: string): TeamInfo => ({ ...i, roster: { ...i.roster, qb: startingQb(i, starters[abbr]) ?? i.roster.qb } });
+    const ia = withQb(ia0, ra.abbreviation), ih = withQb(ih0, rh.abbreviation);
     const A = buildTeam(ra, avg, resolve(ra, game, "away", ia, game?.teams[0]));
     const H = buildTeam(rh, avg, resolve(rh, game, "home", ih, game?.teams[1]));
     // Keep two similar team colors apart on the field.
+    // Two similar colors: the visitor changes. The end zones are the home team's, so its own colors stay.
     if (hexDist(A.team.color, H.team.color) < 130) {
-      if (ih.alt && hexDist(ih.alt, A.team.color) >= 130) H.team.color = ih.alt;
-      else if (ia.alt && hexDist(ia.alt, H.team.color) >= 130) A.team.color = ia.alt;
-      else H.team.color = "#d98a3d";
+      A.team.color = ia.alt && hexDist(ia.alt, H.team.color) >= 130 ? ia.alt : "#d98a3d";
     }
     const hfa = kind === "custom" && neutral ? 0 : HFA[league];
     const leg = game ? legacyFor(game.history?.boxes as LegacyBox[] | undefined, { name: game.teams[0].name, abbr: game.teams[0].abbr }, { name: game.teams[1].name, abbr: game.teams[1].abbr }) : legacyFor(undefined, { name: "", abbr: "" }, { name: "", abbr: "" });
@@ -200,10 +209,6 @@ export default function SimTab({ defaultLeague }: { defaultLeague: League }) {
     <div className="sim">
       <header className="sim-head">
         <h2>Game simulator</h2>
-        <p>
-          Plays a full game snap by snap from each team's real {table.season} numbers, then plays it {SIMS.toLocaleString()} more times for the forecast. Nothing here is a prediction of
-          who is hurt or what the coach will call; it is what the season stats, the line and the series history imply.
-        </p>
       </header>
 
       <section className="sim-controls" aria-label="Choose a game">
@@ -247,6 +252,38 @@ export default function SimTab({ defaultLeague }: { defaultLeague: League }) {
 
       {prep && f && cfg && (
         <>
+          <section className="sim-viewer" aria-label="Simulated game">
+            <div className="sim-viewer-head">
+              <h3>Play by play</h3>
+              <span className="sim-small">Game #{seed.toString(36)}</span>
+            </div>
+            <Stage cfg={cfg} plays={plays} idx={idx} pps={SPEEDS.find((x) => x.id === speed)?.pps ?? 5} />
+            <div className="sim-transport">
+              <button onClick={() => { if (atEnd) { setIdx(-1); setPlaying(true); } else setPlaying(!playing); }} aria-label={playing ? "Pause" : atEnd ? "Replay" : "Play"}>{playing ? "Pause" : atEnd ? "Replay" : "Play"}</button>
+              <div className="segmented" role="group" aria-label="Speed">
+                {SPEEDS.map((s) => <button key={s.id} aria-pressed={speed === s.id} title={s.hint} onClick={() => setSpeed(s.id)}>{s.label}</button>)}
+              </div>
+              <button onClick={() => { setIdx(plays.length - 1); setPlaying(false); }} disabled={atEnd}>Skip to final</button>
+              <button onClick={() => startGame(prep, f.typicalSeed)}>Most likely game</button>
+              <button onClick={() => startGame(prep, (Math.random() * 2 ** 32) >>> 0)}>New random game</button>
+            </div>
+            <WinChart cfg={cfg} plays={plays} idx={Math.max(0, idx)} onSeek={(i) => { setIdx(i); setPlaying(false); }} />
+            <div className="sim-cols">
+              <div>
+                <div className="sim-feed-head">
+                  <h4>Plays</h4>
+                  <label className="sim-check"><input type="checkbox" checked={onlyKey} onChange={(e) => setOnlyKey(e.target.checked)} /> Key plays only</label>
+                </div>
+                <PlayFeed cfg={cfg} plays={plays} idx={idx} onlyKey={onlyKey} />
+              </div>
+              <div>
+                <h4>Box score</h4>
+                <BoxScore cfg={cfg} plays={plays} idx={Math.max(idx, -1)} />
+                <h4>Scoring</h4>
+                <ScoringSummary cfg={cfg} plays={plays} idx={idx} />
+              </div>
+            </div>
+          </section>
           <section className="sim-forecast" aria-label="Forecast">
             <h3>Forecast</h3>
             <div className="sim-prob" role="img" aria-label={`${cfg.away.short} ${Math.round(f.winAway * 100)} percent, ${cfg.home.short} ${Math.round(f.winHome * 100)} percent`}>
@@ -307,41 +344,8 @@ export default function SimTab({ defaultLeague }: { defaultLeague: League }) {
             )}
           </section>
 
-          <section className="sim-viewer" aria-label="Simulated game">
-            <div className="sim-viewer-head">
-              <h3>Play by play</h3>
-              <span className="sim-small">Game #{seed.toString(36)}</span>
-            </div>
-            <Stage cfg={cfg} plays={plays} idx={idx} pps={SPEEDS.find((x) => x.id === speed)?.pps ?? 5} />
-            <div className="sim-transport">
-              <button onClick={() => { if (atEnd) { setIdx(-1); setPlaying(true); } else setPlaying(!playing); }} aria-label={playing ? "Pause" : atEnd ? "Replay" : "Play"}>{playing ? "Pause" : atEnd ? "Replay" : "Play"}</button>
-              <div className="segmented" role="group" aria-label="Speed">
-                {SPEEDS.map((s) => <button key={s.id} aria-pressed={speed === s.id} title={s.hint} onClick={() => setSpeed(s.id)}>{s.label}</button>)}
-              </div>
-              <button onClick={() => { setIdx(plays.length - 1); setPlaying(false); }} disabled={atEnd}>Skip to final</button>
-              <button onClick={() => startGame(prep, f.typicalSeed)}>Most likely game</button>
-              <button onClick={() => startGame(prep, (Math.random() * 2 ** 32) >>> 0)}>New random game</button>
-            </div>
-            <WinChart cfg={cfg} plays={plays} idx={Math.max(0, idx)} onSeek={(i) => { setIdx(i); setPlaying(false); }} />
-            <div className="sim-cols">
-              <div>
-                <div className="sim-feed-head">
-                  <h4>Plays</h4>
-                  <label className="sim-check"><input type="checkbox" checked={onlyKey} onChange={(e) => setOnlyKey(e.target.checked)} /> Key plays only</label>
-                </div>
-                <PlayFeed cfg={cfg} plays={plays} idx={idx} onlyKey={onlyKey} />
-              </div>
-              <div>
-                <h4>Box score</h4>
-                <BoxScore cfg={cfg} plays={plays} idx={Math.max(idx, -1)} />
-                <h4>Scoring</h4>
-                <ScoringSummary cfg={cfg} plays={plays} idx={idx} />
-              </div>
-            </div>
-          </section>
         </>
       )}
-      {!prep && !busy && <p className="ol-note">Pick a game and press Simulate. You will get a forecast and a full accelerated replay of the most likely outcome.</p>}
     </div>
   );
 }

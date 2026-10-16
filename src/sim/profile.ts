@@ -29,7 +29,7 @@ export function leagueAverages(stats: LeagueStats): LeagueAvg {
 /** Pull a ratio toward 1 by games played: `c` games of league-average evidence are mixed in. */
 export const shrink = (ratio: number, gp: number, c: number) => 1 + (ratio - 1) * (gp / (gp + c));
 
-export interface TeamExtras { short: string; color: string; logo?: string; roster?: TeamSim["roster"] }
+export interface TeamExtras { short: string; color: string; alt?: string; logo?: string; logoId?: string; conf?: string | null; roster?: TeamSim["roster"] }
 
 export interface BuiltTeam {
   team: TeamSim;
@@ -52,7 +52,7 @@ export function buildTeam(raw: RawTeam, avg: LeagueAvg, x: TeamExtras): BuiltTea
   const rt = (v: number | undefined, lg: number, c: number) => (typeof v === "number" ? shrink(v / lg, gp, c) : 1);
   const team: TeamSim = {
     ...avgTeam(raw.name, raw.abbreviation),
-    short: x.short, color: x.color, logo: x.logo, roster: x.roster ?? {},
+    short: x.short, color: x.color, alt: x.alt, logo: x.logo, logoId: x.logoId, conf: x.conf, roster: x.roster ?? {},
     passO: r("passing", "offense", avg.pass, 3), passD: r("passing", "defense", avg.pass, 3),
     rushO: r("rushing", "offense", avg.rush, 3), rushD: r("rushing", "defense", avg.rush, 3),
     thirdO: r("thirdDown", "offense", avg.third, 5), thirdD: r("thirdDown", "defense", avg.third, 5),

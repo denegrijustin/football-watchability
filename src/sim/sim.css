@@ -1,6 +1,7 @@
 .sim {
   --field: #2e6b3f;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
   padding: 4px 0 32px;
 }
@@ -572,8 +573,9 @@
 /* broadcast stage */
 .st {
   position: relative;
+  width: 100%;
+  min-width: 0;
   aspect-ratio: 16 / 9;
-  min-height: 300px;
   border-radius: 14px;
   overflow: hidden;
   background: #04070b;
@@ -740,12 +742,23 @@
   stroke-width: 4;
 }
 .st-ez {
-  fill: rgb(255 255 255 / 0.92);
-  font-size: 38px;
   font-weight: 900;
   letter-spacing: 6px;
   text-anchor: middle;
   dominant-baseline: middle;
+  paint-order: stroke;
+  stroke-width: 6px;
+  stroke-linejoin: round;
+}
+.st-ndtext {
+  fill: #c99700;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 3px;
+  text-anchor: end;
+  paint-order: stroke;
+  stroke: rgb(0 0 0 / 0.55);
+  stroke-width: 4px;
 }
 .st-route {
   fill: none;
@@ -909,4 +922,61 @@
   .st-flash {
     animation-duration: 0.01s;
   }
+}
+
+/* a phone: a squarer stage so the whole field, the scoreboard and the caption fit the screen's width */
+@media (max-width: 640px) {
+  .st {
+    aspect-ratio: 6 / 5;
+  }
+  .st-bar {
+    width: 96%;
+    min-width: 0;
+    top: 2.5%;
+  }
+  .st-team {
+    padding: 4px 6px;
+    gap: 5px;
+  }
+  .st-team img {
+    width: 22px;
+    height: 22px;
+  }
+  .st-team strong {
+    font-size: 12px;
+  }
+  .st-team output {
+    font-size: 22px;
+  }
+  .st-clock {
+    min-width: 0;
+    padding: 4px 8px;
+  }
+  .st-view {
+    inset: 20% 1% 25%;
+  }
+  .st-caption {
+    width: 94%;
+    bottom: 11%;
+    font-size: 13px;
+    padding: 6px 8px;
+  }
+  .st-full {
+    bottom: 2%;
+    left: 2%;
+  }
+  .st-tag {
+    bottom: 3%;
+  }
+  .st-banner {
+    top: 30%;
+    padding: 4px 14px;
+  }
+}
+.sim > * {
+  min-width: 0;
+}
+.sim-compare {
+  display: block;
+  overflow-x: auto;
 }

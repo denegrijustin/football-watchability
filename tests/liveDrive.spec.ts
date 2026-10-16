@@ -190,13 +190,13 @@ test("the ball marker is the offense's team logo, and the field carries end-zone
   await expect(svg.locator(".df-ball image.lf-ball-logo")).toHaveCount(1);
   await expect(svg.locator(".df-ball .df-pigskin")).toHaveCount(0); // no football drawn when the team has a logo
   await expect(svg.locator("image.lf-mid")).toHaveCount(1); // the home logo at midfield
-  await expect(svg.locator("text.lf-ez")).toHaveCount(2); // team names in the end zones
-  await expect(svg.locator("g > image")).not.toHaveCount(0); // end-zone logos
-  // The conference mark on the 25-yard line of each half: the away team's (NFC here) on the left, the home team's on the right.
+  await expect(svg.locator("[data-endzone]")).toHaveCount(2); // the home team's end zone design at both ends
+  await expect(svg.locator("[data-endzones] text").first()).toBeAttached(); // lettered with the team's name
+  // The conference mark on the 25-yard line of each half: the NFL's shield for an NFL game, upright on the left and upside down on the right.
   const marks = svg.locator("g.lf-conf");
   await expect(marks).toHaveCount(2);
   const confs = await marks.evaluateAll((els) => els.map((e) => e.getAttribute("data-conf")));
-  expect(confs.every((c) => c === "AFC" || c === "NFC")).toBe(true);
+  expect(confs).toEqual(["NFL", "NFL"]);
   // The 25 from the left goal line is x=35 and from the right goal line x=85 (the 10-yard end zones put the goal lines at 10 and 110).
   const centers = await marks.evaluateAll((els) => els.map((e) => { const b = (e as unknown as SVGGraphicsElement).getBBox(); return Math.round(b.x + b.width / 2); }));
   expect(centers).toEqual([35, 85]);
@@ -281,12 +281,11 @@ test("out of the red zone the box has no red border", async ({ page }) => {
 
 test("a conference mark is its official logo once ESPN's CDN answers, and the lettered badge until then or if it never does", async ({ page }) => {
   const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==", "base64");
-  await page.route("https://a.espncdn.com/i/teamlogos/nfl/500/nfc.png", (r) => r.fulfill({ contentType: "image/png", body: png }));
-  await page.route("https://a.espncdn.com/i/teamlogos/**/afc.png", (r) => r.fulfill({ status: 404, body: "no" }));
+  await page.route("https://a.espncdn.com/i/teamlogos/leagues/500/nfl.png", (r) => r.fulfill({ contentType: "image/png", body: png }));
   const live = await openWith(page, () => summary(65, "2nd & 7 at SEA 35"));
-  // Both teams in this game are NFC: their marks use the logo that loaded.
+  // The marks on an NFL field are the NFL's shield: they use the logo that loaded.
   await expect(live.locator("svg.drive-svg g.lf-conf[data-logo='official']").first()).toBeAttached();
-  await expect(live.locator("svg.drive-svg g.lf-conf[data-conf='NFC'] image").first()).toHaveAttribute("href", /nfl\/500\/nfc\.png/);
+  await expect(live.locator("svg.drive-svg g.lf-conf[data-conf='NFL'] image").first()).toHaveAttribute("href", /leagues\/500\/nfl\.png/);
 });
 
 test("with no answer from ESPN's CDN the conference mark stays a lettered badge", async ({ page }) => {
@@ -298,24 +297,26 @@ test("with no answer from ESPN's CDN the conference mark stays a lettered badge"
 });
 
 /** A live card for NFL game 0 with these scores (state "in" or "post"); returns the card. */
-async function openScores(page: import("@playwright/test").Page, away: number, home: number, state: "in" | "post" = "in") {
+async function openScores(page: import("@playwright/test").Page, away: number, home: number, state: "in" | "post" = "in", game: any = games[0]) {
   const start = Math.max(...games.map((g: any) => new Date(g.date).getTime()));
   await page.clock.install({ time: start + 90 * 60e3 });
   await page.route("**/api/scores**", (route) =>
-    route.fulfill({ json: games.map((g: any, i: number) => ({ id: g.espnId, state: i === 0 ? state : "pre", detail: state === "post" ? "Final" : "5:12 - 3rd", away, home })) }),
+    route.fulfill({ json: games.map((g: any) => ({ id: g.espnId, state: g.espnId === game.espnId ? state : "pre", detail: state === "post" ? "Final" : "5:12 - 3rd", away, home })) }),
   );
   await page.route("**/api/flow**", (route) => route.fulfill({ json: { wp: [] } }));
   await page.route("**/api/game**", (route) => route.fulfill({ json: summary(65, "2nd & 7 at SEA 35") }));
   await page.goto("/?league=NFL");
-  return page.locator(`.game-card[data-game-id="${games[0].id}"]`);
+  return page.locator(`.game-card[data-game-id="${game.id}"]`);
 }
 // The upset is decided by the NFL+ rankings, the same ones shown beside the team names.
 const plusRanks = buildPlusRanks(JSON.parse(readFileSync("src/data/spplus.json", "utf8")), JSON.parse(readFileSync("src/data/nfl.json", "utf8")), JSON.parse(readFileSync("src/data/team-ids.json", "utf8")));
-const fpi = (i: number) => plusRanks.nfl.byAbbr[games[0].teams[i].abbr as string];
+const fpi = (i: number, g: any = games[0]) => plusRanks.nfl.byAbbr[g.teams[i].abbr as string];
+// An upset needs the two teams at least 10 places apart (#12 against #14 is a toss-up), so the upset tests use a game that qualifies.
+const wide = games.find((g: any) => Math.abs(fpi(0, g) - fpi(1, g)) >= 10) ?? games[0];
 
 test("a live card whose lower NFL+-ranked team is ahead gets the neon outline and an UPSET ALERT", async ({ page }) => {
-  const worse = fpi(0) > fpi(1) ? 0 : 1; // the team with the bigger rank number
-  const card = await openScores(page, worse === 0 ? 24 : 10, worse === 0 ? 10 : 24);
+  const worse = fpi(0, wide) > fpi(1, wide) ? 0 : 1; // the team with the bigger rank number
+  const card = await openScores(page, worse === 0 ? 24 : 10, worse === 0 ? 10 : 24, "in", wide);
   await expect(card).toHaveClass(/upset-alert/);
   await expect(card.locator(".upset-banner")).toContainText(/upset alert/i);
   expect(await card.evaluate((e) => getComputedStyle(e).boxShadow)).toContain("57, 255, 136");
@@ -331,7 +332,7 @@ test("a live card whose lower NFL+-ranked team is ahead gets the neon outline an
   expect(fit.top).toBeLessThanOrEqual(2);
   expect(Math.abs(fit.left)).toBeLessThanOrEqual(2);
   expect(Math.abs(fit.right)).toBeLessThanOrEqual(2);
-  await expect(card.locator(".upset-banner")).toContainText(new RegExp(`#${Math.max(fpi(0), fpi(1))}.*#${Math.min(fpi(0), fpi(1))}`));
+  await expect(card.locator(".upset-banner")).toContainText(new RegExp(`#${Math.max(fpi(0, wide), fpi(1, wide))}.*#${Math.min(fpi(0, wide), fpi(1, wide))}`));
 });
 
 test("no alert when the higher-ranked team is ahead, or the game is tied", async ({ page }) => {
@@ -343,10 +344,20 @@ test("no alert when the higher-ranked team is ahead, or the game is tied", async
 });
 
 test("if the lower-ranked team holds on, the card becomes an upset final", async ({ page }) => {
-  const worse = fpi(0) > fpi(1) ? 0 : 1;
-  const card = await openScores(page, worse === 0 ? 27 : 13, worse === 0 ? 13 : 27, "post");
+  const worse = fpi(0, wide) > fpi(1, wide) ? 0 : 1;
+  const card = await openScores(page, worse === 0 ? 27 : 13, worse === 0 ? 13 : 27, "post", wide);
   await expect(card).toHaveClass(/upset-final/);
   await expect(card.locator(".upset-banner")).toContainText(/upset final/i);
+});
+
+test("no alert when the lower-ranked team leads but the two are fewer than 10 places apart", async ({ page }) => {
+  const close = games.find((g: any) => Math.abs(fpi(0, g) - fpi(1, g)) < 10 && fpi(0, g) !== fpi(1, g));
+  test.skip(!close, "no NFL game this week has teams that close");
+  const worse = fpi(0, close) > fpi(1, close) ? 0 : 1;
+  const card = await openScores(page, worse === 0 ? 24 : 10, worse === 0 ? 10 : 24, "in", close);
+  await expect(card.locator(".gs-pill")).toBeVisible();
+  await expect(card).not.toHaveClass(/upset/);
+  await expect(card.locator(".upset-banner")).toHaveCount(0);
 });
 
 // ---------- run / pass colours on the field ----------
@@ -444,4 +455,14 @@ test("a play is a run or a pass from its type, or its text when the type doesn't
   // Going the other way the posts are at the left, and a score is carried through.
   const home = driveSegments([{ yards: 20, kind: "Rushing Touchdown", text: "", score: true }], { ball: 0 }, false);
   expect([home[0].to, home[0].score]).toEqual([0, true]);
+});
+
+test("a live card's field wears the home team's end zones and a conference mark at each 25, the far one upside down", async ({ page }) => {
+  await open(page, { toGo: 40, text: "2nd & 7 at SEA 35" });
+  const card = page.locator(".board-section.live .game-card").first();
+  await expect(card.locator(".drive-svg [data-endzones]")).toHaveCount(1);
+  await expect(card.locator(".drive-svg [data-endzone]")).toHaveCount(2); // both ends are the home team's
+  await expect(card.locator(".drive-svg .lf-conf")).toHaveCount(2);
+  await expect(card.locator(".drive-svg .lf-conf").first()).toHaveAttribute("data-conf", "NFL"); // the NFL's shield for an NFL game
+  expect(await card.locator(".drive-svg g[transform^='rotate(180']").count()).toBe(1);
 });

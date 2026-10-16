@@ -9,6 +9,7 @@ const views: Record<NflView, React.LazyExoticComponent<() => ReactNode>> = {
   ats: lazy(() => import("./views/Ats")),
   matchups: lazy(() => import("./views/Matchups")),
   movement: lazy(() => import("./views/Movement")),
+  standings: lazy(() => import("./views/Standings")),
   team: lazy(() => import("./views/TeamPage")),
 };
 

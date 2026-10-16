@@ -2,10 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { logos, teamColor } from "./data";
 import { rename } from "./data/load";
 import { FootballIcon } from "./live";
-import { mix } from "./halftimeLogic";
 import { LogoMark } from "./logoTone";
 import { WeatherLayer, weatherCaption } from "./WeatherFx";
 import { ConfMark } from "./ConfMark";
+import { EndZones, EZ_H, EZ_W } from "./sim/EndZones";
+import { endzoneFor } from "./sim/endzone";
+import { MIDFIELD_ART } from "./sim/midfield";
 import type { WeatherLike } from "./weatherFx";
 import type { GameBadge } from "./gameLogo";
 import { driveSegments, playKind, type Seg } from "./driveKinds";
@@ -194,6 +196,11 @@ export function FieldView({ data, teams, variant, rootRef, badge, weather }: { d
   const earlier = segsAll.length - shown.length;
   const TOP = 10, ROW = 4.3, BOTTOM = 7;
   const rowY = (i: number) => TOP + i * ROW;
+  // The field wears the home team's end zones and its conference (the NFL's shield for NFL games).
+  const nflGame = home.conf === "AFC" || home.conf === "NFC";
+  const homeShort = nflGame ? home.name.split(" ").pop() ?? home.name : home.name;
+  const ezArt = endzoneFor({ short: homeShort, color: home.color ?? colors[1], alt: undefined });
+  const fieldConf = nflGame ? "NFL" : home.conf && home.conf !== "Independent" ? home.conf : null;
   const H = Math.max(variant === "card" ? 26 : 30, TOP + (shown.length + 1) * ROW + BOTTOM);
   const ballY = rowY(shown.length);
 
@@ -224,23 +231,10 @@ export function FieldView({ data, teams, variant, rootRef, badge, weather }: { d
         {Array.from({ length: 10 }, (_, i) => (
           <rect key={i} x={10 + i * 10} y="0" width="10" height={H} className={i % 2 ? "df-stripe" : "df-stripe alt"} />
         ))}
-        {/* end zones in team color with a woven pattern, the team's logo and name; the home logo (or the game's own) at midfield */}
-        <defs>
-          {[0, 1].map((k) => (
-            <pattern key={k} id={`lf-ez-${ids.join("-")}-${k}-${variant}`} width="3" height="3" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-              <rect width="3" height="3" fill={colors[k]} />
-              <rect width="1.2" height="3" fill={mix(colors[k], -0.22)} />
-            </pattern>
-          ))}
-        </defs>
-        <rect x="0" y="0" width="10" height={H} fill={`url(#lf-ez-${ids.join("-")}-0-${variant})`} />
-        <rect x="110" y="0" width="10" height={H} fill={`url(#lf-ez-${ids.join("-")}-1-${variant})`} />
-        {[[away, 5, -90] as const, [home, 115, 90] as const].map(([t, x, rot], k) => (
-          <g key={k}>
-            <text x={x} y={H / 2 + 5} className="lf-ez" transform={`rotate(${rot} ${x} ${H / 2 + 5})`} textAnchor="middle" dominantBaseline="central">{(t.abbr ?? t.name).toUpperCase()}</text>
-            {t.logoId && logos[t.logoId] && <LogoMark src={logos[t.logoId]} cx={x} cy={9} size={6} />}
-          </g>
-        ))}
+        {/* the home team's real end zone design at both ends, as in its stadium (the same art as the game simulator) */}
+        <svg x="0" y="0" width="120" height={H} viewBox={`0 0 ${EZ_W} ${EZ_H}`} preserveAspectRatio="none" className="lf-ezart">
+          <EndZones ez={ezArt} name={homeShort} />
+        </svg>
         {redZone && <rect x={awayOffense ? X(80) : X(0)} y="0" width="20" height={H} className="df-red" />}
         {Array.from({ length: 11 }, (_, i) => (
           <line key={i} x1={10 + i * 10} x2={10 + i * 10} y1="0" y2={H} className={i === 5 ? "df-line mid" : "df-line"} />
@@ -248,12 +242,19 @@ export function FieldView({ data, teams, variant, rootRef, badge, weather }: { d
         {[1, 2, 3, 4, 5, 4, 3, 2, 1].map((n, i) => (
           <text key={i} x={20 + i * 10} y={H - 1.6} className="df-num" textAnchor="middle">{n * 10}</text>
         ))}
-        <ConfMark conf={away.conf} cx={35} cy={H - 9} size={7} />
-        <ConfMark conf={home.conf} cx={85} cy={H - 9} size={7} />
+        {fieldConf && (
+          <>
+            <ConfMark conf={fieldConf} cx={35} cy={7.5} size={5.5} />
+            <g transform={`rotate(180 85 ${H - 7.5})`}><ConfMark conf={fieldConf} cx={85} cy={H - 7.5} size={5.5} /></g>
+          </>
+        )}
         <WeatherLayer weather={weather} period={data.status.period} h={H} y0={0} seed={Number(ids[0]) || 1} compact={variant === "card"} />
         {firstDown != null && <line x1={X(firstDown)} x2={X(firstDown)} y1="0" y2={H} className="df-first" />}
         <line x1={X(goal)} x2={X(goal)} y1="0" y2={H} className="df-goal" />
-        {(badge?.src ?? (!badge?.neutral && home.logoId ? logos[home.logoId] : null)) && (
+        {!badge?.src && home.logoId && MIDFIELD_ART[home.logoId] && (
+          <image href={MIDFIELD_ART[home.logoId].src} data-midfield="art" x={60 - MIDFIELD_ART[home.logoId].card / 2} y={H / 2 - MIDFIELD_ART[home.logoId].card / MIDFIELD_ART[home.logoId].ratio / 2} width={MIDFIELD_ART[home.logoId].card} height={MIDFIELD_ART[home.logoId].card / MIDFIELD_ART[home.logoId].ratio} opacity="0.95" />
+        )}
+        {!(!badge?.src && home.logoId && MIDFIELD_ART[home.logoId]) && (badge?.src ?? (!badge?.neutral && home.logoId ? logos[home.logoId] : null)) && (
           <LogoMark src={badge?.src ?? logos[home.logoId!]} cx={60} cy={H / 2} size={11} chipOpacity={0.16} imageClass="lf-mid" />
         )}
         {earlier > 0 && <text x="11.5" y="4.6" className="lf-tagtext">▲ {earlier} earlier play{earlier === 1 ? "" : "s"}</text>}
