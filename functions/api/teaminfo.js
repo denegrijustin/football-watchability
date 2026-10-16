@@ -7,13 +7,16 @@ const HEADERS = {
   accept: "application/json",
   referer: "https://www.espn.com/",
 };
-const get = async (url) => {
-  try {
-    const res = await fetch(url, { headers: HEADERS });
-    return res.ok ? await res.json() : null;
-  } catch {
-    return null;
+const get = async (url, tries = 2) => {
+  for (let i = 0; i < tries; i++) {
+    try {
+      const res = await fetch(url, { headers: HEADERS });
+      if (res.ok) return await res.json();
+    } catch {
+      /* try again */
+    }
   }
+  return null;
 };
 
 export async function onRequestGet({ request }) {
@@ -40,7 +43,7 @@ export async function onRequestGet({ request }) {
 
   const people = [];
   for (const grp of roster?.athletes ?? [])
-    for (const a of grp.items ?? []) people.push({ id: String(a.id), name: a.shortName ?? a.displayName, pos: a.position?.abbreviation ?? "" });
+    for (const a of grp.items ?? []) people.push({ id: String(a.id), name: a.shortName ?? a.displayName, pos: a.position?.abbreviation ?? "", exp: a.experience?.years ?? 0 });
   const cat = (name) =>
     ((leaders?.categories ?? []).find((c) => c.name === name)?.leaders ?? [])
       .map((l) => ({ id: l.athlete?.$ref?.match(/athletes\/(\d+)/)?.[1] ?? "", w: Number(l.value) || 0 }))
@@ -52,7 +55,9 @@ export async function onRequestGet({ request }) {
     people,
     leaders: { passingYards: cat("passingYards"), rushingYards: cat("rushingYards"), receivingYards: cat("receivingYards") },
   });
-  const res = new Response(body, { headers: { "content-type": "application/json", "cache-control": "public, max-age=21600" } });
-  await cache.put(key, res.clone());
+  // A half-empty answer (ESPN dropped one of the three feeds) is passed on but not kept, so the next visitor gets a fresh try.
+  const complete = !!team && people.length > 0 && !!leaders && cat("passingYards").length > 0;
+  const res = new Response(body, { headers: { "content-type": "application/json", "cache-control": complete ? "public, max-age=21600" : "no-store" } });
+  if (complete) await cache.put(key, res.clone());
   return res;
 }

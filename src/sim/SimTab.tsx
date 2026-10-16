@@ -119,7 +119,7 @@ export default function SimTab({ defaultLeague }: { defaultLeague: League }) {
     const k = known.get(`${league}:${raw.id}`);
     const short = slateTeam ? (league === "NFL" ? slateTeam.name.split(" ").pop() ?? slateTeam.name : slateTeam.name) : k?.short ?? (league === "NFL" ? raw.name.split(" ").pop() ?? raw.name : schoolName(raw.name));
     const logoId = slateTeam?.logoId ?? k?.logoId ?? [slug(raw.name), slug(schoolName(raw.name))].find((s) => logos[s]);
-    return { short, color: brandColor(info, slateTeam?.color ?? k?.color ?? hashColor(raw.name)), logo: logoId ? logos[logoId] : undefined, roster: { ...rosterFrom(game, side), ...info.roster } };
+    return { short, color: brandColor(info, slateTeam?.color ?? k?.color ?? hashColor(raw.name)), logo: logoId ? logos[logoId] : undefined, roster: { ...rosterFrom(game, side), ...Object.fromEntries(Object.entries(info.roster).filter(([, v]) => v !== undefined)) } };
   }, [known, league]);
 
   const simulate = useCallback(async (kind: "pick" | "custom") => {

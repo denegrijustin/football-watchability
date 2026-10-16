@@ -53,3 +53,28 @@ test("the Upset Alert Meter: filters on one line, a week selector, and an earlie
   expect(await page.locator(".um-row.final").count()).toBe(await page.locator(".um-row").count());
   await expect(page.getByRole("button", { name: "To play" })).toHaveCount(0);
 });
+
+import { shape, type Raw } from "../src/sim/roster";
+
+test("rosters: season leaders pick the players; without them the most experienced QB and real roster names are used", () => {
+  const people = [
+    { id: "1", name: "J. Fields", pos: "QB", exp: 5 }, { id: "2", name: "P. Mahomes", pos: "QB", exp: 9 }, { id: "3", name: "G. Nussmeier", pos: "QB", exp: 0 },
+    { id: "4", name: "K. Walker III", pos: "RB", exp: 3 }, { id: "5", name: "E. Johnson", pos: "RB", exp: 2 },
+    { id: "6", name: "T. Kelce", pos: "TE", exp: 13 }, { id: "7", name: "R. Rice", pos: "WR", exp: 3 }, { id: "8", name: "X. Worthy", pos: "WR", exp: 2 },
+  ];
+  const leaders: Raw["leaders"] = {
+    passingYards: [{ id: "2", w: 1037 }], rushingYards: [{ id: "4", w: 537 }, { id: "5", w: 56 }, { id: "2", w: 41 }],
+    receivingYards: [{ id: "6", w: 246 }, { id: "7", w: 190 }, { id: "8", w: 133 }, { id: "4", w: 84 }],
+  };
+  const full = shape({ color: "e31837", alt: "ffb81c", people, leaders });
+  expect(full.roster.qb).toBe("P. Mahomes");
+  expect(full.roster.rushers?.map((r) => r.name)).toEqual(["K. Walker III", "E. Johnson"]); // the quarterback's scrambles are not a back
+  expect(full.roster.receivers?.map((r) => [r.name, r.pos])).toEqual([["T. Kelce", "TE"], ["R. Rice", "WR"], ["X. Worthy", "WR"], ["K. Walker III", "RB"]]);
+  expect(full.color).toBe("#e31837");
+  // ESPN's season leaders missing: the starter is the veteran, not whoever is listed first, and every position still has names.
+  const bare = shape({ color: null, alt: null, people, leaders: { passingYards: [], rushingYards: [], receivingYards: [] } });
+  expect(bare.roster.qb).toBe("P. Mahomes");
+  expect(bare.roster.rushers?.map((r) => r.name)).toEqual(["K. Walker III", "E. Johnson"]);
+  expect(bare.roster.receivers?.length).toBeGreaterThanOrEqual(3);
+  expect(bare.roster.receivers?.every((r) => r.name && !/receiver/i.test(r.name))).toBe(true);
+});
