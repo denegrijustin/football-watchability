@@ -1,8 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { fetchData } from "../data/load";
 import { logos, results, slate, type League } from "../data";
 import { plusRankFor, usePlusRanks, type TeamRef } from "../plusRanks";
 import { useLiveMap } from "../live";
-import { buildRows, TIERS, type MeterRow, type MeterTeam } from "../upsetMeter";
+import { buildRows, ledgerResults, TIERS, type LedgerLike, type MeterRow, type MeterTeam, type WeeklyLike } from "../upsetMeter";
 import "../upsetMeter.css";
 
 type Show = "all" | "upcoming" | "final" | "upsets";
@@ -60,50 +61,91 @@ function Row({ r, league, biggest }: { r: MeterRow; league: League; biggest: boo
 export function UpsetMeter({ defaultLeague }: { defaultLeague: League }) {
   const [league, setLeague] = useState<League>(defaultLeague);
   const [show, setShow] = useState<Show>("all");
+  const [week, setWeek] = useState(slate.period);
+  const [ledger, setLedger] = useState<LedgerLike[] | null>(null);
+  const [weekly, setWeekly] = useState<WeeklyLike | null>(null);
   const live = useLiveMap();
   const plus = usePlusRanks();
+  const current = week === slate.period;
+
+  // The season ledger lists the earlier weeks; each week's own ranks load only when one of them is opened.
+  useEffect(() => {
+    let on = true;
+    fetchData<{ games: LedgerLike[] }>("season").then((m) => on && setLedger(m.games), () => {});
+    return () => { on = false; };
+  }, []);
+  useEffect(() => {
+    if (current || weekly) return;
+    let on = true;
+    fetchData<WeeklyLike>("plus-ranks-weekly").then((m) => on && setWeekly(m), () => {});
+    return () => { on = false; };
+  }, [current, weekly]);
+
+  // This week first, then earlier weeks, newest to oldest.
+  const weeks = useMemo(() => {
+    const first = new Map<string, string>();
+    for (const g of ledger ?? []) if (g.league === league && g.week !== slate.period && (!first.has(g.week) || g.date < first.get(g.week)!)) first.set(g.week, g.date);
+    return [slate.period, ...[...first.entries()].sort((x, y) => y[1].localeCompare(x[1])).map(([w]) => w)];
+  }, [ledger, league]);
+  useEffect(() => { if (!weeks.includes(week)) setWeek(slate.period); }, [weeks, week]);
+  useEffect(() => { if (!current && (show === "upcoming" || show === "final")) setShow("all"); }, [current, show]);
+
   const rows = useMemo(() => {
-    if (!plus) return [];
-    const of = league === "NFL" ? plus.nfl.of : plus.cfb.of;
+    if (current) {
+      if (!plus) return [];
+      const of = league === "NFL" ? plus.nfl.of : plus.cfb.of;
+      return buildRows({
+        league, games: slate.games as never, results: results as never, live, period: slate.period,
+        ranks: { of, rankOf: (t) => plusRankFor(plus, league, t as TeamRef)?.n ?? null, detailOf: (t) => { const r = plusRankFor(plus, league, t as TeamRef); return r ? { o: r.o, d: r.d } : null; } },
+      });
+    }
+    if (!ledger || !weekly) return [];
     return buildRows({
-      league, games: slate.games as never, results: results as never, live, period: slate.period,
-      ranks: { of, rankOf: (t) => plusRankFor(plus, league, t as TeamRef)?.n ?? null, detailOf: (t) => { const r = plusRankFor(plus, league, t as TeamRef); return r ? { o: r.o, d: r.d } : null; } },
+      league, games: [], results: ledgerResults(ledger, league, week, weekly), live: {}, period: week,
+      ranks: { of: league === "NFL" ? weekly.nfl.of : weekly.cfb.of, rankOf: () => null },
     });
-  }, [league, live, plus]);
-  const finals = rows.filter((r) => r.status === "final");
-  const upsets = finals.filter((r) => r.upset);
+  }, [league, live, plus, current, ledger, weekly, week]);
+
   // The largest rank gap among the upsets so far.
   const biggestKey = rows.filter((r) => r.upset).sort((x, y) => y.gap - x.gap)[0]?.key;
   const done = rows.filter((r) => r.status === "final");
   const todo = rows.filter((r) => r.status !== "final");
+  const upsets = done.filter((r) => r.upset);
   const columns: { id: string; title: string; rows: MeterRow[]; empty: string }[] =
-    show === "all"
-      ? [{ id: "done", title: "Completed", rows: done, empty: "No games have finished yet." }, { id: "todo", title: "Upcoming", rows: todo, empty: "No games left to play." }]
-      : show === "upcoming"
-        ? [{ id: "todo", title: "Upcoming", rows: todo, empty: "No games left to play." }]
-        : show === "final"
-          ? [{ id: "done", title: "Completed", rows: done, empty: "No games have finished yet." }]
-          : [{ id: "ups", title: "Upsets", rows: rows.filter((r) => r.upset || r.brewing), empty: "No upsets yet this week." }];
+    !current
+      ? [{ id: "done", title: show === "upsets" ? "Upsets" : "Completed", rows: show === "upsets" ? upsets : done, empty: show === "upsets" ? "No upsets that week." : "No games to show." }]
+      : show === "all"
+        ? [{ id: "done", title: "Completed", rows: done, empty: "No games have finished yet." }, { id: "todo", title: "Upcoming", rows: todo, empty: "No games left to play." }]
+        : show === "upcoming"
+          ? [{ id: "todo", title: "Upcoming", rows: todo, empty: "No games left to play." }]
+          : show === "final"
+            ? [{ id: "done", title: "Completed", rows: done, empty: "No games have finished yet." }]
+            : [{ id: "ups", title: "Upsets", rows: rows.filter((r) => r.upset || r.brewing), empty: "No upsets yet this week." }];
+  const shows: [Show, string][] = current ? [["all", "All"], ["upcoming", "To play"], ["final", "Final"], ["upsets", "Upsets"]] : [["all", "All"], ["upsets", "Upsets"]];
+  const loading = current ? !plus : !ledger || !weekly;
+
   return (
     <div className="um">
       <header className="um-head">
-        <div>
-          <h2>Upset Alert Meter</h2>
-        </div>
-        <span className="um-week">{slate.period}</span>
+        <h2>Upset Alert Meter</h2>
+        <label className="um-week">
+          <span className="sr-only">Week</span>
+          <select value={week} onChange={(e) => setWeek(e.target.value)} aria-label="Week">
+            {weeks.map((w) => <option key={w} value={w}>{w === slate.period ? `${w} · this week` : w}</option>)}
+          </select>
+        </label>
       </header>
       <div className="um-controls">
         <div className="segmented" role="group" aria-label="League">
-          {(["NFL", "CFB"] as const).map((l) => <button key={l} aria-pressed={league === l} onClick={() => setLeague(l)}>{l === "NFL" ? "NFL" : "College"}</button>)}
+          {(["NFL", "CFB"] as const).map((l) => <button key={l} aria-pressed={league === l} onClick={() => setLeague(l)}>{l}</button>)}
         </div>
         <div className="segmented" role="group" aria-label="Show">
-          {([["all", "All"], ["upcoming", "To play"], ["final", "Final"], ["upsets", "Upsets"]] as const).map(([id, label]) => (
+          {shows.map(([id, label]) => (
             <button key={id} aria-pressed={show === id} onClick={() => setShow(id)}>{label}{id === "upsets" && upsets.length ? <span className="um-n">{upsets.length}</span> : null}</button>
           ))}
         </div>
-        {finals.length > 0 && <span className="um-tally" role="status">{upsets.length} upset{upsets.length === 1 ? "" : "s"} in {finals.length} final{finals.length === 1 ? "" : "s"}</span>}
       </div>
-      {!plus && <p className="ol-note" role="status">Loading team ranks…</p>}
+      {loading && <p className="ol-note" role="status">Loading…</p>}
       <ol className="um-legend" aria-label="Tiers">
         {TIERS.map((t) => <li key={t.id} style={{ ["--tier" as string]: t.color }}><i />{t.short}</li>)}
       </ol>
@@ -112,7 +154,7 @@ export function UpsetMeter({ defaultLeague }: { defaultLeague: League }) {
           <section key={c.id} className="um-col" aria-label={c.title}>
             <h3>{c.title}<span>{c.rows.length}</span></h3>
             {c.rows.length ? <div className="um-listhead" aria-hidden="true"><div className="um-hl"><span /><span /><span>Overall</span><span>Off</span><span>Def</span><span>{c.id === "todo" ? "" : "Pts"}</span></div><i>Upset gap</i></div> : null}
-            {c.rows.length ? <ol className="um-list" aria-label={`${c.title} games by upset chance, most lopsided first`}>{c.rows.map((r) => <Row key={r.key} r={r} league={league} biggest={r.upset && r.key === biggestKey} />)}</ol> : <p className="ol-note">{c.empty}</p>}
+            {c.rows.length ? <ol className="um-list" aria-label={`${c.title} games by upset chance, most lopsided first`}>{c.rows.map((r) => <Row key={r.key} r={r} league={league} biggest={r.upset && r.key === biggestKey} />)}</ol> : !loading && <p className="ol-note">{c.empty}</p>}
           </section>
         ))}
       </div>

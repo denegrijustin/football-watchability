@@ -5,7 +5,7 @@ import { readdirSync } from "node:fs";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { buildLite } from "./src/spplus/liteBuild";
-import { buildPlusRanks } from "./src/plusRanksBuild";
+import { buildPlusRanks, buildWeeklyRanks } from "./src/plusRanksBuild";
 
 // The board's data files are fetched at run time (/data/<name>.json) instead of being compiled into the
 // JavaScript, so a refresh changes only these small, revalidated files and the scripts stay cached.
@@ -23,6 +23,12 @@ const spLite = () =>
 const plusRanks = () =>
   existsSync(dataFile("spplus")) && existsSync(dataFile("nfl"))
     ? JSON.stringify(buildPlusRanks(JSON.parse(readFileSync(dataFile("spplus"), "utf8")), JSON.parse(readFileSync(dataFile("nfl"), "utf8")), JSON.parse(readFileSync(dataFile("team-ids"), "utf8"))))
+    : null;
+
+// Each week's pre-game ranks, for the Upset Alert Meter's look back at earlier weeks.
+const weeklyRanks = () =>
+  existsSync(dataFile("spplus")) && existsSync(dataFile("nfl"))
+    ? JSON.stringify(buildWeeklyRanks(JSON.parse(readFileSync(dataFile("spplus"), "utf8")), JSON.parse(readFileSync(dataFile("nfl"), "utf8")), JSON.parse(readFileSync(dataFile("team-ids"), "utf8"))))
     : null;
 
 const dataFiles = (): Plugin => ({
@@ -43,6 +49,13 @@ const dataFiles = (): Plugin => ({
         res.setHeader("Cache-Control", "no-cache");
         return res.end(ranks);
       }
+      if (/^\/data\/plus-ranks-weekly\.json(\?.*)?$/.test(req.url ?? "")) {
+        const weekly = weeklyRanks();
+        if (!weekly) return next();
+        res.setHeader("Content-Type", "application/json");
+        res.setHeader("Cache-Control", "no-cache");
+        return res.end(weekly);
+      }
       const m = /^\/data\/([\w-]+)\.json(\?.*)?$/.exec(req.url ?? "");
       if (!m || !DATA.includes(m[1]) || !existsSync(dataFile(m[1]))) return next();
       res.setHeader("Content-Type", "application/json");
@@ -56,6 +69,8 @@ const dataFiles = (): Plugin => ({
     if (lite) this.emitFile({ type: "asset", fileName: "data/spplus-lite.json", source: lite });
     const ranks = plusRanks();
     if (ranks) this.emitFile({ type: "asset", fileName: "data/plus-ranks.json", source: ranks });
+    const weekly = weeklyRanks();
+    if (weekly) this.emitFile({ type: "asset", fileName: "data/plus-ranks-weekly.json", source: weekly });
   },
 });
 

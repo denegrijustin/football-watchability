@@ -287,11 +287,14 @@ test("the view tabs and Export never overlap, down to the narrowest phone", asyn
         return { l: b.left, r: b.right, t: b.top, b: b.bottom };
       };
       const tabs = [...document.querySelectorAll(".view-switch button")].map(box);
-      return { tabs, exp: box(document.querySelector(".export-btns summary")!), sw: document.querySelector(".view-switch")!.scrollWidth - document.querySelector(".view-switch")!.clientWidth };
+      return { tabs, swr: document.querySelector(".view-switch")!.getBoundingClientRect().right, exp: box(document.querySelector(".export-btns summary")!), sw: document.querySelector(".view-switch")!.scrollWidth - document.querySelector(".view-switch")!.clientWidth };
     });
-    expect(boxes.sw, `tabs overflow at ${w}px`).toBeLessThanOrEqual(0);
+    // Nine tabs share one row. From 375px up they all fit; on narrower phones the row scrolls sideways rather than wrapping or squeezing.
+    if (w >= 375) expect(boxes.sw, `tabs overflow at ${w}px`).toBeLessThanOrEqual(0);
+    expect(new Set(boxes.tabs.map((t) => Math.round(t.t))).size, `tabs wrapped at ${w}px`).toBe(1);
     expect(boxes.tabs).toHaveLength(9);
     for (const t of boxes.tabs) {
+      if (t.r > boxes.swr + 0.5) continue; // scrolled out of view past the row's edge, so it cannot cover Export
       const apart = t.r <= boxes.exp.l + 0.5 || t.l >= boxes.exp.r - 0.5 || t.b <= boxes.exp.t + 0.5 || t.t >= boxes.exp.b - 0.5;
       expect(apart, `a view tab overlaps Export at ${w}px`).toBe(true);
     }

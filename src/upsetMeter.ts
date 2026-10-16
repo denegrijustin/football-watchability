@@ -56,6 +56,8 @@ export interface SlateLike {
 }
 interface ResultTeam { name: string; abbr: string; logoId: string; color?: string | null; score: number }
 export interface ResultLike {
+  /** That week's own pre-game ranks, for a look back at an earlier week; otherwise the current ranks are used. */
+  ranked?: [{ n: number; o?: number; d?: number } | null, { n: number; o?: number; d?: number } | null];
   espnId: string; league: string; week: string; date: string;
   teams: ResultTeam[];
   final: { detail: string };
@@ -91,7 +93,8 @@ export function buildRows(input: { league: "NFL" | "CFB"; games: SlateLike[]; re
   for (const r of input.results) {
     if (r.league !== input.league || r.week !== input.period) continue;
     const [a, h] = r.teams;
-    const away = withRank(mk(a)), home = withRank(mk(h));
+    const fix = (t: MeterTeam, k: 0 | 1): MeterTeam => (r.ranked ? { ...t, rank: r.ranked[k]?.n ?? null, o: r.ranked[k]?.o, d: r.ranked[k]?.d } : withRank(t));
+    const away = fix(mk(a), 0), home = fix(mk(h), 1);
     const c = compare(away, home, of);
     if (!c) continue;
     const lineNum = /([-+]\d+(?:\.\d+)?)/.exec(r.forecast?.line ?? "");
@@ -123,4 +126,50 @@ export function buildRows(input: { league: "NFL" | "CFB"; games: SlateLike[]; re
 
   // Biggest mismatch first, like the poster this is modeled on; ties by kickoff.
   return rows.sort((x, y) => y.gap / y.of - x.gap / x.of || x.date.localeCompare(y.date));
+}
+
+// ---- looking back at an earlier week -----------------------------------------------------------------------------------------------------
+
+export interface WeeklyLike {
+  cfb: { of: number; starts: Record<string, string>; ranks: Record<string, Record<string, [number, number, number]>> };
+  nfl: { of: number; ranks: Record<string, Record<string, [number, number, number]>>; weekOf: Record<string, number> };
+}
+/** One finished game from the season ledger (src/data/season.json). */
+export interface LedgerLike {
+  id: string; league: string; week: string; date: string; matchup: string;
+  away: { abbr: string; logoId: string; score: number; color?: string | null };
+  home: { abbr: string; logoId: string; score: number; color?: string | null };
+  overtime?: boolean;
+}
+
+/** The ledger's finished games for one league and week, as results carrying the ranks that stood before each kickoff. */
+export function ledgerResults(games: LedgerLike[], league: "NFL" | "CFB", week: string, weekly: WeeklyLike): ResultLike[] {
+  const out: ResultLike[] = [];
+  for (const g of games) {
+    if (g.league !== league || g.week !== week) continue;
+    const [awayName, homeName] = g.matchup.split(" @ ");
+    const pick = (name: string, abbr: string): { n: number; o?: number; d?: number } | null => {
+      let v: [number, number, number] | undefined;
+      if (league === "NFL") {
+        const wk = weekly.nfl.weekOf[g.id];
+        const keys = Object.keys(weekly.nfl.ranks).map(Number);
+        const w = wk ? Math.min(wk, Math.max(...keys)) : Math.max(...keys);
+        v = weekly.nfl.ranks[String(w)]?.[abbr];
+      } else {
+        const local = new Date(Date.parse(g.date) - 6 * 3600e3).toISOString().slice(0, 10);
+        let best = -1;
+        for (const [w, start] of Object.entries(weekly.cfb.starts)) if (start <= local && Number(w) > best && weekly.cfb.ranks[w]) best = Number(w);
+        v = weekly.cfb.ranks[String(best)]?.[name.toLowerCase()];
+      }
+      return v ? { n: v[0], o: v[1], d: v[2] } : null;
+    };
+    out.push({
+      espnId: g.id, league, week, date: g.date,
+      teams: [{ name: awayName ?? g.away.abbr, abbr: g.away.abbr, logoId: g.away.logoId, color: g.away.color ?? null, score: g.away.score }, { name: homeName ?? g.home.abbr, abbr: g.home.abbr, logoId: g.home.logoId, color: g.home.color ?? null, score: g.home.score }],
+      final: { detail: g.overtime ? "Final/OT" : "Final" },
+      forecast: { line: null },
+      ranked: [pick(awayName ?? "", g.away.abbr), pick(homeName ?? "", g.home.abbr)],
+    });
+  }
+  return out;
 }

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { MIN_UPSET_GAP, buildRows, tierFor, type RankSource, type ResultLike, type SlateLike } from "../src/upsetMeter";
+import { MIN_UPSET_GAP, buildRows, ledgerResults, tierFor, type RankSource, type ResultLike, type SlateLike } from "../src/upsetMeter";
 
 const team = (abbr: string, extra = {}) => ({ name: abbr, abbr, logoId: abbr.toLowerCase(), color: null, ...extra });
 const RANKS: Record<string, number> = { AAA: 3, HHH: 90, BBB: 50, III: 10, LLL: 40, MMM: 42, PPP: 12, QQQ: 14, RRR: 13, SSS: 23 };
@@ -67,4 +67,24 @@ test("live and just-finished slate games update from the live feed; a game in th
   expect([done.status, done.upset, done.score]).toEqual(["final", true, [7, 14]]);
   const dup = buildRows({ league: "CFB", games: [g], period: "w", live: {}, ranks, results: [{ espnId: "g1", league: "CFB", week: "w", date: "d", teams: [{ ...team("AAA"), score: 1 }, { ...team("HHH"), score: 2 }], final: { detail: "Final" }, forecast: { line: null } }] });
   expect(dup).toHaveLength(1);
+});
+
+test("a look back at an earlier week uses that week's own ranks", () => {
+  const weekly = {
+    cfb: { of: 100, starts: { "5": "2026-10-01", "6": "2026-10-06" }, ranks: { "5": { "aaa u": [60, 50, 70], "hhh u": [12, 10, 15] }, "6": { "aaa u": [20, 20, 20], "hhh u": [15, 12, 18] } } },
+    nfl: { of: 32, ranks: { "3": { AAA: [30, 29, 28], HHH: [4, 3, 5] } }, weekOf: { n1: 3 } },
+  };
+  const g = (id: string, league: string, date: string, away: [string, number], home: [string, number]) => ({
+    id, league, week: "wk", date, matchup: `${away[0].toUpperCase()} U @ ${home[0].toUpperCase()} U`, overtime: false,
+    away: { abbr: away[0].toUpperCase(), logoId: "a", score: away[1] }, home: { abbr: home[0].toUpperCase(), logoId: "h", score: home[1] },
+  });
+  // The week-5 game is judged by week 5's ranks (#60 against #12), a week-6 game by week 6's (#20 against #15).
+  const cfb = ledgerResults([g("c5", "CFB", "2026-10-03T18:00Z", ["aaa", 31], ["hhh", 17]), g("c6", "CFB", "2026-10-08T18:00Z", ["aaa", 31], ["hhh", 17]), g("x", "NFL", "2026-10-03T18:00Z", ["aaa", 1], ["hhh", 2])], "CFB", "wk", weekly);
+  expect(cfb).toHaveLength(2);
+  const rows = buildRows({ league: "CFB", games: [], results: cfb, live: {}, period: "wk", ranks: { of: 100, rankOf: () => null } });
+  const by = (k: string) => rows.find((r) => r.key === k)!;
+  expect([by("r-c5").teams[0].rank, by("r-c5").teams[1].rank, by("r-c5").gap, by("r-c5").upset]).toEqual([60, 12, 48, true]);
+  expect([by("r-c6").gap, by("r-c6").upset]).toEqual([5, false]); // #20 over #15: too close
+  const nfl = buildRows({ league: "NFL", games: [], results: ledgerResults([g("n1", "NFL", "2026-10-03T18:00Z", ["aaa", 20], ["hhh", 17])], "NFL", "wk", weekly), live: {}, period: "wk", ranks: { of: 32, rankOf: () => null } });
+  expect([nfl[0].gap, nfl[0].upset, nfl[0].teams[1].o]).toEqual([26, true, 3]); // week 3's #30 beat #4
 });

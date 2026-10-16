@@ -7209,11 +7209,16 @@ select,
 }
 .ls-name .fpi-rank { font-size: 10.5px; margin-right: 6px; vertical-align: 1px; }
 
-/* Eight tabs: always fully visible, never overlapping. The buttons share the row evenly and, when the row is too narrow for them, wrap to a
-   second row of equal cells instead of being squeezed or scrolled. */
+/* Nine tabs on one line. They share the row evenly; on a phone the labels shrink (and the long ones are already short), and on the very
+   narrowest screens the row scrolls sideways instead of wrapping, so it never takes a second line or overlaps. */
 .view-row .view-switch {
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.view-row .view-switch::-webkit-scrollbar {
+  display: none;
 }
 .view-row .view-switch button {
   flex: 1 1 auto;
@@ -7222,22 +7227,52 @@ select,
 }
 @media (max-width: 640px) {
   .view-row {
-    align-items: flex-start;
+    align-items: center;
+    gap: 4px;
   }
-  .view-row .view-switch button {
-    flex: 1 1 calc(20% - 4px);
-    padding: 0 4px;
-    font-size: 12px;
-  }
-}
-@media (max-width: 400px) {
   .view-row .view-switch {
-    gap: 2px;
+    gap: 1px;
     padding: 2px;
   }
   .view-row .view-switch button {
-    padding: 0 1px;
+    padding: 0 3px;
     font-size: 10.5px;
     letter-spacing: -0.01em;
+  }
+  .view-row .export-btns summary {
+    padding: 0 7px;
+    min-width: 0;
+  }
+}
+@media (max-width: 400px) {
+  .view-row .view-switch button {
+    padding: 0 2px;
+    font-size: 10px;
+  }
+}
+@media (max-width: 370px) {
+  .view-row .view-switch button {
+    flex: 1 0 auto;
+  }
+}
+.view-row {
+  flex-wrap: nowrap;
+  align-items: center;
+}
+.view-row .view-switch {
+  flex: 1 1 auto;
+  width: auto;
+}
+.view-row .export-btns {
+  flex: none;
+  width: auto;
+}
+@media (min-width: 641px) and (max-width: 940px) {
+  .view-row .view-switch button {
+    font-size: 12.5px;
+    padding: 0 6px;
+  }
+  .view-row .view-switch .count {
+    display: none;
   }
 }

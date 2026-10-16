@@ -44,3 +44,43 @@ export function buildPlusRanks(sp: Snapshot, nfl: NflData, boardTeams: Record<st
     nfl: { updated: nfl.updatedAt, week, of: Object.keys(byAbbr).length, byAbbr, od: odNfl },
   };
 }
+
+/**
+ * Each week's pre-game ranks, for the Upset Alert Meter's look back at earlier weeks (fetched only when a past week is chosen):
+ * [overall, offense, defense] per team. College is keyed by sheet week and lower-case school name (board and sheet spellings), with the date each
+ * sheet week starts; the NFL by week number and abbreviation, with each game's week by ESPN game id.
+ */
+export interface WeeklyRanks {
+  version: 1;
+  cfb: { of: number; starts: Record<string, string>; ranks: Record<string, Record<string, [number, number, number]>> };
+  nfl: { of: number; ranks: Record<string, Record<string, [number, number, number]>>; weekOf: Record<string, number> };
+}
+
+export function buildWeeklyRanks(sp: Snapshot, nfl: NflData, boardTeams: Record<string, { espnId: string; name: string; league: string }>): WeeklyRanks {
+  const lite = buildLite(sp, boardTeams);
+  const aliases = Object.entries(lite.names); // board name -> sheet name
+  const cfbRanks: WeeklyRanks["cfb"]["ranks"] = {};
+  for (const w of Object.keys(lite.weekStarts)) {
+    const rated = Object.entries(lite.teams).filter(([, t]) => t.r[w]).map(([name, t]) => ({ name, sp: t.r[w][0], off: t.r[w][1], def: t.r[w][2] }));
+    if (!rated.length) continue;
+    const rk = (key: "sp" | "off" | "def", low = false) => new Map([...rated].sort((a, b) => (low ? a[key] - b[key] : b[key] - a[key])).map((t, i) => [t.name, i + 1]));
+    const sr = rk("sp"), or = rk("off"), dr = rk("def", true);
+    const out: Record<string, [number, number, number]> = {};
+    for (const t of rated) out[t.name.toLowerCase()] = [sr.get(t.name)!, or.get(t.name)!, dr.get(t.name)!];
+    for (const [board, sheet] of aliases) if (out[sheet.toLowerCase()]) out[board.toLowerCase()] = out[sheet.toLowerCase()];
+    cfbRanks[w] = out;
+  }
+  const nflRanks: WeeklyRanks["nfl"]["ranks"] = {};
+  for (let w = 1; w <= nfl.ratingsThroughWeek; w++) {
+    const out: Record<string, [number, number, number]> = {};
+    for (const r of teamRows(nfl, w)) out[ESPN_ABBR[r.abbr] ?? r.abbr] = [r.rank.sp, r.rank.off, r.rank.def];
+    nflRanks[String(w)] = out;
+  }
+  const weekOf: Record<string, number> = {};
+  for (const g of nfl.games) if (g.espn) weekOf[g.espn] = g.week;
+  return {
+    version: 1,
+    cfb: { of: Object.values(lite.teams).filter((t) => t.spRk).length, starts: lite.weekStarts, ranks: cfbRanks },
+    nfl: { of: Object.keys(nflRanks[String(nfl.ratingsThroughWeek)] ?? {}).length, ranks: nflRanks, weekOf },
+  };
+}
