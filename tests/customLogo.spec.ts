@@ -50,7 +50,7 @@ test("Denver uses the supplied D logo (the donkey with the taped unicorn horn), 
   expect(readFileSync("scripts/upgrade-logos.mjs", "utf8")).toContain('l.source === "custom"');
 });
 
-test("the Chargers use the supplied emblem (the winged donkey-unicorn on the blue field), and a banner for midfield", async () => {
+test("the Chargers use the supplied shield (the donkey with the taped unicorn horn), and a banner for midfield", async () => {
   const sources = JSON.parse(readFileSync("src/data/logo-sources.json", "utf8")).logos as { logoId: string; source: string }[];
   expect(sources.find((l) => l.logoId === "los-angeles-chargers")!.source).toBe("custom");
   const meta = await sharp("public/logos/los-angeles-chargers.webp").metadata();
@@ -64,8 +64,8 @@ test("the Chargers use the supplied emblem (the winged donkey-unicorn on the blu
     if (b > 150 && r < 60) blue++;
     else if (r > 220 && g > 150 && b < 80) gold++;
   }
-  expect(blue / opaque).toBeGreaterThan(0.4); // the Chargers' blue field
-  expect(gold / opaque).toBeGreaterThan(0.05); // the gold lettering
+  expect(blue / opaque).toBeGreaterThan(0.2); // the Chargers' blue
+  expect(gold / opaque).toBeGreaterThan(0.05); // the gold quarter
   const art = await sharp("public/field-art/chargers.webp").metadata();
   expect(art.width! / art.height!).toBeCloseTo(720 / 493, 1);
 });
