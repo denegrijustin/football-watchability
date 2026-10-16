@@ -310,7 +310,7 @@ test("NFL+ has a Conf & Div view: both conferences and all eight divisions ranke
   expect(await sh((r) => [...r.querySelectorAll(".div-card")].every((c) => { const v = [...c.querySelectorAll("li .num:not(.muted)")].map((e) => parseFloat((e.textContent ?? "").replace("−", "-"))); return v.every((x, i) => i === 0 || v[i - 1] >= x); }))).toBe(true);
 });
 
-test("the Chargers put their banner at midfield, in the simulator, when they are the home team; other teams keep their logo", async ({ page }) => {
+test("the Chargers and Denver put their own art at midfield, in the simulator, when they are the home team; other teams keep their logo", async ({ page }) => {
   const run = async (away: string, home: string) => {
     await page.goto("/?league=NFL");
     await page.getByRole("button", { name: "Simulator" }).click();
@@ -326,6 +326,8 @@ test("the Chargers put their banner at midfield, in the simulator, when they are
   };
   await run("Kansas City Chiefs", "Los Angeles Chargers");
   await expect(page.locator(".st image[data-midfield='art']")).toHaveAttribute("href", "/field-art/chargers.webp");
+  await run("Los Angeles Chargers", "Denver Donkeys");
+  await expect(page.locator(".st image[data-midfield='art']")).toHaveAttribute("href", "/field-art/denver.webp");
   await run("Los Angeles Chargers", "Kansas City Chiefs");
   await expect(page.locator(".st image[data-midfield='art']")).toHaveCount(0);
 });

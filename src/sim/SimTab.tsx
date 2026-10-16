@@ -122,7 +122,7 @@ export default function SimTab({ defaultLeague }: { defaultLeague: League }) {
   const resolve = useCallback((raw: RawTeam, game: Game | undefined, side: "away" | "home", info: TeamInfo, slateTeam?: Game["teams"][number]): TeamExtras => {
     const k = known.get(`${league}:${raw.id}`);
     const short = slateTeam ? (league === "NFL" ? slateTeam.name.split(" ").pop() ?? slateTeam.name : slateTeam.name) : k?.short ?? (league === "NFL" ? raw.name.split(" ").pop() ?? raw.name : schoolName(raw.name));
-    const logoId = slateTeam?.logoId ?? k?.logoId ?? [slug(raw.name), slug(schoolName(raw.name))].find((s) => logos[s]);
+    const logoId = slateTeam?.logoId ?? k?.logoId ?? [slug(raw.name.replace("Donkeys", "Broncos")), slug(schoolName(raw.name))].find((s) => logos[s]);
     // The conference painted on the field: the NFL's shield, or the school's conference (independents have none).
     const confName = league === "NFL" ? "NFL" : (slateTeam as { ranks?: { confName?: string } } | undefined)?.ranks?.confName ?? (logoId ? CONF_NAMES[confOf("CFB", logoId) ?? ""] ?? null : null);
     return { short, alt: info.alt, logoId, conf: confName === "Independent" ? null : confName, color: brandColor(info, slateTeam?.color ?? k?.color ?? hashColor(raw.name)), logo: logoId ? logos[logoId] : undefined, roster: { ...rosterFrom(game, side), ...Object.fromEntries(Object.entries(info.roster).filter(([, v]) => v !== undefined)) } };

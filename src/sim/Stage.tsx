@@ -274,7 +274,7 @@ export function Stage({ cfg, plays, idx, pps }: { cfg: GameCfg; plays: PlayRec[]
                 <text x={FW - EZ - 44} y="64" className="st-ndtext">TOUCHDOWN JESUS</text>
               </g>
             )}
-            {midArt ? <image href={midArt.src} data-midfield="art" x={fx(50) - 130} y={CY - 130 / midArt.ratio} width="260" height={260 / midArt.ratio} opacity="0.95" /> : mid && <image href={mid} x={fx(50) - 55} y={CY - 55} width="110" height="110" opacity="0.9" />}
+            {midArt ? <image href={midArt.src} data-midfield="art" x={fx(50) - midArt.stage / 2} y={CY - midArt.stage / midArt.ratio / 2} width={midArt.stage} height={midArt.stage / midArt.ratio} opacity="0.95" /> : mid && <image href={mid} x={fx(50) - 55} y={CY - 55} width="110" height="110" opacity="0.9" />}
             {lead !== null && <rect key={`g${p!.n}`} className="st-flash" x={lead === 0 ? FW - EZ : 0} width={EZ} height={FH} fill="#fff" />}
             {first !== null && first > 0 && first < 100 && <rect x={fx(first) - 3} y="0" width="6" height={FH} fill="#ffd84a" />}
             {p && p.kind !== "kickoff" && <rect x={fx(ball) - 2.5} y="0" width="5" height={FH} fill="#4aa3ff" opacity="0.9" />}

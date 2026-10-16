@@ -252,7 +252,7 @@ export function FieldView({ data, teams, variant, rootRef, badge, weather }: { d
         {firstDown != null && <line x1={X(firstDown)} x2={X(firstDown)} y1="0" y2={H} className="df-first" />}
         <line x1={X(goal)} x2={X(goal)} y1="0" y2={H} className="df-goal" />
         {!badge?.src && home.logoId && MIDFIELD_ART[home.logoId] && (
-          <image href={MIDFIELD_ART[home.logoId].src} data-midfield="art" x={60 - 9.5} y={H / 2 - 9.5 / MIDFIELD_ART[home.logoId].ratio} width="19" height={19 / MIDFIELD_ART[home.logoId].ratio} opacity="0.95" />
+          <image href={MIDFIELD_ART[home.logoId].src} data-midfield="art" x={60 - MIDFIELD_ART[home.logoId].card / 2} y={H / 2 - MIDFIELD_ART[home.logoId].card / MIDFIELD_ART[home.logoId].ratio / 2} width={MIDFIELD_ART[home.logoId].card} height={MIDFIELD_ART[home.logoId].card / MIDFIELD_ART[home.logoId].ratio} opacity="0.95" />
         )}
         {!(!badge?.src && home.logoId && MIDFIELD_ART[home.logoId]) && (badge?.src ?? (!badge?.neutral && home.logoId ? logos[home.logoId] : null)) && (
           <LogoMark src={badge?.src ?? logos[home.logoId!]} cx={60} cy={H / 2} size={11} chipOpacity={0.16} imageClass="lf-mid" />
