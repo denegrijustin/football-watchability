@@ -3,6 +3,7 @@
  * true colors, the roster for names and positions, and the season leaders for who actually carries the ball and catches the passes.
  * Everything is fetched when a game is simulated and cached; if any piece fails the simulation still runs with generic names.
  */
+import { fetchData } from "../data/load";
 import type { Roster } from "./engine";
 import type { League } from "../data";
 
@@ -89,13 +90,15 @@ export function shape(raw: Raw): TeamInfo {
   // Without season leaders, the most experienced quarterback on the roster (a starter, not a backup or a rookie).
   const qbs = raw.people.filter((p) => p.pos === "QB").sort((a, b) => (b.exp ?? 0) - (a.exp ?? 0));
   info.roster.qb = pass ? people.get(pass.id)!.name : qbs[0]?.name;
-  const rush = cat("rushingYards").filter((x) => people.get(x.id)!.pos !== "QB").slice(0, 4);
+  // Ball carriers and targets are backs, receivers and tight ends; ESPN also lists a punter or a lineman who ran or caught one.
+  const skill = new Set(["RB", "FB", "WR", "TE"]);
+  const rush = cat("rushingYards").filter((x) => skill.has(people.get(x.id)!.pos)).slice(0, 4);
   if (rush.length) info.roster.rushers = rush.map((x) => ({ name: people.get(x.id)!.name, w: Math.max(x.w, 20) }));
   else {
     const rbs = raw.people.filter((p) => p.pos === "RB" || p.pos === "FB").slice(0, 3);
     if (rbs.length) info.roster.rushers = rbs.map((p, i) => ({ name: p.name, w: [60, 30, 10][i] }));
   }
-  const rec = cat("receivingYards").slice(0, 7);
+  const rec = cat("receivingYards").filter((x) => skill.has(people.get(x.id)!.pos)).slice(0, 7);
   if (!rec.length) {
     // Real names at least: the first few receivers, tight end and back on the roster, weighted toward the top of the list.
     const pool = [...raw.people.filter((p) => p.pos === "WR").slice(0, 4), ...raw.people.filter((p) => p.pos === "TE").slice(0, 1), ...raw.people.filter((p) => p.pos === "RB").slice(0, 1)];
@@ -114,12 +117,30 @@ async function load(league: League, id: string, season: number): Promise<TeamInf
   return shape(raw);
 }
 
+/** One team in the site's own /data/team-players.json (collected by the refresh, see scripts/fetch-team-players.mjs). */
+interface Packed { c: string | null; a: string | null; qb: string | null; qbs: [string, number][]; rush: [string, number][]; rec: [string, number, "WR" | "TE" | "RB"][]; leaders: boolean }
+interface PackedFile { nfl: Record<string, Packed>; cfb: Record<string, Packed> }
+let packedFile: Promise<PackedFile | null> | null = null;
+const packed = () => (packedFile ??= fetchData<PackedFile>("team-players").catch(() => { packedFile = null; return null; }));
+
+/** The team from the site's own file, when it has season leaders for it; otherwise null and the live feeds are asked. */
+export function fromPacked(p: Packed | undefined): TeamInfo | null {
+  if (!p?.leaders) return null;
+  return {
+    color: p.c ?? undefined, alt: p.a ?? undefined,
+    roster: { qb: p.qb ?? undefined, rushers: p.rush.map(([name, w]) => ({ name, w })), receivers: p.rec.map(([name, w, pos]) => ({ name, w, pos })) },
+    qbs: p.qbs.map(([name, exp]) => ({ name, exp })),
+  };
+}
+
 /** Colors, names and weights for one team. Never rejects: a failed lookup gives an empty roster. */
 export function fetchTeamInfo(league: League, id: string, season: number): Promise<TeamInfo> {
   const key = `${league}:${id}:${season}`;
   let p = cache.get(key);
   if (!p) {
-    p = load(league, id, season).catch(() => ({ roster: {} }));
+    p = packed()
+      .then((f) => fromPacked(f?.[league === "NFL" ? "nfl" : "cfb"]?.[id]) ?? load(league, id, season))
+      .catch(() => ({ roster: {} }));
     cache.set(key, p);
   }
   return p;

@@ -88,3 +88,48 @@ test("a known starter wins over whoever is listed first: nflverse's Mahomes, mat
   expect(startingQb({ roster: {}, qbs: [] }, "Kenneth Walker III")).toBe("K. Walker"); // generational suffixes are dropped
   expect(startingQb(info, null)).toBe("J. Fields"); // nothing known: whatever ESPN's leaders gave
 });
+
+import { readFileSync } from "node:fs";
+import { fromPacked } from "../src/sim/roster";
+
+test("the site's own team-players file names a QB, backs, receivers and a color for every team, with no skill-position strays", () => {
+  const f = JSON.parse(readFileSync("src/data/team-players.json", "utf8"));
+  expect(Object.keys(f.nfl)).toHaveLength(32);
+  expect(Object.keys(f.cfb).length).toBeGreaterThanOrEqual(130);
+  for (const [lg, teams] of [["nfl", f.nfl], ["cfb", f.cfb]] as const) {
+    for (const [id, t] of Object.entries<any>(teams)) {
+      const info = fromPacked(t);
+      expect(info, `${lg} ${id} has season leaders`).not.toBeNull();
+      expect(info!.roster.qb, `${lg} ${id} QB`).toBeTruthy();
+      expect(info!.roster.rushers?.length, `${lg} ${id} rushers`).toBeGreaterThanOrEqual(1);
+      expect(info!.roster.receivers?.length, `${lg} ${id} receivers`).toBeGreaterThanOrEqual(3);
+      expect(info!.color, `${lg} ${id} color`).toMatch(/^#[0-9a-f]{6}$/);
+    }
+  }
+  // Kansas City: the passing leader is the QB and the rushing leader is the first back, not whoever is listed first on the roster.
+  const kc = fromPacked(f.nfl["12"])!;
+  expect(kc.roster.qb).toBe("P. Mahomes");
+  expect(kc.roster.rushers![0].name).toBe("K. Walker III");
+  expect(kc.roster.rushers!.every((r) => r.w >= 20)).toBe(true);
+});
+
+test("the simulator names real players with ESPN and the server function both unreachable", async ({ page }) => {
+  await page.route("**/api/teaminfo*", (r) => r.abort());
+  await page.route(/espn\.com/, (r) => r.abort());
+  await page.goto("/?league=NFL");
+  await page.getByRole("button", { name: "Simulator" }).click();
+  await page.locator(".sim-custom summary").click();
+  const pick = async (n: number, name: string) => {
+    const sel = page.locator(".sim-custom select").nth(n);
+    await sel.selectOption(await sel.locator("option").evaluateAll((os, s) => (os as HTMLOptionElement[]).find((o) => o.textContent === s)?.value ?? "", name));
+  };
+  await pick(0, "Buffalo Bills");
+  await pick(1, "Kansas City Chiefs");
+  await page.getByRole("button", { name: "Simulate matchup" }).click();
+  await expect(page.getByRole("region", { name: "Forecast" })).toBeVisible({ timeout: 45_000 });
+  await page.getByRole("button", { name: "Skip to final" }).click();
+  const panels = page.locator(".st-panel");
+  await expect(panels.nth(1)).toContainText("P. Mahomes");
+  await expect(panels.nth(1)).not.toContainText(/Chiefs QB|KC RB|KC receiver|B\. Smith/);
+  await expect(panels.nth(0)).toContainText("J. Allen");
+});
