@@ -44,3 +44,28 @@ export function liveResults(model: Model, finals: Final[], espn: Record<string, 
   }
   return out;
 }
+
+/**
+ * The sheet's own result rows, checked against ESPN's finals. The sheet is typed by hand, and once in a while a score is entered for the wrong side
+ * (Oklahoma 27, Texas 24 was recorded as Texas winning). When a final says the two teams' scores differ from the sheet's, ESPN's is used: points, winner
+ * and margin are replaced, and the postgame win expectancy and adjusted margin, which were computed from the wrong score, are cleared. Only games between two teams
+ * the sheet and ESPN agree on (FBS, by ESPN id) are touched.
+ */
+export function correctResults(results: GameResult[], finals: Final[], espn: Record<string, string>): GameResult[] {
+  const cfb = finals.filter((f) => f.l === "cfb" && espn[f.a.id] && espn[f.h.id]);
+  if (!cfb.length) return results;
+  const byPair = new Map<string, Final[]>();
+  const key = (x: string, y: string) => (x < y ? `${x}|${y}` : `${y}|${x}`);
+  for (const f of cfb) byPair.set(key(espn[f.a.id], espn[f.h.id]), [...(byPair.get(key(espn[f.a.id], espn[f.h.id])) ?? []), f]);
+  let changed = false;
+  const fixed = results.map((r) => {
+    if (r.pts == null || r.oppPts == null) return r;
+    const f = byPair.get(key(r.team, r.opp))?.find((x) => Math.abs(dayNum(localDate(x.date)) - dayNum(r.date)) <= 1);
+    if (!f) return r;
+    const mine = espn[f.a.id] === r.team ? f.a.s : f.h.s, theirs = espn[f.a.id] === r.team ? f.h.s : f.a.s;
+    if (mine === r.pts && theirs === r.oppPts) return r;
+    changed = true;
+    return { ...r, pts: mine, oppPts: theirs, margin: mine - theirs, win: mine > theirs ? 1 : mine < theirs ? 0 : 0.5, pgwe: null, adjMgn: null, corrected: true };
+  });
+  return changed ? fixed : results;
+}

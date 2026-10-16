@@ -1,4 +1,5 @@
 import { ConfLogoSvg } from "../../ConfMark";
+import { LogoMark } from "../../logoTone";
 import { C, TipView, centreIn, niceTicks, useTip, useWidth } from "./kit";
 
 export interface StripGroup {
@@ -63,8 +64,15 @@ export function StripPlot({ groups, selected, onSelect, axisTitle, lowerBetter, 
                     onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(d.id); } }}
                     onPointerEnter={() => show({ x: px, y: py, title: d.name, swatch: g.color, rows: d.tip })} onFocus={(e) => { const c = centreIn(ref.current, e.currentTarget); show({ x: c.x, y: c.y, title: d.name, swatch: g.color, rows: d.tip }); }} onBlur={hide}>
                     <circle cx={px} cy={py} r={r + 3} fill="transparent" />
-                    <circle cx={px} cy={py} r={on ? r + 1.5 : r} fill={d.logo ? "rgba(255,255,255,0.94)" : g.color} stroke={on ? C.ink : g.color} strokeWidth={on ? 2.5 : 1.5} />
-                    {d.logo && <image href={d.logo} x={px - (r - 2)} y={py - (r - 2)} width={(r - 2) * 2} height={(r - 2) * 2} preserveAspectRatio="xMidYMid meet" style={{ pointerEvents: "none" }} />}
+                    {d.logo ? (
+                      // the chip behind the logo is read from the logo's own pixels: dark for a white logo, white for a dark one
+                      <>
+                        <LogoMark src={d.logo} cx={px} cy={py} size={r * 1.45} chipOpacity={1} />
+                        <circle cx={px} cy={py} r={on ? r + 1.5 : r} fill="none" stroke={on ? C.ink : g.color} strokeWidth={on ? 2.5 : 1.6} />
+                      </>
+                    ) : (
+                      <circle cx={px} cy={py} r={on ? r - 2.5 : r - 3.5} fill={g.color} stroke={on ? C.ink : C.surface} strokeWidth={on ? 2.5 : 1.5} />
+                    )}
                     <circle className="ring" cx={px} cy={py} r={r + 4} fill="none" />
                   </g>
                 );

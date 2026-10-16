@@ -4,7 +4,7 @@ import { buildModel } from "./model";
 import type { Model } from "./types";
 import { fetchData } from "../../data/load";
 import { useFinals } from "../../finals";
-import { liveResults } from "./finals";
+import { correctResults, liveResults } from "./finals";
 import type { SpLite } from "../lite";
 
 interface Ctx {
@@ -46,8 +46,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
   }, []);
   const model = useMemo(() => {
     if (!sheetModel) return null;
-    const extra = liveResults(sheetModel, finals, espn);
-    return extra.length ? { ...sheetModel, liveResults: extra } : sheetModel;
+    const results = correctResults(sheetModel.results, finals, espn);
+    const base = results === sheetModel.results ? sheetModel : { ...sheetModel, results };
+    const extra = liveResults(base, finals, espn);
+    return extra.length ? { ...base, liveResults: extra } : base;
   }, [sheetModel, finals, espn]);
   const value = useMemo(() => ({ snapshot, model, loadError, retry }), [snapshot, model, loadError, retry]);
   return <DataCtx.Provider value={value}>{children}</DataCtx.Provider>;

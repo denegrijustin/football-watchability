@@ -90,6 +90,8 @@ export interface GameResult {
   team: string; opp: string;
   win: number | null; pts: number | null; oppPts: number | null; margin: number | null;
   pgwe: number | null; adjMgn: number | null;
+  /** The sheet had the score wrong; ESPN's final replaced it (see correctResults). */
+  corrected?: boolean;
 }
 
 export interface SeasonLine {

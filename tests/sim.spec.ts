@@ -277,3 +277,35 @@ test("SP+ conference chart: every team is its logo, rows carry the conference lo
   await shadow((r) => (r.querySelector(".team-pop-actions .primary") as HTMLElement).click());
   await expect.poll(() => shadow((r) => r.querySelector('[role=tab][aria-selected="true"]')?.textContent)).toBe("Team");
 });
+
+import { correctResults } from "../src/spplus/data/finals";
+
+test("a sheet score entered for the wrong side is replaced by ESPN's final (Oklahoma 27, Texas 24)", () => {
+  const row = (team: string, opp: string, pts: number, oppPts: number) => ({ id: team, row: 1, date: "2026-10-10", team, opp, win: pts > oppPts ? 1 : 0, pts, oppPts, margin: pts - oppPts, pgwe: 0.5, adjMgn: 3 });
+  const sheet = [row("Oklahoma", "Texas", 24, 27), row("Texas", "Oklahoma", 27, 24), row("Ohio State", "Indiana", 30, 10)];
+  const finals = [
+    { l: "cfb", id: "1", date: "2026-10-10T19:30Z", week: 6, ot: 0, neutral: 1, a: { id: "251", n: "Texas", ab: "TEX", s: 24 }, h: { id: "201", n: "Oklahoma", ab: "OU", s: 27 } },
+    { l: "cfb", id: "2", date: "2026-10-10T16:00Z", week: 6, ot: 0, neutral: 0, a: { id: "194", n: "Ohio State", ab: "OSU", s: 30 }, h: { id: "84", n: "Indiana", ab: "IU", s: 10 } },
+  ];
+  const espn = { "251": "Texas", "201": "Oklahoma", "194": "Ohio State", "84": "Indiana" };
+  const fixed = correctResults(sheet as never, finals as never, espn);
+  const ou = fixed.find((r) => r.team === "Oklahoma")!, tx = fixed.find((r) => r.team === "Texas")!;
+  expect([ou.pts, ou.oppPts, ou.win, ou.margin, ou.corrected]).toEqual([27, 24, 1, 3, true]);
+  expect([tx.pts, tx.oppPts, tx.win, tx.margin]).toEqual([24, 27, 0, -3]);
+  expect(ou.pgwe).toBeNull(); // the win expectancy came from the wrong score
+  expect(fixed.find((r) => r.team === "Ohio State")).toBe(sheet[2]); // a correct row is left exactly as it was
+  const clean = sheet.slice(2);
+  expect(correctResults(clean as never, finals as never, espn)).toBe(clean); // nothing wrong: the very same list comes back
+});
+
+test("NFL+ has a Conf & Div view: both conferences and all eight divisions ranked, with each division's teams in order", async ({ page }) => {
+  await page.goto("/?league=NFL");
+  await page.getByRole("button", { name: "NFL+" }).click();
+  await page.getByRole("tab", { name: "Conf & Div" }).click();
+  const sh = <T,>(fn: (r: ShadowRoot) => T) => page.evaluate(`(${fn.toString()})([...document.querySelectorAll("*")].find((e) => e.shadowRoot?.querySelector(".tabs")).shadowRoot)`) as Promise<T>;
+  await expect.poll(() => sh((r) => r.querySelectorAll(".div-card").length)).toBe(8);
+  expect(await sh((r) => [...r.querySelectorAll(".panel")].slice(0, 2).map((p) => p.querySelectorAll("tbody tr").length))).toEqual([2, 8]);
+  expect(await sh((r) => [...r.querySelectorAll(".div-card")].every((c) => c.querySelectorAll("li").length === 4))).toBe(true);
+  // each division's teams run best rating first
+  expect(await sh((r) => [...r.querySelectorAll(".div-card")].every((c) => { const v = [...c.querySelectorAll("li .num:not(.muted)")].map((e) => parseFloat((e.textContent ?? "").replace("−", "-"))); return v.every((x, i) => i === 0 || v[i - 1] >= x); }))).toBe(true);
+});
