@@ -194,22 +194,41 @@
 .um-tier {
   grid-area: tier;
   display: grid;
-}
-.um-tier {
-  grid-template-columns: 1fr 1fr;
-  gap: 2px 12px;
-}
-.um-tier span {
-  font-size: 11px;
-  color: var(--muted);
+  gap: 2px;
   font-variant-numeric: tabular-nums;
-  white-space: nowrap;
 }
-.um-tier span b {
+.um-th,
+.um-tr {
+  display: grid;
+  grid-template-columns: 52px repeat(3, 1fr);
+  gap: 6px;
+  align-items: center;
+  font-size: 12px;
+}
+.um-th {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.um-th span,
+.um-tr span {
+  text-align: center;
+}
+.um-tr b {
   color: var(--text-2);
+  font-size: 12px;
 }
-.um-tier span:last-child {
-  text-align: right;
+.um-tr span {
+  color: var(--text-2);
+  border-radius: 6px;
+  padding: 1px 4px;
+}
+.um-tr span.best {
+  background: color-mix(in srgb, var(--lime) 22%, transparent);
+  color: var(--lime);
+  font-weight: 800;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--lime) 55%, transparent);
 }
 .um-result {
   grid-area: result;

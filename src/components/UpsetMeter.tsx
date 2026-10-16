@@ -38,14 +38,21 @@ function Row({ r, league }: { r: MeterRow; league: League }) {
         <i style={{ width: `${r.tier.id * 20}%` }} />
         <b /><b /><b /><b />
       </div>
-      <div className="um-tier">
-        {[a, h].map((t, i) => (
-          <span key={i}>
-            <b>{t.abbr}</b> {t.rank != null ? `#${t.rank}` : "unranked"}
-            {t.o != null && <> · O {t.o}</>}
-            {t.d != null && <> · D {t.d}</>}
-          </span>
-        ))}
+      <div className="um-tier" role="table" aria-label="Rankings, away team first">
+        <div className="um-th" role="row"><span /><span>Overall</span><span>Off</span><span>Def</span></div>
+        {([a, h] as const).map((t, i) => {
+          const o = i === 0 ? h : a;
+          // The better (lower) rank in each category is highlighted; equal ranks highlight neither.
+          const best = (mine: number | undefined, theirs: number | undefined) => mine != null && (theirs == null || mine < theirs);
+          return (
+            <div key={i} className="um-tr" role="row">
+              <b role="rowheader">{t.abbr}</b>
+              <span role="cell" className={best(t.rank ?? undefined, o.rank ?? undefined) ? "best" : ""}>{t.rank != null ? `#${t.rank}` : "NR"}</span>
+              <span role="cell" className={best(t.o, o.o) ? "best" : ""}>{t.o ?? "–"}</span>
+              <span role="cell" className={best(t.d, o.d) ? "best" : ""}>{t.d ?? "–"}</span>
+            </div>
+          );
+        })}
       </div>
       {r.status !== "pre" && r.score && (
         <div className="um-result">
