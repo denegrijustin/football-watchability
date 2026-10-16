@@ -21,7 +21,7 @@ export function tierFor(gapShare: number): MeterTier {
   return TIERS[gapShare >= 0.45 ? 0 : gapShare >= 0.28 ? 1 : gapShare >= 0.14 ? 2 : gapShare >= 0.05 ? 3 : 4];
 }
 
-export interface MeterTeam { name: string; abbr: string; logoId: string; color: string | null; espnId?: string | null; rank: number | null }
+export interface MeterTeam { name: string; abbr: string; logoId: string; color: string | null; espnId?: string | null; rank: number | null; /** offense and defense ranks (1 = best), when known */ o?: number; d?: number }
 export interface MeterRow {
   key: string;
   espnId: string | null;
@@ -65,6 +65,8 @@ export interface RankSource {
   of: number;
   /** A team's national rank, or null when it has none (an FCS opponent). */
   rankOf: (t: { name: string; abbr: string; logoId: string; espnId?: string | null }) => number | null;
+  /** Offense and defense ranks, if known. */
+  detailOf?: (t: { name: string; abbr: string; logoId: string; espnId?: string | null }) => { o?: number; d?: number } | null;
 }
 
 /** Order the two teams by rank. A team with no rank (an FCS opponent) sits just below the last ranked team. Null when neither has one. */
@@ -79,9 +81,9 @@ function compare(away: MeterTeam, home: MeterTeam, of: number): Pick<MeterRow, "
 export function buildRows(input: { league: "NFL" | "CFB"; games: SlateLike[]; results: ResultLike[]; live: Record<string, LiveLike | undefined>; period: string; ranks: RankSource }): MeterRow[] {
   const rows: MeterRow[] = [];
   const seen = new Set<string>();
-  const { of, rankOf } = input.ranks;
+  const { of, rankOf, detailOf } = input.ranks;
   const mk = (t: SlateTeam | ResultTeam): MeterTeam => ({ name: t.name, abbr: t.abbr, logoId: t.logoId, color: t.color ?? null, espnId: "espnId" in t ? t.espnId : null, rank: null });
-  const withRank = (t: MeterTeam): MeterTeam => ({ ...t, rank: rankOf(t) });
+  const withRank = (t: MeterTeam): MeterTeam => ({ ...t, rank: rankOf(t), ...(detailOf?.(t) ?? {}) });
 
   for (const r of input.results) {
     if (r.league !== input.league || r.week !== input.period) continue;

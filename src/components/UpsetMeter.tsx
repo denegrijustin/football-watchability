@@ -38,7 +38,15 @@ function Row({ r, league }: { r: MeterRow; league: League }) {
         <i style={{ width: `${r.tier.id * 20}%` }} />
         <b /><b /><b /><b />
       </div>
-      <div className="um-tier"><span>{under.abbr} {under.rank != null ? `#${under.rank}` : "unranked"} vs {fav.abbr} #{fav.rank ?? "–"} · {league === "NFL" ? "NFL+" : "SP+"} rank</span></div>
+      <div className="um-tier">
+        {[a, h].map((t, i) => (
+          <span key={i}>
+            <b>{t.abbr}</b> {t.rank != null ? `#${t.rank}` : "unranked"}
+            {t.o != null && <> · O {t.o}</>}
+            {t.d != null && <> · D {t.d}</>}
+          </span>
+        ))}
+      </div>
       {r.status !== "pre" && r.score && (
         <div className="um-result">
           <span className="um-state">{r.status === "final" ? r.detail || "FINAL" : r.detail || "LIVE"}</span>
@@ -65,7 +73,7 @@ export function UpsetMeter({ defaultLeague }: { defaultLeague: League }) {
     const of = league === "NFL" ? plus.nfl.of : plus.cfb.of;
     return buildRows({
       league, games: slate.games as never, results: results as never, live, period: slate.period,
-      ranks: { of, rankOf: (t) => plusRankFor(plus, league, t as TeamRef)?.n ?? null },
+      ranks: { of, rankOf: (t) => plusRankFor(plus, league, t as TeamRef)?.n ?? null, detailOf: (t) => { const r = plusRankFor(plus, league, t as TeamRef); return r ? { o: r.o, d: r.d } : null; } },
     });
   }, [league, live, plus]);
   const finals = rows.filter((r) => r.status === "final");
@@ -85,7 +93,6 @@ export function UpsetMeter({ defaultLeague }: { defaultLeague: League }) {
       <header className="um-head">
         <div>
           <h2>Upset Alert Meter</h2>
-          <p>How much has to go wrong for the better team? Teams are compared by national rank ({league === "NFL" ? "NFL+" : "SP+"}); the bigger the gap, the fuller the bar. Finished games show the score, and when the lower-ranked team wins, it lights up.</p>
         </div>
         <span className="um-week">{slate.period}</span>
       </header>

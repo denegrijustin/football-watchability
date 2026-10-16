@@ -200,10 +200,6 @@ export default function SimTab({ defaultLeague }: { defaultLeague: League }) {
     <div className="sim">
       <header className="sim-head">
         <h2>Game simulator</h2>
-        <p>
-          Plays a full game snap by snap from each team's real {table.season} numbers, then plays it {SIMS.toLocaleString()} more times for the forecast. Nothing here is a prediction of
-          who is hurt or what the coach will call; it is what the season stats, the line and the series history imply.
-        </p>
       </header>
 
       <section className="sim-controls" aria-label="Choose a game">
@@ -341,7 +337,6 @@ export default function SimTab({ defaultLeague }: { defaultLeague: League }) {
           </section>
         </>
       )}
-      {!prep && !busy && <p className="ol-note">Pick a game and press Simulate. You will get a forecast and a full accelerated replay of the most likely outcome.</p>}
     </div>
   );
 }
