@@ -219,9 +219,9 @@ test("the Upset Alert Meter can be filtered by conference, on one line with the 
   expect(abbrs).toHaveLength(2);
   // the filters share one line and nothing scrolls sideways
   expect(await page.evaluate(() => { const c = document.querySelector(".um-controls")!; return c.scrollWidth <= c.clientWidth + 1 && new Set([...c.children].map((k) => Math.round(k.getBoundingClientRect().top))).size === 1; })).toBe(true);
-  // games are told apart by a clear line
-  const border = await page.locator(".um-row").first().evaluate((e) => parseFloat(getComputedStyle(e).borderBottomWidth));
-  expect(border).toBeGreaterThanOrEqual(2);
+  // games are told apart: each is a bordered card with a wide gap below it
+  const gap = await page.locator(".um-row").first().evaluate((e) => parseFloat(getComputedStyle(e).marginBottom));
+  expect(gap).toBeGreaterThanOrEqual(8);
   await sel.selectOption("all");
   expect(await page.locator(".um-row").count()).toBe(all);
   // the NFL has its two conferences
