@@ -1,8 +1,8 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useData } from "../data/useData";
 import { useRoute } from "../store";
 import { conferenceRanks, fmt, metricMeta, METRICS, ord, resolveWeek, rkKey, rowsFor, type Metric } from "../data/derive";
-import { Derived, Notes, TeamLink } from "../components/common";
+import { Derived, Mark, Notes, TeamLink } from "../components/common";
 import { SortTable, type Col } from "../components/SortTable";
 import { StripPlot, type StripGroup } from "../charts/Strip";
 import { confColor } from "../charts/kit";
@@ -14,6 +14,7 @@ interface ConfStat { conf: string; n: number; mean: number; median: number; best
 export default function Conferences() {
   const { model } = useData();
   const [route, nav] = useRoute();
+  const [popup, setPopup] = useState<string | null>(null);
   if (!model) return null;
   const week = resolveWeek(model, route.week);
   const div: DivKey = route.div === "ALL" ? "FBS" : route.div;
@@ -31,7 +32,7 @@ export default function Conferences() {
       const c = tw.conf ?? "No conference";
       const g = by.get(c) ?? { id: c, label: c, color: confColor(c), dots: [] };
       const cr = crs.get(team.id);
-      g.dots.push({ id: team.id, name: team.name, value: v, tip: [[mm.label, fmt(v)], ["National rank", String(tw[rkKey(useMetric)] ?? "—")], ["Conference rank", `${cr?.[useMetric] ?? "—"} of ${cr?.size ?? "—"}`], ["SP+", fmt(tw.sp)]] });
+      g.dots.push({ id: team.id, name: team.name, value: v, logo: team.logo?.local ?? team.logo?.remote, tip: [[mm.label, fmt(v)], ["National rank", String(tw[rkKey(useMetric)] ?? "—")], ["Conference rank", `${cr?.[useMetric] ?? "—"} of ${cr?.size ?? "—"}`], ["SP+", fmt(tw.sp)]] });
       by.set(c, g);
     }
     const mean = (g: StripGroup) => g.dots.reduce((s, d) => s + d.value, 0) / g.dots.length;
@@ -83,10 +84,30 @@ export default function Conferences() {
             {METRICS.filter((m) => m.key !== "st" || div === "FBS").map((m) => <button key={m.key} type="button" aria-pressed={m.key === useMetric} onClick={() => nav({ p: { metric: m.key === "sp" ? null : m.key } }, { replace: true })}>{m.label}</button>)}
           </div>
         </div>
-        <StripPlot groups={groups} selected={route.team || null} onSelect={(id) => nav({ team: route.team === id ? "" : id }, { replace: true })} axisTitle={`${mm.long}${mm.lowerBetter ? " · axis reversed, right is better" : ""}`} lowerBetter={mm.lowerBetter} natMean={natMean} ariaLabel={`${mm.label} by conference`} />
+        <StripPlot groups={groups} selected={route.team || null} onSelect={(id) => { nav({ team: id }, { replace: true }); setPopup(id); }} axisTitle={`${mm.long}${mm.lowerBetter ? " · axis reversed, right is better" : ""}`} lowerBetter={mm.lowerBetter} natMean={natMean} ariaLabel={`${mm.label} by conference`} />
         {sel && selTw && <p className="note-box" style={{ marginTop: 8 }}>Selected: <TeamLink team={sel} size={18} /> · {selTw.conf} · {mm.label} {fmt(selTw[useMetric])}</p>}
         <Notes items={notes} />
       </div>
+      {popup && model.byId.get(popup) && (() => {
+        const t = model.byId.get(popup)!, tw = t.weeks[week], cr = crs.get(t.id);
+        return (
+          <div className="team-pop-back" onClick={() => setPopup(null)}>
+            <div className="team-pop" role="dialog" aria-modal="true" aria-label={`${t.name} profile`} onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.key === "Escape" && setPopup(null)}>
+              <button type="button" className="team-pop-x" aria-label="Close" onClick={() => setPopup(null)} autoFocus>×</button>
+              <div className="team-pop-head"><Mark team={t} size={44} /><div><h3>{t.name}</h3><p className="sub" style={{ margin: 0 }}><ConfLogo conf={tw?.conf} size={18} /> {tw?.conf ?? "No conference"}{tw?.record ? ` · ${tw.record.text}` : ""}</p></div></div>
+              <dl className="team-pop-grid">
+                <div><dt>SP+ rating</dt><dd>{fmt(tw?.sp)} <span className="muted">#{tw?.spRk ?? "—"}</span></dd></div>
+                <div><dt>Offense</dt><dd>{fmt(tw?.off)} <span className="muted">#{tw?.offRk ?? "—"}</span></dd></div>
+                <div><dt>Defense</dt><dd>{fmt(tw?.def)} <span className="muted">#{tw?.defRk ?? "—"}</span></dd></div>
+                <div><dt>Special teams</dt><dd>{fmt(tw?.st)} <span className="muted">#{tw?.stRk ?? "—"}</span></dd></div>
+                <div><dt>In the conference</dt><dd>{cr ? `${cr.sp} of ${cr.size}` : "—"}</dd></div>
+                <div><dt>Week</dt><dd>{week}</dd></div>
+              </dl>
+              <div className="team-pop-actions"><button type="button" className="primary" onClick={() => { setPopup(null); nav({ view: "team", team: t.id }); }}>Open full profile</button><button type="button" onClick={() => setPopup(null)}>Close</button></div>
+            </div>
+          </div>
+        );
+      })()}
       <div className="panel">
         <h2>Conference summary</h2>
         <SortTable label="Conference summary" cols={cols} rows={stats} rowKey={(s) => s.conf} onRowClick={(s) => nav({ conf: route.conf === s.conf ? "" : s.conf }, { replace: true })} selected={route.conf}

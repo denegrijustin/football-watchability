@@ -256,3 +256,24 @@ test("the SP+ conference summary and the NFL+ ratings carry each conference's lo
   await expect.poll(async () => (await logos()).length, { timeout: 15_000 }).toBeGreaterThanOrEqual(32);
   expect(new Set(await logos())).toEqual(new Set(["AFC", "NFC"]));
 });
+
+test("SP+ conference chart: every team is its logo, rows carry the conference logo, and a click opens that team's profile popup", async ({ page }) => {
+  const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAFUlEQVR42mNk+M9Qz0AEYBxVSF+FABJADveWkH6oAAAAAElFTkSuQmCC", "base64");
+  await page.route(/espncdn\.com\/i\/teamlogos/, (r) => r.fulfill({ contentType: "image/png", body: png }));
+  await page.goto("/?league=CFB");
+  await page.getByRole("button", { name: "CFB SP+" }).click();
+  await page.getByRole("tab", { name: "Conferences" }).click();
+  const shadow = (fn: (root: ShadowRoot) => unknown) => page.evaluate(`(${fn.toString()})([...document.querySelectorAll("*")].find((e) => e.shadowRoot?.querySelector(".tabs")).shadowRoot)`);
+  await expect.poll(() => shadow((r) => r.querySelectorAll("g.pt image").length), { timeout: 15_000 }).toBeGreaterThan(100);
+  await expect.poll(() => shadow((r) => r.querySelectorAll("svg [data-conf-logo]").length), { timeout: 15_000 }).toBeGreaterThanOrEqual(9);
+  expect(await shadow((r) => r.querySelector(".team-pop"))).toBeNull();
+  await shadow((r) => (r.querySelector("g.pt") as SVGElement).dispatchEvent(new MouseEvent("click", { bubbles: true })));
+  await expect.poll(() => shadow((r) => !!r.querySelector(".team-pop[role=dialog]"))).toBe(true);
+  expect(await shadow((r) => (r.querySelector(".team-pop-grid")?.textContent ?? "").includes("SP+ rating"))).toBe(true);
+  await shadow((r) => (r.querySelector(".team-pop-x") as HTMLElement).click());
+  await expect.poll(() => shadow((r) => r.querySelector(".team-pop"))).toBeNull();
+  // the popup leads to the full profile
+  await shadow((r) => (r.querySelector("g.pt") as SVGElement).dispatchEvent(new MouseEvent("click", { bubbles: true })));
+  await shadow((r) => (r.querySelector(".team-pop-actions .primary") as HTMLElement).click());
+  await expect.poll(() => shadow((r) => r.querySelector('[role=tab][aria-selected="true"]')?.textContent)).toBe("Team");
+});

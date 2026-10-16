@@ -84,3 +84,18 @@ export function ConfLogo({ conf, size = 20 }: { conf?: string | null; size?: num
     </span>
   );
 }
+
+/** The same conference logo drawn inside an SVG (chart labels): a light chip with the official logo. Nothing when the conference has none. */
+export function ConfLogoSvg({ conf, x, y, size = 20 }: { conf?: string | null; x: number; y: number; size?: number }) {
+  const name = conf != null ? (conf in ALIAS ? ALIAS[conf] : conf) : null;
+  const e = confEntry(name);
+  const remote = useRemote(name, e?.src ? undefined : e?.remote);
+  const src = e?.src ?? remote;
+  if (!e || !src) return null;
+  return (
+    <g data-conf-logo={name} aria-hidden="true">
+      <rect x={x} y={y} width={size} height={size} rx={size * 0.3} fill="rgba(255,255,255,0.92)" />
+      <image href={src} x={x + size * 0.11} y={y + size * 0.11} width={size * 0.78} height={size * 0.78} preserveAspectRatio="xMidYMid meet" />
+    </g>
+  );
+}

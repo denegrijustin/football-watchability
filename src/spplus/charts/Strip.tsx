@@ -1,8 +1,9 @@
+import { ConfLogoSvg } from "../../ConfMark";
 import { C, TipView, centreIn, niceTicks, useTip, useWidth } from "./kit";
 
 export interface StripGroup {
   id: string; label: string; color: string;
-  dots: { id: string; name: string; value: number; tip: [string, string][] }[];
+  dots: { id: string; name: string; value: number; tip: [string, string][]; logo?: string }[];
 }
 
 const quant = (a: number[], q: number) => { const s = [...a].sort((x, y) => x - y); const p = (s.length - 1) * q; const lo = Math.floor(p); return s[lo] + (s[Math.min(lo + 1, s.length - 1)] - s[lo]) * (p - lo); };
@@ -13,12 +14,13 @@ export function StripPlot({ groups, selected, onSelect, axisTitle, lowerBetter, 
   const { tip, show, hide } = useTip();
   const w = Math.max(width, 300);
   const narrow = w < 520;
-  const m = { l: narrow ? 66 : 110, r: 16, t: 18, b: 30 };
+  const m = { l: narrow ? 92 : 134, r: 18, t: 18, b: 30 };
   const all = groups.flatMap((g) => g.dots.map((d) => d.value));
   if (!all.length) return <p className="empty">No data.</p>;
   const lo = Math.min(...all), hi = Math.max(...all), pad = (hi - lo) * 0.04 || 1;
   const x = (v: number) => { const f = (v - (lo - pad)) / (hi - lo + 2 * pad); return m.l + (lowerBetter ? 1 - f : f) * (w - m.l - m.r); };
-  const r = 5.5;
+  // Teams are drawn as their logos where there is one: a light chip with the logo inside, ringed in the conference color.
+  const r = 9;
   // Lane packing: put each dot in the first lane where it clears its neighbours.
   const laid = groups.map((g) => {
     const lanes: number[][] = [];
@@ -31,7 +33,7 @@ export function StripPlot({ groups, selected, onSelect, axisTitle, lowerBetter, 
     });
     return { g, items, nLanes: Math.max(lanes.length, 1) };
   });
-  const rows = laid.map((l) => ({ ...l, h: Math.max(34, l.nLanes * (r * 2 + 2) + 14) }));
+  const rows = laid.map((l) => ({ ...l, h: Math.max(40, l.nLanes * (r * 2 + 2) + 14) }));
   let acc = m.t;
   const placed = rows.map((row) => { const y0 = acc; acc += row.h; return { ...row, y0 }; });
   const h = acc + m.b;
@@ -49,6 +51,7 @@ export function StripPlot({ groups, selected, onSelect, axisTitle, lowerBetter, 
           return (
             <g key={g.id}>
               <line x1={m.l} x2={w - m.r} y1={y0 + rh} y2={y0 + rh} stroke={C.grid} />
+              <ConfLogoSvg conf={g.id} x={4} y={cy - 10} size={20} />
               <text x={m.l - 8} y={cy + 4} textAnchor="end" style={{ fill: C.ink, fontWeight: 600 }}>{g.label.length > (narrow ? 9 : 14) ? `${g.label.slice(0, narrow ? 8 : 13)}…` : g.label}</text>
               <rect x={Math.min(x(q1), x(q3))} y={cy - rh / 2 + 4} width={Math.abs(x(q3) - x(q1))} height={rh - 8} fill={g.color} fillOpacity={0.12} rx={4} />
               <line x1={x(med)} x2={x(med)} y1={cy - rh / 2 + 4} y2={cy + rh / 2 - 4} stroke={g.color} strokeWidth={2} />
@@ -59,8 +62,9 @@ export function StripPlot({ groups, selected, onSelect, axisTitle, lowerBetter, 
                   <g key={d.id} className="pt" tabIndex={0} role="button" aria-pressed={on} aria-label={`${d.name}, ${g.label}, ${d.value}`} onClick={() => onSelect(d.id)}
                     onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onSelect(d.id); } }}
                     onPointerEnter={() => show({ x: px, y: py, title: d.name, swatch: g.color, rows: d.tip })} onFocus={(e) => { const c = centreIn(ref.current, e.currentTarget); show({ x: c.x, y: c.y, title: d.name, swatch: g.color, rows: d.tip }); }} onBlur={hide}>
-                    <circle cx={px} cy={py} r={r + 4} fill="transparent" />
-                    <circle cx={px} cy={py} r={on ? r + 1.5 : r} fill={g.color} stroke={on ? C.ink : C.surface} strokeWidth={on ? 2.5 : 1.5} />
+                    <circle cx={px} cy={py} r={r + 3} fill="transparent" />
+                    <circle cx={px} cy={py} r={on ? r + 1.5 : r} fill={d.logo ? "rgba(255,255,255,0.94)" : g.color} stroke={on ? C.ink : g.color} strokeWidth={on ? 2.5 : 1.5} />
+                    {d.logo && <image href={d.logo} x={px - (r - 2)} y={py - (r - 2)} width={(r - 2) * 2} height={(r - 2) * 2} preserveAspectRatio="xMidYMid meet" style={{ pointerEvents: "none" }} />}
                     <circle className="ring" cx={px} cy={py} r={r + 4} fill="none" />
                   </g>
                 );
