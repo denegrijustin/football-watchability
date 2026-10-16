@@ -228,3 +228,17 @@ test("the Upset Alert Meter can be filtered by conference, on one line with the 
   await page.getByRole("button", { name: "NFL", exact: true }).click();
   expect(await sel.locator("option").allTextContents()).toEqual(expect.arrayContaining(["AFC", "NFC"]));
 });
+
+test("on a phone the whole simulator stage fits the screen's width, with no sideways scroll", async ({ page }) => {
+  for (const w of [320, 360, 390]) {
+    await page.setViewportSize({ width: w, height: 800 });
+    await page.goto("/?league=CFB");
+    await page.getByRole("button", { name: "Simulator" }).click();
+    await page.getByRole("button", { name: "Simulate this game" }).click();
+    await expect(page.locator(".st")).toBeVisible({ timeout: 45_000 });
+    const m = await page.evaluate(() => { const st = document.querySelector(".st")!.getBoundingClientRect(); return { left: st.left, right: st.right, page: document.documentElement.scrollWidth, vw: innerWidth }; });
+    expect(m.left, `stage left at ${w}px`).toBeGreaterThanOrEqual(0);
+    expect(m.right, `stage right at ${w}px`).toBeLessThanOrEqual(m.vw);
+    expect(m.page, `page width at ${w}px`).toBeLessThanOrEqual(m.vw);
+  }
+});
