@@ -4,6 +4,7 @@ import { fetchData } from "../data/load";
 import { playGame, type GameCfg, type PlayRec, type TeamSim } from "./engine";
 import { buildTeam, leagueAverages, statTargets, type BuiltTeam, type LeagueStats, type RawTeam, type TeamExtras } from "./profile";
 import { legacyFor, type Legacy, type LegacyBox } from "./legacy";
+import { fetchTeamInfo, type TeamInfo } from "./roster";
 import { runForecast, type RunResult } from "./run";
 import { Stage } from "./Stage";
 import { BoxScore, PlayFeed, ScoringSummary, WinChart } from "./SimViewer";
@@ -13,6 +14,7 @@ type Snapshot = { leagues: Partial<Record<League, LeagueStats>> };
 const HFA: Record<League, number> = { NFL: 1.8, CFB: 2.5 };
 const SIMS = 4000;
 const SPEEDS = [
+  { id: "0.5", label: "½×", pps: 0.8, hint: "Slow: each play takes about a second" },
   { id: "1", label: "1×", pps: 1.4, hint: "About two minutes a game" },
   { id: "4", label: "4×", pps: 5, hint: "About 30 seconds a game" },
   { id: "16", label: "16×", pps: 20, hint: "About 8 seconds a game" },
@@ -51,8 +53,21 @@ function rosterFrom(game: Game | undefined, side: "away" | "home"): TeamSim["ros
   const boxes = (game?.history?.boxes ?? []) as { label: string; players?: { pos: string; short: string; side: string }[] }[];
   const players = boxes.find((b) => b.label.startsWith("Key"))?.players ?? [];
   const pick = (re: RegExp) => players.find((p) => p.side === side && re.test(p.pos))?.short;
-  return { qb: pick(/^QB$/), rb: pick(/^(RB|FB)$/), wr: pick(/^(WR|TE)$/) };
+  const rb = pick(/^(RB|FB)$/), wr = pick(/^(WR|TE)$/);
+  return { qb: pick(/^QB$/), rushers: rb ? [{ name: rb, w: 100 }] : undefined, receivers: wr ? [{ name: wr, w: 100, pos: "WR" as const }] : undefined };
 }
+
+const lum = (hex: string) => {
+  const m = /^#([0-9a-f]{6})$/i.exec(hex);
+  if (!m) return 0.3;
+  const [r, g, b] = [0, 2, 4].map((i) => parseInt(m[1].slice(i, i + 2), 16) / 255);
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+};
+/** The team's real primary color; its alternate when the primary is near black (the Raiders) so it still shows on the field. */
+const brandColor = (info: TeamInfo, fallback: string) => {
+  const c = info.color ?? fallback;
+  return lum(c) < 0.05 && info.alt && lum(info.alt) > 0.1 ? info.alt : c;
+};
 
 interface Prep extends RunResult {
   away: BuiltTeam;
@@ -81,7 +96,7 @@ export default function SimTab({ defaultLeague }: { defaultLeague: League }) {
   const [plays, setPlays] = useState<PlayRec[]>([]);
   const [idx, setIdx] = useState(-1);
   const [playing, setPlaying] = useState(false);
-  const [speed, setSpeed] = useState<string>("4");
+  const [speed, setSpeed] = useState<string>("1");
   const [onlyKey, setOnlyKey] = useState(false);
   const known = useMemo(knownTeams, []);
 
@@ -100,11 +115,11 @@ export default function SimTab({ defaultLeague }: { defaultLeague: League }) {
   useEffect(() => { setPick(""); setPrep(null); setPlays([]); setIdx(-1); setPlaying(false); setAwayId(""); setHomeId(""); }, [league]);
   useEffect(() => { if (!pick && games.length) setPick(games[0].id); }, [games, pick]);
 
-  const resolve = useCallback((raw: RawTeam, game: Game | undefined, side: "away" | "home", slateTeam?: Game["teams"][number]): TeamExtras => {
+  const resolve = useCallback((raw: RawTeam, game: Game | undefined, side: "away" | "home", info: TeamInfo, slateTeam?: Game["teams"][number]): TeamExtras => {
     const k = known.get(`${league}:${raw.id}`);
     const short = slateTeam ? (league === "NFL" ? slateTeam.name.split(" ").pop() ?? slateTeam.name : slateTeam.name) : k?.short ?? (league === "NFL" ? raw.name.split(" ").pop() ?? raw.name : schoolName(raw.name));
     const logoId = slateTeam?.logoId ?? k?.logoId ?? [slug(raw.name), slug(schoolName(raw.name))].find((s) => logos[s]);
-    return { short, color: slateTeam?.color ?? k?.color ?? hashColor(raw.name), logo: logoId ? logos[logoId] : undefined, roster: rosterFrom(game, side) };
+    return { short, color: brandColor(info, slateTeam?.color ?? k?.color ?? hashColor(raw.name)), logo: logoId ? logos[logoId] : undefined, roster: { ...rosterFrom(game, side), ...info.roster } };
   }, [known, league]);
 
   const simulate = useCallback(async (kind: "pick" | "custom") => {
@@ -120,10 +135,16 @@ export default function SimTab({ defaultLeague }: { defaultLeague: League }) {
       ra = table.teams[awayId]; rh = table.teams[homeId];
     }
     if (!ra || !rh || ra.id === rh.id) return;
-    const A = buildTeam(ra, avg, resolve(ra, game, "away", game?.teams[0]));
-    const H = buildTeam(rh, avg, resolve(rh, game, "home", game?.teams[1]));
+    setBusy(true); setPlaying(false);
+    const [ia, ih] = await Promise.all([fetchTeamInfo(league, ra.id, table.season), fetchTeamInfo(league, rh.id, table.season)]);
+    const A = buildTeam(ra, avg, resolve(ra, game, "away", ia, game?.teams[0]));
+    const H = buildTeam(rh, avg, resolve(rh, game, "home", ih, game?.teams[1]));
     // Keep two similar team colors apart on the field.
-    if (hexDist(A.team.color, H.team.color) < 70) H.team.color = "#d98a3d";
+    if (hexDist(A.team.color, H.team.color) < 130) {
+      if (ih.alt && hexDist(ih.alt, A.team.color) >= 130) H.team.color = ih.alt;
+      else if (ia.alt && hexDist(ia.alt, H.team.color) >= 130) A.team.color = ia.alt;
+      else H.team.color = "#d98a3d";
+    }
     const hfa = kind === "custom" && neutral ? 0 : HFA[league];
     const leg = game ? legacyFor(game.history?.boxes as LegacyBox[] | undefined, { name: game.teams[0].name, abbr: game.teams[0].abbr }, { name: game.teams[1].name, abbr: game.teams[1].abbr }) : legacyFor(undefined, { name: "", abbr: "" }, { name: "", abbr: "" });
     const t = statTargets(league, avg, A, H, hfa);
@@ -136,7 +157,6 @@ export default function SimTab({ defaultLeague }: { defaultLeague: League }) {
     const windMph = wxHours.length ? wxHours.reduce((s, h) => s + h.windMph, 0) / wxHours.length : 5;
     const rainPct = wxHours.length ? Math.max(...wxHours.map((h) => h.precip)) : 0;
     const cfg: GameCfg = { league, away: A.team, home: H.team, weather: { windMph, rainPct }, allowTies: league === "NFL", priorMargin: target[1] - target[0] };
-    setBusy(true); setPlaying(false);
     const base = (Math.random() * 2 ** 32) >>> 0;
     const res = await runForecast({ cfg, target, n: SIMS, seed: base, line: market ? { spreadHome: -market.margin, total: market.total } : undefined });
     const next: Prep = { ...res, away: A, home: H, legacy: leg, market, espnHome: game?.winProb?.espn ?? null, marketHome: game?.winProb?.market ?? null, usedLine, baseline, game };
@@ -223,7 +243,7 @@ export default function SimTab({ defaultLeague }: { defaultLeague: League }) {
         </label>
       </section>
 
-      {busy && <p className="ol-note" role="status">Calibrating both teams to their season scoring, then playing {SIMS.toLocaleString()} games…</p>}
+      {busy && <p className="ol-note" role="status">Loading rosters and colors, calibrating both teams to their season scoring, then playing {SIMS.toLocaleString()} games…</p>}
 
       {prep && f && cfg && (
         <>

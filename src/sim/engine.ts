@@ -15,6 +15,13 @@ import { makeRng, normCdf } from "../spplus/sim/rng";
 export type Lg = "NFL" | "CFB";
 type Side = 0 | 1;
 
+/** A team's real players, weighted by season production, so the right names carry the ball and catch the passes. */
+export interface Roster {
+  qb?: string;
+  rushers?: { name: string; w: number }[];
+  receivers?: { name: string; w: number; pos: "WR" | "TE" | "RB" }[];
+}
+
 export interface TeamSim {
   name: string;
   short: string;
@@ -27,7 +34,7 @@ export interface TeamSim {
   /** Yardage scalar set by calibrate(). */
   eff: number;
   /** Season leaders, used to name the players in the play text. */
-  roster: { qb?: string; rb?: string; wr?: string };
+  roster: Roster;
 }
 
 export interface GameCfg {
@@ -68,6 +75,8 @@ export interface PlayRec {
   /** Players involved, for the broadcast panels. */
   passer?: string;
   target?: string;
+  /** Where the target lines up, so the play diagram sends the right player. */
+  tpos?: "WR" | "TE" | "RB";
   runner?: string;
   /** Points added on this play and to whom. */
   pts: number;
@@ -137,6 +146,14 @@ export function playGame(cfg: GameCfg, seed: number, record = false): GameResult
       passShare: clamp(B.pass * Math.pow(o.passO / o.rushO, 0.25), 0.4, 0.72),
     };
   });
+
+  /** Pick from a weighted list. */
+  const pickW = <T extends { w: number }>(list: T[] | undefined): T | undefined => {
+    if (!list?.length) return undefined;
+    let r = u() * list.reduce((a, b) => a + b.w, 0);
+    for (const x of list) { r -= x.w; if (r <= 0) return x; }
+    return list[list.length - 1];
+  };
 
   /** Lognormal draw with the given mean and coefficient of variation. */
   const ln = (mean: number, cv: number) => {
@@ -448,8 +465,9 @@ export function playGame(cfg: GameCfg, seed: number, record = false): GameResult
         if (down > 4) turnoverOnDowns();
         return;
       }
-      const tr = u();
-      const target = tr < 0.45 && O.roster.wr ? O.roster.wr : tr < 0.63 && O.roster.rb ? O.roster.rb : ["tight end", "slot receiver", "the second receiver", "the third receiver"][Math.floor(u() * 4)];
+      const rcv = pickW(O.roster.receivers);
+      const target = rcv?.name ?? `${O.abbr} receiver`;
+      const tpos = rcv?.pos ?? "WR";
       const intP = clamp(B.int * m.tf * (hurry ? 1.25 : 1) * (wet ? 1.1 : 1), 0.004, 0.07);
       if (u() < intP) {
         const air = ln(late34 && dist > 7 ? Math.min(dist + 2, 16) : 8.5, 0.75);
@@ -457,18 +475,18 @@ export function playGame(cfg: GameCfg, seed: number, record = false): GameResult
         const rec = other(off);
         const dt = burn(7, true, hurry, false);
         if (spotY >= 100) {
-          emit({ ...b, kind: "pass", passer, target, text: `${passer} intercepted in the end zone by ${D.short} — touchback.`, dt, x1: toX(100, off), turnover: "int", big: true });
+          emit({ ...b, kind: "pass", passer, target, tpos, text: `${passer} intercepted in the end zone by ${D.short} — touchback.`, dt, x1: toX(100, off), turnover: "int", big: true });
           swap(20);
           return;
         }
         if (u() < 0.055) {
           score[rec] += 6;
-          emit({ ...b, kind: "pass", passer, target, text: `${passer} INTERCEPTED by ${D.short} — returned for a TOUCHDOWN!`, dt, x1: toX(0, off), turnover: "int", td: true, pts: 6, scorer: rec, big: true });
+          emit({ ...b, kind: "pass", passer, target, tpos, text: `${passer} INTERCEPTED by ${D.short} — returned for a TOUCHDOWN!`, dt, x1: toX(0, off), turnover: "int", td: true, pts: 6, scorer: rec, big: true });
           scoreTd(rec);
           return;
         }
         const oppY = clamp(100 - spotY + ln(9, 1.1), 1, 99);
-        emit({ ...b, kind: "pass", passer, target, text: `${passer} pass intercepted by ${D.short}, returned to the ${spotText(Math.round(oppY), rec)}.`, dt, x1: toX(Math.round(oppY), rec), turnover: "int", big: true });
+        emit({ ...b, kind: "pass", passer, target, tpos, text: `${passer} pass intercepted by ${D.short}, returned to the ${spotText(Math.round(oppY), rec)}.`, dt, x1: toX(Math.round(oppY), rec), turnover: "int", big: true });
         swap(oppY);
         return;
       }
@@ -476,7 +494,7 @@ export function playGame(cfg: GameCfg, seed: number, record = false): GameResult
       if (u() >= compP) {
         const dt = burn(5, true, hurry, false);
         down++;
-        emit({ ...b, kind: "pass", passer, target, text: `${passer} pass incomplete${u() < 0.35 ? ` intended for ${target}` : ""}.`, dt, x1: startX, complete: false });
+        emit({ ...b, kind: "pass", passer, target, tpos, text: `${passer} pass incomplete${u() < 0.35 ? ` intended for ${target}` : ""}.`, dt, x1: startX, complete: false });
         if (down > 4) turnoverOnDowns();
         return;
       }
@@ -486,26 +504,26 @@ export function playGame(cfg: GameCfg, seed: number, record = false): GameResult
       const dt = burn(gain > 15 ? 8 : 6, hurry ? u() < 0.3 : u() < 0.12, hurry, leadingLate);
       if (ny >= 100) {
         score[off] += 6;
-        emit({ ...b, kind: "pass", passer, target, text: `${passer} pass complete to ${target} for ${gain} yards — TOUCHDOWN ${O.short}!`, dt, x1: toX(100, off), yds: gain, td: true, first: true, complete: true, pts: 6, scorer: off, big: true });
+        emit({ ...b, kind: "pass", passer, target, tpos, text: `${passer} pass complete to ${target} for ${gain} yards — TOUCHDOWN ${O.short}!`, dt, x1: toX(100, off), yds: gain, td: true, first: true, complete: true, pts: 6, scorer: off, big: true });
         scoreTd(off);
         return;
       }
       if (u() < 0.004 * m.tf) {
-        emit({ ...b, kind: "pass", passer, target, text: `${passer} pass complete to ${target} for ${gain} — FUMBLE, recovered by ${D.short}!`, dt, x1: toX(ny, off), yds: gain, turnover: "fumble", complete: true, big: true });
+        emit({ ...b, kind: "pass", passer, target, tpos, text: `${passer} pass complete to ${target} for ${gain} — FUMBLE, recovered by ${D.short}!`, dt, x1: toX(ny, off), yds: gain, turnover: "fumble", complete: true, big: true });
         swap(100 - ny);
         return;
       }
       const first = gain >= dist;
       y = ny;
       if (first) { down = 1; dist = Math.min(10, 100 - y); } else { down++; dist -= gain; }
-      emit({ ...b, kind: "pass", passer, target, text: `${passer} pass complete to ${target} for ${gain} yards${first ? ", first down" : ""}.`, dt, x1: toX(y, off), yds: gain, first, complete: true, big: gain >= 20 });
+      emit({ ...b, kind: "pass", passer, target, tpos, text: `${passer} pass complete to ${target} for ${gain} yards${first ? ", first down" : ""}.`, dt, x1: toX(y, off), yds: gain, first, complete: true, big: gain >= 20 });
       if (down > 4) turnoverOnDowns();
       return;
     }
 
     // Run.
     const rr = u();
-    const runner = rr < 0.07 && O.roster.qb ? O.roster.qb : rr < 0.72 && O.roster.rb ? O.roster.rb : rr < 0.72 ? `${O.short} RB` : "the backup back";
+    const runner = rr < 0.07 && O.roster.qb ? O.roster.qb : pickW(O.roster.rushers)?.name ?? `${O.abbr} RB`;
     let gain = Math.round(ln(B.ypr * m.rush * (late34 ? Math.pow(m.third, 0.15) : 1) + 3, B.cvRush) - 3);
     if (dist <= 2 && gain > dist && u() < 0.15) gain = dist - 1;
     gain = Math.min(gain, toGoal);

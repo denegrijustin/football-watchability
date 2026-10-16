@@ -734,19 +734,51 @@
 .st-dot {
   stroke: #fff;
   stroke-width: 1.8;
-  transition: transform calc(var(--dur) * 1.4) ease-in-out;
+}
+.st-dot.hot {
+  stroke: #ffd84a;
+  stroke-width: 4;
+}
+.st-ez {
+  fill: rgb(255 255 255 / 0.92);
+  font-size: 38px;
+  font-weight: 900;
+  letter-spacing: 6px;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+.st-route {
+  fill: none;
+  stroke: rgb(255 255 255 / 0.8);
+  stroke-width: 3;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  stroke-linejoin: round;
+  animation: st-draw var(--rt) ease-out var(--rd) forwards;
+}
+.st-route.hot {
+  stroke: #ffd84a;
+  stroke-width: 5;
+}
+.st-routeend {
+  fill: #ffd84a;
+  opacity: 0;
+  animation: st-show 0.01s linear calc(var(--rd) + var(--rt)) forwards;
+}
+@keyframes st-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
 }
 .st-rest,
 .st-flight {
   transform-box: fill-box;
 }
 .st-rest {
-  transition: transform var(--dur) ease-out;
-  animation: st-show 0.01s linear var(--dur) backwards;
+  animation: st-show 0.01s linear backwards;
 }
 .st-flight {
-  animation: st-fly var(--dur) ease-in-out forwards;
-  animation-name: st-fly;
+  animation: st-fly 0.5s ease-in-out both;
 }
 .st-flight.run {
   animation-timing-function: linear;
@@ -871,11 +903,8 @@
   z-index: 5;
 }
 @media (prefers-reduced-motion: reduce) {
-  .st-dot,
-  .st-rest {
-    transition: none;
-  }
   .st-flight,
+  .st-route,
   .st-banner,
   .st-flash {
     animation-duration: 0.01s;

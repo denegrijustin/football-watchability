@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { PlayArt } from "../components/PlayArt";
 import type { PlayArtKind } from "../playImpact";
 import { clockText, downText, type GameCfg, type PlayRec, type TeamSim } from "./engine";
@@ -36,38 +36,125 @@ function bannerFor(p: PlayRec): string | null {
   return null;
 }
 
-type Flight = { cls: string; x0: number; x1: number; lift: number } | null;
-function flightFor(p: PlayRec | null): Flight {
-  if (!p) return null;
-  const d = p.off === 0 ? 1 : -1;
-  if (p.kind === "pass") {
-    const incomplete = p.complete === false;
-    return { cls: "arc", x0: fx(p.x0 - d * 4), x1: fx(incomplete ? p.x0 + d * 12 : p.x1), lift: 110 };
-  }
-  if (p.kind === "rush") return { cls: "run", x0: fx(p.x0), x1: fx(p.x1), lift: 10 };
-  if (p.kind === "punt") return { cls: "arc", x0: fx(p.x0), x1: fx(p.x1), lift: 230 };
-  if (p.kind === "kickoff") return { cls: "arc", x0: fx(p.off === 0 ? 35 : 65), x1: fx(p.x1), lift: 230 };
-  if (p.kind === "fg" || p.kind === "xp") return { cls: "arc", x0: fx(p.x0 - d * 7), x1: fx(p.off === 0 ? 102 : -2), lift: 160 };
-  return null;
+type P = [number, number];
+interface Route { pts: P[]; hot: boolean }
+interface Choreo {
+  /** Where each of the 22 players (11 offense, then 11 defense) starts the snap, and the waypoints each walks after it. */
+  pre: P[];
+  path: P[][];
+  routes: Route[];
+  /** Offense index of the ball carrier or target, to highlight. */
+  hot: number | null;
+  /** The ball's flight: where it leaves from, where it lands, how high it flies, and how far into the play it leaves. */
+  ball: { x0: number; x1: number; lift: number; at: number; span: number; kind: "arc" | "run" } | null;
 }
 
-/** Formation dots around the line of scrimmage, in field units (yards along x, pixels across). */
-const OFF: [number, number][] = [[-1.2, -48], [-1.2, -24], [-1.2, 0], [-1.2, 24], [-1.2, 48], [-1.4, 78], [-4.5, 0], [-7.5, 14], [-0.8, -190], [-0.8, 190], [-1.8, -125]];
-const DEF: [number, number][] = [[1.5, -60], [1.5, -20], [1.5, 20], [1.5, 60], [5, -75], [5, 0], [5, 75], [3, -185], [3, 185], [12, -62], [12, 62]];
+/** Base formation in field units: [yards behind(-)/ahead(+) of the line, pixels across]. */
+const OFF: [number, number][] = [[-1.2, -48], [-1.2, -24], [-1.2, 0], [-1.2, 24], [-1.2, 48], [-1.4, 78], [-4.5, 0], [-7.5, 16], [-0.8, -195], [-0.8, 195], [-1.8, -125]];
+const DEF: [number, number][] = [[1.5, -60], [1.5, -20], [1.5, 20], [1.5, 60], [5, -75], [5, 0], [5, 75], [3, -190], [3, 190], [12, -62], [12, 62]];
+const pos = (x: number, dy: number): P => [fx(x), CY + dy];
 
-function Dots({ ball, off, cfg, jitter }: { ball: number; off: 0 | 1; cfg: GameCfg; jitter: number }) {
-  const d = off === 0 ? 1 : -1;
-  const T = [cfg.away, cfg.home];
-  const place = (list: [number, number][], team: TeamSim, dir: number, tag: string) =>
-    list.map(([dx, dy], i) => (
-      <circle key={`${tag}${i}`} className="st-dot" r="9" cx="0" cy="0" fill={team.color} style={{ transform: `translate(${fx(ball + dir * dx)}px, ${CY + dy + ((i * 7 + jitter) % 5) - 2}px)` }} />
-    ));
-  return (
-    <g className="st-dots">
-      {place(OFF, T[off], d, "o")}
-      {place(DEF, T[1 - off], d, "d")}
-    </g>
-  );
+function formation(L: number, d: number): P[] {
+  return [...OFF.map(([dx, dy]) => pos(L + d * dx, dy)), ...DEF.map(([dx, dy]) => pos(L + d * dx, dy))];
+}
+
+function choreograph(p: PlayRec | null): Choreo {
+  if (!p) return { pre: formation(35, 1), path: formation(35, 1).map((q) => [q]), routes: [], hot: null, ball: null };
+  const d = p.off === 0 ? 1 : -1;
+  const scrimmage = p.kind === "rush" || p.kind === "pass" || p.kind === "sack" || p.kind === "penalty" || p.kind === "kneel" || p.kind === "spike" || p.kind === "punt" || p.kind === "fg" || p.kind === "xp" || p.kind === "two";
+  // Between snaps the teams simply line up for the next one.
+  if (!scrimmage) {
+    const f = formation(p.x1, p.nextOff === 0 ? 1 : -1);
+    return { pre: f, path: f.map((q) => [q]), routes: [], hot: null, ball: null };
+  }
+  const L = p.x0;
+  const pre = formation(L, d);
+  const path: P[][] = pre.map((q) => [q]);
+  const go = (i: number, ...pts: P[]) => { path[i] = [pre[i], ...pts]; };
+  const dyOf = (i: number) => pre[i][1] - CY;
+  const routes: Route[] = [];
+  let hot: number | null = null;
+  let ball: Choreo["ball"] = null;
+  const along = (dx: number) => L + d * dx;
+
+  if (p.kind === "pass" || p.kind === "sack") {
+    const tIdx = p.kind === "sack" ? -1 : p.tpos === "RB" ? 7 : p.tpos === "TE" ? 5 : [8, 9, 10][p.n % 3];
+    const sacked = p.kind === "sack";
+    const catchX = p.complete === false || p.turnover === "int" ? along(12) : p.x1;
+    const qbX = sacked ? p.x1 : along(-7);
+    go(6, pos(qbX, 0));
+    for (let i = 0; i < 5; i++) go(i, pos(along(-2.2 - (sacked ? 0.6 : 0)), dyOf(i) * (sacked ? 0.7 : 1)));
+    const run = (i: number, endX: number, endDy: number, bend: number) => {
+      const a = pos(endX - d * bend, dyOf(i) * 0.9), b = pos(endX, endDy);
+      go(i, a, b);
+      routes.push({ pts: [pre[i], a, b], hot: i === tIdx });
+    };
+    if (tIdx !== 8) run(8, along(sacked ? 6 : 14), -215, 3);
+    if (tIdx !== 9) run(9, along(sacked ? 6 : 14), 215, 3);
+    if (tIdx !== 10) run(10, along(sacked ? 4 : 9), 40, 2);
+    if (tIdx !== 5) go(5, pos(along(sacked ? 1 : 6), dyOf(5) * 0.6));
+    if (tIdx !== 7) { const e = pos(along(1), 120); go(7, pos(along(-3), 60), e); routes.push({ pts: [pre[7], pos(along(-3), 60), e], hot: false }); }
+    if (tIdx >= 0) {
+      const endDy = tIdx === 7 ? 110 : dyOf(tIdx) * 0.8;
+      if (tIdx === 7) go(7, pos(along(-3), 60), pos(catchX, endDy));
+      else go(tIdx, pos(catchX - d * 3, dyOf(tIdx) * 0.9), pos(catchX, endDy));
+      routes.push({ pts: path[tIdx], hot: true });
+      hot = tIdx;
+      ball = { x0: qbX, x1: catchX, lift: 120, at: 0.3, span: 0.5, kind: "arc" };
+    }
+    // Defense: line rushes, linebackers drop, corners and safeties cover.
+    for (let i = 0; i < 4; i++) go(11 + i, pos(sacked ? p.x1 + d * (i === 1 || i === 2 ? 1.2 : 2.5) : along(-2.5), (sacked ? (i - 1.5) * 10 : dyOf(11 + i) * 0.4)));
+    go(15, pos(sacked ? p.x1 + d * 1.5 : along(6), sacked ? 8 : -90));
+    go(16, pos(along(sacked ? 3 : 7), sacked ? -10 : 0));
+    go(17, pos(along(6), 90));
+    const cover = (di: number, oi: number, off = 1.4) => { const e = path[oi][path[oi].length - 1]; go(11 + di, [e[0] + d * YD * off, e[1] + 8]); };
+    cover(7, 8); cover(8, 9);
+    go(20, pos(along(13), -62)); go(21, pos(along(13), 62));
+    if (tIdx >= 0) {
+      const e = path[tIdx][path[tIdx].length - 1];
+      const di = tIdx === 9 ? 8 : tIdx === 5 || tIdx === 7 ? 5 : 7;
+      go(11 + di, [e[0] + d * YD * 1.3, e[1] + 10]);
+    }
+    if (p.turnover === "int" && tIdx >= 0) { const e = path[tIdx][path[tIdx].length - 1]; go(18, [e[0] + d * YD * 0.6, e[1] - 4]); }
+    return { pre, path, routes, hot, ball };
+  }
+
+  if (p.kind === "rush") {
+    const gap = (p.n % 2 ? 1 : -1) * 26;
+    const rb = pos(p.x1, gap + (p.n % 3) * 4);
+    go(6, pos(along(-3.5), 0));
+    go(7, pos(along(-3), 14), pos(along(0.6), gap), rb);
+    routes.push({ pts: path[7], hot: true });
+    hot = 7;
+    for (let i = 0; i < 5; i++) go(i, pos(along(1.8), dyOf(i)));
+    go(5, pos(along(2.5), dyOf(5) * 0.8));
+    go(8, pos(along(4), dyOf(8) * 0.8)); go(9, pos(along(4), dyOf(9) * 0.8)); go(10, pos(along(3), dyOf(10) * 0.8));
+    const g = Math.max(p.yds, 0);
+    for (let i = 0; i < 4; i++) go(11 + i, pos(along(3), dyOf(11 + i) * 1.1));
+    go(15, pos(p.x1 + d * 0.9, gap - 14)); go(16, pos(p.x1 + d * 0.8, gap + 12)); go(17, pos(p.x1 + d * (g > 3 ? 2 : 1), 60));
+    go(20, pos(p.x1 + d * 3.2, gap - 30)); go(21, pos(p.x1 + d * 3.8, gap + 40));
+    go(18, pos(p.x1 + d * 5, -110)); go(19, pos(p.x1 + d * 5, 110));
+    ball = { x0: along(-7.5), x1: p.x1, lift: 8, at: 0.2, span: 0.8, kind: "run" };
+    return { pre, path, routes, hot, ball };
+  }
+
+  if (p.kind === "punt") {
+    go(6, pos(along(-13), 0));
+    go(8, pos(p.x1 - d * 3, -60)); go(9, pos(p.x1 - d * 3, 60));
+    for (let i = 0; i < 4; i++) go(11 + i, pos(along(-2), dyOf(11 + i) * 0.5));
+    go(20, pos(p.x1, 0)); hot = 6;
+    ball = { x0: along(-13), x1: p.x1, lift: 240, at: 0.3, span: 0.6, kind: "arc" };
+    return { pre, path, routes, hot, ball };
+  }
+
+  if (p.kind === "fg" || p.kind === "xp") {
+    go(6, pos(along(-7), 0)); go(7, pos(along(-9), 14), pos(along(-6), 10));
+    for (let i = 0; i < 4; i++) go(11 + i, pos(along(0.5), dyOf(11 + i) * 0.8));
+    hot = 7;
+    ball = { x0: along(-7), x1: p.off === 0 ? 103 : -3, lift: 170, at: 0.3, span: 0.6, kind: "arc" };
+    return { pre, path, routes, hot, ball };
+  }
+  return { pre, path, routes, hot, ball };
 }
 
 function PlayerPanel({ team, p, side }: { team: TeamSim; p: TeamPlayers; side: "left" | "right" }) {
@@ -99,11 +186,35 @@ export function Stage({ cfg, plays, idx, pps }: { cfg: GameCfg; plays: PlayRec[]
     return () => document.removeEventListener("fullscreenchange", on);
   }, []);
 
-  const dur = Math.max(0.12, Math.min(0.9, 1.2 / pps));
+  // One play takes most of the gap between plays: a quarter of it resetting to the formation, the rest running the play.
+  const total = Math.max(0.06, Math.min(1.6, 0.85 / pps));
   const quick = pps > 8;
-  const offNext = p ? p.nextOff : 0;
   const ball = p ? p.x1 : 35;
-  const flight = quick && !(p?.kind === "punt" || p?.kind === "fg") ? null : flightFor(p);
+  const chor = useMemo(() => choreograph(p), [p]);
+  const scrim = p && chor.ball !== null || (p && chor.routes.length > 0);
+  const offTeam: 0 | 1 = p ? (scrim ? p.off : p.nextOff) : 0;
+  const dots = useRef<(SVGCircleElement | null)[]>([]);
+  const last = useRef<P[] | null>(null);
+  useLayoutEffect(() => {
+    const from = last.current ?? chor.pre;
+    chor.path.forEach((wp, i) => {
+      const el = dots.current[i];
+      if (!el) return;
+      const pts: P[] = [from[i], ...wp];
+      const final = wp[wp.length - 1];
+      el.style.transform = `translate(${final[0]}px, ${final[1]}px)`;
+      if (quick || !el.animate || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+      const steps = pts.length - 1;
+      const frames = pts.map((q, k) => ({ transform: `translate(${q[0]}px, ${q[1]}px)`, offset: k === 0 ? 0 : k === 1 ? 0.25 : 0.25 + (0.75 * (k - 1)) / (steps - 1) }));
+      if (frames.length < 2) return;
+      el.getAnimations().forEach((a) => a.cancel());
+      el.animate(frames, { duration: total * 1000, easing: "ease-in-out" });
+    });
+    last.current = chor.path.map((wp) => wp[wp.length - 1]);
+  }, [chor, total, quick]);
+  const flight = chor.ball && !quick ? chor.ball : null;
+  const fdelay = total * (0.25 + 0.75 * (flight?.at ?? 0));
+  const fdur = total * 0.75 * (flight?.span ?? 1);
   const banner = p ? bannerFor(p) : null;
   const showBanner = banner && (!quick || p?.td);
   const toGoal = p ? Math.round(100 - (p.nextOff === 0 ? p.x1 : 100 - p.x1)) : 65;
@@ -112,7 +223,7 @@ export function Stage({ cfg, plays, idx, pps }: { cfg: GameCfg; plays: PlayRec[]
   const caption = !p ? "The coin is in the air" : p.text;
   const first = p && p.nextDown > 0 && p.kind !== "kickoff" && !final ? ball + (p.nextOff === 0 ? 1 : -1) * p.nextDist : null;
   const lead = p && p.scorer !== null && p.pts > 0 ? p.scorer : null;
-  const style = { ["--dur" as string]: `${dur}s`, ["--home" as string]: cfg.home.color, ["--away" as string]: cfg.away.color } as CSSProperties;
+  const style = { ["--home" as string]: cfg.home.color, ["--away" as string]: cfg.away.color } as CSSProperties;
   const mid = (cfg.home.logo ?? cfg.away.logo) ? (cfg.home.logo ?? cfg.away.logo) : undefined;
 
   return (
@@ -134,10 +245,17 @@ export function Stage({ cfg, plays, idx, pps }: { cfg: GameCfg; plays: PlayRec[]
       <div className="st-view">
         <div className="st-plane">
           <svg viewBox={`0 0 ${FW} ${FH}`} role="img" aria-label={p ? p.text : "Football field"}>
+            <defs>
+              <linearGradient id="st-ezshade" x1="0" x2="1"><stop offset="0" stopColor="#000" stopOpacity="0.35" /><stop offset="1" stopColor="#000" stopOpacity="0" /></linearGradient>
+            </defs>
             <rect width={FW} height={FH} fill="#2c6b3d" />
             {Array.from({ length: 20 }, (_, i) => <rect key={i} x={EZ + i * 5 * YD} width={5 * YD} height={FH} fill={i % 2 ? "#2f7040" : "#286238"} />)}
-            <rect width={EZ} height={FH} fill={cfg.away.color} />
+            <rect width={EZ} height={FH} fill={cfg.home.color} />
             <rect x={FW - EZ} width={EZ} height={FH} fill={cfg.home.color} />
+            <rect width={EZ} height={FH} fill="url(#st-ezshade)" />
+            <rect x={FW - EZ} width={EZ} height={FH} fill="url(#st-ezshade)" />
+            <text className="st-ez" transform={`translate(${EZ / 2 + 8} ${CY}) rotate(-90)`}>{cfg.home.short.toUpperCase()}</text>
+            <text className="st-ez" transform={`translate(${FW - EZ / 2 - 8} ${CY}) rotate(90)`}>{cfg.home.short.toUpperCase()}</text>
             {Array.from({ length: 21 }, (_, i) => i * 5).map((yd) => (
               <line key={yd} x1={fx(yd)} x2={fx(yd)} y1="0" y2={FH} stroke="#fff" strokeOpacity={yd % 10 === 0 ? 0.85 : 0.4} strokeWidth={yd % 10 === 0 ? 4 : 2} />
             ))}
@@ -148,11 +266,20 @@ export function Stage({ cfg, plays, idx, pps }: { cfg: GameCfg; plays: PlayRec[]
             {lead !== null && <rect key={`g${p!.n}`} className="st-flash" x={lead === 0 ? FW - EZ : 0} width={EZ} height={FH} fill="#fff" />}
             {first !== null && first > 0 && first < 100 && <rect x={fx(first) - 3} y="0" width="6" height={FH} fill="#ffd84a" />}
             {p && p.kind !== "kickoff" && <rect x={fx(ball) - 2.5} y="0" width="5" height={FH} fill="#4aa3ff" opacity="0.9" />}
-            <Dots ball={ball} off={offNext} cfg={cfg} jitter={p ? p.n : 0} />
+            {p && chor.routes.map((r, i) => (
+              <g key={`r${p.n}-${i}`} className="st-routeg" style={{ ["--rd" as string]: `${total * 0.25}s`, ["--rt" as string]: `${total * 0.75}s` }}>
+                <path d={r.pts.map((q, k) => `${k ? "L" : "M"}${q[0]},${q[1]}`).join("")} pathLength="1" className={r.hot ? "st-route hot" : "st-route"} />
+                {r.hot && <circle cx={r.pts[r.pts.length - 1][0]} cy={r.pts[r.pts.length - 1][1]} r="7" className="st-routeend" />}
+              </g>
+            ))}
+            {chor.pre.map((_, i) => (
+              <circle key={i} ref={(el) => { dots.current[i] = el; }} className={`st-dot${chor.hot === i && scrim ? " hot" : ""}`} r="9" cx="0" cy="0"
+                fill={(i < 11 ? cfg : cfg) && (i < 11 ? [cfg.away, cfg.home][offTeam] : [cfg.away, cfg.home][1 - offTeam]).color} style={{ transform: `translate(${chor.pre[i][0]}px, ${chor.pre[i][1]}px)` }} />
+            ))}
             <g key={p?.n ?? 0}>
-              <g className="st-rest" style={{ transform: `translate(${fx(ball)}px, ${CY}px)` }}><Ball /></g>
+              <g className="st-rest" style={{ transform: `translate(${fx(ball)}px, ${CY}px)`, animationDelay: `${flight ? fdelay + fdur : 0}s` }}><Ball /></g>
               {flight && (
-                <g className={`st-flight ${flight.cls}`} style={{ ["--x0" as string]: `${flight.x0}px`, ["--x1" as string]: `${flight.x1}px`, ["--cy" as string]: `${CY}px`, ["--lift" as string]: `${flight.lift}px` }}>
+                <g className={`st-flight ${flight.kind}`} style={{ ["--x0" as string]: `${fx(flight.x0)}px`, ["--x1" as string]: `${fx(flight.x1)}px`, ["--cy" as string]: `${CY}px`, ["--lift" as string]: `${flight.lift}px`, animationDelay: `${fdelay}s`, animationDuration: `${fdur}s` }}>
                   <Ball />
                 </g>
               )}
