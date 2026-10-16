@@ -9,11 +9,30 @@ export interface EndzoneArt {
   ink: string;
   outline: string;
   word: string;
+  /** No lettering at all (Tennessee's checkerboard, Notre Dame's hash marks). */
+  noWord?: boolean;
   serif: boolean;
+  italic?: boolean;
+  /** Lettering size in field pixels; otherwise it is chosen from the length of the word. */
+  size?: number;
   /** A checkerboard laid over the base: the two colors and the square size, in field pixels. */
   checker?: { a: string; b: string; size: number };
+  /** Diagonal hash lines (Notre Dame). */
+  hash?: { color: string; gap: number };
+  /** Black wedges biting in from both edges (the Bengals' tiger stripes). */
+  tiger?: string;
+  /** The word spelled one letter to a diamond, down the length of the end zone (Missouri). */
+  diamonds?: { fill: string; ink: string };
+  /** A border around the end zone. */
+  border?: string;
   /** A stripe along the back line. */
   stripe?: string;
+  /** A jagged ridge along the end line (Wyoming's brown mountains). */
+  ridge?: string;
+  /** A different word in each end zone (the Steelers: PITTSBURGH on one end, STEELERS on the other). */
+  words?: [string, string];
+  /** Turf colors, light and dark mowing stripes, when the field itself is not green (Boise State's blue). */
+  field?: [string, string];
 }
 
 const lum = (hex: string) => {
@@ -29,13 +48,34 @@ export const contrast = (a: string, b: string) => {
   return (hi + 0.05) / (lo + 0.05);
 };
 
-/** Programs whose end zones are known by sight, by school name. */
+/**
+ * Teams whose end zones are known by sight, by the short name the simulator uses (the school, or the NFL nickname). Everything not listed gets the
+ * default below. To add a team, add a line: the fields are the ones in EndzoneArt.
+ */
 const FAMOUS: Record<string, Partial<EndzoneArt>> = {
-  tennessee: { base: "#ffffff", ink: "#ff8200", outline: "#ffffff", checker: { a: "#ff8200", b: "#ffffff", size: 50 } },
-  "notre dame": { base: "#0c2340", ink: "#c99700", outline: "#07162a", serif: true, stripe: "#c99700" },
+  // college
+  tennessee: { base: "#ffffff", checker: { a: "#ff8200", b: "#ffffff", size: 20 }, noWord: true },
+  "notre dame": { base: "#17472c", hash: { color: "rgba(255,255,255,0.88)", gap: 44 }, noWord: true },
+  missouri: { base: "#111111", border: "#f1b82d", diamonds: { fill: "#f1b82d", ink: "#111111" } },
+  "ole miss": { base: "#2d7db6", ink: "#d4572e", outline: "#ffffff", italic: true, size: 62 },
+  lsu: { base: "#fdd023", ink: "#461d7c", outline: "#ffffff", size: 116 },
+  oregon: { base: "#24572f", ink: "#fee123", outline: "rgba(0,0,0,0)", size: 84 },
   michigan: { base: "#ffcb05", ink: "#00274c", outline: "#ffcb05", stripe: "#00274c" },
   clemson: { base: "#f56600", ink: "#522d80", outline: "#ffffff" },
-  lsu: { base: "#461d7c", ink: "#fdd023", outline: "#2b0f4d" },
+  "boise state": { base: "#d64309", ink: "#0033a0", outline: "#ffffff", word: "BRONCOS", size: 58, field: ["#0d43b3", "#0a3a9f"] },
+  maryland: { base: "#111111", checker: { a: "#ffc72c", b: "#111111", size: 25 }, noWord: true },
+  "florida state": { base: "#f4f0e4", ink: "#ceb888", outline: "#782f40", stripe: "#782f40", size: 44 },
+  wyoming: { base: "#ffc425", ink: "#492f24", outline: "rgba(0,0,0,0)", ridge: "#492f24", words: ["WYOMING", "COWBOYS"], serif: true, size: 58 },
+  // NFL
+  nebraska: { base: "#e41c38", ink: "#ffffff", outline: "#a50f26", border: "#ffffff", words: ["HUSKERS", "NEBRASKA"], serif: false, size: 60 },
+  "49ers": { base: "#aa0000", ink: "#ffffff", outline: "#000000", stripe: "#b3995d", size: 78 },
+  steelers: { base: "#ffb612", ink: "#101820", outline: "#ffffff", words: ["PITTSBURGH", "STEELERS"], size: 56 },
+  browns: { base: "#28683a", ink: "#ff3c00", outline: "rgba(0,0,0,0)", size: 72 },
+  chargers: { base: "#0f6cc0", ink: "#ffffff", outline: "#ffc20e", size: 58 },
+  cowboys: { base: "#0a3a8c", ink: "#b0b7bc", outline: "rgba(0,0,0,0.35)", size: 66 },
+  bengals: { base: "#fb4f14", ink: "#ffffff", outline: "#000000", tiger: "#000000", size: 66 },
+  ravens: { base: "#241773", ink: "#f3ead2", outline: "#a8861c", italic: true, serif: true, size: 66 },
+  chiefs: { base: "#e2b72d", ink: "#a6192e", outline: "#7a0f1e", serif: true, size: 80 },
 };
 
 export function endzoneFor(t: { short: string; color: string; alt?: string }): EndzoneArt {

@@ -227,8 +227,9 @@ export function Stage({ cfg, plays, idx, pps }: { cfg: GameCfg; plays: PlayRec[]
   const lead = p && p.scorer !== null && p.pts > 0 ? p.scorer : null;
   const ez = useMemo(() => endzoneFor(cfg.home), [cfg.home]);
   // Long names are set smaller, and squeezed to fit the 560px end line if they still run long.
-  const ezSize = ez.word.length <= 6 ? 54 : ez.word.length <= 9 ? 44 : ez.word.length <= 12 ? 36 : 28;
-  const ezText = ez.word.length * (ezSize * 0.72 + 6) > 470 ? { textLength: 470, lengthAdjust: "spacingAndGlyphs" as const } : {};
+  const ezSize = ez.size ?? (ez.word.length <= 6 ? 54 : ez.word.length <= 9 ? 44 : ez.word.length <= 12 ? 36 : 28);
+  const ezLongest = Math.max(ez.word.length, ...(ez.words?.map((w) => w.length) ?? []));
+  const ezText = ezLongest * (ezSize * 0.72 + 6) > 480 ? { textLength: 480, lengthAdjust: "spacingAndGlyphs" as const } : {};
   const notreDame = cfg.home.short.toLowerCase() === "notre dame";
   const style = { ["--home" as string]: cfg.home.color, ["--away" as string]: cfg.away.color } as CSSProperties;
   const mid = (cfg.home.logo ?? cfg.away.logo) ? (cfg.home.logo ?? cfg.away.logo) : undefined;
@@ -262,19 +263,51 @@ export function Stage({ cfg, plays, idx, pps }: { cfg: GameCfg; plays: PlayRec[]
                 </pattern>
               )}
             </defs>
-            <rect width={FW} height={FH} fill="#2c6b3d" />
-            {Array.from({ length: 20 }, (_, i) => <rect key={i} x={EZ + i * 5 * YD} width={5 * YD} height={FH} fill={i % 2 ? "#2f7040" : "#286238"} />)}
+            <rect width={FW} height={FH} fill={ez.field?.[0] ?? "#2c6b3d"} />
+            {Array.from({ length: 20 }, (_, i) => <rect key={i} x={EZ + i * 5 * YD} width={5 * YD} height={FH} fill={ez.field ? ez.field[i % 2] : i % 2 ? "#2f7040" : "#286238"} />)}
             {[0, FW - EZ].map((x) => (
-              <g key={x} data-endzone={cfg.home.short}>
-                <rect x={x} width={EZ} height={FH} fill={ez.base} />
-                {ez.checker && <rect x={x} width={EZ} height={FH} fill="url(#st-ezchk)" />}
-                {ez.stripe && <rect x={x === 0 ? 0 : FW - 10} width="10" height={FH} fill={ez.stripe} />}
-                <rect x={x} width={EZ} height={FH} fill="url(#st-ezshade)" opacity={x === 0 ? 1 : 0.6} />
+              <g key={x} data-endzone={cfg.home.short} transform={x === 0 ? undefined : `translate(${FW} 0) scale(-1 1)`}>
+                <rect x="0" width={EZ} height={FH} fill={ez.base} />
+                {ez.checker && <rect x="0" width={EZ} height={FH} fill="url(#st-ezchk)" />}
+                {ez.hash && Array.from({ length: Math.ceil((FH + EZ) / ez.hash.gap) }, (_, i) => (
+                  <line key={i} x1="8" x2={EZ - 8} y1={i * ez.hash!.gap + 40} y2={i * ez.hash!.gap - 40} stroke={ez.hash!.color} strokeWidth="3" />
+                ))}
+                {ez.tiger && Array.from({ length: 7 }, (_, i) => {
+                  const y = (i + 0.3) * (FH / 7);
+                  return (
+                    <g key={i} fill={ez.tiger}>
+                      <polygon points={`0,${y} ${EZ * 0.42},${y + 34} 0,${y + 78}`} />
+                      <polygon points={`${EZ},${y + 36} ${EZ * 0.58},${y + 70} ${EZ},${y + 112}`} />
+                    </g>
+                  );
+                })}
+                {ez.stripe && <rect x="0" width="10" height={FH} fill={ez.stripe} />}
+                {ez.ridge && (
+                  <polygon fill={ez.ridge} points={`0,0 ${Array.from({ length: 29 }, (_, i) => `${i % 2 ? 14 : 30 + (i % 4 === 0 ? 8 : 0)},${(i * FH) / 28}`).join(" ")} 0,${FH}`} />
+                )}
+                {ez.border && <rect x="5" y="5" width={EZ - 10} height={FH - 10} fill="none" stroke={ez.border} strokeWidth="10" />}
+                <rect x="0" width={EZ} height={FH} fill="url(#st-ezshade)" opacity="0.7" />
               </g>
             ))}
-            {[[EZ / 2 + 4, -90], [FW - EZ / 2 - 4, 90]].map(([x, rot]) => (
-              <text key={rot} className="st-ez" transform={`translate(${x} ${CY}) rotate(${rot})`} {...ezText} style={{ fill: ez.ink, stroke: ez.outline, fontFamily: ez.serif ? "Georgia, 'Times New Roman', serif" : undefined, fontSize: ezSize }}>{ez.word}</text>
+            {!ez.noWord && !ez.diamonds && [[EZ / 2 + 4, -90], [FW - EZ / 2 - 4, 90]].map(([x, rot], side) => (
+              <text key={rot} className="st-ez" transform={`translate(${x} ${CY}) rotate(${rot})`} {...ezText} style={{ fill: ez.ink, stroke: ez.outline, fontFamily: ez.serif ? "Georgia, 'Times New Roman', serif" : undefined, fontStyle: ez.italic ? "italic" : undefined, fontSize: ezSize }}>{ez.words?.[side] ?? ez.word}</text>
             ))}
+            {ez.diamonds && [0, 1].map((side) => {
+              const letters = ez.word.replace(/\s/g, "").split("");
+              const n = letters.length, step = (FH - 40) / n;
+              return letters.map((ch, i) => {
+                // The word reads bottom to top on the left end zone and top to bottom on the right, like the lettering elsewhere.
+                const cx = side === 0 ? EZ / 2 : FW - EZ / 2;
+                const cy = side === 0 ? FH - 20 - (i + 0.5) * step : 20 + (i + 0.5) * step;
+                const r = Math.min(step * 0.62, 48);
+                return (
+                  <g key={`${side}-${i}`}>
+                    <polygon points={`${cx},${cy - r} ${cx + r * 0.9},${cy} ${cx},${cy + r} ${cx - r * 0.9},${cy}`} fill={ez.diamonds!.fill} />
+                    <text className="st-ez" transform={`translate(${cx} ${cy}) rotate(${side === 0 ? -90 : 90})`} style={{ fill: ez.diamonds!.ink, fontSize: r * 0.9, letterSpacing: 0, stroke: "none" }}>{ch}</text>
+                  </g>
+                );
+              });
+            })}
             {Array.from({ length: 21 }, (_, i) => i * 5).map((yd) => (
               <line key={yd} x1={fx(yd)} x2={fx(yd)} y1="0" y2={FH} stroke="#fff" strokeOpacity={yd % 10 === 0 ? 0.85 : 0.4} strokeWidth={yd % 10 === 0 ? 4 : 2} />
             ))}

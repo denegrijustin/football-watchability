@@ -136,19 +136,33 @@ test("the simulator names real players with ESPN and the server function both un
 
 import { contrast, endzoneFor } from "../src/sim/endzone";
 
-test("end zones: Tennessee's checkerboard, Notre Dame's navy and gold, and a readable default for everyone else", () => {
+test("end zones: each known program's look, and a readable default for everyone else", () => {
   const ten = endzoneFor({ short: "Tennessee", color: "#4b2e83" });
   expect(ten.checker).toMatchObject({ a: "#ff8200", b: "#ffffff" });
-  expect(ten.word).toBe("TENNESSEE");
+  expect(ten.noWord).toBe(true); // the checkerboard carries no lettering
   const nd = endzoneFor({ short: "Notre Dame", color: "#0c2340" });
-  expect([nd.base, nd.ink, nd.serif, nd.checker]).toEqual(["#0c2340", "#c99700", true, undefined]);
+  expect([!!nd.hash, nd.noWord, nd.checker]).toEqual([true, true, undefined]); // diagonal hash lines, no lettering
+  const mo = endzoneFor({ short: "Missouri", color: "#f1b82d" });
+  expect([mo.base, mo.diamonds?.fill, mo.border]).toEqual(["#111111", "#f1b82d", "#f1b82d"]); // black, with gold lettered diamonds
+  expect(endzoneFor({ short: "LSU", color: "#461d7c" })).toMatchObject({ base: "#fdd023", ink: "#461d7c", size: 116 });
+  expect(endzoneFor({ short: "Ole Miss", color: "#14213d" })).toMatchObject({ italic: true, ink: "#d4572e" });
+  expect(endzoneFor({ short: "Oregon", color: "#154733" }).ink).toBe("#fee123");
+  expect(endzoneFor({ short: "Bengals", color: "#fb4f14" }).tiger).toBe("#000000");
+  expect(endzoneFor({ short: "Ravens", color: "#241773" })).toMatchObject({ serif: true, italic: true, outline: "#a8861c" });
+  expect(endzoneFor({ short: "Chiefs", color: "#e31837" })).toMatchObject({ base: "#e2b72d", ink: "#a6192e" });
+  expect(endzoneFor({ short: "Steelers", color: "#101820" }).words).toEqual(["PITTSBURGH", "STEELERS"]); // a different word at each end
+  expect(endzoneFor({ short: "Wyoming", color: "#492f24" })).toMatchObject({ words: ["WYOMING", "COWBOYS"], ridge: "#492f24" });
+  expect(endzoneFor({ short: "Nebraska", color: "#e41c38" }).words).toEqual(["HUSKERS", "NEBRASKA"]);
+  expect(endzoneFor({ short: "Boise State", color: "#0033a0" })).toMatchObject({ word: "BRONCOS", base: "#d64309" });
+  expect(endzoneFor({ short: "Boise State", color: "#0033a0" }).field).toHaveLength(2); // a blue field
+  expect(endzoneFor({ short: "Browns", color: "#311d00" }).ink).toBe("#ff3c00");
   // Everyone else: the team's own color, lettered in the alternate when it stands out, otherwise white or black.
   const packers = endzoneFor({ short: "Packers", color: "#203731", alt: "#ffb612" });
   expect([packers.base, packers.ink]).toEqual(["#203731", "#ffb612"]);
   const same = endzoneFor({ short: "Ohio State", color: "#bb0000", alt: "#c01010" }); // an alternate too close to the base is not used
   expect(same.ink).toBe("#ffffff");
   expect(endzoneFor({ short: "Light", color: "#fafafa", alt: "#f0f0f0" }).ink).toBe("#111111");
-  for (const t of [ten, nd, packers, same]) expect(contrast(t.base, t.ink)).toBeGreaterThanOrEqual(2);
+  for (const t of [packers, same, endzoneFor({ short: "Ravens", color: "#241773" }), endzoneFor({ short: "Chiefs", color: "#e31837" }), endzoneFor({ short: "LSU", color: "#461d7c" })]) expect(contrast(t.base, t.ink)).toBeGreaterThanOrEqual(2);
 });
 
 test("the field carries the conference logo at each 25 (the second upside down), the NFL shield for NFL games, and Notre Dame's Touchdown Jesus line", async ({ page }) => {
