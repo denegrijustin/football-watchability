@@ -296,11 +296,13 @@ export function FieldView({ data, teams, variant, rootRef, badge, weather }: { d
         <g className="df-ball" style={{ transform: `translateX(${X(ball)}px)` }}>
           <line x1="0" x2="0" y1="0" y2={H} className="df-los" />
           <circle cx="0" cy={ballY} r="4.6" className="df-pulse" stroke={colors[side]} />
-          {logo ? (
-            <LogoMark src={logos[teams[side].logoId!]} cx={0} cy={ballY} size={5.4} chipOpacity={1} chipClass="lf-chip" imageClass="lf-ball-logo" />
-          ) : (
-            <ellipse cx="0" cy={ballY} rx="2.4" ry="1.5" className="df-pigskin" />
-          )}
+          {/* the offense's helmet, facing the way it is driving, with the team's logo on the shell */}
+          <g transform={`translate(0 ${ballY}) scale(${dir} 1)`} className="lf-helmet" data-facing={dir > 0 ? "right" : "left"} style={{ color: colors[side] }}>
+            <path d="M-3.6 1.6C-4 -2.3 -1.3 -3.8 0.9 -3.4C2.7 -3 3.6 -1.5 3.4 0.5L1.3 0.9L1.1 1.7L-1.2 2.6L-2.7 2.6Z" className="lf-helmet-shell" fill="currentColor" />
+            <path d="M-2.2 -3C-0.4 -3.6 1.4 -3.1 2.6 -1.8" className="lf-helmet-stripe" />
+            <path d="M3.4 0.5L4.5 0.9L4.4 2.5L2.1 2.8M3.8 1.6L1.5 1.8" className="lf-helmet-mask" />
+          </g>
+          {logo && <image href={logos[teams[side].logoId!]} x={-1.7 - dir * 0.2} y={ballY - 2.1} width="2.8" height="2.8" preserveAspectRatio="xMidYMid meet" className="lf-ball-logo" />}
           <text x={tagLeft ? -4.5 : 4.5} y="3.6" className="lf-tagtext ball" textAnchor={tagLeft ? "end" : "start"}>{abbr} · {spotName(ballOwn, own, opp)}</text>
         </g>
       </svg>
