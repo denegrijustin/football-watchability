@@ -328,3 +328,25 @@ ol.steps b { color: var(--ink); }
   /* white and light logos vanish on a light page, so each sits on a dark chip */
   .tm img { box-sizing: border-box; width: 26px; height: 26px; padding: 3px; border-radius: 7px; background: #232b33; }
 }
+
+/* Phones: the ranking table fits the screen, so an opened row reads without sideways scrolling. */
+@media (max-width: 520px) {
+  .tbl th, .tbl td { padding: 6px 4px; }
+  .tbl .exp-btn { width: 24px; }
+  .tbl-wrap { overflow-x: hidden; }
+  .tbl td .tm { gap: 6px; }
+  .tbl td .tm .name { overflow: hidden; text-overflow: ellipsis; }
+  .tbl tr.detail td { padding: 10px; overflow-wrap: anywhere; }
+  .kv { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* the ranking table: fixed columns, the team name takes what is left and shortens before the table scrolls */
+  .tbl:has(.rbar) { table-layout: fixed; }
+  .tbl:has(.rbar) th { white-space: normal; line-height: 1.15; vertical-align: bottom; }
+  .tbl:has(.rbar) th:nth-child(1) { width: 24px !important; }
+  .tbl:has(.rbar) th:nth-child(2) { width: 46px; }
+  .tbl:has(.rbar) th:nth-child(3) { width: 50px; }
+  .tbl:has(.rbar) th:nth-child(7) { width: 64px; }
+  .tbl:has(.rbar) th:nth-child(4) { width: calc(100% - 184px); }
+  .tbl:has(.rbar) .rbar { min-width: 0; }
+  .tbl:has(.rbar) td .tm { max-width: 100%; }
+  .tbl:has(.rbar) td .tm .name { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+}

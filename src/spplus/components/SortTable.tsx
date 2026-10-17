@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
 
 export interface Col<R> {
   key: string;
@@ -21,6 +21,14 @@ export function SortTable<R>({ cols, rows, rowKey, expand, selected, sort: ctl, 
   const [local, setLocal] = useState<{ key: string; dir: "asc" | "desc" }>({ key: cols[0].key, dir: cols[0].first ?? "asc" });
   const sort = ctl ?? { ...local, set: (key: string, dir: "asc" | "desc") => setLocal({ key, dir }) };
   const [open, setOpen] = useState<Set<string>>(new Set());
+  // Columns marked hideSm are hidden on narrow screens; the detail row spans only the ones that remain, or the extra span widens the table.
+  const [narrow, setNarrow] = useState(() => typeof matchMedia !== "undefined" && matchMedia("(max-width: 560px)").matches);
+  useEffect(() => {
+    const mq = matchMedia("(max-width: 560px)");
+    const on = () => setNarrow(mq.matches);
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
   const col = cols.find((c) => c.key === sort.key) ?? cols[0];
   const sorted = useMemo(() => {
     const dir = sort.dir === "asc" ? 1 : -1;
@@ -61,7 +69,7 @@ export function SortTable<R>({ cols, rows, rowKey, expand, selected, sort: ctl, 
                   )}
                   {cols.map((c) => <td key={c.key} className={`${c.align ?? ""} ${c.align ? "num" : ""}${c.hideSm ? " hide-sm" : ""}`}>{c.render ? c.render(r) : (c.get(r) ?? "—")}</td>)}
                 </tr>
-                {expand && isOpen && <tr className="detail"><td colSpan={cols.length + 1}>{expand(r)}</td></tr>}
+                {expand && isOpen && <tr className="detail"><td colSpan={cols.filter((c) => !(narrow && c.hideSm)).length + 1}>{expand(r)}</td></tr>}
               </Fragment>
             );
           })}
