@@ -16,6 +16,7 @@ import { Headshot } from "./Headshot";
 import { GameDetails } from "./GameDetails";
 import { FootballIcon } from "../live";
 import { FieldView, fieldWhy } from "../liveDrive";
+import { LastPlay, latestShape } from "../LastPlay";
 import type { WeatherLike } from "../weatherFx";
 import { HalftimeBand } from "../halftime";
 import { HalftimeAct } from "../nflHalftime";
@@ -262,6 +263,12 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
                         <small className="gc-why"> {fieldWhy(game, [game.teams[0]?.id, game.teams[1]?.id])}</small>
                       </p>
                     )}
+                  </section>
+                )}
+                {game && state !== "pre" && !isHalftime(game.status.detail) && latestShape(game.plays) && (
+                  <section className="gc-panel gc-wide gc-lastplay">
+                    <h3 className="micro-label">Last play</h3>
+                    <LastPlay plays={game.plays} teams={[away, home].map((t, i) => ({ id: game.teams[i]?.id, abbr: t?.abbr, name: t?.name ?? "", color: t?.color }))} />
                   </section>
                 )}
             {/* Projection */}

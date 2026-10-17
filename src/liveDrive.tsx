@@ -3,6 +3,7 @@ import { logos, teamColor } from "./data";
 import { rename } from "./data/load";
 import { FootballIcon } from "./live";
 import { LogoMark } from "./logoTone";
+import { helmetFor } from "./helmets";
 import { WeatherLayer, weatherCaption } from "./WeatherFx";
 import { ConfMark } from "./ConfMark";
 import { EndZones, EZ_H, EZ_W } from "./sim/EndZones";
@@ -187,6 +188,7 @@ export function FieldView({ data, teams, variant, rootRef, badge, weather }: { d
   const plays = data.curPlays ?? [];
   const wxText = weatherCaption(weather, data.status.period);
   const logo = teams[side].logoId ? logos[teams[side].logoId!] : undefined;
+  const helmet = helmetFor(teams[side].logoId, colors[side]);
   // The ball's tag sits on the side with room.
   const tagLeft = ball > 70;
 
@@ -296,13 +298,14 @@ export function FieldView({ data, teams, variant, rootRef, badge, weather }: { d
         <g className="df-ball" style={{ transform: `translateX(${X(ball)}px)` }}>
           <line x1="0" x2="0" y1="0" y2={H} className="df-los" />
           <circle cx="0" cy={ballY} r="4.6" className="df-pulse" stroke={colors[side]} />
-          {/* the offense's helmet, facing the way it is driving, with the team's logo on the shell */}
-          <g transform={`translate(0 ${ballY}) scale(${dir} 1)`} className="lf-helmet" data-facing={dir > 0 ? "right" : "left"} style={{ color: colors[side] }}>
-            <path d="M-3.6 1.6C-4 -2.3 -1.3 -3.8 0.9 -3.4C2.7 -3 3.6 -1.5 3.4 0.5L1.3 0.9L1.1 1.7L-1.2 2.6L-2.7 2.6Z" className="lf-helmet-shell" fill="currentColor" />
-            <path d="M-2.2 -3C-0.4 -3.6 1.4 -3.1 2.6 -1.8" className="lf-helmet-stripe" />
-            <path d="M3.4 0.5L4.5 0.9L4.4 2.5L2.1 2.8M3.8 1.6L1.5 1.8" className="lf-helmet-mask" />
+          {/* the offense's helmet, as the team wears it, facing the way it is driving, with the logo on the shell */}
+          <g transform={`translate(0 ${ballY}) scale(${dir} 1)`} className="lf-helmet" data-facing={dir > 0 ? "right" : "left"} data-shell={helmet.shell}>
+            <path d="M-3.8 1.9C-4.7 -2.4 -1.8 -4.1 0.8 -3.9C3 -3.7 4.1 -1.9 3.9 0.2L3.3 1.2L1.5 1.3L0.7 2.5L-1.4 3.1L-3 3Z" className="lf-helmet-shell" fill={helmet.shell} />
+            <path d="M3.5 -1.2C1.7 -3.5 -1.5 -3.8 -3.6 -1.5" className="lf-helmet-stripe" stroke={helmet.stripe} />
+            <ellipse cx="-0.7" cy="1" rx="0.8" ry="0.95" className="lf-helmet-ear" />
+            <path d="M3.9 0.5L5.1 0.9L5.1 2.8L2.6 3.3L1.2 2.6M4 1.6L1.9 1.7M4.6 0.7V3" className="lf-helmet-mask" stroke={helmet.mask} />
           </g>
-          {logo && <image href={logos[teams[side].logoId!]} x={-1.7 - dir * 0.2} y={ballY - 2.1} width="2.8" height="2.8" preserveAspectRatio="xMidYMid meet" className="lf-ball-logo" />}
+          {logo && <image href={logos[teams[side].logoId!]} x={-0.2 * dir - 1.5} y={ballY - 2.6} width="3" height="3" preserveAspectRatio="xMidYMid meet" className="lf-ball-logo" />}
           <text x={tagLeft ? -4.5 : 4.5} y="3.6" className="lf-tagtext ball" textAnchor={tagLeft ? "end" : "start"}>{abbr} · {spotName(ballOwn, own, opp)}</text>
         </g>
       </svg>
