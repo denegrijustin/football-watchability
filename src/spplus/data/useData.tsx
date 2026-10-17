@@ -12,6 +12,8 @@ interface Ctx {
   model: Model | null;
   loadError: string | null;
   retry: () => void;
+  /** ESPN team id to the sheet's team name. */
+  espn: Record<string, string>;
 }
 
 const DataCtx = createContext<Ctx | null>(null);
@@ -51,6 +53,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const extra = liveResults(base, finals, espn);
     return extra.length ? { ...base, liveResults: extra } : base;
   }, [sheetModel, finals, espn]);
-  const value = useMemo(() => ({ snapshot, model, loadError, retry }), [snapshot, model, loadError, retry]);
+  const value = useMemo(() => ({ snapshot, model, loadError, retry, espn }), [snapshot, model, loadError, retry, espn]);
   return <DataCtx.Provider value={value}>{children}</DataCtx.Provider>;
 }

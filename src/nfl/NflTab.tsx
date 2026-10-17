@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { LiveMirror, useLiveMap, type LiveMap } from "../live";
 import { createRoot } from "react-dom/client";
 import { NflProvider } from "./useNfl";
 import { NflApp } from "./NflApp";
@@ -7,6 +8,12 @@ import css from "../spplus/spplus.css?inline";
 /** The NFL+ tab. Like the CFB SP+ tab it renders in a shadow root, and it shares that tab's stylesheet and chart components. */
 export default function NflTab() {
   const host = useRef<HTMLDivElement>(null);
+  // The tab is its own React root, so it is handed the live scores and redrawn when they change.
+  const map = useLiveMap();
+  const draw = useRef<(m: LiveMap) => void>(() => {});
+  const latest = useRef(map);
+  latest.current = map;
+  useEffect(() => draw.current(map), [map]);
   useEffect(() => {
     const el = host.current;
     if (!el) return;
@@ -17,7 +24,8 @@ export default function NflTab() {
     const mount = document.createElement("div");
     shadow.append(style, mount);
     const root = createRoot(mount);
-    root.render(<NflProvider><NflApp /></NflProvider>);
+    draw.current = (m) => root.render(<LiveMirror map={m}><NflProvider><NflApp /></NflProvider></LiveMirror>);
+    draw.current(latest.current);
     return () => root.unmount();
   }, []);
   return <div ref={host} className="nfl-host" data-testid="nfl-host" />;

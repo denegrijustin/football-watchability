@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { LiveMirror, useLiveMap, type LiveMap } from "../live";
 import { createRoot } from "react-dom/client";
 import { DataProvider } from "./data/useData";
 import { SpPlusApp } from "./SpPlusApp";
@@ -10,6 +11,12 @@ import css from "./spplus.css?inline";
  */
 export default function SpPlusTab() {
   const host = useRef<HTMLDivElement>(null);
+  // The tab is its own React root, so it is handed the live scores and redrawn when they change.
+  const map = useLiveMap();
+  const draw = useRef<(m: LiveMap) => void>(() => {});
+  const latest = useRef(map);
+  latest.current = map;
+  useEffect(() => draw.current(map), [map]);
   useEffect(() => {
     const el = host.current;
     if (!el) return;
@@ -20,11 +27,15 @@ export default function SpPlusTab() {
     const mount = document.createElement("div");
     shadow.append(style, mount);
     const root = createRoot(mount);
-    root.render(
-      <DataProvider>
-        <SpPlusApp />
-      </DataProvider>,
-    );
+    draw.current = (m) =>
+      root.render(
+        <LiveMirror map={m}>
+          <DataProvider>
+            <SpPlusApp />
+          </DataProvider>
+        </LiveMirror>,
+      );
+    draw.current(latest.current);
     return () => root.unmount();
   }, []);
   return <div ref={host} className="spp-host" data-testid="spplus-host" />;

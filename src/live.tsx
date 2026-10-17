@@ -14,7 +14,7 @@ export type LiveScore = {
   /** Which side has the ball, while the game is live. */
   ball?: "away" | "home" | null;
 };
-type LiveMap = Record<string, LiveScore>;
+export type LiveMap = Record<string, LiveScore>;
 const LiveContext = createContext<LiveMap>({});
 const ReportContext = createContext<(score: LiveScore) => void>(() => {});
 /** How fresh the scores are: when data last arrived, how (pushed or polled), and a way to ask again right now. */
@@ -26,6 +26,10 @@ export const useLive = (espnId?: string | null) => {
   return espnId ? map[espnId] : undefined;
 };
 export const useLiveMap = () => useContext(LiveContext);
+/** Hands the live scores to a React tree that was mounted on its own (the SP+ and NFL+ tabs live in shadow roots, so the page's contexts do not reach them). */
+export function LiveMirror({ map, children }: { map: LiveMap; children: ReactNode }) {
+  return <LiveContext.Provider value={map}>{children}</LiveContext.Provider>;
+}
 /**
  * Lets a fresher source hand the board a score: the game summary (the Game Center and the live field on a card poll it every few seconds) runs ahead of
  * the scoreboard feed, so what it saw is merged in the moment it arrives. It only moves a game forward: a later state, or more points.

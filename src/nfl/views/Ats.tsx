@@ -3,6 +3,7 @@ import { useNfl } from "../useNfl";
 import { useNflRoute } from "../store";
 import { atsGames, pendingPicks, type NflAtsGame } from "../model";
 import { NflMark, NflTeamLink, Notes, Derived } from "../common";
+import { LivePicks, type LivePickItem } from "../../spplus/components/LivePicks";
 import { SortTable, type Col } from "../../spplus/components/SortTable";
 import { AtsChart } from "../../spplus/charts/AtsChart";
 import { BREAK_EVEN, byEdge, recordText, tally, weeklyTracker } from "../../spplus/data/ats";
@@ -29,6 +30,12 @@ export default function Ats() {
   const edges = useMemo(() => byEdge(games, BUCKETS), [games]);
   const side = useMemo(() => [["Home teams", games.filter((g) => g.pickIsHome)], ["Road teams", games.filter((g) => !g.pickIsHome)]] as [string, NflAtsGame[]][], [games]);
   const pending = useMemo(() => pendingPicks(data), [data]);
+  // The pending picks as cards that follow the score. The pick must beat the line by its margin: the spread for a home pick, minus it for a road pick.
+  const liveItems: LivePickItem[] = pending.map(({ g, p }) => ({
+    id: g.id, by: "Ratings", pickName: data.teams[p.pick]?.name ?? p.pick, pickMark: <NflMark abbr={p.pick} size={28} />,
+    line: p.pickIsHome ? (g.spread as number) : -(g.spread as number), pickIsHome: p.pickIsHome, awayName: g.away, homeName: g.home,
+    when: `${dateLabel(g.date)} ${timeLabel(g.time)}`, gap: fmt(p.edge), cover: normCdf((p.pickIsHome ? (g.mm as number) - (g.spread as number) : -((g.mm as number) - (g.spread as number))) / data.params.model.sigma), espnId: g.espn ?? null,
+  }));
   const bt = data.backtest.calibration.ats;
   const sigma = data.params.model.sigma;
 
@@ -43,8 +50,8 @@ export default function Ats() {
     { key: "date", label: "Date", get: (g) => g.date, render: (g) => dateLabel(g.date) },
     { key: "wk", label: "Wk", align: "r", get: (g) => g.week },
     { key: "game", label: "Game", get: (g) => g.game },
-    { key: "pick", label: "Ratings pick", get: (g) => g.pick, render: (g) => <NflTeamLink abbr={g.pick} size={18} label={g.pick} /> },
-    { key: "line", label: "Line", get: (g) => g.line },
+    { key: "pick", label: "Ratings pick", get: (g) => g.pick, render: (g) => <><NflTeamLink abbr={g.pick} size={18} label={g.pick} /> <b className="pickline">{g.line.slice(g.pick.length + 1)}</b></> },
+    { key: "line", label: "Line (pick's side)", get: (g) => g.line },
     { key: "edge", label: "Gap to line", align: "r", first: "desc", get: (g) => g.edge, render: (g) => fmt(g.edge) },
     { key: "final", label: "Final", get: (g) => g.final },
     { key: "cover", label: "Covered by", align: "r", first: "desc", get: (g) => g.coverBy, render: (g) => fmtSigned(g.coverBy) },
@@ -53,6 +60,7 @@ export default function Ats() {
 
   return (
     <div className="stack">
+      <LivePicks items={liveItems} title="This week's picks" note="The side the ratings like against the closing spread, with its line. A game on the field shows whether the pick is covering, not covering or on the number right now, and turns into the final grade at the horn." />
       <div className="panel">
         <div className="phead"><div><h2>Ratings picks against the spread</h2><p className="sub" style={{ margin: 0 }}>Each game's pick is the side the team ratings like better than the closing spread. Graded from nflverse's lines and results <Derived why="The ratings' margin compared with the closing spread, graded against the final margin" /> · scores from ESPN fill in the moment a game ends</p></div></div>
         <div className="atshead">

@@ -3,7 +3,10 @@ import { useData } from "../data/useData";
 import { useRoute } from "../store";
 import { atsGames, byEdge, BREAK_EVEN, recordText, tally, weeklyTracker, type AtsGame } from "../data/ats";
 import { dateLabel, fmt, fmtPct, fmtSigned } from "../data/derive";
-import { Derived, Notes, TeamLink, useTeamLookup } from "../components/common";
+import { Derived, Mark, Notes, TeamLink, useTeamLookup } from "../components/common";
+import { LivePicks, type LivePickItem } from "../components/LivePicks";
+import { findBoardGame, lineText } from "../../livePicks";
+import { slate } from "../../data";
 import { SortTable, type Col } from "../components/SortTable";
 import { AtsChart } from "../charts/AtsChart";
 import { normCdf, paramsFor, ratingsFor, expectation } from "../sim";
@@ -17,7 +20,7 @@ const wilson = (w: number, n: number): [number, number] | null => {
 };
 
 export default function Ats() {
-  const { model } = useData();
+  const { model, espn } = useData();
   const [route, nav] = useRoute();
   const lookup = useTeamLookup();
   const [limit, setLimit] = useState(100);
@@ -52,6 +55,20 @@ export default function Ats() {
     }).sort((a, b) => (b.p.spreadDiff ?? 0) - (a.p.spreadDiff ?? 0));
   }, [model, all, incl]);
 
+  // The pending picks as cards that follow the score: the pick and its line, and whether it is covering right now.
+  const liveItems = useMemo<LivePickItem[]>(() => pending.map(({ p, cover }) => {
+    const pts = p.spreadPts as number;
+    const line = pts === 0 ? 0 : p.spreadTeam === p.atsPick ? pts : -pts;
+    const hit = findBoardGame(slate.games as never, espn, p.away, p.home, p.date);
+    const t = hit?.game as { espnId: string; date?: string } | undefined;
+    const pickIsHome = p.atsPick === p.home;
+    return {
+      id: p.id, by: "SP+", pickName: p.atsPick as string, pickMark: <Mark team={lookup(p.atsPick as string)} size={28} />, line, pickIsHome, liveIsHome: hit?.swapped ? !pickIsHome : pickIsHome,
+      awayName: p.away, homeName: p.home, when: `${dateLabel(p.date)}${t?.date ? ` · ${new Date(t.date).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}` : ""}`,
+      gap: p.spreadDiff == null ? null : fmt(p.spreadDiff), cover, espnId: t?.espnId ?? null,
+    };
+  }), [pending, espn, lookup]);
+
   const best = [...weeks].filter((w) => w.rec.w + w.rec.l >= 10).sort((a, b) => (b.rec.pct ?? 0) - (a.rec.pct ?? 0))[0];
   const worst = [...weeks].filter((w) => w.rec.w + w.rec.l >= 10).sort((a, b) => (a.rec.pct ?? 1) - (b.rec.pct ?? 1))[0];
   const notes: string[] = [];
@@ -67,8 +84,8 @@ export default function Ats() {
     { key: "date", label: "Date", get: (g) => g.date, render: (g) => dateLabel(g.date) },
     { key: "wk", label: "Wk", align: "r", get: (g) => g.week },
     { key: "game", label: "Game", get: (g) => g.game },
-    { key: "pick", label: "SP+ pick", get: (g) => g.pick, render: (g) => <TeamLink team={lookup(g.pick)} size={18} /> },
-    { key: "line", label: "Line", get: (g) => g.spread },
+    { key: "pick", label: "SP+ pick", get: (g) => g.pick, render: (g) => <><TeamLink team={lookup(g.pick)} size={18} /> <b className="pickline">{lineText(g.pickIsFavorite ? g.spreadPts : -g.spreadPts)}</b></> },
+    { key: "line", label: "Spread", get: (g) => g.spread },
     { key: "edge", label: "Gap to line", align: "r", first: "desc", get: (g) => g.edge, render: (g) => fmt(g.edge) },
     { key: "final", label: "Final", get: (g) => g.final },
     { key: "cover", label: "Covered by", align: "r", first: "desc", get: (g) => g.coverBy, render: (g) => fmtSigned(g.coverBy) },
@@ -77,6 +94,7 @@ export default function Ats() {
 
   return (
     <div className="stack">
+      <LivePicks items={liveItems} title={`Week ${model.latest} picks`} note="The side SP+ likes against the spread, with its line. A game on the field shows whether the pick is covering, not covering or on the number right now, and turns into the final grade at the horn." />
       <div className="panel">
         <div className="phead">
           <div>
