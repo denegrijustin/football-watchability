@@ -1,4 +1,5 @@
 import { useId } from "react";
+import { logos } from "../data";
 import type { EndzoneArt } from "./endzone";
 
 /** The field's coordinate system the art is drawn in: 1200 wide with 100-wide end zones, 560 tall. Anything that shows it scales this box. */
@@ -36,7 +37,7 @@ export function EndZones({ ez, name }: { ez: EndzoneArt; name: string }) {
       </defs>
       {[0, EZ_W - EZ].map((x) => (
         <g key={x} data-endzone={name} transform={x === 0 ? undefined : `translate(${EZ_W} 0) scale(-1 1)`}>
-          <rect x="0" width={EZ} height={EZ_H} fill={ez.base} />
+          <rect x="0" width={EZ} height={EZ_H} fill={ez.sides ? ez.sides[x === 0 ? 0 : 1].base : ez.base} />
           {ez.checker && <rect x="0" width={EZ} height={EZ_H} fill={`url(#${id}c)`} />}
           {ez.hash && Array.from({ length: Math.ceil((EZ_H + EZ) / ez.hash.gap) }, (_, i) => (
             <line key={i} x1="8" x2={EZ - 8} y1={i * ez.hash!.gap + 40} y2={i * ez.hash!.gap - 40} stroke={ez.hash!.color} strokeWidth="3" />
@@ -52,12 +53,26 @@ export function EndZones({ ez, name }: { ez: EndzoneArt; name: string }) {
           })}
           {ez.stripe && <rect x="0" width="10" height={EZ_H} fill={ez.stripe} />}
           {ez.ridge && <polygon fill={ez.ridge} points={`0,0 ${Array.from({ length: 29 }, (_, i) => `${i % 2 ? 14 : 30 + (i % 4 === 0 ? 8 : 0)},${(i * EZ_H) / 28}`).join(" ")} 0,${EZ_H}`} />}
-          {ez.border && <rect x="5" y="5" width={EZ - 10} height={EZ_H - 10} fill="none" stroke={ez.border} strokeWidth="10" />}
+          {ez.border && <rect x={ez.span ? 7 : 5} y={ez.span ? 7 : 5} width={EZ - (ez.span ? 14 : 10)} height={EZ_H - (ez.span ? 14 : 10)} fill="none" stroke={ez.border} strokeWidth={ez.span ? 14 : 10} />}
+          {ez.inner && <rect x={ez.inner.inset} y={ez.inner.inset} width={EZ - 2 * ez.inner.inset} height={EZ_H - 2 * ez.inner.inset} fill="none" stroke={ez.inner.color} strokeWidth="2.5" />}
           <rect x="0" width={EZ} height={EZ_H} fill={`url(#${id}s)`} opacity="0.7" />
         </g>
       ))}
       {!ez.noWord && !ez.diamonds && [[EZ / 2 + 4, -90], [EZ_W - EZ / 2 - 4, 90]].map(([x, rot], side) => (
-        <text key={rot} transform={`translate(${x} ${CY}) rotate(${rot})`} {...fit} style={lettering(ez, size)}>{ez.words?.[side] ?? ez.word}</text>
+        ez.mark && logos[ez.mark] ? (
+          // The school's logo leads the lettering, the pair centred along the end zone.
+          (() => {
+            const span = ez.span ?? Math.min(480, longest * (size * 0.62 + 6)), mk = 80, gap = 14, total = mk + gap + span;
+            return (
+              <g key={rot} transform={`translate(${x} ${CY}) rotate(${rot})`}>
+                <image href={logos[ez.mark!]} style={{ filter: "brightness(0) invert(1)" }} data-endzone-mark={ez.mark} x={-total / 2} y={-mk / 2} width={mk} height={mk} preserveAspectRatio="xMidYMid meet" />
+                <text transform={`translate(${-total / 2 + mk + gap + span / 2} 0)`} textLength={span} lengthAdjust="spacingAndGlyphs" style={lettering(ez, size)}>{ez.words?.[side] ?? ez.word}</text>
+              </g>
+            );
+          })()
+        ) : (
+          <text key={rot} transform={`translate(${x} ${CY}) rotate(${rot})`} {...fit} style={lettering(ez.sides ? { ...ez, ...ez.sides[side] } : ez, size)}>{ez.words?.[side] ?? ez.word}</text>
+        )
       ))}
       {ez.ends && [0, 1].flatMap((side) => [0, 1].flatMap((bottom) => ez.ends!.map((color, i) => {
         const cx = side === 0 ? EZ / 2 : EZ_W - EZ / 2;

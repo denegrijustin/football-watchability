@@ -35,6 +35,14 @@ export interface EndzoneArt {
   words?: [string, string];
   /** Turf colors, light and dark mowing stripes, when the field itself is not green (Boise State's blue). */
   field?: [string, string];
+  /** A school logo drawn before the lettering (Kansas State's wildcat), by logo id. */
+  mark?: string;
+  /** The lettering stretched to this length (field pixels) so it fills the end zone the way the real one does. */
+  span?: number;
+  /** A thin line inside the border, inset this far from the edge. */
+  inner?: { color: string; inset: number };
+  /** Different colors in the two end zones, left then right (LSU: gold with purple lettering, purple with gold). */
+  sides?: [{ base: string; ink: string; outline: string }, { base: string; ink: string; outline: string }];
 }
 
 const lum = (hex: string) => {
@@ -60,7 +68,11 @@ const FAMOUS: Record<string, Partial<EndzoneArt>> = {
   "notre dame": { base: "#17472c", hash: { color: "rgba(255,255,255,0.88)", gap: 44 }, noWord: true },
   missouri: { base: "#111111", border: "#f1b82d", diamonds: { fill: "#f1b82d", ink: "#111111" } },
   "ole miss": { base: "#2d7db6", ink: "#d4572e", outline: "#ffffff", italic: true, size: 62 },
-  lsu: { base: "#fdd023", ink: "#461d7c", outline: "#ffffff", size: 116 },
+  lsu: {
+    base: "#fdd023", ink: "#461d7c", outline: "#ffffff", size: 116,     sides: [{ base: "#fdd023", ink: "#461d7c", outline: "#ffffff" }, { base: "#461d7c", ink: "#fdd023", outline: "#ffffff" }],
+  },
+  // Kansas State's end zone at Bill Snyder Family Stadium: deep purple inside a wide white band with a thin white line inside it, the wildcat and K-STATE in white italic.
+  "kansas state": { base: "#432a6f", ink: "#ffffff", outline: "rgba(0,0,0,0)", border: "#ffffff", inner: { color: "#ffffff", inset: 26 }, word: "K-STATE", italic: true, size: 66, span: 330, mark: "kansas-state" },
   oregon: { base: "#24572f", ink: "#fee123", outline: "rgba(0,0,0,0)", size: 84 },
   michigan: { base: "#ffcb05", ink: "#00274c", outline: "#ffcb05", stripe: "#00274c" },
   clemson: { base: "#f56600", ink: "#522d80", outline: "#ffffff" },

@@ -3,9 +3,13 @@ import { logos, teamColor } from "./data";
 import type { GameBadge } from "./gameLogo";
 import { LogoMark } from "./logoTone";
 import { WeatherLayer } from "./WeatherFx";
-import { ConfMark } from "./ConfMark";
+import { ConfMark, confEntry } from "./ConfMark";
+import { EndZones, EZ_H, EZ_W } from "./sim/EndZones";
+import { endzoneFor } from "./sim/endzone";
+import { MIDFIELD_ART } from "./sim/midfield";
 import type { WeatherLike } from "./weatherFx";
-import { FORMATIONS, HALFTIME_MS, mix, N, STEP_MS, anglesAt, clockText, firstSeen, halftimeLeft } from "./halftimeLogic";
+import { logoOutline, logoFilled, exitPoints, bandCue, SCRIPT_OHIO, OHIO_DOTTER, OHIO_DOT, OHIO_STAGE, entrancePoints, type BandPoint } from "./bandLogo";
+import { FORMATIONS, HALFTIME_MS, mix, N, STEP_MS, clockText, firstSeen, halftimeLeft, nearestAssignment, MOVE_MS } from "./halftimeLogic";
 
 /**
  * College halftime: a 20-minute countdown and the band marching through formations on the field. It stands in for the drive
@@ -15,8 +19,14 @@ export type Side = { abbr?: string; name: string; color?: string | null; logoId?
 
 
 /** The stadium from above: turf, end zones with each school's name and logo, yard lines, hash marks and numbers, and the midfield logo. */
-export function FieldArt({ id, home, away, hc, ac, badge }: { id: string; home: Side; away: Side; hc: string; ac: string; badge?: GameBadge | null }) {
+export function FieldArt({ id, home, hc, badge }: { id: string; home: Side; away: Side; hc: string; ac: string; badge?: GameBadge | null }) {
   const espnId = id;
+  // The field is the home team's all game: its end zones at both ends and its conference at both 25s, exactly as on the game card and in the Game Center.
+  const nflGame = home.conf === "AFC" || home.conf === "NFC";
+  const homeShort = nflGame ? home.name.split(" ").pop() ?? home.name : home.name;
+  const ez = endzoneFor({ short: homeShort, color: hc, alt: undefined });
+  const fieldConf = nflGame ? "NFL" : home.conf && home.conf !== "Independent" ? home.conf : null;
+  const midArt = !badge?.src && home.logoId ? MIDFIELD_ART[home.logoId] : undefined;
   return (
     <>
         <defs>
@@ -24,31 +34,15 @@ export function FieldArt({ id, home, away, hc, ac, badge }: { id: string; home: 
             <stop offset="0%" stopColor="#2b6a3a" />
             <stop offset="100%" stopColor="#1a4a29" />
           </radialGradient>
-          <pattern id={`ez-${espnId}-a`} width="3" height="3" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-            <rect width="3" height="3" fill={ac} />
-            <rect width="1.2" height="3" fill={mix(ac, -0.22)} />
-          </pattern>
-          <pattern id={`ez-${espnId}-h`} width="3" height="3" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-            <rect width="3" height="3" fill={hc} />
-            <rect width="1.2" height="3" fill={mix(hc, -0.22)} />
-          </pattern>
         </defs>
         <rect x="0" y="0" width="120" height="40" fill={`url(#turf-${espnId})`} />
         {Array.from({ length: 10 }, (_, i) => (
           <rect key={i} x={10 + i * 10} y="0" width="10" height="40" className={i % 2 ? "df-stripe" : "df-stripe alt"} />
         ))}
-        {/* end zones: team color, diagonal weave, the school name in block letters and its logo */}
-        <rect x="0" y="0" width="10" height="40" fill={`url(#ez-${espnId}-a)`} />
-        <rect x="110" y="0" width="10" height="40" fill={`url(#ez-${espnId}-h)`} />
-        {[[away, 5, -90] as const, [home, 115, 90] as const].map(([t, x, rot], k) => (
-          <g key={k}>
-            <text x={x} y="20" className="band-ez" transform={`rotate(${rot} ${x} 20)`} textAnchor="middle" dominantBaseline="central" textLength={Math.min(26, Math.max(14, t.name.length * 3))} lengthAdjust="spacingAndGlyphs">
-              {t.name.toUpperCase()}
-            </text>
-            {t.logoId && logos[t.logoId] && <LogoMark src={logos[t.logoId]} cx={x} cy={k === 0 ? 34.4 : 6.4} size={6} />}
-            {t.logoId && logos[t.logoId] && <LogoMark src={logos[t.logoId]} cx={x} cy={k === 0 ? 5.6 : 34.4} size={6} />}
-          </g>
-        ))}
+        {/* the home team's real end zone design at both ends (the same art as the game simulator and the cards) */}
+        <svg x="0" y="0" width="120" height="40" viewBox={`0 0 ${EZ_W} ${EZ_H}`} preserveAspectRatio="none" className="lf-ezart">
+          <EndZones ez={ez} name={homeShort} />
+        </svg>
         {/* goal lines, end lines, sidelines and the orange pylons */}
         <line x1="10" x2="10" y1="0" y2="40" className="band-goal" />
         <line x1="110" x2="110" y1="0" y2="40" className="band-goal" />
@@ -85,24 +79,138 @@ export function FieldArt({ id, home, away, hc, ac, badge }: { id: string; home: 
             </g>
           );
         })}
-        {/* midfield: the home team's logo, painted on the turf */}
-        <circle cx="60" cy="20" r="7.4" className="band-mid-ring" />
-        {/* a special or neutral-site game paints its own logo here; any other game, the home team's */}
-        {badge?.src ? <LogoMark src={badge.src} cx={60} cy={20} size={14} chipOpacity={0.15} imageClass="band-mid-logo" gameLogo />
-          : !badge?.neutral && home.logoId && logos[home.logoId] && <LogoMark src={logos[home.logoId]} cx={60} cy={20} size={14} chipOpacity={0.15} imageClass="band-mid-logo" />}
-        <ConfMark conf={away.conf} cx={35} cy={31} size={8} />
-        <ConfMark conf={home.conf} cx={85} cy={31} size={8} />
+        {/* midfield: the home team's own art or logo, painted on the turf */}
+        {midArt ? (
+          <image href={midArt.src} data-midfield="art" x={60 - midArt.card / 2} y={20 - midArt.card / midArt.ratio / 2} width={midArt.card} height={midArt.card / midArt.ratio} opacity="0.95" />
+        ) : (
+          <>
+            <circle cx="60" cy="20" r="7.4" className="band-mid-ring" />
+            {/* a special or neutral-site game paints its own logo here; any other game, the home team's */}
+            {badge?.src ? <LogoMark src={badge.src} cx={60} cy={20} size={14} chipOpacity={0.15} imageClass="band-mid-logo" gameLogo />
+              : !badge?.neutral && home.logoId && logos[home.logoId] && <LogoMark src={logos[home.logoId]} cx={60} cy={20} size={14} chipOpacity={0.15} imageClass="band-mid-logo" />}
+          </>
+        )}
+        {fieldConf && (
+          <>
+            <ConfMark conf={fieldConf} cx={35} cy={7.5} size={5.5} />
+            <g transform="rotate(180 85 32.5)"><ConfMark conf={fieldConf} cx={85} cy={32.5} size={5.5} /></g>
+          </>
+        )}
     </>
   );
 }
 
 export function HalftimeBand({ espnId, home, away, badge, weather }: { espnId: string; home: Side; away: Side; badge?: GameBadge | null; weather?: WeatherLike | null }) {
   const ref = useRef<HTMLDivElement>(null);
+  const isOhioState = home.logoId === "ohio-state";
+  const conference = confEntry(home.conf);
+  const scriptStep = conference ? 2 : 1;
   const [seenAt] = useState(() => firstSeen(espnId, Date.now()));
   const [now, setNow] = useState(() => Date.now());
   const [step, setStep] = useState(0);
   const [visible, setVisible] = useState(true);
-  const still = typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const [still, setStill] = useState(() => typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches);
+  const [moving, setMoving] = useState(false);
+  const [dotting, setDotting] = useState(false);
+  const [logoPoints, setLogoPoints] = useState<BandPoint[] | null>(null);
+  const [logoReady, setLogoReady] = useState(false);
+  const [drill, setDrill] = useState(() => ({ points: entrancePoints(N), angles: Array(N).fill(-90) as number[], distances: Array(N).fill(0) as number[] }));
+  const [conferencePoints, setConferencePoints] = useState<BandPoint[] | null>(null);
+  const [conferenceReady, setConferenceReady] = useState(false);
+  const [conferenceLettering, setConferenceLettering] = useState(false);
+  useEffect(() => {
+    setConferencePoints(null);
+    setConferenceReady(false);
+    setConferenceLettering(false);
+    if (!conference) { setConferenceReady(true); return; }
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const canvas = document.createElement("canvas");
+    canvas.width = canvas.height = 128;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    const fallback = () => {
+      if (cancelled) return;
+      if (ctx) {
+        canvas.width = 128;
+        ctx.clearRect(0, 0, 128, 128);
+        ctx.fillStyle = "#fff";
+        ctx.font = `900 ${Math.min(75, 180 / conference.label.length)}px sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(conference.label, 64, 64, 116);
+        setConferencePoints(logoFilled(ctx.getImageData(0, 0, 128, 128).data, 128, 128, N));
+      }
+      setConferenceLettering(true);
+      setConferenceReady(true);
+    };
+    const sources = [...(conference.src ? [conference.src] : []), ...(conference.remote ?? [])];
+    const next = (index: number) => {
+      if (cancelled) return;
+      if (!ctx || index >= sources.length) { fallback(); return; }
+      const image = new Image();
+      let settled = false;
+      const failed = () => {
+        if (settled || cancelled) return;
+        settled = true;
+        clearTimeout(timer);
+        next(index + 1);
+      };
+      image.crossOrigin = "anonymous";
+      image.onload = () => {
+        if (settled || cancelled) return;
+        try {
+          canvas.width = 128;
+          ctx.clearRect(0, 0, 128, 128);
+          const scale = Math.min(128 / image.naturalWidth, 128 / image.naturalHeight);
+          const w = image.naturalWidth * scale, h = image.naturalHeight * scale;
+          ctx.drawImage(image, (128 - w) / 2, (128 - h) / 2, w, h);
+          const points = logoFilled(ctx.getImageData(0, 0, 128, 128).data, 128, 128, N);
+          if (!points) { failed(); return; }
+          settled = true;
+          clearTimeout(timer);
+          setConferencePoints(points);
+          setConferenceReady(true);
+        } catch { failed(); }
+      };
+      image.onerror = failed;
+      timer = setTimeout(failed, 4_000);
+      image.src = sources[index];
+    };
+    next(0);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [conference]);
+  const logoSrc = home.logoId ? logos[home.logoId] : undefined;
+  useEffect(() => {
+    setLogoPoints(null);
+    setLogoReady(false);
+    if (!logoSrc) { setLogoReady(true); return; }
+    let cancelled = false;
+    const image = new Image();
+    image.crossOrigin = "anonymous";
+    image.onload = () => {
+      if (cancelled) return;
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = canvas.height = 128;
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+        if (!ctx) { setLogoReady(true); return; }
+        ctx.drawImage(image, 0, 0, 128, 128);
+        setLogoPoints(logoOutline(ctx.getImageData(0, 0, 128, 128).data, 128, 128, N));
+      } catch { /* Unreadable assets use a ring; a block is never shown. */ }
+      setLogoReady(true);
+    };
+    image.onerror = () => { if (!cancelled) setLogoReady(true); };
+    image.src = logoSrc;
+    return () => { cancelled = true; image.onload = null; image.onerror = null; };
+  }, [logoSrc]);
+  useEffect(() => {
+    const q = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const change = () => setStill(q.matches);
+    change();
+    q.addEventListener("change", change);
+    return () => q.removeEventListener("change", change);
+  }, []);
+
 
   useEffect(() => {
     const el = ref.current;
@@ -111,28 +219,75 @@ export function HalftimeBand({ espnId, home, away, badge, weather }: { espnId: s
     io.observe(el);
     return () => io.disconnect();
   }, []);
+  const canMarch = logoReady && (step !== 1 || !conference || conferenceReady);
   useEffect(() => {
     if (!visible) return;
     const clock = setInterval(() => !document.hidden && setNow(Date.now()), 1000);
-    const dance = still ? undefined : setInterval(() => !document.hidden && setStep((s) => s + 1), STEP_MS);
+    const dance = still || !canMarch ? undefined : setInterval(() => !document.hidden && setStep((s) => s + 1), isOhioState && step === scriptStep ? 28_000 : STEP_MS);
     setNow(Date.now());
     return () => {
       clearInterval(clock);
       if (dance) clearInterval(dance);
     };
-  }, [visible, still]);
+  }, [visible, still, step, isOhioState, canMarch, scriptStep]);
 
   const left = halftimeLeft(seenAt, now);
-  const f = FORMATIONS[step % FORMATIONS.length];
+  const phase = bandCue(left, step, !!conference);
+  const f = FORMATIONS[Math.max(0, step - scriptStep) % FORMATIONS.length];
+  const entering = step === 0 && phase === "logo";
+  const scriptOhio = isOhioState && step === scriptStep && phase === "show";
+  const target = scriptOhio ? SCRIPT_OHIO : phase === "conference" ? conferencePoints ?? FORMATIONS[0].pts : phase !== "show" ? logoPoints ?? FORMATIONS[0].pts : f.pts;
+  const formationName = scriptOhio ? (dotting ? "Script Ohio · dotting the i" : "Script Ohio") : phase === "conference" ? `${home.conf} ${conferencePoints ? conferenceLettering ? "lettering" : "logo" : "logo unavailable · ring"}` : phase === "exit" ? "sideline exit" : phase === "logo" ? (logoPoints ? "home logo" : "ring") : f.name.toLowerCase();
+  const drillReady = phase === "exit" || (logoReady && (phase !== "conference" || conferenceReady));
+  useEffect(() => {
+    if (!drillReady) return;
+    setDotting(false);
+    setDrill((prev) => {
+      let points: BandPoint[];
+      if (scriptOhio) {
+        const letters = nearestAssignment(prev.points.filter((_, i) => i !== OHIO_DOTTER), SCRIPT_OHIO);
+        let next = 0;
+        points = prev.points.map((_, i) => i === OHIO_DOTTER ? (still ? OHIO_DOT : OHIO_STAGE) : letters[next++]);
+      } else points = phase === "exit" ? exitPoints(prev.points) : nearestAssignment(prev.points, target);
+      const angles = points.map(([x, y], i) => {
+        const dx = x - prev.points[i][0], dy = y - prev.points[i][1];
+        if (Math.hypot(dx, dy) < 0.1) return prev.angles[i];
+        let angle = Math.atan2(dy, dx) * 180 / Math.PI;
+        while (angle - prev.angles[i] > 180) angle -= 360;
+        while (angle - prev.angles[i] < -180) angle += 360;
+        return angle;
+      });
+      return { points, angles, distances: points.map(([x, y], i) => Math.hypot(x - prev.points[i][0], y - prev.points[i][1])) };
+    });
+    setMoving(!still);
+    // Hold the other 63 musicians, then let the sousaphone high-step to the dot.
+    const dotTimer = scriptOhio && !still ? setTimeout(() => {
+      setDotting(true);
+      setDrill((prev) => ({
+        ...prev,
+        points: prev.points.map((p, i) => i === OHIO_DOTTER ? OHIO_DOT : p),
+        angles: prev.angles.map((a, i) => {
+          if (i !== OHIO_DOTTER) return a;
+          let angle = -180;
+          while (angle - a > 180) angle -= 360;
+          while (angle - a < -180) angle += 360;
+          return angle;
+        }),
+      }));
+    }, MOVE_MS + 750) : undefined;
+    const dotFinish = scriptOhio && !still ? setTimeout(() => { setDotting(false); setMoving(false); }, MOVE_MS + 750 + 7_000) : undefined;
+    const timer = setTimeout(() => setMoving(false), phase === "exit" ? 29_000 : scriptOhio ? 24_000 : entering ? 15_000 : MOVE_MS);
+    return () => { clearTimeout(timer); if (dotTimer) clearTimeout(dotTimer); if (dotFinish) clearTimeout(dotFinish); };
+  }, [phase, target, still, scriptOhio, drillReady, entering]);
   const hc = teamColor(home.color) ?? "#2f7de1";
   const ac = teamColor(away.color) ?? "#c1403d";
   const label = left > 0 ? `Second half in ${clockText(left)}` : "Second half starting";
   const pctLeft = Math.round((left / HALFTIME_MS) * 100);
   const dots = useMemo(() => Array.from({ length: N }, (_, i) => i), []);
-  const angles = anglesAt(step);
+  const { angles, points } = drill;
 
   return (
-    <div ref={ref} className="halftime-band" role="img" aria-label={`${label}. The ${home.abbr ?? home.name} band is on the field in a ${f.name.toLowerCase()} formation.`}>
+    <div ref={ref} className={`halftime-band${moving ? " band-travel" : ""}${phase === "exit" ? " band-exit" : ""}${entering && moving ? " band-enter" : ""}${visible ? "" : " band-paused"}`} role="img" aria-label={`${label}. The ${home.abbr ?? home.name} band is on the field in a ${formationName} formation.`}>
       <div className="band-count" aria-hidden="true">
         <span className="band-count-k">HALFTIME</span>
         <strong className="band-count-t">{left > 0 ? clockText(left) : "0:00"}</strong>
@@ -144,17 +299,20 @@ export function HalftimeBand({ espnId, home, away, badge, weather }: { espnId: s
       <svg viewBox="0 0 120 40" className="band-svg" aria-hidden="true">
         <FieldArt id={espnId} home={home} away={away} hc={hc} ac={ac} badge={badge} />
         <WeatherLayer weather={weather} period={2} h={40} seed={Number(espnId) || 1} />
+        <text x="60" y="39" className="band-home-sideline" textAnchor="middle">{home.abbr ?? home.name} HOME SIDELINE</text>
         {dots.map((i) => {
-          const [x, y] = f.pts[i];
+          const [x, y] = points[i];
           const major = i === 0; // the drum major leads the band
           const role = major ? "major" : i % 16 < 2 ? "sousa" : i % 16 < 6 ? "drum" : i % 3 === 0 ? "wood" : "brass";
           return (
             <g
               key={i}
-              className={`band-member ${role}`}
-              style={{ transform: `translate(${x.toFixed(2)}px, ${y.toFixed(2)}px) rotate(${angles[i].toFixed(1)}deg) scale(1.1)`, transitionDelay: `${(i % 4) * 40}ms` }}
+              className={`band-member ${role}${scriptOhio && dotting && i === OHIO_DOTTER ? " band-dotter" : ""}`}
+              style={{ transform: `translate(${x.toFixed(2)}px, ${y.toFixed(2)}px)`, ["--band-phase" as string]: `${-(Math.floor(i / 16) % 2) * 0.025}s`, transitionDuration: still ? "0s" : entering ? `${Math.min(14, Math.max(4, drill.distances[i] / 3.5))}s` : scriptOhio && dotting && i === OHIO_DOTTER ? "7s" : phase === "exit" ? `${Math.min(27, Math.max(4, drill.distances[i] / 1.8))}s` : `${MOVE_MS / 1000}s`, transitionDelay: phase === "exit" || entering ? `${(i % 8) * 0.12}s` : "0s" }}
             >
-              <g className="band-march" style={{ animationDelay: `${-((i * 37) % 7) * 12}ms` }}>
+              <ellipse cx="0.3" cy="0.45" rx="1.25" ry="0.75" className="band-ground-shadow" />
+              <g className="band-facing" style={{ transform: `rotate(${angles[i].toFixed(1)}deg)` }}>
+              <g className="band-march">
               <ellipse className="band-foot a" cx="0" cy="-0.7" rx="0.85" ry="0.38" />
               <ellipse className="band-foot b" cx="0" cy="0.7" rx="0.85" ry="0.38" />
               <ellipse cx="0.25" cy="0.3" rx={role === "sousa" ? 2.1 : 1.5} ry={role === "sousa" ? 1.7 : 1} className="band-shadow" />
@@ -169,15 +327,16 @@ export function HalftimeBand({ espnId, home, away, badge, weather }: { espnId: s
                   <ellipse className="band-arm b" cx="0.2" cy="1.35" rx="0.55" ry="0.28" fill={major ? "#f6f6f6" : mix(hc, -0.1)} />
                 </>
               )}
-              {role === "sousa" && <circle cx="0.5" cy="0" r="1.55" className="band-sousa" />}
-              {role === "brass" && <ellipse cx="1.4" cy="0" rx="0.8" ry="0.55" className="band-brass" />}
+              {role === "sousa" && <g><circle cx="0.5" cy="0" r="1.55" className="band-sousa" /><ellipse cx="1.35" cy="-0.6" rx="0.85" ry="0.65" className="band-bell" /><ellipse cx="1.4" cy="-0.6" rx="0.48" ry="0.37" className="band-bell-inner" /></g>}
+              {role === "brass" && <g><path d="M0.5 -0.15H1.4V0.15H0.5" className="band-brass" /><ellipse cx="1.6" cy="0" rx="0.55" ry="0.65" className="band-bell" /><ellipse cx="1.7" cy="0" rx="0.25" ry="0.4" className="band-bell-inner" /></g>}
               {role === "wood" && <line x1="0.6" x2="1.9" y1="0" y2="0" className="band-wood" />}
-              {role === "drum" && <circle cx="1.05" cy="0" r="0.85" className="band-drum" stroke={hc} />}
+              {role === "drum" && <g><circle cx="1.05" cy="0" r="0.85" className="band-drum" stroke={hc} /><path d="M0.65 -1.1L1.2 -0.25M0.65 1.1L1.2 0.25" className="band-sticks" /></g>}
               {role === "major" && <line x1="0.6" x2="2.6" y1="0.5" y2="-0.6" className="band-baton" />}
               {/* shako: brim ring, crown and a tall plume */}
               <circle cx="0.05" cy="0" r="0.72" fill={major ? "#f6f6f6" : mix(hc, -0.25)} className="band-hat" />
               <circle cx="0.05" cy="0" r="0.45" fill={major ? "#d9b13b" : hc} className="band-crown" />
               <ellipse cx="-0.25" cy="-0.1" rx={major ? 0.5 : 0.3} ry={major ? 0.9 : 0.55} className="band-plume" />
+              </g>
               </g>
             </g>
           );
@@ -185,8 +344,8 @@ export function HalftimeBand({ espnId, home, away, badge, weather }: { espnId: s
       </svg>
       <p className="drive-cap">
         <span className="drive-dot" aria-hidden="true" />
-        <b>{label}</b>
-        <span> · {home.abbr ?? home.name} band: {f.name.toLowerCase()}</span>
+        <b>{phase === "exit" ? "Band clearing the field" : entering && moving ? "Band entering from the home sideline" : label}</b>
+        <span> · {home.abbr ?? home.name} band: {formationName}</span>
       </p>
     </div>
   );

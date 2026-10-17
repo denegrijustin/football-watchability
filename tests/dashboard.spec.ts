@@ -955,7 +955,9 @@ test("@smoke the persistent bar is slim and every filter is a pop-down menu", as
   // Still persistent: it stays at the top of the screen while the page scrolls.
   await page.evaluate(() => scrollTo(0, 900));
   // (directly under the final-scores ticker, which owns the very top)
-  expect(Math.round((await dock.boundingBox())!.y)).toBe(Math.round((await page.locator(".ticker").boundingBox())!.height));
+  // (and the site header on a computer, which stays too)
+  const above = Math.round((await page.locator(".ticker").boundingBox())!.height) + (phone ? 0 : Math.round((await page.locator(".site-header").boundingBox())!.height));
+  expect(Math.round((await dock.boundingBox())!.y)).toBe(above);
   await page.evaluate(() => scrollTo(0, 0));
   // Each menu narrows the board.
   const nfl = slate.games.filter((g: any) => g.league === "NFL");

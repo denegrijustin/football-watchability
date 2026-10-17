@@ -6,10 +6,13 @@ import { confOf } from "../teamConf";
 
 const CONF_LABEL: Record<string, string> = { sec: "SEC", "big-ten": "Big Ten", "big-12": "Big 12", acc: "ACC", "pac-12": "Pac-12", "mountain-west": "Mountain West", american: "American", "sun-belt": "Sun Belt", "c-usa": "Conference USA", mac: "MAC", independent: "Independent", afc: "AFC", nfc: "NFC" };
 import { useLiveMap } from "../live";
+import { closestToFinal } from "../closing";
+import { useOpenGame, type GameStub } from "./GameCenterContext";
 import { buildRows, fillOf, ledgerResults, TIERS, type LedgerLike, type MeterRow, type MeterTeam, type WeeklyLike } from "../upsetMeter";
 import "../upsetMeter.css";
 
-type Show = "all" | "upcoming" | "final" | "upsets";
+type Show = "all" | "live" | "upcoming" | "final" | "upsets";
+const known = new Set([...slate.games.map((g) => g.espnId), ...results.map((r) => r.espnId)]);
 
 function Logo({ team }: { team: MeterTeam }) {
   const src = logos[team.logoId];
@@ -19,12 +22,12 @@ function Logo({ team }: { team: MeterTeam }) {
 const when = (iso: string) =>
   new Date(iso).toLocaleString("en-US", { weekday: "short", hour: "numeric", minute: "2-digit" });
 
-function Row({ r, league, biggest }: { r: MeterRow; league: League; biggest: boolean }) {
+function Row({ r, league, biggest, onOpen }: { r: MeterRow; league: League; biggest: boolean; onOpen: () => void }) {
   const [a, h] = r.teams;
   const fav = r.teams[r.favorite];
   const under = r.teams[1 - r.favorite];
   const winner = r.score ? (r.score[0] > r.score[1] ? 0 : r.score[1] > r.score[0] ? 1 : null) : null;
-  const cls = `um-row${r.status === "final" ? " final" : ""}${r.upset ? " upset" : ""}${r.brewing ? " brewing" : ""}`;
+  const cls = `um-row${r.status === "final" ? " final" : ""}${r.status === "live" ? " in-play" : ""}${r.upset ? " upset" : ""}${r.brewing ? " brewing" : ""}`;
   // The better (lower) rank in each category is highlighted; equal ranks highlight neither.
   const best = (mine: number | null | undefined, theirs: number | null | undefined) => mine != null && (theirs == null || mine < theirs);
   const note = r.status === "pre"
@@ -32,6 +35,7 @@ function Row({ r, league, biggest }: { r: MeterRow; league: League; biggest: boo
     : r.detail || (r.status === "final" ? "Final" : "Live");
   return (
     <li className={cls} style={{ ["--tier" as string]: r.tier.color }}>
+      {r.espnId && <button type="button" className="um-open" onClick={onOpen} aria-label={`Open the Game Center: ${a.name} at ${h.name}`} data-game={r.espnId} />}
       <div className="um-teams" role="table" aria-label={`${a.name} at ${h.name}, ${league === "NFL" ? "NFL+" : "SP+"} ranks`}>
         {([a, h] as const).map((t, i) => {
           const o = i === 0 ? h : a;
@@ -53,8 +57,10 @@ function Row({ r, league, biggest }: { r: MeterRow; league: League; biggest: boo
           <i style={{ width: `${fillOf(r.tier)}%` }} />
           <b /><b /><b /><b />
         </div>
+        {r.status === "live" && <span className="um-clock"><i aria-hidden="true" />{r.detail || "Live"}</span>}
         {r.upset ? <em className="um-flag">{biggest ? "★ BIGGEST" : "UPSET"} · {under.abbr} +{r.gap}</em>
           : r.brewing ? <em className="um-flag live">UPSET BREWING</em>
+          : r.status === "live" ? null
           : <span className="um-note">{note}{r.status === "final" && winner !== null ? (winner === r.favorite ? " · favorite held" : " · too close to call an upset") : ""}</span>}
       </div>
     </li>
@@ -69,6 +75,7 @@ export function UpsetMeter({ defaultLeague }: { defaultLeague: League }) {
   const [ledger, setLedger] = useState<LedgerLike[] | null>(null);
   const [weekly, setWeekly] = useState<WeeklyLike | null>(null);
   const live = useLiveMap();
+  const openGame = useOpenGame();
   const plus = usePlusRanks();
   const current = week === slate.period;
 
@@ -120,19 +127,29 @@ export function UpsetMeter({ defaultLeague }: { defaultLeague: League }) {
   // The largest rank gap among the upsets so far.
   const biggestKey = shownRows.filter((r) => r.upset).sort((x, y) => y.gap - x.gap)[0]?.key;
   const done = shownRows.filter((r) => r.status === "final");
-  const todo = shownRows.filter((r) => r.status !== "final");
+  const todo = shownRows.filter((r) => r.status === "pre");
+  const inPlay = closestToFinal(shownRows.filter((r) => r.status === "live"), (r) => r);
+  const open = (r: MeterRow) => {
+    if (!r.espnId) return;
+    if (known.has(r.espnId)) return openGame(r.espnId);
+    const stub: GameStub = { league: r.league, date: r.date, matchup: `${r.teams[0].abbr} @ ${r.teams[1].abbr}`, teams: r.teams.map((t, i) => ({ name: t.name, abbr: t.abbr, logoId: t.logoId, color: t.color, score: r.score?.[i] ?? 0 })) };
+    openGame(r.espnId, stub);
+  };
   const upsets = done.filter((r) => r.upset);
+  useEffect(() => { if (show === "live" && !inPlay.length) setShow("all"); }, [show, inPlay.length]);
   const columns: { id: string; title: string; rows: MeterRow[]; empty: string }[] =
     !current
       ? [{ id: "done", title: show === "upsets" ? "Upsets" : "Completed", rows: show === "upsets" ? upsets : done, empty: show === "upsets" ? "No upsets that week." : "No games to show." }]
       : show === "all"
-        ? [{ id: "done", title: "Completed", rows: done, empty: "No games have finished yet." }, { id: "todo", title: "Upcoming", rows: todo, empty: "No games left to play." }]
+        ? [...(inPlay.length ? [{ id: "live", title: "Live", rows: inPlay, empty: "" }] : []), { id: "done", title: "Completed", rows: done, empty: "No games have finished yet." }, { id: "todo", title: "Upcoming", rows: todo, empty: "No games left to play." }]
+        : show === "live"
+          ? [{ id: "live", title: "Live", rows: inPlay, empty: "No games are on right now." }]
         : show === "upcoming"
           ? [{ id: "todo", title: "Upcoming", rows: todo, empty: "No games left to play." }]
           : show === "final"
             ? [{ id: "done", title: "Completed", rows: done, empty: "No games have finished yet." }]
             : [{ id: "ups", title: "Upsets", rows: shownRows.filter((r) => r.upset || r.brewing), empty: "No upsets yet this week." }];
-  const shows: [Show, string][] = current ? [["all", "All"], ["upcoming", "Next"], ["final", "Final"], ["upsets", "Upsets"]] : [["all", "All"], ["upsets", "Upsets"]];
+  const shows: [Show, string][] = current ? [["all", "All"], ...(inPlay.length ? [["live", "Live"] as [Show, string]] : []), ["upcoming", "Next"], ["final", "Final"], ["upsets", "Upsets"]] : [["all", "All"], ["upsets", "Upsets"]];
   const loading = current ? !plus : !ledger || !weekly;
 
   return (
@@ -167,12 +184,12 @@ export function UpsetMeter({ defaultLeague }: { defaultLeague: League }) {
       <ol className="um-legend" aria-label="Tiers">
         {[...TIERS].reverse().map((t) => <li key={t.id} style={{ ["--tier" as string]: t.color }}><i />{t.short}</li>)}
       </ol>
-      <div className={`um-cols${columns.length === 1 ? " one" : ""}`}>
+      <div className={`um-cols${columns.length === 1 ? " one" : columns.length === 3 ? " three" : ""}`}>
         {columns.map((c) => (
           <section key={c.id} className="um-col" aria-label={c.title}>
             <h3>{c.title}<span>{c.rows.length}</span></h3>
             {c.rows.length ? <div className="um-listhead" aria-hidden="true"><div className="um-hl"><span /><span /><span>Overall</span><span>Off</span><span>Def</span><span>{c.id === "todo" ? "" : "Pts"}</span></div><i>Upset gap</i></div> : null}
-            {c.rows.length ? <ol className="um-list" aria-label={`${c.title} games by upset chance, most lopsided first`}>{c.rows.map((r) => <Row key={r.key} r={r} league={league} biggest={r.upset && r.key === biggestKey} />)}</ol> : !loading && <p className="ol-note">{c.empty}</p>}
+            {c.rows.length ? <ol className="um-list" aria-label={`${c.title} games by upset chance, most lopsided first`}>{c.rows.map((r) => <Row key={r.key} r={r} league={league} biggest={r.upset && r.key === biggestKey} onOpen={() => open(r)} />)}</ol> : !loading && <p className="ol-note">{c.empty}</p>}
           </section>
         ))}
       </div>

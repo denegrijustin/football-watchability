@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { logos, teamColor } from "./data";
 import { rename } from "./data/load";
-import { FootballIcon } from "./live";
+import { FootballIcon, liveFromSummary, useReportLive } from "./live";
 import { LogoMark } from "./logoTone";
+import { helmetFor } from "./helmets";
 import { WeatherLayer, weatherCaption } from "./WeatherFx";
 import { ConfMark } from "./ConfMark";
 import { EndZones, EZ_H, EZ_W } from "./sim/EndZones";
@@ -35,7 +36,7 @@ async function fetchSummary(league: string, id: string): Promise<Summary | null>
   if (hit && Date.now() - hit.at < POLL_MS - 1000) return hit.data;
   let data: Summary | null = null;
   try {
-    const r = await fetch(`/api/game?league=${PATHS[league]}&event=${id}`);
+    const r = await fetch(`/api/game?league=${PATHS[league]}&event=${id}`, { cache: "no-store" });
     if (r.ok && (r.headers.get("content-type") ?? "").includes("json")) data = rename(await r.json());
   } catch {
     /* offline: keep what we had */
@@ -50,6 +51,7 @@ async function fetchSummary(league: string, id: string): Promise<Summary | null>
  */
 function useSummary(league: string, id: string, active: boolean) {
   const ref = useRef<HTMLDivElement>(null);
+  const report = useReportLive();
   const [data, setData] = useState<Summary | null>(() => cache.get(id)?.data ?? null);
   const [loaded, setLoaded] = useState(() => cache.has(id));
   useEffect(() => {
@@ -63,7 +65,11 @@ function useSummary(league: string, id: string, active: boolean) {
       if (stop || !onScreen || document.hidden) return;
       const next = await fetchSummary(league, id);
       if (stop) return;
-      if (next) setData(next);
+      if (next) {
+        setData(next);
+        const l = liveFromSummary(next as never, id);
+        if (l) report(l);
+      }
       setLoaded(true);
       timer = setTimeout(tick, POLL_MS);
     };
@@ -187,6 +193,7 @@ export function FieldView({ data, teams, variant, rootRef, badge, weather }: { d
   const plays = data.curPlays ?? [];
   const wxText = weatherCaption(weather, data.status.period);
   const logo = teams[side].logoId ? logos[teams[side].logoId!] : undefined;
+  const helmet = helmetFor(teams[side].logoId, colors[side]);
   // The ball's tag sits on the side with room.
   const tagLeft = ball > 70;
 
@@ -238,6 +245,13 @@ export function FieldView({ data, teams, variant, rootRef, badge, weather }: { d
         {redZone && <rect x={awayOffense ? X(80) : X(0)} y="0" width="20" height={H} className="df-red" />}
         {Array.from({ length: 11 }, (_, i) => (
           <line key={i} x1={10 + i * 10} x2={10 + i * 10} y1="0" y2={H} className={i === 5 ? "df-line mid" : "df-line"} />
+        ))}
+        {Array.from({ length: 99 }, (_, i) => i + 1).filter((yd) => yd % 5).map((yd) => (
+          <path key={`hash-${yd}`} d={`M${X(yd)} 0.6v0.9M${X(yd)} ${H - 1.5}v0.9M${X(yd)} ${H * 0.43}v0.65M${X(yd)} ${H * 0.57}v0.65`} className="lf-field-hash" />
+        ))}
+        <rect x="0.25" y="0.25" width="119.5" height={H - 0.5} className="lf-field-boundary" />
+        {[1, 2, 3, 4, 5, 4, 3, 2, 1].map((n, i) => (
+          <text key={`top-${i}`} x={20 + i * 10} y="3.8" transform={`rotate(180 ${20 + i * 10} 2.8)`} className="df-num" textAnchor="middle">{n * 10}</text>
         ))}
         {[1, 2, 3, 4, 5, 4, 3, 2, 1].map((n, i) => (
           <text key={i} x={20 + i * 10} y={H - 1.6} className="df-num" textAnchor="middle">{n * 10}</text>
@@ -296,11 +310,17 @@ export function FieldView({ data, teams, variant, rootRef, badge, weather }: { d
         <g className="df-ball" style={{ transform: `translateX(${X(ball)}px)` }}>
           <line x1="0" x2="0" y1="0" y2={H} className="df-los" />
           <circle cx="0" cy={ballY} r="4.6" className="df-pulse" stroke={colors[side]} />
-          {logo ? (
-            <LogoMark src={logos[teams[side].logoId!]} cx={0} cy={ballY} size={5.4} chipOpacity={1} chipClass="lf-chip" imageClass="lf-ball-logo" />
-          ) : (
-            <ellipse cx="0" cy={ballY} rx="2.4" ry="1.5" className="df-pigskin" />
-          )}
+          {/* the offense's helmet, as the team wears it, facing the way it is driving, with the logo on the shell */}
+          <g transform={`translate(0 ${ballY}) scale(${dir} 1)`} className="lf-helmet" data-facing={dir > 0 ? "right" : "left"} data-shell={helmet.shell}>
+            <path d="M-3.8 1.9C-4.7 -2.4 -1.8 -4.1 0.8 -3.9C3 -3.7 4.1 -1.9 3.9 0.2L3.3 1.2L1.5 1.3L0.7 2.5L-1.4 3.1L-3 3Z" className="lf-helmet-shell" fill={helmet.shell} />
+            <path d="M-3.8 1.9C-4.7 -2.4 -1.8 -4.1 0.8 -3.9C3 -3.7 4.1 -1.9 3.9 0.2L3.3 1.2L1.5 1.3L0.7 2.5L-1.4 3.1L-3 3Z" className="lf-shell-shade" />
+            <path d="M2.4 -0.7L3.8 -0.3L3.3 1.2L1.7 1.3Z" className="lf-visor" />
+            <ellipse cx="-0.7" cy="1" rx="0.8" ry="0.95" className="lf-helmet-ear" />
+            <path d="M3.9 0.5L5.1 0.9L5.1 2.8L2.6 3.3L1.2 2.6M4 1.6L1.9 1.7M4.6 0.7V3" className="lf-helmet-mask" stroke={helmet.mask} />
+          </g>
+          {helmet.decal && <text x={-0.2 * dir} y={ballY - 0.2} className="lf-decal" textAnchor="middle" fill={helmet.decal.color}>{helmet.decal.text}</text>}
+          {helmet.tint && <filter id={`lf-tint-${helmet.tint.slice(1)}`} colorInterpolationFilters="sRGB"><feFlood floodColor={helmet.tint} result="c" /><feComposite in="c" in2="SourceAlpha" operator="in" /></filter>}
+          {logo && !helmet.decal && <image transform={helmet.facesRight && dir < 0 ? `translate(${-0.4 * dir} 0) scale(-1 1)` : undefined} style={helmet.tint ? { filter: `url(#lf-tint-${helmet.tint.slice(1)}) drop-shadow(0 0 0.3px rgb(0 0 0 / 40%))` } : undefined} href={logos[teams[side].logoId!]} x={-0.2 * dir - 1.5} y={ballY - 2.2} width="2.8" height="2.8" preserveAspectRatio="xMidYMid meet" className="lf-ball-logo" />}
           <text x={tagLeft ? -4.5 : 4.5} y="3.6" className="lf-tagtext ball" textAnchor={tagLeft ? "end" : "start"}>{abbr} · {spotName(ballOwn, own, opp)}</text>
         </g>
       </svg>

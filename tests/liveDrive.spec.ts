@@ -105,14 +105,13 @@ test("the live field names who has the ball, where it is, where the drive starte
   await expect(more.locator(".lf-yds.neg")).toContainText("-3 yds");
 });
 
-test("the Game Center carries the same live field, with the plays open", async ({ page }) => {
+test("the Game Center no longer carries a separate live field", async ({ page }) => {
   await open(page, { toGo: 65, text: "2nd & 7 at SEA 35" }, "max"); // every game has kicked off, so the Game Center polls
   await page.clock.resume();
   await page.locator(".board-section.live .game-card").first().locator(".cc-gc").click();
-  const panel = page.locator("dialog.gc .gc-livefield");
-  await expect(panel.locator(".lf-ball-team")).toContainText("have the ball");
-  await expect(panel.locator("svg.drive-svg")).toBeVisible();
-  await expect(panel.locator(".lf-plays li")).toHaveCount(3);
+  await expect(page.locator("dialog.gc .gc-livefield")).toHaveCount(0); // the separate live field is gone
+  await expect(page.locator("dialog.gc")).toBeVisible();
+  await expect(page.locator("dialog.gc svg.drive-svg")).toHaveCount(0); // no second field in the Game Center (the last-play field is tested in lastPlay.spec.ts)
 });
 
 test("when ESPN gives no yards-to-end-zone figure, the ball is placed from its own spot text", async ({ page }) => {
@@ -188,7 +187,8 @@ test("the ball marker is the offense's team logo, and the field carries end-zone
   await open(page, { toGo: 65, text: "2nd & 7 at SEA 35" });
   const svg = page.locator(".board-section.live .game-card").first().locator("svg.drive-svg");
   await expect(svg.locator(".df-ball image.lf-ball-logo")).toHaveCount(1);
-  await expect(svg.locator(".df-ball .df-pigskin")).toHaveCount(0); // no football drawn when the team has a logo
+  await expect(svg.locator(".df-ball .lf-helmet")).toHaveCount(1); // the offense's helmet marks the ball
+  await expect(svg.locator(".df-ball .lf-helmet")).toHaveAttribute("data-facing", /^(left|right)$/);
   await expect(svg.locator("image.lf-mid")).toHaveCount(1); // the home logo at midfield
   await expect(svg.locator("[data-endzone]")).toHaveCount(2); // the home team's end zone design at both ends
   await expect(svg.locator("[data-endzones] text").first()).toBeAttached(); // lettered with the team's name

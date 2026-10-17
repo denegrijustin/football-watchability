@@ -15,21 +15,27 @@ const v = (o: Record<string, string | number>) => o as unknown as CSSProperties;
 const SKIN = ["#f1c9a5", "#d8a47a", "#a8734e", "#7a4e30"];
 
 /** One person, facing right (+x) at the origin. */
-function Person({ c, skin = 0, blind, s = 1.8 }: { c: string; skin?: number; blind?: boolean; s?: number }) {
+function Person({ c, skin = 0, blind, s = 1.35 }: { c: string; skin?: number; blind?: boolean; s?: number }) {
   return (
-    <g transform={`scale(${s})`}>
-      <ellipse cx="0.2" cy="0.3" rx="1.3" ry="1.5" className="band-shadow" />
-      <ellipse cx="0" cy="0" rx="1" ry="1.68" fill="none" stroke="rgb(255 255 255 / 75%)" strokeWidth="0.22" />
-      <ellipse cx="0" cy="0" rx="0.8" ry="1.5" fill={c} className="band-shoulders" />
-      <circle cx="0.15" cy="0" r="0.85" fill={SKIN[skin % SKIN.length]} stroke="rgb(0 0 0 / 35%)" strokeWidth="0.15" />
-      {blind && <rect x="-0.35" y="-0.9" width="1.1" height="1.8" fill="#161616" />}
+    <g transform={`scale(${s})`} className="ha-person">
+      <ellipse cx="0.25" cy="0.4" rx="1" ry="1.35" className="ha-shadow" />
+      <g className="ha-person-foot a"><path d="M-0.5 -0.65h1.1" /></g>
+      <g className="ha-person-foot b"><path d="M-0.5 0.65h1.1" /></g>
+      <g className="ha-person-body">
+        <ellipse rx="0.72" ry="1.15" fill={c} stroke="rgb(0 0 0 / 40%)" strokeWidth="0.16" />
+        <path d="M0.1 -0.95v1.9" stroke="#fff" strokeOpacity="0.35" strokeWidth="0.12" />
+        <path d="M0 -1.05l0.6 -0.4M0 1.05l0.6 0.4" className="ha-person-arm" stroke={c} />
+        <circle cx="0.2" r="0.55" fill={SKIN[skin % SKIN.length]} stroke="#513f32" strokeWidth="0.09" />
+        <path d="M-0.22 -0.34Q-0.5 0 -0.22 0.34" fill="none" stroke="#47352b" strokeWidth="0.17" />
+        {blind && <rect className="ha-blindfold" x="0.15" y="-0.55" width="0.32" height="1.1" rx="0.08" fill="#161616" />}
+      </g>
     </g>
   );
 }
 const Ball = ({ r = 0.9 }: { r?: number }) => (
   <g>
     <ellipse rx={r * 1.35} ry={r} fill="#8a4a1f" stroke="#2c1608" strokeWidth="0.15" />
-    <path d={`M${-r * 0.5} 0H${r * 0.5}`} stroke="#fff" strokeWidth="0.18" />
+    <path d={`M${-r * 0.5} 0H${r * 0.5}M${-r * 0.25} ${-r * 0.3}v${r * 0.6}M${r * 0.25} ${-r * 0.3}v${r * 0.6}`} stroke="#fff" strokeWidth="0.18" />
   </g>
 );
 /** A scene that repeats; an element's own delay (in seconds) places its moment within the 14-second loop. */
@@ -83,8 +89,10 @@ function Inflatables() {
       {suits.map((p, i) => (
         <g key={i} transform={`translate(20 ${p.y})`}>
           <g className="ha-infl-run" style={v({ "--k": p.k, "--fall": p.fall, animationDelay: `${i * 0.18}s` })}>
-            <g className="ha-wobble" style={at(-i * 0.2)}><g transform="scale(0.8)">
-              <ellipse cx="0.5" cy="0.6" rx="4.4" ry="3.6" className="band-shadow" />
+            <g className="ha-wobble" style={at(-i * 0.2)}><g transform="scale(0.62)">
+              <ellipse cx="0.5" cy="0.6" rx="4.4" ry="3.6" className="ha-shadow" />
+              <g className="ha-person-foot a"><path d="M-1 -3h2" /></g>
+              <g className="ha-person-foot b"><path d="M-1 3h2" /></g>
               <ellipse cx="0" cy="0" rx="4" ry="3.2" fill={p.c} stroke="rgb(0 0 0 / 45%)" strokeWidth="0.25" />
               {p.kind === "football" && <path d="M-2.2 0H2.4M-1 -0.9v1.8M0.3 -0.9v1.8M1.5 -0.9v1.8" stroke="#fff" strokeWidth="0.3" />}
               {p.kind === "dino" && <path d="M-4 0l-2.6 -1.4v2.8zM-2.4 -3l0.6 1.2M-0.6 -3.2l0.6 1.2M1.2 -3l0.6 1.2" fill={p.c} stroke="#2c6e32" strokeWidth="0.3" />}
@@ -111,10 +119,10 @@ function DizzyBat() {
       <g className="ha-posts"><path d="M1.5 14v12M1.5 20h-1.6M1.5 14h1.4M1.5 26h1.4" stroke="#f2d23c" strokeWidth="0.5" fill="none" /></g>
       <g className="ha-bat-spot"><circle cx="24" cy="20" r="1.1" className="ha-spot" /><path d="M24 20v-5" stroke="#d9a35a" strokeWidth="1" strokeLinecap="round" /></g>
       {/* ten spins around the bat, then a stagger toward the ball that misses it altogether */}
-      <g className="ha-orbit"><g transform="translate(27 20)"><g transform="rotate(180)"><Person c="#e04b3a" skin={1} s={2.4} /></g></g></g>
+      <g className="ha-orbit"><g transform="translate(27 20)"><g transform="rotate(180)"><Person c="#e04b3a" skin={1} s={1.55} /></g></g></g>
       <g transform="translate(27 20)">
         <g className="ha-stagger">
-          <g transform="rotate(180)"><Person c="#e04b3a" skin={1} s={2.4} /></g>
+          <g transform="rotate(180)"><Person c="#e04b3a" skin={1} s={1.55} /></g>
           <g className="ha-stars"><circle cx="0" cy="-3.3" r="0.45" /><circle cx="2.4" cy="2.4" r="0.45" /><circle cx="-2.4" cy="2.4" r="0.45" /></g>
         </g>
       </g>
@@ -136,16 +144,16 @@ function CashKick() {
       <text x="76" y="38" className="ha-tag" textAnchor="middle">35-YARD LINE</text>
       {/* one fan, three tries: a pass through the target, a punt past the 30, and a field goal from the 35 */}
       <g transform="translate(20 20)">
-        <g className="ha-fan-walk"><g><Person c="#2f7de1" skin={2} s={2.4} /></g></g>
+        <g className="ha-fan-walk"><g><Person c="#2f7de1" skin={2} s={1.55} /></g></g>
       </g>
       <g transform="translate(22 20)">
-        <g className="ha-fly" style={at(0.8, { "--dx": "16px", "--dy": "0px" })}><g className="ha-arc"><Ball /></g></g>
+        <g className="ha-fly" style={at(0.8, { "--dx": "16px", "--dy": "0px" })}><ellipse rx="1.1" ry="0.4" className="ha-flight-shadow" /><g className="ha-arc"><Ball /></g></g>
       </g>
       <g transform="translate(22 20)">
-        <g className="ha-fly" style={at(4.8, { "--dx": "38px", "--dy": "0px" })}><g className="ha-arc big"><Ball /></g></g>
+        <g className="ha-fly" style={at(4.8, { "--dx": "38px", "--dy": "0px" })}><ellipse rx="1.1" ry="0.4" className="ha-flight-shadow" /><g className="ha-arc big"><Ball /></g></g>
       </g>
       <g transform="translate(77 20)">
-        <g className="ha-fly" style={at(9.2, { "--dx": "42px", "--dy": "0px" })}><g className="ha-arc big"><Ball /></g></g>
+        <g className="ha-fly" style={at(9.2, { "--dx": "42px", "--dy": "0px" })}><ellipse rx="1.1" ry="0.4" className="ha-flight-shadow" /><g className="ha-arc big"><Ball /></g></g>
       </g>
       <g className="ha-pop" style={at(2.9)}><text x="40" y="12" className="ha-word" textAnchor="middle">T-SHIRT!</text></g>
       <g className="ha-pop" style={at(6.9)}><text x="58" y="12" className="ha-word" textAnchor="middle">$250</text></g>
@@ -157,19 +165,22 @@ function CashKick() {
 function AirCannon() {
   return (
     <>
-      <g transform="translate(52 20)">
+      <g transform="translate(52 20)"><g className="ha-cannon-recoil">
         <rect x="-3" y="-2" width="6" height="4" rx="1" className="ha-cannon" />
         <rect x="2" y="-1" width="4" height="2" className="ha-cannon-bore" />
-      </g>
+        <circle cx="-1.5" cy="-2" r="0.6" className="ha-cannon-wheel" />
+        <circle cx="-1.5" cy="2" r="0.6" className="ha-cannon-wheel" />
+        <ellipse cx="6.5" cy="0" rx="2" ry="1.2" className="ha-cannon-puff" />
+      </g></g>
       <text x="52" y="28" className="ha-tag" textAnchor="middle">AIR CANNON</text>
       <g transform="translate(55 20)">
-        <g className="ha-fly" style={at(1.2, { "--dx": "53px", "--dy": "-8px" })}><g className="ha-arc big"><Ball /></g></g>
+        <g className="ha-fly" style={at(1.2, { "--dx": "53px", "--dy": "-8px" })}><ellipse rx="1.1" ry="0.4" className="ha-flight-shadow" /><g className="ha-arc big"><Ball /></g></g>
       </g>
       <g transform="translate(55 20)">
-        <g className="ha-fly" style={at(6.4, { "--dx": "56px", "--dy": "8px" })}><g className="ha-arc big"><Ball /></g></g>
+        <g className="ha-fly" style={at(6.4, { "--dx": "56px", "--dy": "8px" })}><ellipse rx="1.1" ry="0.4" className="ha-flight-shadow" /><g className="ha-arc big"><Ball /></g></g>
       </g>
       <g transform="translate(114 20)">
-        <g className="ha-catcher"><Person c="#e04b3a" skin={0} s={2.4} /><circle r="2.2" className="ha-ring" /></g>
+        <g className="ha-catcher"><Person c="#e04b3a" skin={0} s={1.55} /><circle r="2.2" className="ha-ring" /></g>
       </g>
       <g className="ha-pop" style={at(3.4)}><text x="84" y="7" className="ha-word" textAnchor="middle">MISSED!</text></g>
       <g className="ha-pop wide" style={at(8.6)}>
@@ -184,14 +195,18 @@ function AirCannon() {
 function Dachshund({ c }: { c: string }) {
   return (
     <g>
-      <ellipse cx="0.4" cy="0.35" rx="3.1" ry="1" className="band-shadow" />
-      <g className="ha-legs"><path d="M-1.6 -1.1v2.2M1.2 -1.1v2.2" stroke="#3c2312" strokeWidth="0.5" strokeLinecap="round" /></g>
+      <ellipse cx="0.4" cy="0.35" rx="3.1" ry="1" className="ha-shadow" />
+      {[-1, 1].flatMap((side) => [-1.6, 1.2].map((x, k) => (
+        <g key={`${side}-${k}`} transform={`translate(${x} ${side * 0.7})`}>
+          <path d={`M0 0l${k ? 0.5 : -0.5} ${side * 0.8}`} className={`ha-dog-leg ${(side > 0) === (k > 0) ? "a" : "b"}`} />
+        </g>
+      )))}
       <ellipse cx="0" cy="0" rx="2.6" ry="0.95" fill={c} stroke="rgb(0 0 0 / 40%)" strokeWidth="0.15" />
       <circle cx="2.9" cy="0" r="0.95" fill={c} stroke="rgb(0 0 0 / 40%)" strokeWidth="0.15" />
       <ellipse cx="2.5" cy="-0.95" rx="0.5" ry="0.3" fill="#3c2312" />
       <ellipse cx="2.5" cy="0.95" rx="0.5" ry="0.3" fill="#3c2312" />
       <circle cx="3.8" cy="0" r="0.3" fill="#111" />
-      <path d="M-2.6 0l-1.1 -0.5" stroke="#3c2312" strokeWidth="0.3" strokeLinecap="round" />
+      <path className="ha-dog-tail" d="M-2.6 0l-1.1 -0.5" stroke="#3c2312" strokeWidth="0.3" strokeLinecap="round" />
     </g>
   );
 }
@@ -218,6 +233,7 @@ function Tron() {
   return (
     <>
       <rect x="0" y="0" width="120" height="40" className="ha-dark" />
+      {[30, 60, 90].map((x, i) => <ellipse key={x} cx={x} cy="20" rx="15" ry="11" fill={col[i]} className="ha-light-pool" />)}
       <g className="ha-led-grid"><path d="M10 20H110M60 0V40M35 0V40M85 0V40" /></g>
       <g className="ha-led-spin a" style={{ transformOrigin: "60px 20px" }}>
         {dancers.map((i) => {
@@ -254,6 +270,13 @@ export function HalftimeAct({ espnId, home, away, badge, weather }: { espnId: st
   const [seenAt] = useState(() => firstSeen(espnId, Date.now()));
   const [now, setNow] = useState(() => Date.now());
   const [visible, setVisible] = useState(true);
+  const [pageVisible, setPageVisible] = useState(true);
+  useEffect(() => {
+    const change = () => setPageVisible(!document.hidden);
+    change();
+    document.addEventListener("visibilitychange", change);
+    return () => document.removeEventListener("visibilitychange", change);
+  }, []);
   const act = actFor(espnId);
 
   useEffect(() => {
@@ -276,7 +299,7 @@ export function HalftimeAct({ espnId, home, away, badge, weather }: { espnId: st
   const label = left > 0 ? `Second half in ${clockText(left)}` : "Second half starting";
   const Scene = SCENES[act.id];
   return (
-    <div ref={ref} className="halftime-act" data-act={act.id} role="img" aria-label={`${label}. Halftime act: ${act.name}, ${act.blurb}.`}>
+    <div ref={ref} className={`halftime-act${!visible || !pageVisible ? " ha-paused" : ""}`} data-act={act.id} role="img" aria-label={`${label}. Halftime act: ${act.name}, ${act.blurb}.`}>
       <div className="band-count" aria-hidden="true">
         <span className="band-count-k">HALFTIME</span>
         <strong className="band-count-t">{left > 0 ? clockText(left) : "0:00"}</strong>
