@@ -73,7 +73,6 @@ const ring = (r: number, n: number, off = 0): Pt[] => Array.from({ length: n }, 
 
 /** The formations the band cycles through, each a position for every one of the N members. */
 export const FORMATIONS: { name: string; pts: Pt[] }[] = [
-  { name: "Block", pts: Array.from({ length: N }, (_, i) => [CX + ((i % 16) - 7.5) * 3.3, CY + (Math.floor(i / 16) - 1.5) * 3.3] as Pt) },
   { name: "Ring", pts: [...ring(15, 40), ...ring(8, 24, 0.3)] },
   {
     name: "Star",
@@ -155,7 +154,7 @@ export function anglesAt(step: number): number[] {
   const hit = angleCache.get(step);
   if (hit) return hit;
   if (step <= 0) {
-    const first = Array.from({ length: N }, () => 90); // the block starts facing the near sideline
+    const first = Array.from({ length: N }, () => 90); // the opening formation starts facing the near sideline
     angleCache.set(0, first);
     return first;
   }

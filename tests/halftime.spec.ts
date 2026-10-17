@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { readFileSync } from "node:fs";
+const conferences = JSON.parse(readFileSync("src/data/conference-logos.json", "utf8")).conferences as Record<string, unknown>;
+const confEntry = (name?: string | null) => (name ? conferences[name] ?? null : null);
 import { FORMATIONS, NFL_ACTS, NFL_HALFTIME_MS, STEP_MS, actFor, clockText, halftimeLeft, isHalftime } from "../src/halftimeLogic";
 
 const slate = JSON.parse(readFileSync("src/data/slate.json", "utf8"));
@@ -61,11 +63,11 @@ test("a college game at halftime shows the band, second under the score, with a 
   // The very first thing on the card.
   const order = await live(page).locator(".compact-overview > *").evaluateAll((els) => els.map((e) => e.className.split(" ")[0]));
   expect(order.filter((c) => c !== "upset-banner")[0]).toBe("halftime-band"); // an upset strip, if there is one, sits above it
-  await expect(band).toContainText("Second half in 19:00");
+  await expect(band.locator(".band-count-t")).toHaveText("19:00"); // (the caption reads "band entering" while the band walks on)
   await page.clock.fastForward(60_000);
-  await expect(band).toContainText("Second half in 18:00");
+  await expect(band.locator(".band-count-t")).toHaveText("18:00");
   await page.clock.fastForward(20 * 60_000);
-  await expect(band).toContainText(/second half starting/i);
+  await expect(band).toContainText(/second half starting/i); // (the caption says the band is clearing the field by then)
 });
 
 test("the band changes formation every few seconds", async ({ page }) => {
@@ -74,21 +76,24 @@ test("the band changes formation every few seconds", async ({ page }) => {
   await expect(dot).toBeAttached();
   const at = () => dot.evaluate((e) => (e as SVGElement).style.transform);
   const first = await at();
-  await expect(live(page).locator(".halftime-band")).toContainText(/home logo|block/);
-  // A fast-forward fires each timer once, so one per formation step (the first step is the logo, the second the first formation).
-  await page.clock.fastForward(STEP_MS + 100);
-  await page.clock.fastForward(STEP_MS + 100);
+  await expect(live(page).locator(".halftime-band")).toContainText(/home logo|ring/);
+  const hasConference = !!confEntry(cfb[0]?.teams[1]?.ranks?.confName ?? cfb[0]?.teams[1]?.conf);
+  const isOhio = cfb[0]?.teams[1]?.logoId === "ohio-state";
+  // A fast-forward fires each timer once, so go one formation step at a time.
+  const stepsBeforeScript = hasConference ? 2 : 1;
+  for (let i = 0; i < (isOhio ? stepsBeforeScript : 2); i++) await page.clock.fastForward(STEP_MS + 100);
+  if (isOhio) await page.clock.fastForward(28_000 + 100);
   await expect.poll(at).not.toBe(first);
-  await expect(live(page).locator(".halftime-band")).toContainText("ring");
+  await expect(live(page).locator(".halftime-band")).toContainText(FORMATIONS[isOhio || !hasConference ? 1 : 0].name.toLowerCase());
 });
 
 test("the clock keeps its place across a reload", async ({ page }) => {
   await open(page, "CFB", "Halftime");
-  await expect(live(page).locator(".halftime-band")).toContainText("Second half in 19:00");
+  await expect(live(page).locator(".halftime-band .band-count-t")).toHaveText("19:00");
   await page.clock.fastForward(5 * 60_000);
-  await expect(live(page).locator(".halftime-band")).toContainText("Second half in 14:00");
+  await expect(live(page).locator(".halftime-band .band-count-t")).toHaveText("14:00");
   await page.reload();
-  await expect(live(page).locator(".halftime-band")).toContainText(/Second half in 1[34]:\d\d/); // not back at 19:00
+  await expect(live(page).locator(".halftime-band .band-count-t")).toHaveText(/1[34]:\d\d/); // not back at 19:00
 });
 
 test("NFL halftime is twelve minutes, and every act is in the rotation", () => {
@@ -153,9 +158,9 @@ test("with reduced motion the band stays in one formation", async ({ page }) => 
   await page.emulateMedia({ reducedMotion: "reduce" });
   await open(page, "CFB", "Halftime");
   const band = live(page).locator(".halftime-band");
-  await expect(band).toContainText(/home logo|block/);
+  await expect(band).toContainText(/home logo|ring/);
   await page.clock.fastForward(30_000);
-  await expect(band).toContainText(/home logo|block/);
+  await expect(band).toContainText(/home logo|ring/);
   expect(await live(page).locator(".band-member").first().evaluate((e) => getComputedStyle(e).transitionDuration)).toBe("0s");
 });
 
@@ -180,7 +185,7 @@ test("the Game Center opens with the band and countdown at the very top", async 
   await live(page).locator(".cc-gc").first().click();
   await page.clock.resume(); // the Game Center loads lazily and needs real timers
   const gcBand = page.locator("dialog.gc .gc-body > .halftime-band");
-  await expect(gcBand).toContainText("Second half in");
+  await expect(gcBand.locator(".band-count-t")).toHaveText(/\d+:\d\d/);
   const first = await page.locator("dialog.gc .gc-body").evaluate((e) => (e.firstElementChild as HTMLElement).className);
   expect(first).toContain("halftime-band");
 });

@@ -1,21 +1,13 @@
 import { test, expect } from "@playwright/test";
-import { mkdirSync, writeFileSync } from "node:fs";
-import { createRequire } from "node:module";
-import { build } from "vite";
+import { bundle, src } from "./ssr";
 
-// Playwright rewrites React components imported into test files, so the layer is rendered the way the site's own build would: bundled by Vite for
-// the server, then called for its markup.
 async function markup(): Promise<string> {
-  const dir = new URL("../node_modules/.cache/wx-render/", import.meta.url).pathname;
-  mkdirSync(dir, { recursive: true });
-  writeFileSync(`${dir}entry.tsx`, `import { createElement } from "react";
+  const render = await bundle("wx", `import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { WeatherFx } from "${new URL("../src/WeatherFx", import.meta.url).pathname}";
-export const html = (fx: never) => renderToStaticMarkup(createElement("svg", null, createElement(WeatherFx, { fx, seed: 42 }), createElement(WeatherFx, { fx, seed: 42 })));
+import { WeatherFx } from "${src("WeatherFx")}";
+export const render = (fx: never) => renderToStaticMarkup(createElement("svg", null, createElement(WeatherFx, { fx, seed: 42 }), createElement(WeatherFx, { fx, seed: 42 })));
 `);
-  await build({ configFile: false, logLevel: "silent", root: dir, build: { ssr: `${dir}entry.tsx`, outDir: `${dir}out`, emptyOutDir: true, rollupOptions: { output: { format: "cjs", entryFileNames: "entry.cjs" } } }, ssr: { noExternal: [/WeatherFx/] } });
-  const mod = createRequire(import.meta.url)(`${dir}out/entry.cjs`);
-  return mod.html(storm as never);
+  return render(storm as never);
 }
 
 const storm = { rain: 3, snow: 0, wind: 3, storm: true, fog: false, drizzle: false, drift: 1, rate: 1, windMph: 38, windText: "", rainText: "" };

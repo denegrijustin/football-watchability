@@ -6172,7 +6172,13 @@ select,
 .band-sticks { fill: none; stroke: #f5e4c0; stroke-width: 0.13; stroke-linecap: round; animation: band-stick 0.517s ease-in-out infinite alternate; animation-delay: var(--band-phase, 0s); transform-origin: 1px 0; }
 @keyframes band-stick { to { transform: rotate(6deg); } }
 .band-paused * { animation-play-state: paused !important; }
+.band-dotter .band-foot { animation-duration: 0.34s; }
+.band-dotter .band-foot.b { animation-delay: -0.34s; }
+.band-dotter .band-march { animation-duration: 0.68s; }
 .band-home-sideline { fill: #fff; opacity: 0.7; font-size: 1.2px; font-weight: 700; letter-spacing: 0.12px; }
+.band-enter .band-foot { animation-duration: 0.34s; }
+.band-enter .band-foot.b { animation-delay: -0.34s; }
+.band-enter .band-march { animation-duration: 0.68s; }
 .band-exit .band-foot { animation-duration: 0.36s; }
 .band-exit .band-foot.b { animation-delay: -0.36s; }
 .band-exit .band-march { animation-duration: 0.72s; }
@@ -6768,10 +6774,10 @@ select,
   stroke-dasharray: 1.4 1;
 }
 .ha-spot { fill: rgb(0 0 0 / 35%); }
-.ha-wobble { animation-name: ha-wobble; animation-duration: 0.45s !important; animation-direction: alternate; animation-timing-function: ease-in-out !important; }
-@keyframes ha-wobble { from { transform: rotate(-9deg); } to { transform: rotate(9deg); } }
+.ha-wobble { animation-name: ha-wobble; animation-duration: 0.62s !important; animation-direction: alternate; animation-timing-function: ease-in-out !important; }
+@keyframes ha-wobble { from { transform: translateY(-0.1px) rotate(-3.5deg); } to { transform: translateY(0.1px) rotate(3.5deg); } }
 .ha-sway { animation-name: ha-sway; animation-duration: 0.5s !important; animation-direction: alternate; animation-timing-function: ease-in-out !important; }
-@keyframes ha-sway { from { transform: rotate(-9deg); } to { transform: rotate(9deg); } }
+@keyframes ha-sway { from { transform: rotate(-2deg); } to { transform: rotate(2deg); } }
 .ha-legs { animation-name: ha-legs; animation-duration: 0.22s !important; animation-direction: alternate; }
 @keyframes ha-legs { from { transform: translateX(-0.6px); } to { transform: translateX(0.6px); } }
 
@@ -6785,8 +6791,8 @@ select,
 }
 .ha-arc { animation-name: ha-arc; animation-delay: inherit; }
 .ha-arc.big { animation-name: ha-arc-big; }
-@keyframes ha-arc { 0%, 15%, 100% { transform: scale(1); } 7% { transform: scale(1.7); } }
-@keyframes ha-arc-big { 0%, 15%, 100% { transform: scale(1); } 7% { transform: scale(2.3); } }
+@keyframes ha-arc { 0%, 15%, 100% { transform: translateY(0) scale(1); } 7% { transform: translateY(-2.5px) scale(1.08); } }
+@keyframes ha-arc-big { 0%, 15%, 100% { transform: translateY(0) scale(1); } 7% { transform: translateY(-4.5px) scale(1.14); } }
 
 /* shoe scramble */
 .ha-shoe-run { animation-name: ha-shoe-run; }
@@ -6810,7 +6816,7 @@ select,
   0% { opacity: 0; transform: translate(0, 0) rotate(0deg); }
   3% { opacity: 1; transform: translate(0, 0) rotate(0deg); }
   30% { transform: translate(calc(var(--k) * 20px), 0) rotate(0deg); }
-  34%, 48% { transform: translate(calc(var(--k) * 22px), calc(var(--fall) * 1.5px)) rotate(calc(var(--fall) * 95deg)); }
+  34%, 48% { transform: translate(calc(var(--k) * 22px), calc(var(--fall) * 1.5px)) rotate(calc(var(--fall) * 62deg)); }
   56% { transform: translate(calc(var(--k) * 23px), 0) rotate(0deg); }
   92% { opacity: 1; transform: translate(calc(var(--k) * 72px), 0) rotate(0deg); }
   97% { opacity: 1; }
@@ -6891,13 +6897,36 @@ select,
 /* LED light show */
 .ha-dark { fill: #01040b; opacity: 0.76; }
 .ha-led-grid path { fill: none; stroke: #31e8ff; stroke-width: 0.25; opacity: 0.3; }
-.ha-led-man { fill: none; stroke-width: 0.4; stroke-linecap: round; animation-name: ha-blink; animation-duration: 1.2s !important; animation-direction: alternate; animation-timing-function: ease-in-out !important; }
+.ha-led-man { fill: none; stroke-width: 0.4; stroke-linecap: round; animation-name: ha-blink; animation-duration: 2.8s !important; animation-direction: alternate; animation-timing-function: ease-in-out !important; }
 .ha-led-man * { animation: none !important; }
-@keyframes ha-blink { from { opacity: 0.5; } to { opacity: 1; } }
+@keyframes ha-blink { from { opacity: 0.68; } to { opacity: 1; } }
 .ha-led-spin.a { animation-name: ha-rot; }
 .ha-led-spin.b { animation-name: ha-rot; animation-direction: reverse; animation-duration: 9s !important; }
-@keyframes ha-rot { to { transform: rotate(360deg); } }
+@keyframes ha-rot { 0%, 100% { transform: rotate(0deg); } 25% { transform: rotate(16deg); } 75% { transform: rotate(-16deg); } }
 
+.ha-shadow { fill: rgb(0 0 0 / 24%); }
+.ha-person-foot path { fill: none; stroke: #18212a; stroke-width: 0.32; stroke-linecap: round; }
+.ha-person-foot { animation-name: ha-person-step; animation-duration: 0.28s !important; animation-direction: alternate; animation-timing-function: ease-in-out !important; }
+.ha-person-foot.b { animation-delay: -0.28s; }
+@keyframes ha-person-step { from { transform: translateX(-0.25px); } to { transform: translateX(0.25px); } }
+.ha-person-arm { fill: none; stroke-width: 0.28; stroke-linecap: round; }
+.ha-person-body { animation-name: ha-person-bob; animation-duration: 0.56s !important; animation-timing-function: ease-in-out !important; }
+@keyframes ha-person-bob { 0%, 100% { transform: translateY(-0.04px); } 50% { transform: translateY(0.04px); } }
+.ha-flight-shadow { fill: #07151a; opacity: 0.2; }
+.ha-dog-leg { fill: none; stroke: #3c2312; stroke-width: 0.42; stroke-linecap: round; transform-box: fill-box; transform-origin: 0 0; animation-name: ha-dog-step; animation-duration: 0.16s !important; animation-direction: alternate; }
+.ha-dog-leg.b { animation-delay: -0.16s; }
+@keyframes ha-dog-step { from { transform: rotate(-18deg); } to { transform: rotate(18deg); } }
+.ha-dog-tail { transform-origin: -2.6px 0; animation-name: ha-tail; animation-duration: 0.25s !important; animation-direction: alternate; }
+@keyframes ha-tail { from { transform: rotate(-12deg); } to { transform: rotate(12deg); } }
+.ha-cannon-wheel { fill: #17222b; stroke: #a0aab2; stroke-width: 0.18; }
+.ha-cannon-recoil { animation-name: ha-recoil; }
+@keyframes ha-recoil { 0%, 8%, 11%, 45%, 49%, 100% { transform: translateX(0); } 8.8%, 46.5% { transform: translateX(-0.65px); } }
+.ha-cannon-puff { fill: #e5edf2; opacity: 0; animation-name: ha-puff; transform-box: fill-box; transform-origin: center; }
+@keyframes ha-puff { 0%, 8%, 13%, 45%, 51%, 100% { opacity: 0; transform: scale(0.4); } 9%, 47% { opacity: 0.35; transform: scale(0.8); } 12%, 50% { opacity: 0; transform: scale(1.7); } }
+.ha-light-pool { opacity: 0.055; }
+.ha-blindfold { animation-name: ha-unblind; }
+@keyframes ha-unblind { 0%, 74% { opacity: 1; } 78%, 100% { opacity: 0; } }
+.ha-paused .ha-scene *, .ha-paused .wx * { animation-play-state: paused !important; }
 @media (prefers-reduced-motion: reduce) {
   .ha-scene * { animation: none !important; }
 }

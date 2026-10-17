@@ -34,3 +34,40 @@ export const exitPoints = (points: BandPoint[]): BandPoint[] => points.map(([x],
 
 export const bandPhase = (left: number, opening: boolean): "logo" | "show" | "exit" =>
   left <= 30_000 ? "exit" : opening || left <= 90_000 ? "logo" : "show";
+
+export const OHIO_DOTTER = 1; // Member 1 is a sousaphone, not the drum major.
+export const OHIO_DOT: BandPoint = [66, 12];
+export const OHIO_STAGE: BandPoint = [92, 12];
+const oval = (cx: number, cy: number, rx: number, ry: number, n: number): BandPoint[] =>
+  Array.from({ length: n }, (_, i) => [cx + rx * Math.cos(i * Math.PI * 2 / n), cy + ry * Math.sin(i * Math.PI * 2 / n)]);
+function stroke(points: BandPoint[], n: number): BandPoint[] {
+  const lengths = points.slice(1).map((p, i) => Math.hypot(p[0] - points[i][0], p[1] - points[i][1]));
+  const total = lengths.reduce((a, b) => a + b, 0);
+  return Array.from({ length: n }, (_, k) => {
+    let distance = total * k / (n - 1), segment = 0;
+    while (segment < lengths.length - 1 && distance > lengths[segment]) distance -= lengths[segment++];
+    const t = distance / lengths[segment];
+    return [points[segment][0] + (points[segment + 1][0] - points[segment][0]) * t, points[segment][1] + (points[segment + 1][1] - points[segment][1]) * t];
+  });
+}
+/** A stylized Script Ohio: 63 letter positions and a reserved sousaphone dot. */
+export const SCRIPT_OHIO: BandPoint[] = [
+  ...oval(36, 20, 7, 11, 20),
+  ...stroke([[48, 29], [53, 9], [50, 23], [54, 18], [57, 18], [59, 21], [57, 29]], 17),
+  ...stroke([[66, 18], [64, 29]], 7),
+  ...oval(80, 24, 6, 6, 19),
+];
+
+
+/** Staged beyond the home sideline: four shallow files, fully outside the SVG. */
+export const entrancePoints = (count = 64): BandPoint[] => Array.from({ length: count }, (_, i) => [24 + (i % 16) * 4.8, 44 + Math.floor(i / 16) * 1.1]);
+
+/** Conference bookends use the home team's conference, not its opponent's. */
+export function bandCue(left: number, step: number, hasConference: boolean): "logo" | "conference" | "show" | "exit" {
+  if (left <= 30_000) return "exit";
+  if (left <= 90_000) return "logo";
+  if (hasConference && left <= 150_000) return "conference";
+  if (step === 0) return "logo";
+  if (hasConference && step === 1) return "conference";
+  return "show";
+}

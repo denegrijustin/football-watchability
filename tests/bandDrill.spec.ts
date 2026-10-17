@@ -1,6 +1,17 @@
 import { test, expect } from "@playwright/test";
-import { bandPhase, exitPoints, logoOutline } from "../src/bandLogo";
+import { bandPhase, bandCue, exitPoints, logoOutline, SCRIPT_OHIO, OHIO_DOTTER, OHIO_DOT, OHIO_STAGE, entrancePoints } from "../src/bandLogo";
 import { FORMATIONS, nearestAssignment } from "../src/halftimeLogic";
+
+test("home and conference logos bookend the halftime show in order", () => {
+  expect(bandCue(19 * 60_000, 0, true)).toBe("logo");
+  expect(bandCue(18 * 60_000, 1, true)).toBe("conference");
+  expect(bandCue(17 * 60_000, 2, true)).toBe("show");
+  expect(bandCue(150_000, 15, true)).toBe("conference");
+  expect(bandCue(90_000, 15, true)).toBe("logo");
+  expect(bandCue(30_000, 15, true)).toBe("exit");
+  expect(bandCue(18 * 60_000, 1, false)).toBe("show");
+  expect(bandCue(150_000, 15, false)).toBe("show");
+});
 
 test("logo bookends the show; the sideline exit starts at thirty seconds", () => {
   expect(bandPhase(19 * 60_000, true)).toBe("logo");
@@ -29,4 +40,30 @@ test("marchers retain every target and avoid needless travel; the exit keeps eac
   expect(cost(mapped)).toBeLessThanOrEqual(cost(to));
   const exit = exitPoints(mapped);
   exit.forEach(([x, y], i) => { expect(x).toBe(mapped[i][0]); expect(y).toBeGreaterThan(40); expect((y - mapped[i][1]) / 1.8 + 0.84).toBeLessThan(30); });
+});
+
+
+test("Script Ohio reserves the i dot for a sousaphone after the 63 letter positions assemble", () => {
+  expect(SCRIPT_OHIO).toHaveLength(63);
+  expect(new Set(SCRIPT_OHIO.map((p) => p.join(","))).size).toBe(63);
+  expect(OHIO_DOTTER).toBe(1); // the component assigns this musician a sousaphone
+  expect(SCRIPT_OHIO).not.toContainEqual(OHIO_DOT);
+  expect(OHIO_DOT[1]).toBeLessThan(18); // above the lowercase i
+  expect(Math.hypot(OHIO_STAGE[0] - OHIO_DOT[0], OHIO_STAGE[1] - OHIO_DOT[1]) / 7).toBeGreaterThan(1.8);
+  expect(10_000 + 750 + 7_000).toBeLessThan(28_000); // finish before the next drill
+});
+
+
+test("the band stages outside the home sideline and enters without a block formation", () => {
+  expect(FORMATIONS.some((f) => f.name === "Block")).toBe(false);
+  const staged = entrancePoints();
+  expect(staged).toHaveLength(64);
+  staged.forEach(([x, y]) => { expect(x).toBeGreaterThan(10); expect(x).toBeLessThan(110); expect(y).toBeGreaterThan(42); });
+  for (const formation of FORMATIONS) {
+    const target = nearestAssignment(staged, formation.pts);
+    target.forEach(([x, y], i) => {
+      const seconds = Math.min(14, Math.max(4, Math.hypot(x - staged[i][0], y - staged[i][1]) / 3.5)) + (i % 8) * 0.12;
+      expect(seconds).toBeLessThan(16); // assembled before the next routine
+    });
+  }
 });
