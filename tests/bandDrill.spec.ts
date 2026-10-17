@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 import { bandPhase, bandCue, exitPoints, logoOutline, logoFilled, SCRIPT_OHIO, OHIO_DOTTER, OHIO_DOT, OHIO_STAGE, entrancePoints } from "../src/bandLogo";
 import { FORMATIONS, nearestAssignment } from "../src/halftimeLogic";
 

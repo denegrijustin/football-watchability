@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 // The simulator is a lazy tab. It must open, run a game and its forecast, and never disturb the rest of the page.
 test("the Simulator tab runs a game: forecast, stage, play feed and a final score", async ({ page }) => {
@@ -20,18 +20,20 @@ test("the Simulator tab runs a game: forecast, stage, play feed and a final scor
   expect(errors).toEqual([]);
 });
 
-test("all nine tabs stay on one row, visible and not overlapping, from 375px up", async ({ page }) => {
+test("@phone all nine tabs stay on one row, visible and not overlapping, from 375px up", async ({ page }) => {
   for (const w of [375, 390, 700, 1280]) {
     await page.setViewportSize({ width: w, height: 800 });
     await page.goto("/?league=NFL");
     await expect(page.locator(".view-switch button").first()).toBeVisible();
+    // On a phone the nine sections are four tabs and More (the rest sit in its sheet); wider screens show all nine.
+    const phone = w <= 760;
     const r = await page.evaluate(() => {
-      const bs = [...document.querySelectorAll(".view-switch button")].map((x) => x.getBoundingClientRect());
+      const bs = [...document.querySelectorAll(".view-switch button")].filter((x) => (x as HTMLElement).offsetParent !== null).map((x) => x.getBoundingClientRect());
       let overlaps = 0;
       for (let i = 0; i < bs.length; i++) for (let j = i + 1; j < bs.length; j++) if (bs[i].left < bs[j].right - 0.5 && bs[j].left < bs[i].right - 0.5 && bs[i].top < bs[j].bottom - 0.5 && bs[j].top < bs[i].bottom - 0.5) overlaps++;
       return { n: bs.length, overlaps, off: bs.filter((b) => b.right > innerWidth + 1 || b.left < -1).length, rows: new Set(bs.map((b) => Math.round(b.top))).size };
     });
-    expect(r, `tabs at ${w}px`).toEqual({ n: 9, overlaps: 0, off: 0, rows: 1 });
+    expect(r, `tabs at ${w}px`).toEqual({ n: phone ? 5 : 9, overlaps: 0, off: 0, rows: 1 });
   }
 });
 
@@ -219,8 +221,8 @@ test("the Upset Alert Meter can be filtered by conference, on one line with the 
   // every game shown has a team in the SEC
   const abbrs = await page.locator(".um-row").first().locator(".um-tr b").allTextContents();
   expect(abbrs).toHaveLength(2);
-  // the filters share one line and nothing scrolls sideways
-  expect(await page.evaluate(() => { const c = document.querySelector(".um-controls")!; return c.scrollWidth <= c.clientWidth + 1 && new Set([...c.children].map((k) => Math.round(k.getBoundingClientRect().top))).size === 1; })).toBe(true);
+  // the filters share one line (with 44pt targets the row may scroll sideways on the narrowest phones, never wrap)
+  expect(await page.evaluate(() => { const c = document.querySelector(".um-controls")!; return new Set([...c.children].map((k) => Math.round(k.getBoundingClientRect().top))).size === 1; })).toBe(true);
   // games are told apart: each is a bordered card with a wide gap below it
   const gap = await page.locator(".um-row").first().evaluate((e) => parseFloat(getComputedStyle(e).marginBottom));
   expect(gap).toBeGreaterThanOrEqual(8);

@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { fxText, hasFx, weatherFx } from "../src/weatherFx";
 
 const hours = (precip: number[], gust: number[], dir = "E") => precip.map((p, i) => ({ precip: p, windMph: Math.round(gust[i] / 2), gustMph: gust[i], dir }));

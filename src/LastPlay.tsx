@@ -212,12 +212,12 @@ export function LastPlay({ plays, teams, live, situation, nfl }: { plays: FeedPl
       {stats && (
         <dl className="lp-stats" aria-label="Drive stats">
           {([
-            ["Run plays", stats.runPlays], ["Run yards", stats.runYards], ["Pass plays", stats.passPlays], ["Pass yards", stats.passYards],
-            ["Penalty for", stats.penaltiesFor.n ? `${stats.penaltiesFor.n} · ${stats.penaltiesFor.yards} yds` : 0],
-            ["Penalty against", stats.penaltiesAgainst.n ? `${stats.penaltiesAgainst.n} · ${stats.penaltiesAgainst.yards} yds` : 0],
-            ["Total plays", stats.totalPlays], ["Total yards", stats.totalYards],
-          ] as [string, number | string][]).map(([k, v]) => (
-            <div key={k} data-stat={k}><dt>{k}</dt><dd>{v}</dd></div>
+            ["Run plays", stats.runPlays, "Run plays"], ["Run yards", stats.runYards, "Run yds"], ["Pass plays", stats.passPlays, "Pass plays"], ["Pass yards", stats.passYards, "Pass yds"],
+            ["Penalty for", stats.penaltiesFor.n ? `${stats.penaltiesFor.n} · ${stats.penaltiesFor.yards} yds` : 0, "Pen. for"],
+            ["Penalty against", stats.penaltiesAgainst.n ? `${stats.penaltiesAgainst.n} · ${stats.penaltiesAgainst.yards} yds` : 0, "Pen. against"],
+            ["Total plays", stats.totalPlays, "Total plays"], ["Total yards", stats.totalYards, "Total yds"],
+          ] as [string, number | string, string][]).map(([k, v, short]) => (
+            <div key={k} data-stat={k}><dt><span className="full">{k}</span><span className="short" aria-hidden="true">{short}</span></dt><dd>{v}</dd></div>
           ))}
         </dl>
       )}

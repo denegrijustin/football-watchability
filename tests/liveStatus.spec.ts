@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 import { liveStatusParts } from "../src/liveStatus";
 
 test("ESPN status text becomes quarter and clock", () => {

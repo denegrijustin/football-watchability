@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -276,7 +276,7 @@ test("the NFL grid has a row per team, a column per seed, and the #1 seed column
   expect(errors).toEqual([]);
 });
 
-test("the view tabs and Export never overlap, down to the narrowest phone", async ({ page }) => {
+test("@phone the view tabs and Export never overlap, down to the narrowest phone", async ({ page }) => {
   for (const w of [320, 360, 390, 430, 521, 760]) {
     await page.setViewportSize({ width: w, height: 800 });
     await page.goto("/?league=NFL");
@@ -286,13 +286,15 @@ test("the view tabs and Export never overlap, down to the narrowest phone", asyn
         const b = el.getBoundingClientRect();
         return { l: b.left, r: b.right, t: b.top, b: b.bottom };
       };
-      const tabs = [...document.querySelectorAll(".view-switch button")].map(box);
+      const tabs = [...document.querySelectorAll(".view-switch button")].filter((x) => (x as HTMLElement).offsetParent !== null).map(box);
       return { tabs, swr: document.querySelector(".view-switch")!.getBoundingClientRect().right, exp: box(document.querySelector(".export-btns summary")!), sw: document.querySelector(".view-switch")!.scrollWidth - document.querySelector(".view-switch")!.clientWidth };
     });
     // Nine tabs share one row. From 375px up they all fit; on narrower phones the row scrolls sideways rather than wrapping or squeezing.
     if (w >= 375) expect(boxes.sw, `tabs overflow at ${w}px`).toBeLessThanOrEqual(0);
     expect(new Set(boxes.tabs.map((t) => Math.round(t.t))).size, `tabs wrapped at ${w}px`).toBe(1);
-    expect(boxes.tabs).toHaveLength(9);
+    // On a phone they are four tabs and More, in a bar at the bottom; Export moves into the More sheet.
+    expect(boxes.tabs).toHaveLength(w <= 760 ? 5 : 9);
+    if (w <= 760) continue;
     for (const t of boxes.tabs) {
       if (t.r > boxes.swr + 0.5) continue; // scrolled out of view past the row's edge, so it cannot cover Export
       const apart = t.r <= boxes.exp.l + 0.5 || t.l >= boxes.exp.r - 0.5 || t.b <= boxes.exp.t + 0.5 || t.t >= boxes.exp.b - 0.5;

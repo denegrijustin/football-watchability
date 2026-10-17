@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 import { readFileSync } from "node:fs";
 const slate = JSON.parse(readFileSync("src/data/slate.json", "utf8"));
 // Slate cards (not archived result cards, which also carry .game-card). The board lists every
@@ -91,7 +91,7 @@ test("@smoke all games, conferences, history and logos remain available", async 
   expect(loaded.every(Boolean)).toBe(true);
   expect(errors).toEqual([]);
 });
-test("search, empty state, league switch and responsive layout", async ({
+test("@phone search, empty state, league switch and responsive layout", async ({
   page,
 }, testInfo) => {
   await page.goto("/?league=NFL");
@@ -315,7 +315,7 @@ test("TV grid lays out every game by network and time, highlighting good games a
   expect(errors).toEqual([]);
 });
 
-test("weekend export files and advanced stats are available", async ({ page, request }) => {
+test("weekend export files and advanced stats are available", async ({ page, request }, testInfo) => {
   const csv = await (await request.get("/exports/watch-slate.csv")).text();
   const lines = csv.trim().split(/\r?\n/);
   expect(lines[0]).toContain("Watchability");
@@ -324,8 +324,13 @@ test("weekend export files and advanced stats are available", async ({ page, req
   expect(ics).toContain("BEGIN:VCALENDAR");
   expect((ics.match(/BEGIN:VEVENT/g) ?? []).length).toBe(slate.games.filter((g: any) => g.score >= 74).length);
   await page.goto("/?league=NFL");
-  await page.locator(".export summary").click();
-  await expect(page.locator(".export-menu a[href='/exports/watch-slate.csv']")).toBeVisible();
+  if (testInfo.project.name === "mobile") {
+    // On a phone the downloads sit in the More sheet.
+    await expect(page.locator(".more-export[href='/exports/watch-slate.csv']")).toBeAttached();
+  } else {
+    await page.locator(".export summary").click();
+    await expect(page.locator(".export-menu a[href='/exports/watch-slate.csv']")).toBeVisible();
+  }
   await expect(page.getByRole("button", { name: /Save image/ })).toHaveCount(0);
   let card = page.locator(CARD).first();
   await expand(card);
@@ -697,6 +702,7 @@ test("game details open fixed to the screen, keep the page still, and scroll ins
     await expect(dialog).toBeVisible();
     // Fixed to the screen and inside it: not parked at the top of the page where it scrolls away.
     expect(await dialog.evaluate((el) => getComputedStyle(el).position)).toBe("fixed");
+    await page.waitForTimeout(450); // on a phone the dialog slides up as a sheet; measure once it has settled
     const box = (await dialog.boundingBox())!;
     expect(box.y).toBeGreaterThanOrEqual(-1);
     expect(box.y + box.height).toBeLessThanOrEqual(vh + 1);
@@ -934,18 +940,21 @@ test("completed cards show attendance at the top, with a capacity bar when the s
   expect(width).toBeLessThanOrEqual((page.viewportSize()?.width ?? 0) + 1);
 });
 
-test("@smoke the persistent bar is slim and every filter is a pop-down menu", async ({ page }, testInfo) => {
+test("@smoke @phone the persistent bar is slim and every filter is a pop-down menu", async ({ page }, testInfo) => {
   await page.clock.install({ time: Math.min(...slate.games.map((g: any) => Date.parse(g.date))) - 3600e3 });
   await page.route("**/api/scores**", (route) => route.fulfill({ json: [] }));
   const errors: string[] = [];
   page.on("pageerror", (err) => errors.push(err.message));
   await page.goto("/?league=NFL");
   const dock = page.locator(".filter-dock");
+  // On a phone the filters live in a sheet behind a Filters button; open it to reach them.
+  const sheetBtn = page.getByRole("button", { name: /^Filters/ });
+  if (await sheetBtn.isVisible()) await sheetBtn.click();
   // Every filter is a pop-down (a select), not a row of buttons.
   for (const menu of ["League", "Status", "Day", "Watchability"]) {
     await expect(page.getByLabel(menu, { exact: true })).toHaveJSProperty("tagName", "SELECT");
   }
-  await expect(dock.locator("button:not(.search-clear)")).toHaveCount(0);
+  await expect(dock.locator("button:not(.search-clear):not(.filter-toggle):not(.sheet-done)")).toHaveCount(0);
   // The Conference menu is there for both leagues: AFC / NFC for the NFL (college conferences for college).
   await expect(page.getByLabel("Conference", { exact: true })).toHaveJSProperty("tagName", "SELECT");
   await expect(page.getByLabel("Conference", { exact: true }).locator("option")).toHaveText(["Both conferences", "AFC", "NFC"]);
@@ -959,7 +968,8 @@ test("@smoke the persistent bar is slim and every filter is a pop-down menu", as
   const above = Math.round((await page.locator(".ticker").boundingBox())!.height) + (phone ? 0 : Math.round((await page.locator(".site-header").boundingBox())!.height));
   expect(Math.round((await dock.boundingBox())!.y)).toBe(above);
   await page.evaluate(() => scrollTo(0, 0));
-  // Each menu narrows the board.
+  // Each menu narrows the board (on a phone they are in the Filters sheet).
+  if ((await sheetBtn.isVisible()) && !(await page.getByLabel("Watchability", { exact: true }).isVisible())) await sheetBtn.click();
   const nfl = slate.games.filter((g: any) => g.league === "NFL");
   await pick(page, "Watchability", "Must watch");
   await expect(page.locator(CARD)).toHaveCount(nfl.filter((g: any) => g.score >= 90).length);

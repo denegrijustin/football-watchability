@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 import { readFileSync } from "node:fs";
 import { ART_COUNT, attributePlays, impact, summarizeEvents, W, type ImpactEvent, type PlayerRow } from "../src/playImpact";
 

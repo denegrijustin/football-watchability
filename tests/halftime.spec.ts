@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page } from "./fixtures";
 import { readFileSync } from "node:fs";
 const conferences = JSON.parse(readFileSync("src/data/conference-logos.json", "utf8")).conferences as Record<string, unknown>;
 const confEntry = (name?: string | null) => (name ? conferences[name] ?? null : null);

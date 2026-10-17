@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { CHIP_DARK, CHIP_LIGHT, chipFor } from "../src/logoTone";
 import { withRedRiver } from "./helpers/redRiver";
 

@@ -1,4 +1,4 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page } from "./fixtures";
 import { spawnSync } from "node:child_process";
 import { readFileSync, statSync } from "node:fs";
 import type { NflData, NflGame } from "../src/nfl/types";

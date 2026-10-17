@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { readFileSync } from "node:fs";
 import { onRequestGet as scoresHandler } from "../functions/api/scores.js";
 import { onRequestGet as liveHandler } from "../functions/api/live.js";
@@ -50,6 +50,7 @@ test("while a game is live the board asks for scores every 15 seconds, and a sco
   expect(asked - first).toBeGreaterThanOrEqual(2); // 15-second cadence, not the old minute
   // The card's own live field fetches the summary; its 21 reaches the score without waiting for the scoreboard.
   const card = page.locator(".board-section .game-card", { hasText: a.name }).first();
+  await card.scrollIntoViewIfNeeded();
   await expect(card.locator(".team-score").first()).toHaveText("21");
 });
 
