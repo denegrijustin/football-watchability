@@ -37,4 +37,8 @@ export const NFL_HELMETS: Record<string, HelmetLook> = {
   "tampa-bay-buccaneers": H("#6b6e70", "#d50a0a", "#6b6e70"),
   "washington-commanders": H("#5a1414", "#ffb612"),
 };
-export const helmetFor = (logoId: string | undefined, color: string): HelmetLook => (logoId && NFL_HELMETS[logoId]) || H(color, "#ffffff");
+/** Colleges whose helmet is not their jersey colour. */
+export const COLLEGE_HELMETS: Record<string, HelmetLook> = {
+  "kansas-state": H("#b9bec4", "#512888", "#512888"),
+};
+export const helmetFor = (logoId: string | undefined, color: string): HelmetLook => (logoId && (NFL_HELMETS[logoId] ?? COLLEGE_HELMETS[logoId])) || H(color, "#ffffff");

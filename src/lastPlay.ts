@@ -9,7 +9,7 @@ import { playKind } from "./driveKinds";
 export type PlayInput = { text: string; kind: string; yards: number; score?: boolean; turnover?: boolean };
 export type Side = "left" | "middle" | "right";
 export type PlayShape = {
-  type: "pass" | "rush" | "sack" | "punt" | "fg";
+  type: "pass" | "rush" | "sack" | "punt" | "fg" | "kickoff";
   yards: number;
   side: Side | null;
   depth: "short" | "deep" | null;
@@ -27,6 +27,12 @@ export type PlayShape = {
   target: string | null;
   rusher: string | null;
   defender: string | null;
+  /** An extra point (a short field goal). */
+  xp: boolean;
+  blocked: boolean;
+  kicker: string | null;
+  /** What happened to a punt or kickoff once it came down. */
+  ret: { kind: "return" | "fair" | "touchback" | "oob" | "downed" | null; by: string | null; yards: number };
   text: string;
 };
 
@@ -42,7 +48,11 @@ export function parsePlay(p: PlayInput): PlayShape | null {
   const text = p.text ?? "";
   const flat = `${p.kind} ${text}`;
   let type: PlayShape["type"] | null = null;
-  if (/\bsacked\b|\bsack\b/i.test(flat)) type = "sack";
+  const xp = /extra point/i.test(flat) && !/two[- ]point/i.test(flat);
+  if (/two[- ]point/i.test(flat)) return null;
+  if (xp) type = "fg";
+  else if (/kickoff|kicks off|onside/i.test(`${p.kind} ${text}`) && !/timeout|penalty/i.test(p.kind)) type = "kickoff";
+  else if (/\bsacked\b|\bsack\b/i.test(flat)) type = "sack";
   else {
     const k = playKind(p.kind, text);
     type = k === "pass" ? "pass" : k === "run" ? "rush" : k === "punt" ? "punt" : k === "fg" ? "fg" : null;
@@ -55,13 +65,21 @@ export function parsePlay(p: PlayInput): PlayShape | null {
   const gapWord = /\b(end|tackle|guard)\b/i.exec(text)?.[1]?.toLowerCase() as "end" | "tackle" | "guard" | undefined;
   const intercepted = type === "pass" && /intercept/i.test(flat);
   const incomplete = type === "pass" && /incomplete|incompletion/i.test(flat);
-  const dist = Number(/(\d+)[- ]yard(?:s)? (?:field goal|fg)/i.exec(text)?.[1] ?? /punts (\d+)/i.exec(text)?.[1] ?? 0);
+  const dist = Number(/(\d+)[- ]yard(?:s)? (?:field goal|fg|extra point)/i.exec(text)?.[1] ?? /punts (\d+)/i.exec(text)?.[1] ?? /kicks (?:off )?(\d+)/i.exec(text)?.[1] ?? (xp ? 33 : 0));
+  const retBy = new RegExp(`(?:returned|returns?)(?: it)?(?: by)? (${NAME}) for (-?\\d+) yards?`).exec(text) ?? new RegExp(`(${NAME}) returns? (?:the )?(?:punt|kick|kickoff)? ?for (-?\\d+) yards?`).exec(text);
+  const ret: PlayShape["ret"] = retBy
+    ? { kind: "return", by: last(retBy[1]), yards: Number(retBy[2]) }
+    : /touchback/i.test(text) ? { kind: "touchback", by: null, yards: 0 }
+    : /fair catch/i.test(text) ? { kind: "fair", by: grab(text, new RegExp(`fair catch by (${NAME})`)), yards: 0 }
+    : /out of bounds/i.test(text) ? { kind: "oob", by: null, yards: 0 }
+    : /downed/i.test(text) ? { kind: "downed", by: null, yards: 0 }
+    : { kind: null, by: null, yards: 0 };
   let yards = Number.isFinite(p.yards) ? p.yards : 0;
   if (type === "sack") {
     const loss = /loss of (\d+)/i.exec(text)?.[1];
     yards = loss ? -Number(loss) : yards > 0 ? -yards : yards;
   }
-  if (type === "punt" && !yards) yards = dist;
+  if ((type === "punt" || type === "kickoff") && !yards) yards = dist || (type === "kickoff" ? 65 : 0);
   if (type === "fg" && !dist) return null;
   return {
     type,
@@ -73,8 +91,8 @@ export function parsePlay(p: PlayInput): PlayShape | null {
     intercepted,
     fumble: /fumble/i.test(flat),
     td: !!p.score && /touchdown/i.test(flat) && type !== "fg",
-    good: type === "fg" && /\bgood\b/i.test(flat) && !/no good|missed|blocked|wide|short/i.test(flat),
-    distance: type === "fg" ? dist : Math.abs(yards),
+    good: type === "fg" && /\bgood\b|is good|successful/i.test(flat) && !/no good|missed|blocked|wide|short|failed/i.test(flat),
+    distance: type === "fg" ? dist : type === "kickoff" ? dist || 65 : Math.abs(yards),
     passer: type === "pass" || type === "sack" ? grab(text, new RegExp(`^(${NAME})\\s+(?:pass|sacked|scrambles|incomplete)`)) : null,
     target: type === "pass" ? grab(text, new RegExp(`\\bto\\s+(?!the\\b)(${NAME})`)) : null,
     rusher: type === "rush" ? grab(text, new RegExp(`^(${NAME})\\s+(?:rush|run|scrambles)`)) : null,
@@ -82,6 +100,10 @@ export function parsePlay(p: PlayInput): PlayShape | null {
       type === "pass" && intercepted
         ? grab(text, new RegExp(`(?:[Ii]ntercepted|INTERCEPTED) by\\s+(${NAME})`))
         : grab(text, new RegExp(`\\((?:[^;)]*;\\s*)?(${NAME})`)),
+    xp,
+    blocked: /blocked/i.test(flat),
+    kicker: type === "fg" || type === "punt" || type === "kickoff" ? grab(text, new RegExp(`^(${NAME})\\s+(?:\\d+ yard|punts|kicks|extra|field|PAT|\\d+-yard)`)) ?? grab(text, new RegExp(`^(${NAME})`)) : null,
+    ret,
     text,
   };
 }
@@ -270,28 +292,55 @@ export function choreograph(shape: PlayShape): Choreo {
     xMax = Math.max(30, endX + 10);
     xMin = -16;
     headline = shape.td ? "Touchdown run" : shape.fumble ? "Fumble" : gain <= 0 ? (gain === 0 ? "No gain" : `Loss of ${-gain}`) : `Run for ${gain} yard${gain === 1 ? "" : "s"}`;
-  } else if (shape.type === "punt") {
-    const px = -14;
-    const land = Math.max(20, y);
-    go(o(QB), [0.1, px, 0], [1, px, 0]);
-    go(o(RB), [0.15, -8, 0], [1, -6, 0]);
-    for (let i = 0; i < 5; i++) go(o(i), [0.25, -2, OFF[i][1] * 0.8], [1, 3, OFF[i][1] * 0.9]);
-    go(o(WR_L), [0.8, land - 5, -22], [1, land - 3, -20]);
-    go(o(WR_R), [0.8, land - 5, 22], [1, land - 3, 20]);
-    for (let i = 0; i < 4; i++) go(d(i), [0.3, -1, DEF[i][1] * 0.8], [1, -3, DEF[i][1] * 0.7]);
-    go(d(9), [0.25, land + 8, 0], [0.66, land, 0], [1, land + 1.5, 0]);
-    d(9).hot = true;
-    ball = [[0, -1, 0, 0], [0.12, px, 0, 0], [0.3, px, 0, 0.1]];
-    for (let k = 1; k <= 6; k++) {
-      const u = k / 6;
-      ball.push([0.3 + 0.36 * u, px + (land - px) * u, 0, Math.sin(Math.PI * u) * 1.2]);
+  } else if (shape.type === "punt" || shape.type === "kickoff") {
+    const kick = shape.type === "kickoff";
+    const px = kick ? 0 : -14;
+    const land = Math.max(20, shape.blocked ? 4 : y);
+    const rb = shape.ret.kind === "return" ? shape.ret.yards : 0;
+    const finalX = shape.ret.kind === "touchback" ? land : land - rb;
+    const tackleY = (kick ? 5 : 3) * (shape.ret.yards % 2 ? 1 : -1);
+    if (kick) {
+      // The kicking team lines up across the field and runs the ball down; the receiving team sets a wall and a deep returner.
+      const ys = [-24, -19, -14, -9, -4.5, 0, 4.5, 9, 14, 19, 24];
+      ys.forEach((yy, i) => { o(i).kf[0] = [0, -1.5 - (i === 5 ? 0.5 : 0), yy]; go(o(i), [0.22, -1 + (i === 5 ? -0.5 : 0), yy], [0.7, land - 6 + (i % 3), yy * 0.9], [1, finalX - 2 + (i % 3), clamp(tackleY + yy * 0.25, -22, 22)]); });
+      o(5).hot = true;
+      o(5).label = shape.kicker ?? undefined;
+      d(0).kf[0] = [0, 28, -16]; d(1).kf[0] = [0, 28, -6]; d(2).kf[0] = [0, 28, 6]; d(3).kf[0] = [0, 28, 16];
+      d(4).kf[0] = [0, 36, -20]; d(5).kf[0] = [0, 36, 0]; d(6).kf[0] = [0, 36, 20];
+      d(7).kf[0] = [0, 44, -12]; d(8).kf[0] = [0, 44, 12]; d(10).kf[0] = [0, 50, 4];
+      d(9).kf[0] = [0, Math.min(land + 3, 66), 0];
+      for (let i = 0; i < 9; i++) { const dd = d(i < 4 ? i : i < 7 ? i : i + 0); go(dd, [0.45, dd.kf[0][1] - 1.5, dd.kf[0][2]], [1, Math.max(finalX + 3 + i, 12), dd.kf[0][2] * 0.6]); }
+      go(d(9), [0.62, land, 0], [1, finalX, tackleY]);
+      d(9).hot = true;
+      d(9).label = shape.ret.by ?? undefined;
+      go(d(10), [0.62, land - 4, 5], [1, finalX - 1, tackleY + 3]);
+      ball = [[0, 0, 0, 0], [0.22, 0, 0, 0.1]];
+    } else {
+      go(o(QB), [0.1, px, 0], [1, px, 0]);
+      go(o(RB), [0.15, -8, 0], [1, -6, 0]);
+      for (let i = 0; i < 5; i++) go(o(i), [0.25, -2, OFF[i][1] * 0.8], [1, 3, OFF[i][1] * 0.9]);
+      go(o(WR_L), [0.8, land - 5, -22], [1, finalX - 2, -8]);
+      go(o(WR_R), [0.8, land - 5, 22], [1, finalX - 1, 8]);
+      for (let i = 0; i < 4; i++) go(d(i), [0.3, -1, DEF[i][1] * 0.8], [1, -3, DEF[i][1] * 0.7]);
+      go(d(9), [0.25, land + 8, 0], [0.66, land, 0], [1, finalX, tackleY]);
+      d(9).hot = true;
+      d(9).label = shape.ret.by ?? undefined;
+      o(QB).label = shape.kicker ?? undefined;
+      ball = [[0, -1, 0, 0], [0.12, px, 0, 0], [0.3, px, 0, 0.1]];
     }
-    ball.push([1, land + 1.5, 0, 0]);
-    routes.push({ pts: [[px, 0], [land, 0]], hot: true, at: [0.3, 0.66] });
-    end = [land + 1.5, 0];
-    xMin = -20;
-    xMax = Math.max(40, land + 12);
-    headline = `Punt, ${shape.distance} yards`;
+    const t0 = ball[ball.length - 1][0];
+    for (let k = 1; k <= 7; k++) {
+      const u = k / 7;
+      ball.push([t0 + (0.66 - t0) * u, px + (land - px) * u, 0, Math.sin(Math.PI * u) * (kick ? 1.5 : 1.2)]);
+    }
+    ball.push([1, finalX, kick ? tackleY : tackleY, 0]);
+    routes.push({ pts: [[px, 0], [land, 0]], hot: true, at: [t0, 0.66] });
+    if (rb) routes.push({ pts: [[land, 0], [finalX, tackleY]], hot: false, at: [0.66, 1] });
+    end = [finalX, tackleY];
+    xMin = kick ? -10 : -20;
+    xMax = Math.max(kick ? 78 : 40, land + 12);
+    const how = shape.ret.kind === "touchback" ? ", touchback" : shape.ret.kind === "fair" ? ", fair catch" : shape.ret.kind === "return" ? `, returned ${rb} yard${rb === 1 ? "" : "s"}` : shape.ret.kind === "oob" ? ", out of bounds" : shape.ret.kind === "downed" ? ", downed" : "";
+    headline = `${kick ? "Kickoff" : shape.blocked ? "Blocked punt" : "Punt"}, ${shape.distance} yards${how}`;
   } else {
     // Field goal: the kick goes from the holder at 7 yards behind the line to the posts, 10 yards behind the goal line.
     const dist = shape.distance;
@@ -313,7 +362,7 @@ export function choreograph(shape: PlayShape): Choreo {
     end = null;
     xMin = -16;
     xMax = Math.max(34, px + 10);
-    headline = `${dist}-yard field goal${shape.good ? " is good" : " is no good"}`;
+    headline = shape.xp ? `Extra point ${shape.good ? "is good" : "is no good"}` : `${dist}-yard field goal${shape.good ? " is good" : shape.blocked ? " is blocked" : " is no good"}`;
   }
 
   holdAll();
@@ -323,4 +372,24 @@ export function choreograph(shape: PlayShape): Choreo {
     a.kf = a.kf.map((k) => [TIDY(k[0] * 1000) / 1000, TIDY(k[1]), TIDY(k[2])] as Key);
   }
   return { shape, actors, ball, routes, end, posts, xMin, xMax, headline };
+}
+
+/** The play's detail lines for the caption: who, how far, and how it ended. */
+export function playDetail(shape: PlayShape): string[] {
+  const out: string[] = [];
+  const who = (n: string | null) => (n ? `${n} · ` : "");
+  if (shape.type === "fg") {
+    out.push(`${who(shape.kicker)}${shape.xp ? "extra point" : `${shape.distance}-yard field goal`}`);
+    out.push(shape.good ? "Kick is good" : shape.blocked ? "Kick blocked" : "Kick misses");
+  } else if (shape.type === "punt" || shape.type === "kickoff") {
+    out.push(`${who(shape.kicker)}${shape.type === "kickoff" ? "kickoff" : "punt"} of ${shape.distance} yards`);
+    const r = shape.ret;
+    if (r.kind === "return") out.push(`${r.by ? `${r.by} returns` : "Returned"} it ${r.yards} yard${r.yards === 1 ? "" : "s"}`);
+    else if (r.kind === "fair") out.push(`Fair catch${r.by ? ` by ${r.by}` : ""}`);
+    else if (r.kind === "touchback") out.push("Touchback");
+    else if (r.kind === "oob") out.push("Out of bounds");
+    else if (r.kind === "downed") out.push("Downed by the kicking team");
+    if (shape.blocked) out.push("Blocked");
+  }
+  return out;
 }

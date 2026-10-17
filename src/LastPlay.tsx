@@ -4,9 +4,9 @@ import { ConfMark } from "./ConfMark";
 import { EndZones } from "./sim/EndZones";
 import { endzoneFor } from "./sim/endzone";
 import { MIDFIELD_ART } from "./sim/midfield";
-import { driveHistory } from "./driveHistory";
+import { driveHistory, driveStats } from "./driveHistory";
 import { helmetFor } from "./helmets";
-import { choreograph, parsePlay, type Choreo, type Key, type PlayShape } from "./lastPlay";
+import { choreograph, parsePlay, playDetail, type Choreo, type Key, type PlayShape } from "./lastPlay";
 
 export type LastPlayTeam = { id?: string; abbr?: string; name: string; color?: string | null; logoId?: string; conf?: string | null };
 type FeedPlay = { id?: string; team: string; text: string; kind: string; yards: number; score?: boolean; turnover?: boolean; toGo?: number | null };
@@ -101,6 +101,8 @@ export function LastPlay({ plays, teams, live, situation, nfl }: { plays: FeedPl
   const homeLogo = home.logoId ? logos[home.logoId] : undefined;
   const history = driveHistory(plays ?? [], found.index, teams[0]?.id);
   const HIST_Y = FH - 112, HIST_H = 28;
+  const stats = chor.shape.type === "kickoff" ? null : driveStats(plays ?? [], found.index, off.abbr);
+  const detail = playDetail(chor.shape);
   const [bx0, by0] = px(0, 0);
   const side = chor.shape.side ? `${chor.shape.depth ? `${chor.shape.depth} ` : ""}${chor.shape.side}` : "";
   const endMark = chor.end ? px(chor.end[0], chor.end[1]) : null;
@@ -195,9 +197,22 @@ export function LastPlay({ plays, teams, live, situation, nfl }: { plays: FeedPl
         <span className="lp-diagram-note">Illustrated from play text{known ? "" : " · field position approximate"}</span>
         {side && <span> · {side}</span>}
         <span className="lp-key" aria-hidden="true"><i className="pass" /> pass <i className="run" /> run <i className="penalty" /> penalty</span>
+        {detail.length > 0 && <span className="lp-detail" data-detail>{detail.map((d, i) => <em key={i}>{d}</em>)}</span>}
         <span className="lp-text">{found.shape.text}</span>
         <button type="button" className="lp-replay" onClick={() => setRun((n) => n + 1)} aria-label="Replay the last play">↻ Replay</button>
       </figcaption>
+      {stats && (
+        <dl className="lp-stats" aria-label="Drive stats">
+          {([
+            ["Run plays", stats.runPlays], ["Run yards", stats.runYards], ["Pass plays", stats.passPlays], ["Pass yards", stats.passYards],
+            ["Penalty for", stats.penaltiesFor.n ? `${stats.penaltiesFor.n} · ${stats.penaltiesFor.yards} yds` : 0],
+            ["Penalty against", stats.penaltiesAgainst.n ? `${stats.penaltiesAgainst.n} · ${stats.penaltiesAgainst.yards} yds` : 0],
+            ["Total plays", stats.totalPlays], ["Total yards", stats.totalYards],
+          ] as [string, number | string][]).map(([k, v]) => (
+            <div key={k} data-stat={k}><dt>{k}</dt><dd>{v}</dd></div>
+          ))}
+        </dl>
+      )}
     </figure>
   );
 }

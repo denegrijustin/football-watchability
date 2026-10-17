@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { readFileSync } from "node:fs";
-import { choreograph, parsePlay } from "../src/lastPlay";
-import { driveHistory } from "../src/driveHistory";
+import { choreograph, parsePlay, playDetail } from "../src/lastPlay";
+import { driveHistory, driveStats } from "../src/driveHistory";
 import { helmetFor, NFL_HELMETS } from "../src/helmets";
 
 const slate = JSON.parse(readFileSync("src/data/slate.json", "utf8"));
@@ -54,6 +54,7 @@ test("every NFL team wears its own helmet, and a college team its own colour", (
   for (const id of ids) expect(NFL_HELMETS[id], id).toBeTruthy();
   expect(helmetFor("buffalo-bills", "#00338d").shell).toBe("#f4f5f7"); // white with red stripe, not the blue of the jersey
   expect(helmetFor("green-bay-packers", "#203731").shell).toBe("#ffb612");
+  expect(helmetFor("kansas-state", "#512888")).toMatchObject({ shell: "#b9bec4" }); // silver, not the purple of the jersey
   expect(helmetFor("ohio-state", "#bb0000")).toEqual({ shell: "#bb0000", stripe: "#ffffff", mask: "#aab2ba" });
 });
 
@@ -102,6 +103,15 @@ test("the Game Center shows the last play as play art drawn from the play", asyn
   await expect(lp.locator("g.lp-box")).toHaveCount(4);
   expect(await lp.locator("g.lp-box").evaluateAll((els) => els.map((e) => e.getAttribute("data-box")))).toEqual(["run", "run", "pass", "penalty"]);
   await expect(page.locator("dialog.gc .gc-livefield")).toHaveCount(0);
+  // the drive's stats under the field: 2 runs for 7, 2 passes for 37, 4 plays for 44 yards, one flag
+  const stat = (k: string) => lp.locator(`[data-stat="${k}"] dd`);
+  await expect(stat("Run plays")).toHaveText("2");
+  await expect(stat("Run yards")).toHaveText("7");
+  await expect(stat("Pass plays")).toHaveText("2");
+  await expect(stat("Pass yards")).toHaveText("37");
+  await expect(stat("Total plays")).toHaveText("4");
+  await expect(stat("Total yards")).toHaveText("44");
+  expect((await stat("Penalty for").textContent())! + (await stat("Penalty against").textContent())!).toMatch(/1 · 5 yds/);
   await expect(lp.locator("path.lp-route[data-route='target']")).toHaveCount(1);
   await expect(lp.locator("g.lp-p .lp-name")).toContainText(["Passer", "Receiver"]);
   await expect(lp.locator("figcaption")).toContainText("Complete for 31 yards");
@@ -136,4 +146,42 @@ test("the drive history is the plays of the drive in progress, and a punt, a sco
   expect(driveHistory(plays, 1, A)).toEqual([]); // a change of possession before it
   expect(driveHistory([p("t", A, "Q pass to R for 20 yards, TOUCHDOWN", "Passing Touchdown", 20, 20, { score: true })], 0, A)).toEqual([]);
   expect(driveHistory([p("i", A, "Q pass intercepted", "Pass Interception Return", 0, 40, { turnover: true })], 0, A)).toEqual([]);
+});
+
+test("punts, kickoffs, field goals and extra points are drawn, with their detail", () => {
+  const punt = P("Sam Martin punts 52 yards to KC 20, returned by Marcus Jones for 8 yards to the KC 28", "Punt", 52);
+  expect(punt).toMatchObject({ type: "punt", distance: 52, ret: { kind: "return", by: "Jones", yards: 8 }, kicker: "Martin" });
+  expect(playDetail(punt)).toEqual(["Martin · punt of 52 yards", "Jones returns it 8 yards"]);
+  const c = choreograph(punt);
+  expect(c.end![0]).toBe(44); // 52 yards out, then 8 back
+  expect(c.headline).toBe("Punt, 52 yards, returned 8 yards");
+  expect(P("Sam Martin punts 40 yards to KC 20, fair catch by Marcus Jones", "Punt", 40).ret).toMatchObject({ kind: "fair", by: "Jones" });
+  expect(P("Sam Martin punts 60 yards, Touchback", "Punt", 60).ret.kind).toBe("touchback");
+  const ko = P("Cam Little kicks off 65 yards, returned by Khalil Herbert for 24 yards to the CHI 24", "Kickoff", 0);
+  expect(ko).toMatchObject({ type: "kickoff", distance: 65, ret: { kind: "return", yards: 24 } });
+  expect(choreograph(ko).actors).toHaveLength(22);
+  expect(choreograph(ko).end![0]).toBe(41);
+  const xp = P("Tyler Bass extra point is GOOD", "Extra Point Good", 0);
+  expect(xp).toMatchObject({ type: "fg", xp: true, good: true });
+  expect(choreograph(xp).headline).toBe("Extra point is good");
+  expect(choreograph(P("Tyler Bass 51 yard field goal is No Good, Blocked", "Field Goal Missed", 0)).headline).toBe("51-yard field goal is blocked");
+  expect(parsePlay({ text: "Team converts the two-point conversion", kind: "Two-Point Pass", yards: 0 })).toBeNull();
+});
+
+test("drive stats: runs, passes, flags for and against, totals", () => {
+  const p = (id: string, team: string, text: string, kind: string, yards: number, toGo: number) => ({ id, team, text, kind, yards, toGo });
+  const plays = [
+    p("1", "1", "A rush left end for 5 yards", "Rush", 5, 70),
+    p("2", "1", "B pass short right to C for 11 yards", "Pass Reception", 11, 65),
+    p("3", "1", "PENALTY on KC, Offside, 5 yards", "Penalty", 5, 54),
+    p("4", "1", "PENALTY on ATL, False Start, 5 yards", "Penalty", -5, 49),
+    p("5", "1", "B sacked at ATL 40 for -7 yards (D E)", "Sack", -7, 54),
+    p("6", "1", "S punts 41 yards to KC 19", "Punt", 41, 61),
+  ];
+  expect(driveStats(plays, 5, "ATL")).toEqual({
+    runPlays: 1, runYards: 5, passPlays: 2, passYards: 4,
+    penaltiesFor: { n: 1, yards: 5 }, penaltiesAgainst: { n: 1, yards: 5 },
+    totalPlays: 3, totalYards: 9,
+  });
+  expect(driveStats(plays, 1, "ATL").totalPlays).toBe(2);
 });
