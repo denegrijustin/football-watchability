@@ -105,14 +105,13 @@ test("the live field names who has the ball, where it is, where the drive starte
   await expect(more.locator(".lf-yds.neg")).toContainText("-3 yds");
 });
 
-test("the Game Center carries the same live field, with the plays open", async ({ page }) => {
+test("the Game Center no longer carries a separate live field", async ({ page }) => {
   await open(page, { toGo: 65, text: "2nd & 7 at SEA 35" }, "max"); // every game has kicked off, so the Game Center polls
   await page.clock.resume();
   await page.locator(".board-section.live .game-card").first().locator(".cc-gc").click();
-  const panel = page.locator("dialog.gc .gc-livefield");
-  await expect(panel.locator(".lf-ball-team")).toContainText("have the ball");
-  await expect(panel.locator("svg.drive-svg")).toBeVisible();
-  await expect(panel.locator(".lf-plays li")).toHaveCount(3);
+  await expect(page.locator("dialog.gc .gc-livefield")).toHaveCount(0); // the separate live field is gone
+  await expect(page.locator("dialog.gc")).toBeVisible();
+  await expect(page.locator("dialog.gc svg.drive-svg")).toHaveCount(0); // no second field in the Game Center (the last-play field is tested in lastPlay.spec.ts)
 });
 
 test("when ESPN gives no yards-to-end-zone figure, the ball is placed from its own spot text", async ({ page }) => {

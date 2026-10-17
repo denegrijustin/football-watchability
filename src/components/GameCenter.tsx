@@ -15,7 +15,6 @@ import { InsanityMeter } from "./InsanityMeter";
 import { Headshot } from "./Headshot";
 import { GameDetails } from "./GameDetails";
 import { FootballIcon } from "../live";
-import { FieldView, fieldWhy } from "../liveDrive";
 import { LastPlay, latestShape } from "../LastPlay";
 import type { WeatherLike } from "../weatherFx";
 import { HalftimeBand } from "../halftime";
@@ -152,10 +151,6 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
   const netSlug = (up as { network?: string } | undefined)?.network ?? fin?.network ?? null;
   const netLogo = networkLogo(netSlug);
   const badge = gameBadge({ meta: (up as { meta?: string } | undefined)?.meta, event: (up as { event?: string } | undefined)?.event, teams: teams as { logoId?: string }[] });
-  const liveField =
-    game && state === "in" && !isHalftime(game.status.detail)
-      ? FieldView({ variant: "center", data: game, badge, weather: (up as { weather?: WeatherLike } | undefined)?.weather, teams: [away, home].map((t, i) => ({ espnId: game.teams[i]?.id, abbr: t?.abbr, name: t?.name ?? "", color: t?.color, logoId: t?.logoId, conf: t?.ranks?.confName })) })
-      : null;
   const hasAnalysis = !!up || !!fin || !!(!up && !fin && (away?.advanced || home?.advanced));
   const tabs: { id: GcTab; label: string }[] = [
     { id: "overview", label: "Overview" },
@@ -254,21 +249,10 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
           <div className="gc-grid" id="gc-tabpanel" role="tabpanel" aria-labelledby={`gc-tab-${tab}`}>
             {tab === "overview" && (
               <>
-                {game && state === "in" && !isHalftime(game.status.detail) && (
-                  <section className="gc-panel gc-wide gc-livefield">
-                    <h3 className="micro-label">Live field</h3>
-                    {liveField ?? (
-                      <p className="gc-note">
-                        Waiting for field position from the feed.
-                        <small className="gc-why"> {fieldWhy(game, [game.teams[0]?.id, game.teams[1]?.id])}</small>
-                      </p>
-                    )}
-                  </section>
-                )}
                 {game && state !== "pre" && !isHalftime(game.status.detail) && latestShape(game.plays) && (
                   <section className="gc-panel gc-wide gc-lastplay">
-                    <h3 className="micro-label">Last play</h3>
-                    <LastPlay plays={game.plays} teams={[away, home].map((t, i) => ({ id: game.teams[i]?.id, abbr: t?.abbr, name: t?.name ?? "", color: t?.color, logoId: t?.logoId }))} />
+                    <h3 className="micro-label">{state === "in" ? "Live field · last play" : "Last play"}</h3>
+                    <LastPlay plays={game.plays} nfl={league === "NFL"} live={state === "in"} situation={game.situation?.text} teams={[away, home].map((t, i) => ({ id: game.teams[i]?.id, abbr: t?.abbr, name: t?.name ?? "", color: t?.color, logoId: t?.logoId, conf: t?.ranks?.confName }))} />
                   </section>
                 )}
             {/* Projection */}
