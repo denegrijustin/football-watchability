@@ -54,6 +54,7 @@ test("every NFL team wears its own helmet, and a college team its own colour", (
   for (const id of ids) expect(NFL_HELMETS[id], id).toBeTruthy();
   expect(helmetFor("buffalo-bills", "#00338d").shell).toBe("#f4f5f7"); // white with red stripe, not the blue of the jersey
   expect(helmetFor("green-bay-packers", "#203731").shell).toBe("#ffb612");
+  expect(helmetFor("kansas-state", "#512888").facesRight).toBe(true); // the Wildcat looks where the helmet looks
   expect(helmetFor("lsu", "#461d7c")).toMatchObject({ shell: "#fdd023", decal: { text: "LSU", color: "#461d7c" } }); // gold with purple letters
   expect(helmetFor("texas", "#bf5700")).toMatchObject({ shell: "#f4f5f7", tint: "#bf5700" }); // white, with the Longhorn in burnt orange
   expect(helmetFor("kansas-state", "#512888")).toMatchObject({ shell: "#b9bec4" }); // silver, not the purple of the jersey

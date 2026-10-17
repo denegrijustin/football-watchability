@@ -315,7 +315,7 @@ export function FieldView({ data, teams, variant, rootRef, badge, weather }: { d
           </g>
           {helmet.decal && <text x={-0.2 * dir} y={ballY - 0.2} className="lf-decal" textAnchor="middle" fill={helmet.decal.color}>{helmet.decal.text}</text>}
           {helmet.tint && <filter id={`lf-tint-${helmet.tint.slice(1)}`} colorInterpolationFilters="sRGB"><feFlood floodColor={helmet.tint} result="c" /><feComposite in="c" in2="SourceAlpha" operator="in" /></filter>}
-          {logo && !helmet.decal && <image style={helmet.tint ? { filter: `url(#lf-tint-${helmet.tint.slice(1)}) drop-shadow(0 0 0.3px rgb(0 0 0 / 40%))` } : undefined} href={logos[teams[side].logoId!]} x={-0.2 * dir - 1.5} y={ballY - 2.2} width="2.8" height="2.8" preserveAspectRatio="xMidYMid meet" className="lf-ball-logo" />}
+          {logo && !helmet.decal && <image transform={helmet.facesRight && dir < 0 ? `translate(${-0.4 * dir} 0) scale(-1 1)` : undefined} style={helmet.tint ? { filter: `url(#lf-tint-${helmet.tint.slice(1)}) drop-shadow(0 0 0.3px rgb(0 0 0 / 40%))` } : undefined} href={logos[teams[side].logoId!]} x={-0.2 * dir - 1.5} y={ballY - 2.2} width="2.8" height="2.8" preserveAspectRatio="xMidYMid meet" className="lf-ball-logo" />}
           <text x={tagLeft ? -4.5 : 4.5} y="3.6" className="lf-tagtext ball" textAnchor={tagLeft ? "end" : "start"}>{abbr} · {spotName(ballOwn, own, opp)}</text>
         </g>
       </svg>
