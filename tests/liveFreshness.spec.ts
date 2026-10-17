@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { onRequestGet as scoresHandler } from "../functions/api/scores.js";
+import { onRequestGet as liveHandler } from "../functions/api/live.js";
 
 const slate = JSON.parse(readFileSync("src/data/slate.json", "utf8"));
 
@@ -50,4 +51,51 @@ test("while a game is live the board asks for scores every 15 seconds, and a sco
   // The card's own live field fetches the summary; its 21 reaches the score without waiting for the scoreboard.
   const card = page.locator(".board-section .game-card", { hasText: a.name }).first();
   await expect(card.locator(".team-score").first()).toHaveText("21");
+});
+
+test("/api/live is an event stream that sends the scores as they change, and /api/scores honours fresh= by refetching a copy that is too old", async () => {
+  const g = globalThis as unknown as { caches: unknown; fetch: typeof fetch };
+  const realFetch = g.fetch;
+  const store = new Map<string, Response>();
+  g.caches = { default: { match: async (k: Request) => store.get(k.url)?.clone(), put: async (k: Request, r: Response) => void store.set(k.url, r) } };
+  let away = 7, asked = 0;
+  g.fetch = (async () => {
+    asked++;
+    return new Response(JSON.stringify({ events: [{ id: "9", date: new Date().toISOString(), competitions: [{ status: { type: { state: "in", shortDetail: "5:12 - 3rd" } }, competitors: [{ homeAway: "home", id: "1", score: "3" }, { homeAway: "away", id: "2", score: String(away) }] }] }] }), { headers: { "content-type": "application/json" } });
+  }) as typeof fetch;
+  try {
+    const res = await liveHandler({ request: new Request("https://x/api/live?league=cfb&date=20261017") } as never);
+    expect(res.headers.get("content-type")).toBe("text/event-stream");
+    const reader = res.body!.getReader();
+    const dec = new TextDecoder();
+    let text = "";
+    const read = async () => { text += dec.decode((await reader.read()).value); };
+    await read(); // retry:
+    await read(); // the first scores
+    expect(text).toContain("event: scores");
+    expect(text).toContain('"away":7');
+    expect(asked).toBe(1);
+    // a touchdown: the next look (a copy older than 4 seconds is refetched) sends it
+    away = 14;
+    for (const k of store.keys()) store.set(k, new Response(await store.get(k)!.text(), { headers: { "content-type": "application/json", "x-fetched": String(Date.now() - 6000) } }));
+    await read();
+    await read();
+    expect(text).toContain('"away":14');
+    await reader.cancel();
+  } finally {
+    g.fetch = realFetch;
+  }
+});
+
+test("a score pushed on the event stream reaches the board at once, ahead of the next poll", async ({ page }) => {
+  const g = slate.games.find((x: any) => x.league === "NFL");
+  const [a] = g.teams;
+  await page.clock.install({ time: new Date(g.date).getTime() + 90 * 60e3 });
+  const board = (away: number) => slate.games.map((x: any) => ({ id: x.espnId, state: x.espnId === g.espnId ? "in" : "pre", detail: "5:12 - 3rd", away, home: 17, ball: null }));
+  await page.route("**/api/scores**", (r) => r.fulfill({ json: board(14) }));
+  await page.route("**/api/flow**", (r) => r.fulfill({ json: { wp: [] } }));
+  await page.route("**/api/live?**", (r) => r.fulfill({ status: 200, headers: { "content-type": "text/event-stream" }, body: `retry: 60000\n\nevent: scores\ndata: ${JSON.stringify(board(21))}\n\n` }));
+  await page.goto("/?league=NFL");
+  const card = page.locator(".board-section .game-card", { hasText: a.name }).first();
+  await expect(card.locator(".team-score").first()).toHaveText("21"); // the poll says 14, the stream says 21
 });

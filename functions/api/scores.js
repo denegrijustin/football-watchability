@@ -3,6 +3,8 @@
 // kickoff), so every visitor's poll doesn't hit ESPN but a touchdown shows within seconds. The edge keeps it for s-maxage; browsers are told
 // max-age=0 so a poll always reaches the edge instead of the browser's own copy. With full=1 it returns only the finished games, with both teams' ids, names and
 // final scores (the shape of src/data/finals.json), which the CFB SP+ and NFL+ against-the-spread trackers grade picks from.
+import { isFresh, stamped } from "../../src/serverFeeds.js";
+
 const PATHS = { nfl: "nfl", cfb: "college-football" };
 
 export async function onRequestGet({ request }) {
@@ -16,7 +18,7 @@ export async function onRequestGet({ request }) {
   const cache = caches.default;
   const key = new Request(`https://fbwatch-cache/scores/${league}/${date}${full ? "/full" : ""}`);
   const hit = await cache.match(key);
-  if (hit) return hit;
+  if (hit && isFresh(hit, url)) return hit;
 
   const qs = `dates=${date}${league === "cfb" ? "&groups=80&limit=300" : ""}`;
   const hosts = ["https://site.api.espn.com", "https://site.web.api.espn.com"];
@@ -59,7 +61,7 @@ export async function onRequestGet({ request }) {
       };
     }).filter(Boolean);
     const fullResponse = new Response(JSON.stringify(finals), {
-      headers: { "content-type": "application/json", "cache-control": "public, max-age=0, s-maxage=60" },
+      headers: stamped({ "content-type": "application/json", "cache-control": "public, max-age=0, s-maxage=60" }),
     });
     await cache.put(key, fullResponse.clone());
     return fullResponse;
@@ -85,10 +87,10 @@ export async function onRequestGet({ request }) {
   const live = out.some((g) => g.state === "in");
   const ttl = live ? 10 : soon ? 15 : 120;
   const response = new Response(JSON.stringify(out), {
-    headers: {
+    headers: stamped({
       "content-type": "application/json",
       "cache-control": `public, max-age=0, s-maxage=${ttl}`,
-    },
+    }),
   });
   await cache.put(key, response.clone());
   return response;

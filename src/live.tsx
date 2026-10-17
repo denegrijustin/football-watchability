@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 import { results, slate } from "./data";
 import type { WpPoint } from "./insanity";
 import { liveStatusParts } from "./liveStatus";
+import { openStream, type Stream } from "./liveStream";
 
 /** Live score for one game, from /api/scores (a Cloudflare Pages Function over ESPN). */
 export type LiveScore = {
@@ -32,6 +33,20 @@ export function liveFromSummary(g: { id?: string; status: { state: string; detai
   const state = g.status.state as LiveScore["state"];
   if (!away || !home || !(state in STATE_ORDER)) return null;
   return { id: espnId, state, detail: g.status.detail, away: Number(away.score) || 0, home: Number(home.score) || 0, ball: state === "in" ? (away.possession ? "away" : home.possession ? "home" : null) : null };
+}
+/** When each game's score last changed here, so a copy older than what was just pushed cannot overwrite it. */
+const changedAt = new Map<string, number>();
+const RECENT_MS = 90_000;
+/**
+ * Whether `s` may replace `old`. Feeds reach the page at different speeds (the pushed stream, the game summary, the polled scoreboard), so a slower one
+ * must not undo a newer one: a game never goes back a state, and its score does not go down within a minute and a half of its last change (a real
+ * correction later still gets through).
+ */
+function accept(old: LiveScore | undefined, s: LiveScore): boolean {
+  if (!old) return true;
+  if (STATE_ORDER[s.state] < STATE_ORDER[old.state]) return false;
+  if (s.state === old.state && s.away + s.home < old.away + old.home && Date.now() - (changedAt.get(s.id) ?? 0) < RECENT_MS) return false;
+  return true;
 }
 const newer = (old: LiveScore | undefined, s: LiveScore) =>
   !old || STATE_ORDER[s.state] > STATE_ORDER[old.state] || (s.state === old.state && s.away + s.home > old.away + old.home);
@@ -126,10 +141,39 @@ export function LiveScores({ children }: { children: ReactNode }) {
       .filter((g) => !archived.has(g.id) && !Number.isNaN(g.date.getTime()));
     let busy = false;
     let lastAt = 0;
+    // Only what changed is replaced, and when nothing did the same map is kept, so an update that brings nothing new re-renders nothing.
+    const applyScores = (next: LiveMap) =>
+      setMap((m) => {
+        let changed = false;
+        const merged: LiveMap = { ...m };
+        for (const [id, s] of Object.entries(next)) {
+          const old = m[id];
+          if (old && old.state === s.state && old.detail === s.detail && old.away === s.away && old.home === s.home && old.ball === s.ball) continue;
+          if (!accept(old, s)) continue;
+          if (!old || old.away + old.home !== s.away + s.home || old.state !== s.state) changedAt.set(id, Date.now());
+          merged[id] = s;
+          changed = true;
+        }
+        return changed ? merged : m;
+      });
+    // Pushed scores: one event stream per league and day with a game on. The polling below keeps running (slower while the stream is delivering).
+    const streams = new Map<string, Stream>();
+    const syncStreams = (wanted: Map<string, Set<string>>) => {
+      const keep = new Set<string>();
+      for (const [league, dates] of wanted) for (const date of dates) {
+        const key = `${league}:${date}`;
+        keep.add(key);
+        if (!streams.has(key)) streams.set(key, openStream<LiveScore[]>(`/api/live?league=${league}&date=${date}`, "scores", (list) => applyScores(Object.fromEntries(list.map((x) => [x.id, x])))));
+      }
+      for (const [key, st] of streams) if (!keep.has(key)) { st.close(); streams.delete(key); }
+    };
+    const streaming = () => [...streams.values()].some((st) => Date.now() - st.lastAt() < 20_000);
     const tick = async () => {
       if (busy) return;
       // No polling while the tab is hidden: wait until it is shown, then fetch straight away.
       if (document.hidden) {
+        for (const st of streams.values()) st.close();
+        streams.clear();
         const resume = () => {
           if (document.hidden || stop) return;
           document.removeEventListener("visibilitychange", resume);
@@ -157,6 +201,7 @@ export function LiveScores({ children }: { children: ReactNode }) {
         if (!wanted.has(key)) wanted.set(key, new Set());
         wanted.get(key)!.add(etYmd(g.date));
       }
+      syncStreams(wanted);
       const next: LiveMap = {};
       await Promise.all(
         [...wanted].flatMap(([league, dates]) =>
@@ -171,21 +216,10 @@ export function LiveScores({ children }: { children: ReactNode }) {
         timer = setTimeout(tick, POLL_MS);
         return;
       }
-      // Only what changed is replaced, and when nothing did the same map is kept, so a poll that brings nothing new re-renders nothing.
-      setMap((m) => {
-        let changed = false;
-        const merged: LiveMap = { ...m };
-        for (const [id, s] of Object.entries(next)) {
-          const old = m[id];
-          if (old && old.state === s.state && old.detail === s.detail && old.away === s.away && old.home === s.home && old.ball === s.ball) continue;
-          merged[id] = s;
-          changed = true;
-        }
-        return changed ? merged : m;
-      });
+      applyScores(next);
       const pending = started.some((g) => next[g.id]?.state !== "post");
       const anyLive = Object.values(next).some((s) => s.state === "in");
-      if (pending) timer = setTimeout(tick, anyLive ? LIVE_POLL_MS : SOON_POLL_MS);
+      if (pending) timer = setTimeout(tick, streaming() ? POLL_MS / 2 : anyLive ? LIVE_POLL_MS : SOON_POLL_MS);
       else {
         const future = games.filter((g) => g.date.getTime() - 10 * 60e3 > now).map((g) => g.date.getTime());
         if (future.length) timer = setTimeout(tick, Math.max(POLL_MS, Math.min(...future) - now - 10 * 60e3));
@@ -209,12 +243,18 @@ export function LiveScores({ children }: { children: ReactNode }) {
       stop = true;
       clearTimeout(timer);
       stopHidden();
+      for (const st of streams.values()) st.close();
+      streams.clear();
       window.removeEventListener("focus", wake);
       window.removeEventListener("online", wake);
       window.removeEventListener("pageshow", wake);
     };
   }, []);
-  const report = useCallback((s: LiveScore) => setMap((m) => (newer(m[s.id], s) ? { ...m, [s.id]: { ...m[s.id], ...s } } : m)), []);
+  const report = useCallback((s: LiveScore) => setMap((m) => {
+    if (!newer(m[s.id], s)) return m;
+    changedAt.set(s.id, Date.now());
+    return { ...m, [s.id]: { ...m[s.id], ...s } };
+  }), []);
   return (
     <ReportContext.Provider value={report}>
       <LiveContext.Provider value={map}>{children}</LiveContext.Provider>

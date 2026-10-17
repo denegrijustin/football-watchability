@@ -15,6 +15,7 @@ import { InsanityMeter } from "./InsanityMeter";
 import { Headshot } from "./Headshot";
 import { GameDetails } from "./GameDetails";
 import { FootballIcon, liveFromSummary, useReportLive } from "../live";
+import { openStream } from "../liveStream";
 import { LastPlay, latestShape } from "../LastPlay";
 import type { WeatherLike } from "../weatherFx";
 import { HalftimeBand } from "../halftime";
@@ -91,9 +92,19 @@ function useLiveGame(league: string | null, id: string | null, started: boolean)
       if (!g || g.status.state === "in") timer = setTimeout(tick, g ? 15_000 : 60_000);
     };
     tick();
+    // The open Game Center also gets the summary pushed the moment it changes (the polling above stays as the fallback).
+    const stream = openStream<LiveGame>(`/api/live-game?league=${league}&event=${id}`, "game", (g) => {
+      if (stop) return;
+      const next = rename(g) as LiveGame;
+      setGame(next);
+      setUpdated(new Date());
+      const l = liveFromSummary(next as never, id);
+      if (l) report(l);
+    });
     return () => {
       stop = true;
       clearTimeout(timer);
+      stream.close();
     };
   }, [league, id, started]);
   return { game, updated };
