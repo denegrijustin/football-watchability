@@ -60,6 +60,12 @@ test("a college game at halftime shows the band, second under the score, with a 
   await expect(band.locator(".band-hat")).toHaveCount(64);
   await expect(band.locator(".band-plume")).toHaveCount(64);
   await expect(band.locator(".band-member")).toHaveCount(64);
+  // The field is the home team's all game: its end zones at both ends, and its conference at both 25s (never the visitor's end zone).
+  await expect(band.locator("[data-endzones]")).toHaveCount(1);
+  await expect(band.locator("[data-endzone]")).toHaveCount(2);
+  const homeName = cfb[0]?.teams[1]?.name as string;
+  expect(await band.locator("[data-endzones]").first().getAttribute("data-endzones")).toBe(homeName);
+  await expect(band.locator("g.lf-conf")).toHaveCount(2);
   // The very first thing on the card.
   const order = await live(page).locator(".compact-overview > *").evaluateAll((els) => els.map((e) => e.className.split(" ")[0]));
   expect(order.filter((c) => c !== "upset-banner")[0]).toBe("halftime-band"); // an upset strip, if there is one, sits above it

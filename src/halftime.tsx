@@ -4,6 +4,9 @@ import type { GameBadge } from "./gameLogo";
 import { LogoMark } from "./logoTone";
 import { WeatherLayer } from "./WeatherFx";
 import { ConfMark, confEntry } from "./ConfMark";
+import { EndZones, EZ_H, EZ_W } from "./sim/EndZones";
+import { endzoneFor } from "./sim/endzone";
+import { MIDFIELD_ART } from "./sim/midfield";
 import type { WeatherLike } from "./weatherFx";
 import { logoOutline, logoFilled, exitPoints, bandCue, SCRIPT_OHIO, OHIO_DOTTER, OHIO_DOT, OHIO_STAGE, entrancePoints, type BandPoint } from "./bandLogo";
 import { FORMATIONS, HALFTIME_MS, mix, N, STEP_MS, clockText, firstSeen, halftimeLeft, nearestAssignment, MOVE_MS } from "./halftimeLogic";
@@ -16,8 +19,14 @@ export type Side = { abbr?: string; name: string; color?: string | null; logoId?
 
 
 /** The stadium from above: turf, end zones with each school's name and logo, yard lines, hash marks and numbers, and the midfield logo. */
-export function FieldArt({ id, home, away, hc, ac, badge }: { id: string; home: Side; away: Side; hc: string; ac: string; badge?: GameBadge | null }) {
+export function FieldArt({ id, home, hc, badge }: { id: string; home: Side; away: Side; hc: string; ac: string; badge?: GameBadge | null }) {
   const espnId = id;
+  // The field is the home team's all game: its end zones at both ends and its conference at both 25s, exactly as on the game card and in the Game Center.
+  const nflGame = home.conf === "AFC" || home.conf === "NFC";
+  const homeShort = nflGame ? home.name.split(" ").pop() ?? home.name : home.name;
+  const ez = endzoneFor({ short: homeShort, color: hc, alt: undefined });
+  const fieldConf = nflGame ? "NFL" : home.conf && home.conf !== "Independent" ? home.conf : null;
+  const midArt = !badge?.src && home.logoId ? MIDFIELD_ART[home.logoId] : undefined;
   return (
     <>
         <defs>
@@ -25,31 +34,15 @@ export function FieldArt({ id, home, away, hc, ac, badge }: { id: string; home: 
             <stop offset="0%" stopColor="#2b6a3a" />
             <stop offset="100%" stopColor="#1a4a29" />
           </radialGradient>
-          <pattern id={`ez-${espnId}-a`} width="3" height="3" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-            <rect width="3" height="3" fill={ac} />
-            <rect width="1.2" height="3" fill={mix(ac, -0.22)} />
-          </pattern>
-          <pattern id={`ez-${espnId}-h`} width="3" height="3" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-            <rect width="3" height="3" fill={hc} />
-            <rect width="1.2" height="3" fill={mix(hc, -0.22)} />
-          </pattern>
         </defs>
         <rect x="0" y="0" width="120" height="40" fill={`url(#turf-${espnId})`} />
         {Array.from({ length: 10 }, (_, i) => (
           <rect key={i} x={10 + i * 10} y="0" width="10" height="40" className={i % 2 ? "df-stripe" : "df-stripe alt"} />
         ))}
-        {/* end zones: team color, diagonal weave, the school name in block letters and its logo */}
-        <rect x="0" y="0" width="10" height="40" fill={`url(#ez-${espnId}-a)`} />
-        <rect x="110" y="0" width="10" height="40" fill={`url(#ez-${espnId}-h)`} />
-        {[[away, 5, -90] as const, [home, 115, 90] as const].map(([t, x, rot], k) => (
-          <g key={k}>
-            <text x={x} y="20" className="band-ez" transform={`rotate(${rot} ${x} 20)`} textAnchor="middle" dominantBaseline="central" textLength={Math.min(26, Math.max(14, t.name.length * 3))} lengthAdjust="spacingAndGlyphs">
-              {t.name.toUpperCase()}
-            </text>
-            {t.logoId && logos[t.logoId] && <LogoMark src={logos[t.logoId]} cx={x} cy={k === 0 ? 34.4 : 6.4} size={6} />}
-            {t.logoId && logos[t.logoId] && <LogoMark src={logos[t.logoId]} cx={x} cy={k === 0 ? 5.6 : 34.4} size={6} />}
-          </g>
-        ))}
+        {/* the home team's real end zone design at both ends (the same art as the game simulator and the cards) */}
+        <svg x="0" y="0" width="120" height="40" viewBox={`0 0 ${EZ_W} ${EZ_H}`} preserveAspectRatio="none" className="lf-ezart">
+          <EndZones ez={ez} name={homeShort} />
+        </svg>
         {/* goal lines, end lines, sidelines and the orange pylons */}
         <line x1="10" x2="10" y1="0" y2="40" className="band-goal" />
         <line x1="110" x2="110" y1="0" y2="40" className="band-goal" />
@@ -86,13 +79,23 @@ export function FieldArt({ id, home, away, hc, ac, badge }: { id: string; home: 
             </g>
           );
         })}
-        {/* midfield: the home team's logo, painted on the turf */}
-        <circle cx="60" cy="20" r="7.4" className="band-mid-ring" />
-        {/* a special or neutral-site game paints its own logo here; any other game, the home team's */}
-        {badge?.src ? <LogoMark src={badge.src} cx={60} cy={20} size={14} chipOpacity={0.15} imageClass="band-mid-logo" gameLogo />
-          : !badge?.neutral && home.logoId && logos[home.logoId] && <LogoMark src={logos[home.logoId]} cx={60} cy={20} size={14} chipOpacity={0.15} imageClass="band-mid-logo" />}
-        <ConfMark conf={away.conf} cx={35} cy={31} size={8} />
-        <ConfMark conf={home.conf} cx={85} cy={31} size={8} />
+        {/* midfield: the home team's own art or logo, painted on the turf */}
+        {midArt ? (
+          <image href={midArt.src} data-midfield="art" x={60 - midArt.card / 2} y={20 - midArt.card / midArt.ratio / 2} width={midArt.card} height={midArt.card / midArt.ratio} opacity="0.95" />
+        ) : (
+          <>
+            <circle cx="60" cy="20" r="7.4" className="band-mid-ring" />
+            {/* a special or neutral-site game paints its own logo here; any other game, the home team's */}
+            {badge?.src ? <LogoMark src={badge.src} cx={60} cy={20} size={14} chipOpacity={0.15} imageClass="band-mid-logo" gameLogo />
+              : !badge?.neutral && home.logoId && logos[home.logoId] && <LogoMark src={logos[home.logoId]} cx={60} cy={20} size={14} chipOpacity={0.15} imageClass="band-mid-logo" />}
+          </>
+        )}
+        {fieldConf && (
+          <>
+            <ConfMark conf={fieldConf} cx={35} cy={7.5} size={5.5} />
+            <g transform="rotate(180 85 32.5)"><ConfMark conf={fieldConf} cx={85} cy={32.5} size={5.5} /></g>
+          </>
+        )}
     </>
   );
 }
