@@ -3,7 +3,7 @@
 import { playKind } from "./driveKinds";
 
 export type HistInput = { id?: string; team: string; text: string; kind: string; yards: number; toGo?: number | null; score?: boolean; turnover?: boolean };
-export type HistBox = { type: "pass" | "run" | "penalty"; /** yards from the left goal line */ from: number; to: number; yards: number };
+export type HistBox = { type: "pass" | "run" | "penalty"; /** yards from the left goal line */ from: number; to: number; yards: number; /** The play earned a first down. */ firstDown: boolean };
 
 const isPenalty = (p: HistInput) => /penalty/i.test(p.kind) || /^\s*penalty\b/i.test(p.text);
 /** A play after which the next snap belongs to a new drive. */
@@ -17,7 +17,7 @@ function box(p: HistInput, dir: 1 | -1): HistBox | null {
   const from = dir > 0 ? 100 - p.toGo : p.toGo;
   const yards = p.yards || 0;
   const to = Math.max(0, Math.min(100, from + dir * yards));
-  return { type, from, to, yards };
+  return { type, from, to, yards, firstDown: type !== "penalty" && /\b(?:1st|first) down\b/i.test(p.text) };
 }
 
 /** The plays of the drive that `shown` belongs to (the shown play included), oldest first, as indices into `plays`. */

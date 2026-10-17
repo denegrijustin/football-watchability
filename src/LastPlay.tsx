@@ -149,6 +149,15 @@ export function LastPlay({ plays, teams, live, situation, nfl }: { plays: FeedPl
           return (
             <g key={i} className={`lp-box ${b.type}`} data-box={b.type}>
               <rect x={x1} y={HIST_Y} width={w} height={HIST_H} rx="3" />
+              {b.firstDown && (
+                <>
+                  <rect x={x1 + w - 5} y={HIST_Y - 2} width="5" height={HIST_H + 4} className="lp-first" />
+                  <g className="lp-first-tag" transform={`translate(${Math.max(x1, x1 + w - 34)} ${HIST_Y - 21})`}>
+                    <rect width="34" height="17" rx="3" />
+                    <text x="17" y="12.5" textAnchor="middle">1st</text>
+                  </g>
+                </>
+              )}
               {w >= 38 && <text x={x1 + w / 2} y={HIST_Y + HIST_H / 2 + 5} textAnchor="middle">{b.yards > 0 ? `+${b.yards}` : b.yards}</text>}
             </g>
           );
@@ -195,7 +204,7 @@ export function LastPlay({ plays, teams, live, situation, nfl }: { plays: FeedPl
         <b>{chor.headline}</b>
         <span className="lp-diagram-note">Illustrated from play text{known ? "" : " · field position approximate"}</span>
         {side && <span> · {side}</span>}
-        <span className="lp-key" aria-hidden="true"><i className="pass" /> pass <i className="run" /> run <i className="penalty" /> penalty</span>
+        <span className="lp-key" aria-hidden="true"><i className="pass" /> pass <i className="run" /> run <i className="penalty" /> penalty <i className="first" /> first down</span>
         {detail.length > 0 && <span className="lp-detail" data-detail>{detail.map((d, i) => <em key={i}>{d}</em>)}</span>}
         <span className="lp-text">{found.shape.text}</span>
         <button type="button" className="lp-replay" onClick={() => setRun((n) => n + 1)} aria-label="Replay the last play">↻ Replay</button>

@@ -53,17 +53,23 @@ export function EndZones({ ez, name }: { ez: EndzoneArt; name: string }) {
           })}
           {ez.stripe && <rect x="0" width="10" height={EZ_H} fill={ez.stripe} />}
           {ez.ridge && <polygon fill={ez.ridge} points={`0,0 ${Array.from({ length: 29 }, (_, i) => `${i % 2 ? 14 : 30 + (i % 4 === 0 ? 8 : 0)},${(i * EZ_H) / 28}`).join(" ")} 0,${EZ_H}`} />}
-          {ez.border && <rect x="5" y="5" width={EZ - 10} height={EZ_H - 10} fill="none" stroke={ez.border} strokeWidth="10" />}
+          {ez.border && <rect x={ez.span ? 7 : 5} y={ez.span ? 7 : 5} width={EZ - (ez.span ? 14 : 10)} height={EZ_H - (ez.span ? 14 : 10)} fill="none" stroke={ez.border} strokeWidth={ez.span ? 14 : 10} />}
+          {ez.inner && <rect x={ez.inner.inset} y={ez.inner.inset} width={EZ - 2 * ez.inner.inset} height={EZ_H - 2 * ez.inner.inset} fill="none" stroke={ez.inner.color} strokeWidth="2.5" />}
           <rect x="0" width={EZ} height={EZ_H} fill={`url(#${id}s)`} opacity="0.7" />
         </g>
       ))}
       {!ez.noWord && !ez.diamonds && [[EZ / 2 + 4, -90], [EZ_W - EZ / 2 - 4, 90]].map(([x, rot], side) => (
         ez.mark && logos[ez.mark] ? (
-          // The school's logo leads the lettering, the pair centred in the end zone.
-          <g key={rot} transform={`translate(${x} ${CY}) rotate(${rot})`}>
-            <text transform="translate(34 0)" {...fit} style={lettering(ez, size)}>{ez.words?.[side] ?? ez.word}</text>
-            <image href={logos[ez.mark]} style={{ filter: "brightness(0) invert(1)" }} data-endzone-mark={ez.mark} x={34 - Math.min(480, longest * (size * 0.62 + 6)) / 2 - 66} y="-31" width="62" height="62" preserveAspectRatio="xMidYMid meet" />
-          </g>
+          // The school's logo leads the lettering, the pair centred along the end zone.
+          (() => {
+            const span = ez.span ?? Math.min(480, longest * (size * 0.62 + 6)), mk = 80, gap = 14, total = mk + gap + span;
+            return (
+              <g key={rot} transform={`translate(${x} ${CY}) rotate(${rot})`}>
+                <image href={logos[ez.mark!]} style={{ filter: "brightness(0) invert(1)" }} data-endzone-mark={ez.mark} x={-total / 2} y={-mk / 2} width={mk} height={mk} preserveAspectRatio="xMidYMid meet" />
+                <text transform={`translate(${-total / 2 + mk + gap + span / 2} 0)`} textLength={span} lengthAdjust="spacingAndGlyphs" style={lettering(ez, size)}>{ez.words?.[side] ?? ez.word}</text>
+              </g>
+            );
+          })()
         ) : (
           <text key={rot} transform={`translate(${x} ${CY}) rotate(${rot})`} {...fit} style={lettering(ez.sides ? { ...ez, ...ez.sides[side] } : ez, size)}>{ez.words?.[side] ?? ez.word}</text>
         )

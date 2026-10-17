@@ -81,7 +81,7 @@ test("the Game Center shows the last play as play art drawn from the play", asyn
         plays: [
           { id: "0", team: a.espnId, period: 3, clock: "7:10", text: "Run Man rush up the middle for 3 yards", kind: "Rush", yards: 3, toGo: 60, offense: true, score: false, turnover: false },
           { id: "1", team: a.espnId, period: 3, clock: "6:00", text: "Run Man rush left end for 4 yards", kind: "Rush", yards: 4, toGo: 57, offense: true, score: false, turnover: false },
-          { id: "1b", team: a.espnId, period: 3, clock: "5:55", text: "Pat Passer pass short middle to Tim End for 6 yards", kind: "Pass Reception", yards: 6, toGo: 53, offense: true, score: false, turnover: false },
+          { id: "1b", team: a.espnId, period: 3, clock: "5:55", text: "Pat Passer pass short middle to Tim End for 6 yards, 1ST DOWN", kind: "Pass Reception", yards: 6, toGo: 53, offense: true, score: false, turnover: false },
           { id: "1c", team: a.espnId, period: 3, clock: "5:50", text: "PENALTY on SEA, Offside, 5 yards", kind: "Penalty", yards: 5, toGo: 47, offense: true, score: false, turnover: false },
           { id: "2", team: a.espnId, period: 3, clock: "5:40", text: "Pat Passer pass deep right to Wes Receiver for 31 yards to the SEA 35", kind: "Pass Reception", yards: 31, toGo: 42, offense: true, score: false, turnover: false },
           { id: "3", team: a.espnId, period: 3, clock: "5:12", text: "Timeout #1 by ATL", kind: "Timeout", yards: 0, toGo: null, offense: true, score: false, turnover: false },
@@ -103,6 +103,7 @@ test("the Game Center shows the last play as play art drawn from the play", asyn
   await expect(lp.locator("svg.lp-svg")).toHaveAttribute("viewBox", "0 0 1200 560");
   await expect(lp.locator("g.lf-conf")).toHaveCount(2);
   await expect(lp.locator("g.lp-box")).toHaveCount(4);
+  await expect(lp.locator(".lp-first-tag")).toHaveCount(1); // the box of the play that got a first down carries a 1st marker
   expect(await lp.locator("g.lp-box").evaluateAll((els) => els.map((e) => e.getAttribute("data-box")))).toEqual(["run", "run", "pass", "penalty"]);
   await expect(page.locator("dialog.gc .gc-livefield")).toHaveCount(0);
   // the drive's stats under the field: 2 runs for 7, 2 passes for 37, 4 plays for 44 yards, one flag
@@ -131,7 +132,7 @@ test("the drive history is the plays of the drive in progress, and a punt, a sco
   const plays = [
     p("a", B, "Z rush for 3 yards", "Rush", 3, 70),
     p("b", A, "X rush up the middle for 4 yards", "Rush", 4, 70),
-    p("c", A, "Q pass short left to R for 12 yards", "Pass Reception", 12, 66),
+    p("c", A, "Q pass short left to R for 12 yards to the ATL 46, 1ST DOWN ATL", "Pass Reception", 12, 66),
     p("d", A, "PENALTY on ATL, holding, 10 yards", "Penalty", -10, 54),
     p("e", A, "Q pass incomplete deep right", "Pass Incompletion", 0, 64),
     p("f", A, "S punts 40 yards", "Punt", 40, 64),
@@ -139,9 +140,9 @@ test("the drive history is the plays of the drive in progress, and a punt, a sco
   ];
   // the away team (A) drives right: from its own 30 the first run goes 4 yards
   expect(driveHistory(plays, 4, A)).toEqual([
-    { type: "run", from: 30, to: 34, yards: 4 },
-    { type: "pass", from: 34, to: 46, yards: 12 },
-    { type: "penalty", from: 46, to: 36, yards: -10 },
+    { type: "run", from: 30, to: 34, yards: 4, firstDown: false },
+    { type: "pass", from: 34, to: 46, yards: 12, firstDown: true },
+    { type: "penalty", from: 46, to: 36, yards: -10, firstDown: false },
   ]);
   expect(driveHistory(plays, 5, A)).toEqual([]); // the punt clears the field
   expect(driveHistory(plays, 6, A)).toEqual([]); // the other team's first play after it: the earlier plays are not its drive

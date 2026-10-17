@@ -37,6 +37,10 @@ export interface EndzoneArt {
   field?: [string, string];
   /** A school logo drawn before the lettering (Kansas State's wildcat), by logo id. */
   mark?: string;
+  /** The lettering stretched to this length (field pixels) so it fills the end zone the way the real one does. */
+  span?: number;
+  /** A thin line inside the border, inset this far from the edge. */
+  inner?: { color: string; inset: number };
   /** Different colors in the two end zones, left then right (LSU: gold with purple lettering, purple with gold). */
   sides?: [{ base: string; ink: string; outline: string }, { base: string; ink: string; outline: string }];
 }
@@ -67,7 +71,8 @@ const FAMOUS: Record<string, Partial<EndzoneArt>> = {
   lsu: {
     base: "#fdd023", ink: "#461d7c", outline: "#ffffff", size: 116,     sides: [{ base: "#fdd023", ink: "#461d7c", outline: "#ffffff" }, { base: "#461d7c", ink: "#fdd023", outline: "#ffffff" }],
   },
-  "kansas state": { base: "#4a2a7d", ink: "#ffffff", outline: "rgba(0,0,0,0)", border: "#ffffff", word: "K-STATE", italic: true, size: 56, mark: "kansas-state" },
+  // Kansas State's end zone at Bill Snyder Family Stadium: deep purple inside a wide white band with a thin white line inside it, the wildcat and K-STATE in white italic.
+  "kansas state": { base: "#432a6f", ink: "#ffffff", outline: "rgba(0,0,0,0)", border: "#ffffff", inner: { color: "#ffffff", inset: 26 }, word: "K-STATE", italic: true, size: 66, span: 330, mark: "kansas-state" },
   oregon: { base: "#24572f", ink: "#fee123", outline: "rgba(0,0,0,0)", size: 84 },
   michigan: { base: "#ffcb05", ink: "#00274c", outline: "#ffcb05", stripe: "#00274c" },
   clemson: { base: "#f56600", ink: "#522d80", outline: "#ffffff" },
