@@ -1,4 +1,5 @@
 import { useId } from "react";
+import { logos } from "../data";
 import type { EndzoneArt } from "./endzone";
 
 /** The field's coordinate system the art is drawn in: 1200 wide with 100-wide end zones, 560 tall. Anything that shows it scales this box. */
@@ -57,7 +58,15 @@ export function EndZones({ ez, name }: { ez: EndzoneArt; name: string }) {
         </g>
       ))}
       {!ez.noWord && !ez.diamonds && [[EZ / 2 + 4, -90], [EZ_W - EZ / 2 - 4, 90]].map(([x, rot], side) => (
-        <text key={rot} transform={`translate(${x} ${CY}) rotate(${rot})`} {...fit} style={lettering(ez.sides ? { ...ez, ...ez.sides[side] } : ez, size)}>{ez.words?.[side] ?? ez.word}</text>
+        ez.mark && logos[ez.mark] ? (
+          // The school's logo leads the lettering, the pair centred in the end zone.
+          <g key={rot} transform={`translate(${x} ${CY}) rotate(${rot})`}>
+            <text transform="translate(34 0)" {...fit} style={lettering(ez, size)}>{ez.words?.[side] ?? ez.word}</text>
+            <image href={logos[ez.mark]} style={{ filter: "brightness(0) invert(1)" }} data-endzone-mark={ez.mark} x={34 - Math.min(480, longest * (size * 0.62 + 6)) / 2 - 66} y="-31" width="62" height="62" preserveAspectRatio="xMidYMid meet" />
+          </g>
+        ) : (
+          <text key={rot} transform={`translate(${x} ${CY}) rotate(${rot})`} {...fit} style={lettering(ez.sides ? { ...ez, ...ez.sides[side] } : ez, size)}>{ez.words?.[side] ?? ez.word}</text>
+        )
       ))}
       {ez.ends && [0, 1].flatMap((side) => [0, 1].flatMap((bottom) => ez.ends!.map((color, i) => {
         const cx = side === 0 ? EZ / 2 : EZ_W - EZ / 2;

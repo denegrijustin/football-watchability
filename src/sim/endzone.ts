@@ -35,6 +35,8 @@ export interface EndzoneArt {
   words?: [string, string];
   /** Turf colors, light and dark mowing stripes, when the field itself is not green (Boise State's blue). */
   field?: [string, string];
+  /** A school logo drawn before the lettering (Kansas State's wildcat), by logo id. */
+  mark?: string;
   /** Different colors in the two end zones, left then right (LSU: gold with purple lettering, purple with gold). */
   sides?: [{ base: string; ink: string; outline: string }, { base: string; ink: string; outline: string }];
 }
@@ -63,9 +65,9 @@ const FAMOUS: Record<string, Partial<EndzoneArt>> = {
   missouri: { base: "#111111", border: "#f1b82d", diamonds: { fill: "#f1b82d", ink: "#111111" } },
   "ole miss": { base: "#2d7db6", ink: "#d4572e", outline: "#ffffff", italic: true, size: 62 },
   lsu: {
-    base: "#fdd023", ink: "#461d7c", outline: "#ffffff", size: 116, words: ["LSU", "TIGERS"],
-    sides: [{ base: "#fdd023", ink: "#461d7c", outline: "#ffffff" }, { base: "#461d7c", ink: "#fdd023", outline: "#ffffff" }],
+    base: "#fdd023", ink: "#461d7c", outline: "#ffffff", size: 116,     sides: [{ base: "#fdd023", ink: "#461d7c", outline: "#ffffff" }, { base: "#461d7c", ink: "#fdd023", outline: "#ffffff" }],
   },
+  "kansas state": { base: "#4a2a7d", ink: "#ffffff", outline: "rgba(0,0,0,0)", border: "#ffffff", word: "K-STATE", italic: true, size: 56, mark: "kansas-state" },
   oregon: { base: "#24572f", ink: "#fee123", outline: "rgba(0,0,0,0)", size: 84 },
   michigan: { base: "#ffcb05", ink: "#00274c", outline: "#ffcb05", stripe: "#00274c" },
   clemson: { base: "#f56600", ink: "#522d80", outline: "#ffffff" },

@@ -1,7 +1,7 @@
 // The real helmet of each NFL team: the shell, the stripe down the middle and the facemask. Colleges (and any team not listed) wear
 // their own team colour with a white stripe and a grey mask.
 /** `decal`: lettering drawn on the shell in place of the team logo (LSU's purple letters on the gold). */
-export type HelmetLook = { shell: string; stripe: string; mask: string; decal?: { text: string; color: string } };
+export type HelmetLook = { shell: string; stripe: string; mask: string; decal?: { text: string; color: string }; /** Paint the team logo this single colour (the burnt-orange Longhorn on a white helmet). */ tint?: string };
 const GREY = "#aab2ba";
 const H = (shell: string, stripe: string, mask = GREY): HelmetLook => ({ shell, stripe, mask });
 export const NFL_HELMETS: Record<string, HelmetLook> = {
@@ -42,6 +42,6 @@ export const NFL_HELMETS: Record<string, HelmetLook> = {
 export const COLLEGE_HELMETS: Record<string, HelmetLook> = {
   "kansas-state": H("#b9bec4", "#512888", "#512888"),
   lsu: { ...H("#fdd023", "#461d7c", "#461d7c"), decal: { text: "LSU", color: "#461d7c" } },
-  texas: H("#f4f5f7", "#bf5700", "#c9ced3"),
+  texas: { ...H("#f4f5f7", "#bf5700", "#c9ced3"), tint: "#bf5700" },
 };
 export const helmetFor = (logoId: string | undefined, color: string): HelmetLook => (logoId && (NFL_HELMETS[logoId] ?? COLLEGE_HELMETS[logoId])) || H(color, "#ffffff");
