@@ -268,7 +268,7 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
                 {game && state !== "pre" && !isHalftime(game.status.detail) && latestShape(game.plays) && (
                   <section className="gc-panel gc-wide gc-lastplay">
                     <h3 className="micro-label">Last play</h3>
-                    <LastPlay plays={game.plays} teams={[away, home].map((t, i) => ({ id: game.teams[i]?.id, abbr: t?.abbr, name: t?.name ?? "", color: t?.color }))} />
+                    <LastPlay plays={game.plays} teams={[away, home].map((t, i) => ({ id: game.teams[i]?.id, abbr: t?.abbr, name: t?.name ?? "", color: t?.color, logoId: t?.logoId }))} />
                   </section>
                 )}
             {/* Projection */}

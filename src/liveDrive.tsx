@@ -241,6 +241,13 @@ export function FieldView({ data, teams, variant, rootRef, badge, weather }: { d
         {Array.from({ length: 11 }, (_, i) => (
           <line key={i} x1={10 + i * 10} x2={10 + i * 10} y1="0" y2={H} className={i === 5 ? "df-line mid" : "df-line"} />
         ))}
+        {Array.from({ length: 99 }, (_, i) => i + 1).filter((yd) => yd % 5).map((yd) => (
+          <path key={`hash-${yd}`} d={`M${X(yd)} 0.6v0.9M${X(yd)} ${H - 1.5}v0.9M${X(yd)} ${H * 0.43}v0.65M${X(yd)} ${H * 0.57}v0.65`} className="lf-field-hash" />
+        ))}
+        <rect x="0.25" y="0.25" width="119.5" height={H - 0.5} className="lf-field-boundary" />
+        {[1, 2, 3, 4, 5, 4, 3, 2, 1].map((n, i) => (
+          <text key={`top-${i}`} x={20 + i * 10} y="3.8" transform={`rotate(180 ${20 + i * 10} 2.8)`} className="df-num" textAnchor="middle">{n * 10}</text>
+        ))}
         {[1, 2, 3, 4, 5, 4, 3, 2, 1].map((n, i) => (
           <text key={i} x={20 + i * 10} y={H - 1.6} className="df-num" textAnchor="middle">{n * 10}</text>
         ))}
@@ -301,11 +308,14 @@ export function FieldView({ data, teams, variant, rootRef, badge, weather }: { d
           {/* the offense's helmet, as the team wears it, facing the way it is driving, with the logo on the shell */}
           <g transform={`translate(0 ${ballY}) scale(${dir} 1)`} className="lf-helmet" data-facing={dir > 0 ? "right" : "left"} data-shell={helmet.shell}>
             <path d="M-3.8 1.9C-4.7 -2.4 -1.8 -4.1 0.8 -3.9C3 -3.7 4.1 -1.9 3.9 0.2L3.3 1.2L1.5 1.3L0.7 2.5L-1.4 3.1L-3 3Z" className="lf-helmet-shell" fill={helmet.shell} />
+            <path d="M-3.8 1.9C-4.7 -2.4 -1.8 -4.1 0.8 -3.9C3 -3.7 4.1 -1.9 3.9 0.2L3.3 1.2L1.5 1.3L0.7 2.5L-1.4 3.1L-3 3Z" className="lf-shell-shade" />
+            <path d="M-3.4 -1.6C-2.4 -3.5 0.4 -3.8 2.3 -2.3" className="lf-shell-shine" />
+            <path d="M2.4 -0.7L3.8 -0.3L3.3 1.2L1.7 1.3Z" className="lf-visor" />
             <path d="M3.5 -1.2C1.7 -3.5 -1.5 -3.8 -3.6 -1.5" className="lf-helmet-stripe" stroke={helmet.stripe} />
             <ellipse cx="-0.7" cy="1" rx="0.8" ry="0.95" className="lf-helmet-ear" />
             <path d="M3.9 0.5L5.1 0.9L5.1 2.8L2.6 3.3L1.2 2.6M4 1.6L1.9 1.7M4.6 0.7V3" className="lf-helmet-mask" stroke={helmet.mask} />
           </g>
-          {logo && <image href={logos[teams[side].logoId!]} x={-0.2 * dir - 1.5} y={ballY - 2.6} width="3" height="3" preserveAspectRatio="xMidYMid meet" className="lf-ball-logo" />}
+          {logo && <image href={logos[teams[side].logoId!]} x={-0.2 * dir - 1.5} y={ballY - 2.2} width="2.8" height="2.8" preserveAspectRatio="xMidYMid meet" className="lf-ball-logo" />}
           <text x={tagLeft ? -4.5 : 4.5} y="3.6" className="lf-tagtext ball" textAnchor={tagLeft ? "end" : "start"}>{abbr} · {spotName(ballOwn, own, opp)}</text>
         </g>
       </svg>
