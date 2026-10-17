@@ -48,7 +48,8 @@ test("watch links: ESPN games open in the ESPN app, cable networks open the DIRE
   // Any game the broadcast line says is in the ESPN App, whatever its network.
   expect(watchLink({ network: "fox", broadcast: "FOX / ESPN App", league: "NFL", espnId: "9" })?.kind).toBe("espn");
   expect(watchLink({ network: "nbc", league: "NFL", espnId: "9" })).toBeNull(); // no Peacock link
-  expect(watchLink({ network: "prime-video", league: "NFL", espnId: "9" })?.title).toBe("Open Prime Video");
+  expect(watchLink({ network: "prime-video", league: "NFL", espnId: "9" })).toMatchObject({ title: "Open the Prime Video app (or its web page)", app: { ios: "aiv://" } });
+  expect(watchLink({ network: "fox", league: "NFL", espnId: "9" })).toMatchObject({ title: "Open FOX One", url: "https://www.foxone.com/" });
   expect(watchLink({ network: "tnt", league: "NFL", espnId: "9" })).toBeNull(); // cable only: the channel number links instead
   expect(watchLink({ network: "espn", league: "CFB", espnId: null })).toBeNull(); // nothing to link to without a game id
   expect(directvLink("espn")).toMatchObject({ url: DIRECTV_GUIDE, title: "Open the DIRECTV app · channel 206 (Overland Park, KS)" });
