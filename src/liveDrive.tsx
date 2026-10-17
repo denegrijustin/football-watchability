@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { logos, teamColor } from "./data";
 import { rename } from "./data/load";
-import { FootballIcon } from "./live";
+import { FootballIcon, liveFromSummary, useReportLive } from "./live";
 import { LogoMark } from "./logoTone";
 import { helmetFor } from "./helmets";
 import { WeatherLayer, weatherCaption } from "./WeatherFx";
@@ -36,7 +36,7 @@ async function fetchSummary(league: string, id: string): Promise<Summary | null>
   if (hit && Date.now() - hit.at < POLL_MS - 1000) return hit.data;
   let data: Summary | null = null;
   try {
-    const r = await fetch(`/api/game?league=${PATHS[league]}&event=${id}`);
+    const r = await fetch(`/api/game?league=${PATHS[league]}&event=${id}`, { cache: "no-store" });
     if (r.ok && (r.headers.get("content-type") ?? "").includes("json")) data = rename(await r.json());
   } catch {
     /* offline: keep what we had */
@@ -51,6 +51,7 @@ async function fetchSummary(league: string, id: string): Promise<Summary | null>
  */
 function useSummary(league: string, id: string, active: boolean) {
   const ref = useRef<HTMLDivElement>(null);
+  const report = useReportLive();
   const [data, setData] = useState<Summary | null>(() => cache.get(id)?.data ?? null);
   const [loaded, setLoaded] = useState(() => cache.has(id));
   useEffect(() => {
@@ -64,7 +65,11 @@ function useSummary(league: string, id: string, active: boolean) {
       if (stop || !onScreen || document.hidden) return;
       const next = await fetchSummary(league, id);
       if (stop) return;
-      if (next) setData(next);
+      if (next) {
+        setData(next);
+        const l = liveFromSummary(next as never, id);
+        if (l) report(l);
+      }
       setLoaded(true);
       timer = setTimeout(tick, POLL_MS);
     };

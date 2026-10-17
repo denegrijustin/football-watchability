@@ -1,7 +1,7 @@
 // Cloudflare Pages Function: /api/game?league=nfl|cfb&event=ID
 // A trimmed ESPN game summary for the Game Center overlay (score, situation,
 // win probability, drives, plays, team and player stats), cached at the edge
-// for 15 seconds while the game is live.
+// for 8 seconds while the game is live (browsers always revalidate, see s-maxage).
 import { rosterPositions, trimGame } from "../../src/gameTrim.js";
 
 const PATHS = { nfl: "nfl", cfb: "college-football" };
@@ -69,9 +69,9 @@ export async function onRequestGet({ request }) {
     }),
   );
   const game = trimGame(summary, positions);
-  const ttl = game.status.state === "in" ? 15 : game.status.state === "post" ? 600 : 120;
+  const ttl = game.status.state === "in" ? 8 : game.status.state === "post" ? 600 : 60;
   const response = new Response(JSON.stringify({ ...game, _roster: rosterStatus.join(",") || "cached" }), {
-    headers: { "content-type": "application/json", "cache-control": `public, max-age=${ttl}`, "x-roster": rosterStatus.join(",") || "cached" },
+    headers: { "content-type": "application/json", "cache-control": `public, max-age=0, s-maxage=${ttl}`, "x-roster": rosterStatus.join(",") || "cached" },
   });
   await cache.put(key, response.clone());
   return response;

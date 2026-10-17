@@ -14,7 +14,7 @@ import { NflProjectionBlock, NflSettingPanel } from "./NflGameInfo";
 import { InsanityMeter } from "./InsanityMeter";
 import { Headshot } from "./Headshot";
 import { GameDetails } from "./GameDetails";
-import { FootballIcon } from "../live";
+import { FootballIcon, liveFromSummary, useReportLive } from "../live";
 import { LastPlay, latestShape } from "../LastPlay";
 import type { WeatherLike } from "../weatherFx";
 import { HalftimeBand } from "../halftime";
@@ -55,7 +55,7 @@ export type LiveGame = {
 const PATHS: Record<string, string> = { nfl: "nfl", cfb: "college-football" };
 async function fetchGame(league: string, id: string): Promise<LiveGame | null> {
   try {
-    const r = await fetch(`/api/game?league=${league}&event=${id}`);
+    const r = await fetch(`/api/game?league=${league}&event=${id}`, { cache: "no-store" });
     if (r.ok && (r.headers.get("content-type") ?? "").includes("json")) return rename(await r.json());
   } catch {
     /* fall through */
@@ -70,6 +70,7 @@ async function fetchGame(league: string, id: string): Promise<LiveGame | null> {
 }
 
 function useLiveGame(league: string | null, id: string | null, started: boolean) {
+  const report = useReportLive();
   const [game, setGame] = useState<LiveGame | null>(null);
   const [updated, setUpdated] = useState<Date | null>(null);
   useEffect(() => {
@@ -83,6 +84,8 @@ function useLiveGame(league: string | null, id: string | null, started: boolean)
       if (g) {
         setGame(g);
         setUpdated(new Date());
+        const l = liveFromSummary(g as never, id);
+        if (l) report(l);
       }
       // Every 15 seconds while live; a finished game needs one load.
       if (!g || g.status.state === "in") timer = setTimeout(tick, g ? 15_000 : 60_000);

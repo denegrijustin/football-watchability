@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { results, slate } from "./data";
 import type { WpPoint } from "./insanity";
 import { liveStatusParts } from "./liveStatus";
@@ -15,11 +15,26 @@ export type LiveScore = {
 };
 type LiveMap = Record<string, LiveScore>;
 const LiveContext = createContext<LiveMap>({});
+const ReportContext = createContext<(score: LiveScore) => void>(() => {});
 export const useLive = (espnId?: string | null) => {
   const map = useContext(LiveContext);
   return espnId ? map[espnId] : undefined;
 };
 export const useLiveMap = () => useContext(LiveContext);
+/**
+ * Lets a fresher source hand the board a score: the game summary (the Game Center and the live field on a card poll it every few seconds) runs ahead of
+ * the scoreboard feed, so what it saw is merged in the moment it arrives. It only moves a game forward: a later state, or more points.
+ */
+export const useReportLive = () => useContext(ReportContext);
+const STATE_ORDER = { pre: 0, in: 1, post: 2 } as const;
+export function liveFromSummary(g: { id?: string; status: { state: string; detail: string }; teams: { homeAway: string; score: number; possession?: boolean }[] }, espnId: string): LiveScore | null {
+  const away = g.teams.find((t) => t.homeAway === "away"), home = g.teams.find((t) => t.homeAway === "home");
+  const state = g.status.state as LiveScore["state"];
+  if (!away || !home || !(state in STATE_ORDER)) return null;
+  return { id: espnId, state, detail: g.status.detail, away: Number(away.score) || 0, home: Number(home.score) || 0, ball: state === "in" ? (away.possession ? "away" : home.possession ? "home" : null) : null };
+}
+const newer = (old: LiveScore | undefined, s: LiveScore) =>
+  !old || STATE_ORDER[s.state] > STATE_ORDER[old.state] || (s.state === old.state && s.away + s.home > old.away + old.home);
 
 /** Where a game is in its life, for the board's sections and Status filter. */
 export type GameStatus = "live" | "final" | "upcoming";
@@ -47,13 +62,16 @@ export function useNow(ms = 30_000) {
   return now;
 }
 
+/** How often the scoreboard is asked: every 15 seconds while a game is on, every 30 while a kickoff is close or just past, a minute otherwise. */
 const POLL_MS = 60_000;
+const LIVE_POLL_MS = 15_000;
+const SOON_POLL_MS = 30_000;
 const PATHS: Record<string, string> = { nfl: "nfl", cfb: "college-football" };
 
 /** Our edge-cached proxy first; ESPN directly (it allows cross-origin) as a fallback. */
 async function scores(league: string, date: string): Promise<LiveScore[]> {
   try {
-    const res = await fetch(`/api/scores?league=${league}&date=${date}`);
+    const res = await fetch(`/api/scores?league=${league}&date=${date}`, { cache: "no-store" });
     if (res.ok && (res.headers.get("content-type") ?? "").includes("json")) return await res.json();
   } catch {
     /* fall through */
@@ -106,7 +124,10 @@ export function LiveScores({ children }: { children: ReactNode }) {
     const games = slate.games
       .map((g) => ({ id: g.espnId, league: g.league, date: new Date((g as { date?: string }).date ?? "") }))
       .filter((g) => !archived.has(g.id) && !Number.isNaN(g.date.getTime()));
+    let busy = false;
+    let lastAt = 0;
     const tick = async () => {
+      if (busy) return;
       // No polling while the tab is hidden: wait until it is shown, then fetch straight away.
       if (document.hidden) {
         const resume = () => {
@@ -118,6 +139,10 @@ export function LiveScores({ children }: { children: ReactNode }) {
         stopHidden = () => document.removeEventListener("visibilitychange", resume);
         return;
       }
+      clearTimeout(timer);
+      busy = true;
+      lastAt = Date.now();
+      try {
       const now = Date.now();
       const started = games.filter((g) => g.date.getTime() - 10 * 60e3 <= now);
       if (!started.length) {
@@ -143,7 +168,7 @@ export function LiveScores({ children }: { children: ReactNode }) {
       if (stop) return;
       if (!Object.keys(next).length) {
         // Scores unavailable (offline, local preview): back off.
-        timer = setTimeout(tick, 5 * POLL_MS);
+        timer = setTimeout(tick, POLL_MS);
         return;
       }
       // Only what changed is replaced, and when nothing did the same map is kept, so a poll that brings nothing new re-renders nothing.
@@ -159,20 +184,42 @@ export function LiveScores({ children }: { children: ReactNode }) {
         return changed ? merged : m;
       });
       const pending = started.some((g) => next[g.id]?.state !== "post");
-      if (pending) timer = setTimeout(tick, POLL_MS);
+      const anyLive = Object.values(next).some((s) => s.state === "in");
+      if (pending) timer = setTimeout(tick, anyLive ? LIVE_POLL_MS : SOON_POLL_MS);
       else {
         const future = games.filter((g) => g.date.getTime() - 10 * 60e3 > now).map((g) => g.date.getTime());
         if (future.length) timer = setTimeout(tick, Math.max(POLL_MS, Math.min(...future) - now - 10 * 60e3));
       }
+      } finally {
+        busy = false;
+      }
     };
+    // Coming back to the tab, or back online, asks straight away (unless it just did): a phone that slept through a quarter must not wait for the timer.
+    const wake = () => {
+      if (!document.hidden && !stop && Date.now() - lastAt > 5_000) {
+        clearTimeout(timer);
+        void tick();
+      }
+    };
+    window.addEventListener("focus", wake);
+    window.addEventListener("online", wake);
+    window.addEventListener("pageshow", wake);
     tick();
     return () => {
       stop = true;
       clearTimeout(timer);
       stopHidden();
+      window.removeEventListener("focus", wake);
+      window.removeEventListener("online", wake);
+      window.removeEventListener("pageshow", wake);
     };
   }, []);
-  return <LiveContext.Provider value={map}>{children}</LiveContext.Provider>;
+  const report = useCallback((s: LiveScore) => setMap((m) => (newer(m[s.id], s) ? { ...m, [s.id]: { ...m[s.id], ...s } } : m)), []);
+  return (
+    <ReportContext.Provider value={report}>
+      <LiveContext.Provider value={map}>{children}</LiveContext.Provider>
+    </ReportContext.Provider>
+  );
 }
 
 /**

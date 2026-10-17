@@ -47,7 +47,7 @@ export async function onRequestGet({ request }) {
         { id: w.playId, text: periodByPlay.get(w.playId)?.text ?? "Play description unavailable", clock: periodByPlay.get(w.playId)?.clock?.displayValue ?? "" },
   ]);
   const response = new Response(JSON.stringify({ wp }), {
-    headers: { "content-type": "application/json", "cache-control": "public, max-age=30" },
+    headers: { "content-type": "application/json", "cache-control": "public, max-age=0, s-maxage=20" },
   });
   await cache.put(key, response.clone());
   return response;

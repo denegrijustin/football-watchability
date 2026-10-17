@@ -1,6 +1,7 @@
 // Cloudflare Pages Function: /api/scores?league=nfl|cfb&date=YYYYMMDD[&full=1]
-// Trimmed live scores from ESPN's scoreboard, cached at the edge for 30s so
-// every visitor's poll doesn't hit ESPN. With full=1 it returns only the finished games, with both teams' ids, names and
+// Trimmed live scores from ESPN's scoreboard, cached at the edge for 10s while a game is on (and for a game about to start or already past its
+// kickoff), so every visitor's poll doesn't hit ESPN but a touchdown shows within seconds. The edge keeps it for s-maxage; browsers are told
+// max-age=0 so a poll always reaches the edge instead of the browser's own copy. With full=1 it returns only the finished games, with both teams' ids, names and
 // final scores (the shape of src/data/finals.json), which the CFB SP+ and NFL+ against-the-spread trackers grade picks from.
 const PATHS = { nfl: "nfl", cfb: "college-football" };
 
@@ -58,7 +59,7 @@ export async function onRequestGet({ request }) {
       };
     }).filter(Boolean);
     const fullResponse = new Response(JSON.stringify(finals), {
-      headers: { "content-type": "application/json", "cache-control": "public, max-age=60" },
+      headers: { "content-type": "application/json", "cache-control": "public, max-age=0, s-maxage=60" },
     });
     await cache.put(key, fullResponse.clone());
     return fullResponse;
@@ -78,11 +79,15 @@ export async function onRequestGet({ request }) {
       ball,
     };
   });
+  // How long the edge may keep this: seconds while anything is live or a kickoff is near/past, a couple of minutes otherwise.
+  const now = Date.now();
+  const soon = (data.events ?? []).some((ev, i) => out[i]?.state === "pre" && Date.parse(ev.date) - now < 20 * 60e3);
   const live = out.some((g) => g.state === "in");
+  const ttl = live ? 10 : soon ? 15 : 120;
   const response = new Response(JSON.stringify(out), {
     headers: {
       "content-type": "application/json",
-      "cache-control": `public, max-age=${live ? 30 : 300}`,
+      "cache-control": `public, max-age=0, s-maxage=${ttl}`,
     },
   });
   await cache.put(key, response.clone());
