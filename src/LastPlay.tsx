@@ -180,7 +180,6 @@ export function LastPlay({ plays, teams, live, situation, nfl }: { plays: FeedPl
             <ellipse rx="10" ry="7" cy="3" fill={a.off ? offColor : defColor} className="lp-shoulders" />
             <g transform={`rotate(${(a.off ? s : -s) > 0 ? -90 : 90})`}>
               <path d="M-6 3V-2C-6 -9 6 -9 6 -2V3L3 5H-3Z" fill={(a.off ? offHelmet : defHelmet).shell} className="lp-player-shell" />
-              <path d="M0 -7V1" className="lp-player-stripe" style={{ stroke: (a.off ? offHelmet : defHelmet).stripe }} />
               <path d="M-4 3V6H4V3M-3 4H3" className="lp-player-mask" style={{ stroke: (a.off ? offHelmet : defHelmet).mask }} />
             </g>
             </g>

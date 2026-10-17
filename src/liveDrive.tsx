@@ -309,9 +309,7 @@ export function FieldView({ data, teams, variant, rootRef, badge, weather }: { d
           <g transform={`translate(0 ${ballY}) scale(${dir} 1)`} className="lf-helmet" data-facing={dir > 0 ? "right" : "left"} data-shell={helmet.shell}>
             <path d="M-3.8 1.9C-4.7 -2.4 -1.8 -4.1 0.8 -3.9C3 -3.7 4.1 -1.9 3.9 0.2L3.3 1.2L1.5 1.3L0.7 2.5L-1.4 3.1L-3 3Z" className="lf-helmet-shell" fill={helmet.shell} />
             <path d="M-3.8 1.9C-4.7 -2.4 -1.8 -4.1 0.8 -3.9C3 -3.7 4.1 -1.9 3.9 0.2L3.3 1.2L1.5 1.3L0.7 2.5L-1.4 3.1L-3 3Z" className="lf-shell-shade" />
-            <path d="M-3.4 -1.6C-2.4 -3.5 0.4 -3.8 2.3 -2.3" className="lf-shell-shine" />
             <path d="M2.4 -0.7L3.8 -0.3L3.3 1.2L1.7 1.3Z" className="lf-visor" />
-            <path d="M3.5 -1.2C1.7 -3.5 -1.5 -3.8 -3.6 -1.5" className="lf-helmet-stripe" stroke={helmet.stripe} />
             <ellipse cx="-0.7" cy="1" rx="0.8" ry="0.95" className="lf-helmet-ear" />
             <path d="M3.9 0.5L5.1 0.9L5.1 2.8L2.6 3.3L1.2 2.6M4 1.6L1.9 1.7M4.6 0.7V3" className="lf-helmet-mask" stroke={helmet.mask} />
           </g>

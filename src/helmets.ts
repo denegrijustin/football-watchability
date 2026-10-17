@@ -40,5 +40,6 @@ export const NFL_HELMETS: Record<string, HelmetLook> = {
 /** Colleges whose helmet is not their jersey colour. */
 export const COLLEGE_HELMETS: Record<string, HelmetLook> = {
   "kansas-state": H("#b9bec4", "#512888", "#512888"),
+  texas: H("#f4f5f7", "#bf5700", "#c9ced3"),
 };
 export const helmetFor = (logoId: string | undefined, color: string): HelmetLook => (logoId && (NFL_HELMETS[logoId] ?? COLLEGE_HELMETS[logoId])) || H(color, "#ffffff");
