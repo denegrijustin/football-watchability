@@ -63,7 +63,7 @@ const FAMOUS: Record<string, Partial<EndzoneArt>> = {
   missouri: { base: "#111111", border: "#f1b82d", diamonds: { fill: "#f1b82d", ink: "#111111" } },
   "ole miss": { base: "#2d7db6", ink: "#d4572e", outline: "#ffffff", italic: true, size: 62 },
   lsu: {
-    base: "#fdd023", ink: "#461d7c", outline: "#ffffff", size: 110, words: ["LSU", "TIGERS"],
+    base: "#fdd023", ink: "#461d7c", outline: "#ffffff", size: 116, words: ["LSU", "TIGERS"],
     sides: [{ base: "#fdd023", ink: "#461d7c", outline: "#ffffff" }, { base: "#461d7c", ink: "#fdd023", outline: "#ffffff" }],
   },
   oregon: { base: "#24572f", ink: "#fee123", outline: "rgba(0,0,0,0)", size: 84 },
