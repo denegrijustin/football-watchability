@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { bandPhase, bandCue, exitPoints, logoOutline, SCRIPT_OHIO, OHIO_DOTTER, OHIO_DOT, OHIO_STAGE, entrancePoints } from "../src/bandLogo";
+import { bandPhase, bandCue, exitPoints, logoOutline, logoFilled, SCRIPT_OHIO, OHIO_DOTTER, OHIO_DOT, OHIO_STAGE, entrancePoints } from "../src/bandLogo";
 import { FORMATIONS, nearestAssignment } from "../src/halftimeLogic";
 
 test("home and conference logos bookend the halftime show in order", () => {
@@ -65,5 +65,24 @@ test("the band stages outside the home sideline and enters without a block forma
       const seconds = Math.min(14, Math.max(4, Math.hypot(x - staged[i][0], y - staged[i][1]) / 3.5)) + (i % 8) * 0.12;
       expect(seconds).toBeLessThan(16); // assembled before the next routine
     });
+  }
+});
+
+
+test("conference marks fill their ink, including the center, while preserving letter holes", () => {
+  const width = 128, height = 128, pixels = new Uint8ClampedArray(width * height * 4);
+  for (let y = 20; y <= 108; y++) for (let x = 20; x <= 108; x++) pixels[(y * width + x) * 4 + 3] = 255;
+  const points = logoFilled(pixels, width, height)!;
+  expect(points).toHaveLength(64);
+  expect(new Set(points.map((p) => p.join(","))).size).toBe(64);
+  expect(points.some(([x, y]) => Math.abs(x - 60) < 1 && Math.abs(y - 20) < 1)).toBe(true);
+  expect(points.filter(([x, y]) => Math.abs(x - 60) < 9 && Math.abs(y - 20) < 9).length).toBeGreaterThan(12);
+  // Turn the solid mark into a ring: its counter must not be filled by marchers.
+  for (let y = 48; y <= 80; y++) for (let x = 48; x <= 80; x++) pixels[(y * width + x) * 4 + 3] = 0;
+  const ring = logoFilled(pixels, width, height)!;
+  const scale = 24 / 88;
+  for (const [x, y] of ring) {
+    const sx = Math.round((x - 60) / scale + 64), sy = Math.round((y - 20) / scale + 64);
+    expect(pixels[(sy * width + sx) * 4 + 3]).toBeGreaterThanOrEqual(100);
   }
 });

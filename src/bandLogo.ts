@@ -2,7 +2,7 @@
 export type BandPoint = [number, number];
 
 /** Sample the alpha silhouette; transparent padding does not change its size. */
-export function logoOutline(data: Uint8ClampedArray, width: number, height: number, count = 64): BandPoint[] | null {
+function sampleLogo(data: Uint8ClampedArray, width: number, height: number, count: number, filled: boolean): BandPoint[] | null {
   const alpha = (x: number, y: number) => x < 0 || y < 0 || x >= width || y >= height ? 0 : data[(y * width + x) * 4 + 3];
   const edge: BandPoint[] = [];
   let minX = width, maxX = 0, minY = height, maxY = 0;
@@ -10,11 +10,17 @@ export function logoOutline(data: Uint8ClampedArray, width: number, height: numb
     if (alpha(x, y) < 100) continue;
     minX = Math.min(minX, x); maxX = Math.max(maxX, x);
     minY = Math.min(minY, y); maxY = Math.max(maxY, y);
-    if ([[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => alpha(x + dx, y + dy) < 100)) edge.push([x, y]);
+    if (filled || [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => alpha(x + dx, y + dy) < 100)) edge.push([x, y]);
   }
   if (edge.length < count || maxX <= minX || maxY <= minY) return null;
-  // Farthest-point sampling covers thin details and disconnected portions evenly.
-  const selected = [edge[0]];
+  // Filled marks start on ink nearest the center, then distribute across ALL ink
+  // pixels. Transparent letter counters and disconnected gaps remain unoccupied.
+  let first = edge[0];
+  if (filled) {
+    const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+    first = edge.reduce((best, p) => Math.hypot(p[0] - cx, p[1] - cy) < Math.hypot(best[0] - cx, best[1] - cy) ? p : best, first);
+  }
+  const selected = [first];
   const distance = edge.map(() => Infinity);
   for (let k = 1; k < count; k++) {
     const last = selected[selected.length - 1];
@@ -25,9 +31,15 @@ export function logoOutline(data: Uint8ClampedArray, width: number, height: numb
     });
     selected.push(edge[at]);
   }
-  const scale = Math.min(46 / (maxX - minX), 26 / (maxY - minY));
+  const scale = Math.min((filled ? 40 : 46) / (maxX - minX), (filled ? 24 : 26) / (maxY - minY));
   return selected.map(([x, y]) => [60 + (x - (minX + maxX) / 2) * scale, 20 + (y - (minY + maxY) / 2) * scale]);
 }
+
+/** Home-team logos keep their outline drill. */
+export const logoOutline = (data: Uint8ClampedArray, width: number, height: number, count = 64) => sampleLogo(data, width, height, count, false);
+
+/** Conference marks occupy their solid interior, not only their perimeter. */
+export const logoFilled = (data: Uint8ClampedArray, width: number, height: number, count = 64) => sampleLogo(data, width, height, count, true);
 
 /** A near-sideline exit: retain each file's x to avoid crossing diagonally. */
 export const exitPoints = (points: BandPoint[]): BandPoint[] => points.map(([x], i) => [x, 45 + (i % 4) * 0.7]);

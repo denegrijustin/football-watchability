@@ -5,7 +5,7 @@ import { LogoMark } from "./logoTone";
 import { WeatherLayer } from "./WeatherFx";
 import { ConfMark, confEntry } from "./ConfMark";
 import type { WeatherLike } from "./weatherFx";
-import { logoOutline, exitPoints, bandCue, SCRIPT_OHIO, OHIO_DOTTER, OHIO_DOT, OHIO_STAGE, entrancePoints, type BandPoint } from "./bandLogo";
+import { logoOutline, logoFilled, exitPoints, bandCue, SCRIPT_OHIO, OHIO_DOTTER, OHIO_DOT, OHIO_STAGE, entrancePoints, type BandPoint } from "./bandLogo";
 import { FORMATIONS, HALFTIME_MS, mix, N, STEP_MS, clockText, firstSeen, halftimeLeft, nearestAssignment, MOVE_MS } from "./halftimeLogic";
 
 /**
@@ -135,7 +135,7 @@ export function HalftimeBand({ espnId, home, away, badge, weather }: { espnId: s
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.fillText(conference.label, 64, 64, 116);
-        setConferencePoints(logoOutline(ctx.getImageData(0, 0, 128, 128).data, 128, 128, N));
+        setConferencePoints(logoFilled(ctx.getImageData(0, 0, 128, 128).data, 128, 128, N));
       }
       setConferenceLettering(true);
       setConferenceReady(true);
@@ -161,7 +161,7 @@ export function HalftimeBand({ espnId, home, away, badge, weather }: { espnId: s
           const scale = Math.min(128 / image.naturalWidth, 128 / image.naturalHeight);
           const w = image.naturalWidth * scale, h = image.naturalHeight * scale;
           ctx.drawImage(image, (128 - w) / 2, (128 - h) / 2, w, h);
-          const points = logoOutline(ctx.getImageData(0, 0, 128, 128).data, 128, 128, N);
+          const points = logoFilled(ctx.getImageData(0, 0, 128, 128).data, 128, 128, N);
           if (!points) { failed(); return; }
           settled = true;
           clearTimeout(timer);
