@@ -3,6 +3,7 @@ import { filterGames, filterResults, results, type FilterState, type Result } fr
 import { gameStatus, useLiveMap, useNow } from "../live";
 import { timeOf, tzAbbr, useTz } from "../tz";
 import { insanity } from "../insanity";
+import { useClosingUpsets } from "../brewing";
 import type { StatusCounts } from "./Filters";
 import { GameCard } from "./GameCard";
 import { ResultCard } from "./ResultCard";
@@ -16,6 +17,8 @@ const COMPLETED_PREVIEW = 12;
 export type Board = {
   /** Kicked off and not final yet. */
   live: Game[];
+  /** Live games with an upset brewing in the 4th quarter or overtime, closest to final first (they are not in `live`). */
+  closing: Game[];
   /** Finished on the feed but not archived yet: "just finished". */
   justFinal: Game[];
   /** Archived finals, filtered. */
@@ -35,17 +38,21 @@ export function useBoard(filters: FilterState): Board {
   const games = filterGames(filters).filter((g) => !archived.has(g.espnId));
   const by = (s: "live" | "final" | "upcoming") =>
     games.filter((g) => gameStatus((g as { date?: string }).date ?? "", map[g.espnId], now) === s);
-  const live = by("live");
+  const closingMap = useClosingUpsets();
+  const allLive = by("live");
+  const closing = allLive.filter((g) => closingMap.has(g.espnId)).sort((a, b) => closingMap.get(a.espnId)! - closingMap.get(b.espnId)!);
+  const live = allLive.filter((g) => !closingMap.has(g.espnId));
   const justFinal = by("final").sort((a, b) => ((b as { date?: string }).date ?? "").localeCompare((a as { date?: string }).date ?? ""));
   const upcoming = by("upcoming");
   const finals = filterResults(filters);
   const done = justFinal.length + finals.length;
   return {
     live,
+    closing,
     justFinal,
     finals,
     upcoming,
-    counts: { all: live.length + done + upcoming.length, live: live.length, final: done, upcoming: upcoming.length },
+    counts: { all: allLive.length + done + upcoming.length, live: allLive.length, final: done, upcoming: upcoming.length },
   };
 }
 
@@ -90,12 +97,13 @@ export function GameBoard({
   const [showAll, setShowAll] = useState(false);
   const [showCompleted, setShowCompleted] = useState(false);
   const completedExpanded = status === "final" || showCompleted;
-  const { live, justFinal, finals, upcoming, counts } = board;
+  const { live, closing, justFinal, finals, upcoming, counts } = board;
+  const showClosing = (status === "all" || status === "live") && closing.length > 0;
   const showLive = (status === "all" || status === "live") && live.length > 0;
   const showFinal = (status === "all" || status === "final") && counts.final > 0;
   const showUpcoming = (status === "all" || status === "upcoming") && upcoming.length > 0;
 
-  if (!showLive && !showFinal && !showUpcoming) {
+  if (!showClosing && !showLive && !showFinal && !showUpcoming) {
     const label = { all: "games", live: "games in progress", final: "completed games", upcoming: "upcoming games" }[status];
     return (
       <div className="empty-state">
@@ -122,6 +130,19 @@ export function GameBoard({
 
   return (
     <>
+      {showClosing && (
+        <section className="board-section live closing" aria-label="Upset brewing">
+          <div className="section-head">
+            <h3>
+              <span className="live-dot" aria-hidden="true" /> Upset brewing
+            </h3>
+            <span className="count">{closing.length}</span>
+            <span className="section-note">An upset is brewing in the 4th quarter or overtime; the game closest to final is first.</span>
+          </div>
+          <div className="game-grid">{closing.map((game) => <GameCard key={game.id} game={game} />)}</div>
+        </section>
+      )}
+
       {showLive && (
         <section className="board-section live" aria-label="In progress">
           <div className="section-head">

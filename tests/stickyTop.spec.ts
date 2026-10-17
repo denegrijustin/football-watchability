@@ -24,5 +24,5 @@ test("LSU: gold end zone on the left, purple on the right, and the tiger eye at 
   const ez = endzoneFor({ short: "LSU", color: "#461d7c" });
   expect(ez.sides![0]).toMatchObject({ base: "#fdd023", ink: "#461d7c" });
   expect(ez.sides![1]).toMatchObject({ base: "#461d7c", ink: "#fdd023" });
-  expect(MIDFIELD_ART.lsu.src).toBe("/field-art/lsu.svg");
+  expect(MIDFIELD_ART.lsu.src).toBe("/field-art/lsu.webp");
 });

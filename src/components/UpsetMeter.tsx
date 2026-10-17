@@ -6,6 +6,7 @@ import { confOf } from "../teamConf";
 
 const CONF_LABEL: Record<string, string> = { sec: "SEC", "big-ten": "Big Ten", "big-12": "Big 12", acc: "ACC", "pac-12": "Pac-12", "mountain-west": "Mountain West", american: "American", "sun-belt": "Sun Belt", "c-usa": "Conference USA", mac: "MAC", independent: "Independent", afc: "AFC", nfc: "NFC" };
 import { useLiveMap } from "../live";
+import { closestToFinal } from "../closing";
 import { useOpenGame, type GameStub } from "./GameCenterContext";
 import { buildRows, fillOf, ledgerResults, TIERS, type LedgerLike, type MeterRow, type MeterTeam, type WeeklyLike } from "../upsetMeter";
 import "../upsetMeter.css";
@@ -127,7 +128,7 @@ export function UpsetMeter({ defaultLeague }: { defaultLeague: League }) {
   const biggestKey = shownRows.filter((r) => r.upset).sort((x, y) => y.gap - x.gap)[0]?.key;
   const done = shownRows.filter((r) => r.status === "final");
   const todo = shownRows.filter((r) => r.status === "pre");
-  const inPlay = shownRows.filter((r) => r.status === "live");
+  const inPlay = closestToFinal(shownRows.filter((r) => r.status === "live"), (r) => r);
   const open = (r: MeterRow) => {
     if (!r.espnId) return;
     if (known.has(r.espnId)) return openGame(r.espnId);
