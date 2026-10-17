@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { MIN_UPSET_GAP, buildRows, fillOf, ledgerResults, tierFor, type RankSource, type ResultLike, type SlateLike } from "../src/upsetMeter";
 
 const team = (abbr: string, extra = {}) => ({ name: abbr, abbr, logoId: abbr.toLowerCase(), color: null, ...extra });

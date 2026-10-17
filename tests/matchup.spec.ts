@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 
 test("crossover engine expands, compares ranks and swaps teams", async ({ page }) => {
   await page.goto("/matchup-demo.html?sample=1");

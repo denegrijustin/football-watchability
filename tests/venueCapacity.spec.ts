@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 import { readFileSync } from "node:fs";
 import { altSiteCapacity, buildIndex, lookupCapacity, parseTables, stadiumRows, stateCode } from "../scripts/venue-capacity.mjs";
 

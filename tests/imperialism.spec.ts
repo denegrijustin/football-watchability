@@ -1,5 +1,5 @@
 import { donkeys } from "../src/data/load";
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page } from "./fixtures";
 import { readFileSync } from "node:fs";
 import { buildWeekCache, conquestPath, conferenceStatus, ownersAt, standings, type ImperialismData } from "../src/imperialism";
 

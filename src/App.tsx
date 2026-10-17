@@ -2,6 +2,9 @@ import { Suspense, useEffect, useState } from "react";
 import { lazyView } from "./lazyView";
 import { useUpdateCheck } from "./useUpdateCheck";
 import { LiveFreshness } from "./live";
+import { TabIcon } from "./components/TabIcon";
+
+const MORE_VIEWS: View[] = ["grid", "outlook", "empire", "spplus", "nfl"];
 import { dayName, results, slate, tiers, type FilterState, type League, type View } from "./data";
 import { Filters } from "./components/Filters";
 import { GameBoard, useBoard } from "./components/GameBoard";
@@ -95,6 +98,24 @@ export default function App() {
     }
     setFilters((f) => ({ ...f, day: "all" }));
   };
+  // Phones: the secondary sections sit in a sheet over the tab bar. Choosing one (or anything else) closes it.
+  const [moreOpen, setMoreOpen] = useState(false);
+  const go = (v: View) => {
+    setMoreOpen(false);
+    switchView(v);
+  };
+  useEffect(() => {
+    if (!moreOpen) return;
+    const key = (e: KeyboardEvent) => e.key === "Escape" && setMoreOpen(false);
+    const away = (e: MouseEvent) =>
+      !(e.target as Element).closest?.(".view-switch") && setMoreOpen(false);
+    document.addEventListener("keydown", key);
+    document.addEventListener("click", away);
+    return () => {
+      document.removeEventListener("keydown", key);
+      document.removeEventListener("click", away);
+    };
+  }, [moreOpen]);
   const filtered =
     filters.query !== "" ||
     filters.day !== "all" ||
@@ -199,56 +220,164 @@ export default function App() {
 
         <section id="games" tabIndex={-1} aria-label="Game dashboard">
           <div className="view-row">
-          <div className="view-switch segmented" role="group" aria-label="Games to show">
-            <button aria-pressed={view === "board"} onClick={() => switchView("board")}>
-              Games<span className="count">{gameCount(league)}</span>
-            </button>
-            <button aria-label="TV grid" aria-pressed={view === "grid"} onClick={() => switchView("grid")}>
-              <span className="t-long">TV grid</span>
-              <span className="t-short">TV</span>
-            </button>
-            <button aria-label="Upset Alert Meter" aria-pressed={view === "upset"} onClick={() => switchView("upset")} title="Upset Alert Meter: how much has to go wrong for each favorite, and which upsets have happened">
-              <span className="t-long">Upsets</span>
-              <span className="t-short">Upsets</span>
-            </button>
-            <button aria-pressed={view === "insanity"} onClick={() => switchView("insanity")}>
-              Insanity
-            </button>
-            <button aria-pressed={view === "outlook"} onClick={() => switchView("outlook")}>
-              Outlook
-            </button>
-            <button aria-label="Empire" aria-pressed={view === "empire"} onClick={() => switchView("empire")} title="Imperialism Map: territory changes hands as teams win">
-              <span className="t-long">Empire</span>
-              <span className="t-short">War</span>
-            </button>
-            <button aria-label="CFB SP+" aria-pressed={view === "spplus"} onClick={() => switchView("spplus")} title="CFB SP+: ratings, a matchup simulator and an against-the-spread tracker for college football">
-              <span className="t-long">CFB SP+</span>
-              <span className="t-short">SP+</span>
-            </button>
-            <button aria-label="NFL+" aria-pressed={view === "nfl"} onClick={() => switchView("nfl")} title="NFL+: EPA-based team ratings, a matchup simulator and an against-the-spread tracker, from nflverse">
-              <span className="t-long">NFL+</span>
-              <span className="t-short">NFL+</span>
-            </button>
-            <button aria-label="Simulator" aria-pressed={view === "sim"} onClick={() => switchView("sim")} title="Game simulator: a full play-by-play game built from real season stats, with a forecast from thousands of replays">
-              <span className="t-long">Simulator</span>
-              <span className="t-short">Sim</span>
-            </button>
-          </div>
-          <div className="export-btns">
-            <details className="export">
-              <summary aria-label="Export options">Export</summary>
-              <div className="export-menu">
-                <a href="/exports/watch-slate.csv" download={`watch-slate-${slate.period.replace(/[^\w]+/g, "-")}.csv`}>
-                  <strong>Spreadsheet (CSV)</strong>
-                  <span>Every game with all the numbers, times Central</span>
+            {/* Sections: a segmented control on a computer, a bottom tab bar with a More sheet on a phone (CSS decides; the buttons are the same). */}
+            <nav
+              className="view-switch segmented"
+              aria-label="Sections"
+              data-more={moreOpen ? "open" : "closed"}
+            >
+              <button
+                data-tab="board"
+                aria-pressed={view === "board"}
+                onClick={() => go("board")}
+              >
+                <TabIcon name="board" />
+                <span className="tab-label">
+                  Games<span className="count">{gameCount(league)}</span>
+                </span>
+              </button>
+              <button
+                data-tab="upset"
+                aria-label="Upset Alert Meter"
+                aria-pressed={view === "upset"}
+                onClick={() => go("upset")}
+                title="Upset Alert Meter: how much has to go wrong for each favorite, and which upsets have happened"
+              >
+                <TabIcon name="upset" />
+                <span className="tab-label">
+                  <span className="t-long">Upsets</span>
+                  <span className="t-short">Upsets</span>
+                </span>
+              </button>
+              <button
+                data-tab="insanity"
+                aria-pressed={view === "insanity"}
+                onClick={() => go("insanity")}
+              >
+                <TabIcon name="insanity" />
+                <span className="tab-label">Insanity</span>
+              </button>
+              <button
+                data-tab="sim"
+                aria-label="Simulator"
+                aria-pressed={view === "sim"}
+                onClick={() => go("sim")}
+                title="Game simulator: a full play-by-play game built from real season stats, with a forecast from thousands of replays"
+              >
+                <TabIcon name="sim" />
+                <span className="tab-label">
+                  <span className="t-long">Simulator</span>
+                  <span className="t-short">Sim</span>
+                </span>
+              </button>
+              <button
+                type="button"
+                className="tab-more"
+                aria-haspopup="true"
+                aria-expanded={moreOpen}
+                aria-controls="more-sheet"
+                aria-pressed={moreOpen || MORE_VIEWS.includes(view)}
+                onClick={() => setMoreOpen((o) => !o)}
+              >
+                <TabIcon name="more" />
+                <span className="tab-label">More</span>
+              </button>
+              <div className="more-sheet" id="more-sheet">
+                <button
+                  data-tab="grid"
+                  aria-label="TV grid"
+                  aria-pressed={view === "grid"}
+                  onClick={() => go("grid")}
+                >
+                  <TabIcon name="grid" />
+                  <span className="tab-label">
+                    <span className="t-long">TV grid</span>
+                    <span className="t-short">TV</span>
+                  </span>
+                </button>
+                <button
+                  data-tab="outlook"
+                  aria-pressed={view === "outlook"}
+                  onClick={() => go("outlook")}
+                >
+                  <TabIcon name="outlook" />
+                  <span className="tab-label">Outlook</span>
+                </button>
+                <button
+                  data-tab="empire"
+                  aria-label="Empire"
+                  aria-pressed={view === "empire"}
+                  onClick={() => go("empire")}
+                  title="Imperialism Map: territory changes hands as teams win"
+                >
+                  <TabIcon name="empire" />
+                  <span className="tab-label">
+                    <span className="t-long">Empire</span>
+                    <span className="t-short">War</span>
+                  </span>
+                </button>
+                <button
+                  data-tab="spplus"
+                  aria-label="CFB SP+"
+                  aria-pressed={view === "spplus"}
+                  onClick={() => go("spplus")}
+                  title="CFB SP+: ratings, a matchup simulator and an against-the-spread tracker for college football"
+                >
+                  <TabIcon name="spplus" />
+                  <span className="tab-label">
+                    <span className="t-long">CFB SP+</span>
+                    <span className="t-short">SP+</span>
+                  </span>
+                </button>
+                <button
+                  data-tab="nfl"
+                  aria-label="NFL+"
+                  aria-pressed={view === "nfl"}
+                  onClick={() => go("nfl")}
+                  title="NFL+: EPA-based team ratings, a matchup simulator and an against-the-spread tracker, from nflverse"
+                >
+                  <TabIcon name="nfl" />
+                  <span className="tab-label">NFL+</span>
+                </button>
+                <a
+                  className="more-export"
+                  href="/exports/watch-slate.csv"
+                  download={`watch-slate-${slate.period.replace(/[^\w]+/g, "-")}.csv`}
+                >
+                  <TabIcon name="export" />
+                  <span className="tab-label">Export CSV</span>
                 </a>
-                <a href="/exports/entertaining.ics" download="entertaining-games.ics">
-                  <strong>Calendar (.ics)</strong>
-                  <span>Entertaining games as calendar events</span>
+                <a
+                  className="more-export"
+                  href="/exports/entertaining.ics"
+                  download="entertaining-games.ics"
+                >
+                  <TabIcon name="calendar" />
+                  <span className="tab-label">Add to calendar</span>
                 </a>
               </div>
-            </details>
-          </div>
+            </nav>
+            <div className="export-btns">
+              <details className="export">
+                <summary aria-label="Export options">Export</summary>
+                <div className="export-menu">
+                  <a
+                    href="/exports/watch-slate.csv"
+                    download={`watch-slate-${slate.period.replace(/[^\w]+/g, "-")}.csv`}
+                  >
+                    <strong>Spreadsheet (CSV)</strong>
+                    <span>Every game with all the numbers, times Central</span>
+                  </a>
+                  <a
+                    href="/exports/entertaining.ics"
+                    download="entertaining-games.ics"
+                  >
+                    <strong>Calendar (.ics)</strong>
+                    <span>Entertaining games as calendar events</span>
+                  </a>
+                </div>
+              </details>
+            </div>
           </div>
           {view !== "board" ? (
             <ErrorBoundary resetKey={view}>

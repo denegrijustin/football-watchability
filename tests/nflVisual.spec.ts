@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 import { bundle, src } from "./ssr";
 import { readFileSync } from "node:fs";
 import { actFor, NFL_ACTS } from "../src/halftimeLogic";

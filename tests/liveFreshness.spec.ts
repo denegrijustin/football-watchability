@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures";
 import { readFileSync } from "node:fs";
 import { onRequestGet as scoresHandler } from "../functions/api/scores.js";
 import { onRequestGet as liveHandler } from "../functions/api/live.js";

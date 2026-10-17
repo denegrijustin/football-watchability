@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 import { readFileSync } from "node:fs";
 import { DIRECTV, directvChannel, directvTitle } from "../src/directv";
 import { espnGameUrl, watchLink, directvLink, DIRECTV_GUIDE } from "../src/watchLinks";

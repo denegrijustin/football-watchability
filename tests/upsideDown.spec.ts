@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./fixtures";
 
 test("Texas, Kansas, Broncos, Chargers and Raiders logos are upside down wherever they appear, and no other logo is", async ({ page }) => {
   await page.goto("/?league=CFB");

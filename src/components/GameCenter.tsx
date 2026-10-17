@@ -152,6 +152,62 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
     if (!espnId && d.open) d.close();
   }, [espnId]);
 
+  // On a phone the Game Center is a sheet: pulling it down from the top closes it (the way a sheet is dismissed on iOS).
+  useEffect(() => {
+    const d = ref.current;
+    if (!d || !espnId) return;
+    let y0 = 0,
+      dy = 0,
+      dragging = false;
+    const body = () => d.querySelector<HTMLElement>(".gc-body");
+    const phone = () => window.matchMedia("(max-width: 760px)").matches;
+    const start = (e: TouchEvent) => {
+      if (!phone() || (body()?.scrollTop ?? 0) > 0) return;
+      y0 = e.touches[0].clientY;
+      dy = 0;
+      dragging = true;
+      d.style.transition = "none";
+    };
+    const move = (e: TouchEvent) => {
+      if (!dragging) return;
+      dy = e.touches[0].clientY - y0;
+      if (dy <= 0) {
+        d.style.transform = "";
+        return;
+      }
+      if (e.cancelable) e.preventDefault();
+      d.style.transform = `translateY(${dy}px)`;
+    };
+    const end = () => {
+      if (!dragging) return;
+      dragging = false;
+      d.style.transition = "transform 0.2s ease-out";
+      if (dy > 110) {
+        d.style.transform = "translateY(100%)";
+        setTimeout(() => {
+          d.style.transform = "";
+          d.style.transition = "";
+          onClose();
+        }, 180);
+      } else {
+        d.style.transform = "";
+        setTimeout(() => {
+          d.style.transition = "";
+        }, 220);
+      }
+    };
+    d.addEventListener("touchstart", start, { passive: true });
+    d.addEventListener("touchmove", move, { passive: false });
+    d.addEventListener("touchend", end);
+    d.addEventListener("touchcancel", end);
+    return () => {
+      d.removeEventListener("touchstart", start);
+      d.removeEventListener("touchmove", move);
+      d.removeEventListener("touchend", end);
+      d.removeEventListener("touchcancel", end);
+    };
+  }, [espnId, onClose]);
+
   const teams = ((up?.teams ?? fin?.teams ?? old?.teams.map((t) => ({ ...t, record: "" })) ?? []) as unknown as TeamLike[]).slice(0, 2);
   const [away, home] = teams;
   const abbr = (t?: TeamLike) => t?.abbr ?? t?.name ?? "";
@@ -208,6 +264,7 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
     >
       {espnId && away && home && (
         <>
+        <span className="gc-grabber" aria-hidden="true" />
         <button className="gc-close" onClick={onClose} aria-label="Close Game Center">
           ×
         </button>

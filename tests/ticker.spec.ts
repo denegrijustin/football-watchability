@@ -19,11 +19,17 @@ test('ticker includes this week only, including upcoming games', async ({ page }
   expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(page.viewportSize()!.width+1);
 });
 
-test('ticker stays at the top and pauses on request', async ({ page })=>{
+test('ticker stays at the top and pauses on request', async ({ page }, testInfo)=>{
   await page.goto('/');
   const ticker=page.getByRole('region',{name:'Current week games'});
+  if (testInfo.project.name==='mobile') {
+    // On a phone the strip does not move by itself: it is swiped by hand and has no Pause button.
+    expect(await ticker.locator('.ticker-track').evaluate(e=>getComputedStyle(e).animationName)).toBe('none');
+    await expect(ticker.getByRole('button',{name:'Pause',exact:true})).toBeHidden();
+  } else {
   await ticker.getByRole('button',{name:'Pause',exact:true}).click();
   await expect(ticker.getByRole('button',{name:'Play',exact:true})).toHaveAttribute('aria-pressed','true');
+  }
   await page.mouse.wheel(0,1000);
   expect(await ticker.evaluate(e=>Math.round(e.getBoundingClientRect().top))).toBe(0);
 });
