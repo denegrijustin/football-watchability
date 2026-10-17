@@ -14,7 +14,7 @@ import { NflProjectionBlock, NflSettingPanel } from "./NflGameInfo";
 import { InsanityMeter } from "./InsanityMeter";
 import { Headshot } from "./Headshot";
 import { GameDetails } from "./GameDetails";
-import { FootballIcon, liveFromSummary, useReportLive } from "../live";
+import { FootballIcon, liveFromSummary, useLive, useReportLive } from "../live";
 import { openStream } from "../liveStream";
 import { LastPlay, latestShape } from "../LastPlay";
 import type { WeatherLike } from "../weatherFx";
@@ -142,6 +142,7 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
   const league = up?.league ?? fin?.league ?? old?.league ?? null;
   const date = (up as { date?: string } | undefined)?.date ?? fin?.date ?? old?.date ?? "";
   const started = !!date && Date.parse(date) - 20 * 60e3 <= Date.now();
+  const boardLive = useLive(espnId);
   const { game, updated } = useLiveGame(league ? (league === "NFL" ? "nfl" : "cfb") : null, espnId, started || !!fin);
 
   useEffect(() => {
@@ -159,8 +160,12 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
     ((up as { projected?: Projection } | undefined)?.projected as Projection) ??
     (fin?.scoreCheck ? ({ ...fin.scoreCheck.projected } as Projection) : null);
   const wpData = (up as { winProb?: WinProbData } | undefined)?.winProb ?? null;
-  const scoreA = game?.teams[0]?.score ?? (fin ? fin.teams[0].score : old ? old.teams[0].score : null);
-  const scoreH = game?.teams[1]?.score ?? (fin ? fin.teams[1].score : old ? old.teams[1].score : null);
+  // The scoreboard feed runs 10 to 20 seconds ahead of the game summary, so the score shown is whichever of the two has more points.
+  const fromSummary = game ? [game.teams[0]?.score ?? 0, game.teams[1]?.score ?? 0] : null;
+  const fromBoard = boardLive && boardLive.state !== "pre" ? [boardLive.away, boardLive.home] : null;
+  const ahead = fromBoard && (!fromSummary || fromBoard[0] + fromBoard[1] > fromSummary[0] + fromSummary[1]) ? fromBoard : fromSummary;
+  const scoreA = ahead?.[0] ?? (fin ? fin.teams[0].score : old ? old.teams[0].score : null);
+  const scoreH = ahead?.[1] ?? (fin ? fin.teams[1].score : old ? old.teams[1].score : null);
   const net = up?.broadcast ?? fin?.broadcast ?? "";
   const netSlug = (up as { network?: string } | undefined)?.network ?? fin?.network ?? null;
   const netLogo = networkLogo(netSlug);

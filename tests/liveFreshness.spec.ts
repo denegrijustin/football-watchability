@@ -99,3 +99,22 @@ test("a score pushed on the event stream reaches the board at once, ahead of the
   const card = page.locator(".board-section .game-card", { hasText: a.name }).first();
   await expect(card.locator(".team-score").first()).toHaveText("21"); // the poll says 14, the stream says 21
 });
+
+test("the header says how fresh the live scores are, and the Game Center shows whichever of the scoreboard and the summary has more points", async ({ page }) => {
+  const g = slate.games.find((x: any) => x.league === "NFL");
+  const [a, h] = g.teams;
+  await page.clock.install({ time: new Date(g.date).getTime() + 90 * 60e3 });
+  // The scoreboard has the touchdown (21); the summary, which runs 10 to 20 seconds behind it, still says 14.
+  await page.route("**/api/scores**", (r) => r.fulfill({ json: slate.games.map((x: any) => ({ id: x.espnId, state: x.espnId === g.espnId ? "in" : "pre", detail: "5:12 - 3rd", away: 21, home: 17, ball: null })) }));
+  await page.route("**/api/flow**", (r) => r.fulfill({ json: { wp: [] } }));
+  await page.route("**/api/game**", (r) => r.fulfill({ json: { id: g.espnId, status: { state: "in", detail: "5:30 - 3rd", period: 3, clock: "5:30" },
+    teams: [{ id: a.espnId, abbr: a.abbr, name: a.name, homeAway: "away", score: 14, linescores: [], possession: false }, { id: h.espnId, abbr: h.abbr, name: h.name, homeAway: "home", score: 17, linescores: [], possession: true }],
+    situation: { text: "1st & 10", possession: h.espnId, toGo: 60, redZone: false, lastPlay: "x" }, drives: [], curPlays: [], plays: [], wp: [], allOffense: [], scoring: [], teamStats: {}, players: {} } }));
+  await page.goto("/?league=NFL");
+  await expect(page.locator(".live-fresh")).toContainText("live ·");
+  await page.clock.runFor(20_000);
+  await expect(page.locator(".live-fresh")).toContainText(/\d+s ago|just now/);
+  await page.clock.resume();
+  await page.locator(".board-section .game-card", { hasText: a.name }).first().locator(".cc-gc").click();
+  await expect(page.locator("dialog.gc .gc-head")).toContainText("21");
+});

@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { results, slate } from "./data";
 import type { WpPoint } from "./insanity";
 import { liveStatusParts } from "./liveStatus";
@@ -17,6 +17,10 @@ export type LiveScore = {
 type LiveMap = Record<string, LiveScore>;
 const LiveContext = createContext<LiveMap>({});
 const ReportContext = createContext<(score: LiveScore) => void>(() => {});
+/** How fresh the scores are: when data last arrived, how (pushed or polled), and a way to ask again right now. */
+export type LiveStatus = { at: number; via: "push" | "poll" | null; refresh: () => void };
+const StatusContext = createContext<LiveStatus>({ at: 0, via: null, refresh: () => {} });
+export const useLiveStatus = () => useContext(StatusContext);
 export const useLive = (espnId?: string | null) => {
   const map = useContext(LiveContext);
   return espnId ? map[espnId] : undefined;
@@ -131,6 +135,9 @@ const etYmd = (d: Date) => d.toLocaleDateString("en-CA", { timeZone: "America/Ne
  */
 export function LiveScores({ children }: { children: ReactNode }) {
   const [map, setMap] = useState<LiveMap>({});
+  const [fresh, setFresh] = useState<{ at: number; via: "push" | "poll" | null }>({ at: 0, via: null });
+  const refreshRef = useRef<() => void>(() => {});
+  const refresh = useCallback(() => refreshRef.current(), []);
   useEffect(() => {
     let stop = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -163,7 +170,10 @@ export function LiveScores({ children }: { children: ReactNode }) {
       for (const [league, dates] of wanted) for (const date of dates) {
         const key = `${league}:${date}`;
         keep.add(key);
-        if (!streams.has(key)) streams.set(key, openStream<LiveScore[]>(`/api/live?league=${league}&date=${date}`, "scores", (list) => applyScores(Object.fromEntries(list.map((x) => [x.id, x])))));
+        if (!streams.has(key)) streams.set(key, openStream<LiveScore[]>(`/api/live?league=${league}&date=${date}`, "scores", (list) => {
+          applyScores(Object.fromEntries(list.map((x) => [x.id, x])));
+          setFresh({ at: Date.now(), via: "push" });
+        }));
       }
       for (const [key, st] of streams) if (!keep.has(key)) { st.close(); streams.delete(key); }
     };
@@ -217,6 +227,7 @@ export function LiveScores({ children }: { children: ReactNode }) {
         return;
       }
       applyScores(next);
+      setFresh((f) => (Date.now() - f.at < 20_000 && f.via === "push" ? f : { at: Date.now(), via: "poll" }));
       const pending = started.some((g) => next[g.id]?.state !== "post");
       const anyLive = Object.values(next).some((s) => s.state === "in");
       if (pending) timer = setTimeout(tick, streaming() ? POLL_MS / 2 : anyLive ? LIVE_POLL_MS : SOON_POLL_MS);
@@ -235,6 +246,7 @@ export function LiveScores({ children }: { children: ReactNode }) {
         void tick();
       }
     };
+    refreshRef.current = () => { clearTimeout(timer); void tick(); };
     window.addEventListener("focus", wake);
     window.addEventListener("online", wake);
     window.addEventListener("pageshow", wake);
@@ -257,8 +269,35 @@ export function LiveScores({ children }: { children: ReactNode }) {
   }), []);
   return (
     <ReportContext.Provider value={report}>
-      <LiveContext.Provider value={map}>{children}</LiveContext.Provider>
+      <StatusContext.Provider value={{ ...fresh, refresh }}>
+        <LiveContext.Provider value={map}>{children}</LiveContext.Provider>
+      </StatusContext.Provider>
     </ReportContext.Provider>
+  );
+}
+
+/**
+ * "LIVE · updated 8s ago" while any game is on: how old the scores on the page are and how they arrived (pushed or polled). Tapping it asks again
+ * right now. It is also how a stale page shows itself, instead of quietly looking current.
+ */
+export function LiveFreshness() {
+  const map = useContext(LiveContext);
+  const { at, via, refresh } = useContext(StatusContext);
+  const [now, setNow] = useState(() => Date.now());
+  const anyLive = Object.values(map).some((g) => g.state === "in");
+  useEffect(() => {
+    if (!anyLive) return;
+    const t = setInterval(() => !document.hidden && setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [anyLive]);
+  if (!anyLive || !at) return null;
+  const age = Math.max(0, Math.round((now - at) / 1000));
+  const stale = age > 45;
+  return (
+    <button type="button" className={`live-fresh${stale ? " stale" : ""}`} onClick={refresh} title={`Scores ${via === "push" ? "pushed" : "polled"} ${age}s ago. Tap to refresh now.`} aria-label={`Live scores updated ${age} seconds ago. Refresh now.`}>
+      <i aria-hidden="true" />
+      {age < 3 ? "live · just now" : `live · ${age < 60 ? `${age}s` : `${Math.floor(age / 60)}m`} ago`}
+    </button>
   );
 }
 

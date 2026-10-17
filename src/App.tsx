@@ -1,6 +1,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { lazyView } from "./lazyView";
 import { useUpdateCheck } from "./useUpdateCheck";
+import { LiveFreshness } from "./live";
 import { dayName, results, slate, tiers, type FilterState, type League, type View } from "./data";
 import { Filters } from "./components/Filters";
 import { GameBoard, useBoard } from "./components/GameBoard";
@@ -187,6 +188,7 @@ export default function App() {
           <span className="status-dot" aria-hidden="true" />
           <span className="edition-label">Weekly board</span>
           <span className="edition-date">{slate.period}</span>
+          <LiveFreshness />
         </div>
       </header>
       <main className="page">
