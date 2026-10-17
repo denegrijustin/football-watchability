@@ -6134,57 +6134,49 @@ select,
 }
 /* every member keeps stepping in time: a small rise and fall on each beat, so the band is moving even between formations */
 .band-march {
-  /* a full left-right stride takes a second: the shoulders roll with each step */
-  animation: band-sway 0.5s ease-in-out infinite alternate;
+  animation: band-cadence 1.034s ease-in-out infinite;
+  animation-delay: var(--band-phase, 0s);
   transform-origin: 0 0;
 }
-@keyframes band-sway {
-  from {
-    transform: translate(0, 0.1px) rotate(-7deg) scale(1);
-  }
-  to {
-    transform: translate(0, -0.1px) rotate(7deg) scale(1.06);
-  }
+@keyframes band-cadence {
+  0%, 100% { transform: translateY(0.035px) rotate(-1.2deg); }
+  50% { transform: translateY(-0.035px) rotate(1.2deg); }
 }
-/* seen from above, the feet swing front to back, one forward as the other goes back, a half beat apart */
 .band-foot {
-  fill: #f1f1f1; /* white spats, so the stride shows against the turf */
+  fill: #f1f1f1;
   stroke: rgb(0 0 0 / 55%);
   stroke-width: 0.12;
-  animation: band-foot 0.5s ease-in-out infinite alternate;
+  animation: band-step 0.517s ease-in-out infinite alternate;
+  animation-delay: var(--band-phase, 0s);
 }
-.band-foot.b {
-  animation-delay: -0.5s;
+.band-foot.b { animation-delay: calc(var(--band-phase, 0s) - 0.517s); }
+@keyframes band-step {
+  from { transform: translateX(-0.18px); }
+  to { transform: translateX(0.18px); }
 }
-@keyframes band-foot {
-  from {
-    transform: translateX(-1.1px);
-  }
-  to {
-    transform: translateX(1.1px);
-  }
+.band-travel .band-foot { animation-name: band-travel-step; }
+@keyframes band-travel-step {
+  from { transform: translateX(-0.55px); }
+  to { transform: translateX(0.55px); }
 }
-/* arms swing against the legs */
-.band-arm {
-  stroke: rgb(0 0 0 / 35%);
-  stroke-width: 0.1;
-  animation: band-arm 0.5s ease-in-out infinite alternate;
-}
-.band-arm.b {
-  animation-delay: -0.5s;
-}
-@keyframes band-arm {
-  from {
-    transform: translateX(0.5px);
-  }
-  to {
-    transform: translateX(-0.5px);
-  }
-}
-.band-member {
-  /* the band marches to its next place at an even pace, easing off at each end, turning to face the way it goes */
-  transition: transform 10s cubic-bezier(0.3, 0, 0.7, 1);
-}
+.band-arm { stroke: rgb(0 0 0 / 35%); stroke-width: 0.1; }
+.band-member.major .band-arm { animation: band-conduct 0.517s ease-in-out infinite alternate; }
+.band-member.major .band-arm.b { animation-delay: -0.517s; }
+@keyframes band-conduct { to { transform: translateX(0.3px); } }
+.band-member { transition: transform 10s linear; }
+.band-facing { transition: transform 0.6s ease-out; transform-origin: 0 0; }
+.band-ground-shadow { fill: rgb(0 0 0 / 23%); }
+.band-shadow { display: none; }
+.band-bell { fill: #dfb84c; stroke: #fff0b6; stroke-width: 0.12; }
+.band-bell-inner { fill: #725020; stroke: #cda441; stroke-width: 0.08; }
+.band-sticks { fill: none; stroke: #f5e4c0; stroke-width: 0.13; stroke-linecap: round; animation: band-stick 0.517s ease-in-out infinite alternate; animation-delay: var(--band-phase, 0s); transform-origin: 1px 0; }
+@keyframes band-stick { to { transform: rotate(6deg); } }
+.band-paused * { animation-play-state: paused !important; }
+.band-home-sideline { fill: #fff; opacity: 0.7; font-size: 1.2px; font-weight: 700; letter-spacing: 0.12px; }
+.band-exit .band-foot { animation-duration: 0.36s; }
+.band-exit .band-foot.b { animation-delay: -0.36s; }
+.band-exit .band-march { animation-duration: 0.72s; }
+.band-exit .band-facing { transition-duration: 0.35s; }
 .band-shadow {
   fill: rgb(0 0 0 / 28%);
 }
@@ -6289,9 +6281,10 @@ select,
   .band-count-bar b {
     transition: none;
   }
-  .band-member {
+  .band-member, .band-facing {
     transition: none;
   }
+  .halftime-band .band-march, .halftime-band .band-arm, .halftime-band .band-foot, .halftime-band .band-sticks { animation: none !important; }
 }
 
 /* ---------- the game's own logo (neutral-site and special games) ---------- */
@@ -6474,145 +6467,65 @@ select,
 }
 
 /* ---------- weather over the field ---------- */
+.wx { pointer-events: none; }
 .wx-drop {
-  stroke: #d6ebff;
+  stroke: #d6e5ed;
   stroke-linecap: round;
   animation: wx-fall linear infinite;
 }
-.wx-drop.far {
-  stroke-width: 0.14;
-  opacity: 0.32;
-}
-.wx-drop.near {
-  stroke-width: 0.3;
-  opacity: 0.7;
-}
+.wx-drop.far { stroke-width: 0.1; opacity: 0.22; }
+.wx-drop.near { stroke-width: 0.22; opacity: 0.52; }
 @keyframes wx-fall {
-  to {
-    transform: translate(var(--wx-dx), var(--wx-dy));
-  }
+  to { transform: translate(var(--wx-dx), var(--wx-dy)); }
 }
 .wx-splash {
-  fill: none;
-  stroke: #e6f2ff;
-  stroke-width: 0.12;
-  opacity: 0;
-  transform-box: fill-box;
-  transform-origin: center;
+  fill: none; stroke: #dce8ed; stroke-width: 0.1; opacity: 0;
+  transform-box: fill-box; transform-origin: center;
   animation: wx-splash ease-out infinite;
 }
 @keyframes wx-splash {
-  0% {
-    opacity: 0.7;
-    transform: scale(0.3);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(2.2);
-  }
+  0% { opacity: 0; transform: scale(0.2); }
+  12% { opacity: 0.42; }
+  80%, 100% { opacity: 0; transform: scale(1.7); }
 }
-.wx-mist {
-  animation: wx-mist 5s ease-in-out infinite alternate;
-}
-@keyframes wx-mist {
-  to {
-    opacity: 0.65;
-  }
-}
-.wx-flake {
-  fill: #fff;
-  animation: wx-snow linear infinite;
-}
+.wx-mist { opacity: 0.45; animation: wx-mist 9s ease-in-out infinite alternate; }
+@keyframes wx-mist { to { opacity: 0.65; } }
+.wx-flake { fill: #f2f5f8; animation: wx-snow linear infinite; }
 @keyframes wx-snow {
-  25% {
-    transform: translate(calc(var(--wx-dx) * 0.25 + 1.2px), calc(var(--wx-dy) * 0.25));
-  }
-  50% {
-    transform: translate(calc(var(--wx-dx) * 0.5 - 1px), calc(var(--wx-dy) * 0.5));
-  }
-  75% {
-    transform: translate(calc(var(--wx-dx) * 0.75 + 1.2px), calc(var(--wx-dy) * 0.75));
-  }
-  to {
-    transform: translate(var(--wx-dx), var(--wx-dy));
-  }
+  0% { transform: translate(0, 0); }
+  12.5% { transform: translate(calc(var(--wx-dx) * 0.125 + var(--wx-sway)), calc(var(--wx-dy) * 0.125)); }
+  25% { transform: translate(calc(var(--wx-dx) * 0.25 + var(--wx-sway) * 1.4), calc(var(--wx-dy) * 0.25)); }
+  37.5% { transform: translate(calc(var(--wx-dx) * 0.375 + var(--wx-sway)), calc(var(--wx-dy) * 0.375)); }
+  50% { transform: translate(calc(var(--wx-dx) * 0.5), calc(var(--wx-dy) * 0.5)); }
+  62.5% { transform: translate(calc(var(--wx-dx) * 0.625 - var(--wx-sway)), calc(var(--wx-dy) * 0.625)); }
+  75% { transform: translate(calc(var(--wx-dx) * 0.75 - var(--wx-sway) * 1.4), calc(var(--wx-dy) * 0.75)); }
+  87.5% { transform: translate(calc(var(--wx-dx) * 0.875 - var(--wx-sway)), calc(var(--wx-dy) * 0.875)); }
+  100% { transform: translate(var(--wx-dx), var(--wx-dy)); }
 }
-.wx-fog {
-  fill: #e4eaf0;
-  opacity: 0.34;
-  animation: wx-drift linear infinite alternate;
-}
-@keyframes wx-drift {
-  to {
-    transform: translateX(var(--wx-dx));
-  }
-}
-.wx-gust {
-  stroke: #fff;
-  stroke-width: 0.18;
-  stroke-linecap: round;
-  opacity: 0.4;
-  animation: wx-blow linear infinite;
-}
+.wx-fog { opacity: 0.65; animation: wx-drift ease-in-out infinite alternate; }
+@keyframes wx-drift { to { transform: translateX(var(--wx-dx)); opacity: 0.4; } }
+.wx-gust { stroke: #dce5eb; stroke-width: 0.1; stroke-linecap: round; opacity: 0; animation: wx-blow linear infinite; }
 @keyframes wx-blow {
-  to {
-    transform: translateX(var(--wx-dx));
-  }
+  0% { opacity: 0; transform: translateX(0); }
+  20%, 65% { opacity: 0.14; }
+  100% { opacity: 0; transform: translateX(var(--wx-dx)); }
 }
-.wx-flash {
-  fill: #fff;
-  opacity: 0;
-  animation: wx-lightning 7s infinite;
+/* Distant cloud illumination, without a cartoon bolt striking the playing surface. */
+.wx-flash { opacity: 0; animation: wx-cloudlight var(--wx-storm-period, 19s) linear infinite; }
+@keyframes wx-cloudlight {
+  0%, 87%, 92%, 100% { opacity: 0; }
+  88% { opacity: 0.22; }
+  89% { opacity: 0.04; }
+  90% { opacity: 0.14; }
 }
-.wx-bolt {
-  fill: none;
-  stroke: #fffbe0;
-  stroke-width: 0.5;
-  stroke-linejoin: round;
-  opacity: 0;
-  animation: wx-lightning 7s infinite;
-}
-@keyframes wx-lightning {
-  0%,
-  92%,
-  100% {
-    opacity: 0;
-  }
-  93% {
-    opacity: 0.5;
-  }
-  94% {
-    opacity: 0.05;
-  }
-  95% {
-    opacity: 0.4;
-  }
-}
-.lf-wx {
-  opacity: 0.85;
-}
+.lf-wx { opacity: 0.85; }
 @media (prefers-reduced-motion: reduce) {
-  .wx-drop,
-  .wx-flake,
-  .wx-gust,
-  .wx-flash,
-  .wx-bolt,
-  .wx-splash,
-  .wx-fog,
-  .wx-mist {
-    animation: none;
+  .wx-drop, .wx-flake, .wx-gust, .wx-flash, .wx-splash, .wx-fog, .wx-mist { animation: none; }
+  .wx-drop, .wx-flake {
+    transform: translate(calc(var(--wx-dx) * var(--wx-still, 0.35)), calc(var(--wx-dy) * var(--wx-still, 0.35)));
   }
-  .wx-drop,
-  .wx-flake {
-    transform: translate(calc(var(--wx-dx) * 0.35), calc(var(--wx-dy) * 0.35));
-  }
-  .wx-gust {
-    transform: translateX(calc(var(--wx-dx) * 0.5));
-  }
-  .wx-splash,
-  .wx-bolt {
-    opacity: 0;
-  }
+  .wx-gust { transform: translateX(calc(var(--wx-dx) * 0.5)); opacity: 0.1; }
+  .wx-splash, .wx-flash { opacity: 0; }
 }
 
 /* ---------- which way the drive is headed, and the red zone ---------- */

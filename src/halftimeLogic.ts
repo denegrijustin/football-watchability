@@ -105,6 +105,50 @@ export const STEP_MS = 16000;
 export const MOVE_MS = 10000;
 
 
+/** Assign the next formation's places to the existing musicians by minimum
+ * total travel. Identity (and instrument) stays with the marcher. This reduces
+ * cross-field shuffling; it is an illustrated drill, not collision simulation.
+ */
+export function nearestAssignment(from: Pt[], to: Pt[]): Pt[] {
+  // Hungarian assignment, O(N^3), once per formation change, never per frame.
+  const n = from.length;
+  const u = Array(n + 1).fill(0), v = Array(n + 1).fill(0);
+  const owner = Array(n + 1).fill(0), way = Array(n + 1).fill(0);
+  for (let i = 1; i <= n; i++) {
+    owner[0] = i;
+    let j0 = 0;
+    const best = Array(n + 1).fill(Infinity), used = Array(n + 1).fill(false);
+    do {
+      used[j0] = true;
+      const i0 = owner[j0];
+      let delta = Infinity, j1 = 0;
+      for (let j = 1; j <= n; j++) if (!used[j]) {
+        const cost = Math.hypot(from[i0 - 1][0] - to[j - 1][0], from[i0 - 1][1] - to[j - 1][1]) - u[i0] - v[j];
+        if (cost < best[j]) { best[j] = cost; way[j] = j0; }
+        if (best[j] < delta) { delta = best[j]; j1 = j; }
+      }
+      for (let j = 0; j <= n; j++) {
+        if (used[j]) { u[owner[j]] += delta; v[j] -= delta; }
+        else best[j] -= delta;
+      }
+      j0 = j1;
+    } while (owner[j0] !== 0);
+    do { const j1 = way[j0]; owner[j0] = owner[j1]; j0 = j1; } while (j0 !== 0);
+  }
+  const out: Pt[] = Array(n);
+  for (let j = 1; j <= n; j++) out[owner[j] - 1] = to[j - 1];
+  return out;
+}
+const marchCache: Pt[][] = [FORMATIONS[0].pts];
+export function marchPointsAt(step: number): Pt[] {
+  const target = Math.max(0, Math.floor(step));
+  while (marchCache.length <= target) {
+    const k = marchCache.length;
+    marchCache.push(nearestAssignment(marchCache[k - 1], FORMATIONS[k % FORMATIONS.length].pts));
+  }
+  return marchCache[target];
+}
+
 /** Degrees the band member `i` faces at formation step `step`: toward where it just marched from the last formation. */
 const angleCache = new Map<number, number[]>();
 export function anglesAt(step: number): number[] {
@@ -116,8 +160,8 @@ export function anglesAt(step: number): number[] {
     return first;
   }
   const prev = anglesAt(step - 1);
-  const a = FORMATIONS[(step - 1) % FORMATIONS.length].pts;
-  const b = FORMATIONS[step % FORMATIONS.length].pts;
+  const a = marchPointsAt(step - 1);
+  const b = marchPointsAt(step);
   const out = prev.map((old, i) => {
     const dx = b[i][0] - a[i][0];
     const dy = b[i][1] - a[i][1];

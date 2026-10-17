@@ -5,7 +5,8 @@ import { LogoMark } from "./logoTone";
 import { WeatherLayer } from "./WeatherFx";
 import { ConfMark } from "./ConfMark";
 import type { WeatherLike } from "./weatherFx";
-import { FORMATIONS, HALFTIME_MS, mix, N, STEP_MS, anglesAt, clockText, firstSeen, halftimeLeft } from "./halftimeLogic";
+import { logoOutline, exitPoints, bandPhase, type BandPoint } from "./bandLogo";
+import { FORMATIONS, HALFTIME_MS, mix, N, STEP_MS, clockText, firstSeen, halftimeLeft, nearestAssignment, MOVE_MS } from "./halftimeLogic";
 
 /**
  * College halftime: a 20-minute countdown and the band marching through formations on the field. It stands in for the drive
@@ -102,7 +103,39 @@ export function HalftimeBand({ espnId, home, away, badge, weather }: { espnId: s
   const [now, setNow] = useState(() => Date.now());
   const [step, setStep] = useState(0);
   const [visible, setVisible] = useState(true);
-  const still = typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const [still, setStill] = useState(() => typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches);
+  const [moving, setMoving] = useState(false);
+  const [logoPoints, setLogoPoints] = useState<BandPoint[] | null>(null);
+  const [drill, setDrill] = useState(() => ({ points: FORMATIONS[0].pts, angles: Array(N).fill(90) as number[], distances: Array(N).fill(0) as number[] }));
+  const logoSrc = home.logoId ? logos[home.logoId] : undefined;
+  useEffect(() => {
+    setLogoPoints(null);
+    if (!logoSrc) return;
+    let cancelled = false;
+    const image = new Image();
+    image.crossOrigin = "anonymous";
+    image.onload = () => {
+      if (cancelled) return;
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = canvas.height = 128;
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+        if (!ctx) return;
+        ctx.drawImage(image, 0, 0, 128, 128);
+        setLogoPoints(logoOutline(ctx.getImageData(0, 0, 128, 128).data, 128, 128, N));
+      } catch { /* Unreadable assets keep the normal block formation. */ }
+    };
+    image.src = logoSrc;
+    return () => { cancelled = true; image.onload = null; };
+  }, [logoSrc]);
+  useEffect(() => {
+    const q = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const change = () => setStill(q.matches);
+    change();
+    q.addEventListener("change", change);
+    return () => q.removeEventListener("change", change);
+  }, []);
+
 
   useEffect(() => {
     const el = ref.current;
@@ -123,16 +156,36 @@ export function HalftimeBand({ espnId, home, away, badge, weather }: { espnId: s
   }, [visible, still]);
 
   const left = halftimeLeft(seenAt, now);
-  const f = FORMATIONS[step % FORMATIONS.length];
+  const phase = bandPhase(left, step === 0);
+  const f = FORMATIONS[Math.max(0, step - 1) % FORMATIONS.length];
+  const target = phase !== "show" ? logoPoints ?? FORMATIONS[0].pts : f.pts;
+  const formationName = phase === "exit" ? "sideline exit" : phase === "logo" ? (logoPoints ? "home logo" : "block") : f.name.toLowerCase();
+  useEffect(() => {
+    setDrill((prev) => {
+      const points = phase === "exit" ? exitPoints(prev.points) : nearestAssignment(prev.points, target);
+      const angles = points.map(([x, y], i) => {
+        const dx = x - prev.points[i][0], dy = y - prev.points[i][1];
+        if (Math.hypot(dx, dy) < 0.1) return prev.angles[i];
+        let angle = Math.atan2(dy, dx) * 180 / Math.PI;
+        while (angle - prev.angles[i] > 180) angle -= 360;
+        while (angle - prev.angles[i] < -180) angle += 360;
+        return angle;
+      });
+      return { points, angles, distances: points.map(([x, y], i) => Math.hypot(x - prev.points[i][0], y - prev.points[i][1])) };
+    });
+    setMoving(!still);
+    const timer = setTimeout(() => setMoving(false), phase === "exit" ? 29_000 : MOVE_MS);
+    return () => clearTimeout(timer);
+  }, [phase, target, still]);
   const hc = teamColor(home.color) ?? "#2f7de1";
   const ac = teamColor(away.color) ?? "#c1403d";
   const label = left > 0 ? `Second half in ${clockText(left)}` : "Second half starting";
   const pctLeft = Math.round((left / HALFTIME_MS) * 100);
   const dots = useMemo(() => Array.from({ length: N }, (_, i) => i), []);
-  const angles = anglesAt(step);
+  const { angles, points } = drill;
 
   return (
-    <div ref={ref} className="halftime-band" role="img" aria-label={`${label}. The ${home.abbr ?? home.name} band is on the field in a ${f.name.toLowerCase()} formation.`}>
+    <div ref={ref} className={`halftime-band${moving ? " band-travel" : ""}${phase === "exit" ? " band-exit" : ""}${visible ? "" : " band-paused"}`} role="img" aria-label={`${label}. The ${home.abbr ?? home.name} band is on the field in a ${formationName} formation.`}>
       <div className="band-count" aria-hidden="true">
         <span className="band-count-k">HALFTIME</span>
         <strong className="band-count-t">{left > 0 ? clockText(left) : "0:00"}</strong>
@@ -144,17 +197,20 @@ export function HalftimeBand({ espnId, home, away, badge, weather }: { espnId: s
       <svg viewBox="0 0 120 40" className="band-svg" aria-hidden="true">
         <FieldArt id={espnId} home={home} away={away} hc={hc} ac={ac} badge={badge} />
         <WeatherLayer weather={weather} period={2} h={40} seed={Number(espnId) || 1} />
+        <text x="60" y="39" className="band-home-sideline" textAnchor="middle">{home.abbr ?? home.name} HOME SIDELINE</text>
         {dots.map((i) => {
-          const [x, y] = f.pts[i];
+          const [x, y] = points[i];
           const major = i === 0; // the drum major leads the band
           const role = major ? "major" : i % 16 < 2 ? "sousa" : i % 16 < 6 ? "drum" : i % 3 === 0 ? "wood" : "brass";
           return (
             <g
               key={i}
               className={`band-member ${role}`}
-              style={{ transform: `translate(${x.toFixed(2)}px, ${y.toFixed(2)}px) rotate(${angles[i].toFixed(1)}deg) scale(1.1)`, transitionDelay: `${(i % 4) * 40}ms` }}
+              style={{ transform: `translate(${x.toFixed(2)}px, ${y.toFixed(2)}px)`, ["--band-phase" as string]: `${-(Math.floor(i / 16) % 2) * 0.025}s`, transitionDuration: still ? "0s" : phase === "exit" ? `${Math.min(27, Math.max(4, drill.distances[i] / 1.8))}s` : `${MOVE_MS / 1000}s`, transitionDelay: phase === "exit" ? `${(i % 8) * 0.12}s` : "0s" }}
             >
-              <g className="band-march" style={{ animationDelay: `${-((i * 37) % 7) * 12}ms` }}>
+              <ellipse cx="0.3" cy="0.45" rx="1.25" ry="0.75" className="band-ground-shadow" />
+              <g className="band-facing" style={{ transform: `rotate(${angles[i].toFixed(1)}deg)` }}>
+              <g className="band-march">
               <ellipse className="band-foot a" cx="0" cy="-0.7" rx="0.85" ry="0.38" />
               <ellipse className="band-foot b" cx="0" cy="0.7" rx="0.85" ry="0.38" />
               <ellipse cx="0.25" cy="0.3" rx={role === "sousa" ? 2.1 : 1.5} ry={role === "sousa" ? 1.7 : 1} className="band-shadow" />
@@ -169,15 +225,16 @@ export function HalftimeBand({ espnId, home, away, badge, weather }: { espnId: s
                   <ellipse className="band-arm b" cx="0.2" cy="1.35" rx="0.55" ry="0.28" fill={major ? "#f6f6f6" : mix(hc, -0.1)} />
                 </>
               )}
-              {role === "sousa" && <circle cx="0.5" cy="0" r="1.55" className="band-sousa" />}
-              {role === "brass" && <ellipse cx="1.4" cy="0" rx="0.8" ry="0.55" className="band-brass" />}
+              {role === "sousa" && <g><circle cx="0.5" cy="0" r="1.55" className="band-sousa" /><ellipse cx="1.35" cy="-0.6" rx="0.85" ry="0.65" className="band-bell" /><ellipse cx="1.4" cy="-0.6" rx="0.48" ry="0.37" className="band-bell-inner" /></g>}
+              {role === "brass" && <g><path d="M0.5 -0.15H1.4V0.15H0.5" className="band-brass" /><ellipse cx="1.6" cy="0" rx="0.55" ry="0.65" className="band-bell" /><ellipse cx="1.7" cy="0" rx="0.25" ry="0.4" className="band-bell-inner" /></g>}
               {role === "wood" && <line x1="0.6" x2="1.9" y1="0" y2="0" className="band-wood" />}
-              {role === "drum" && <circle cx="1.05" cy="0" r="0.85" className="band-drum" stroke={hc} />}
+              {role === "drum" && <g><circle cx="1.05" cy="0" r="0.85" className="band-drum" stroke={hc} /><path d="M0.65 -1.1L1.2 -0.25M0.65 1.1L1.2 0.25" className="band-sticks" /></g>}
               {role === "major" && <line x1="0.6" x2="2.6" y1="0.5" y2="-0.6" className="band-baton" />}
               {/* shako: brim ring, crown and a tall plume */}
               <circle cx="0.05" cy="0" r="0.72" fill={major ? "#f6f6f6" : mix(hc, -0.25)} className="band-hat" />
               <circle cx="0.05" cy="0" r="0.45" fill={major ? "#d9b13b" : hc} className="band-crown" />
               <ellipse cx="-0.25" cy="-0.1" rx={major ? 0.5 : 0.3} ry={major ? 0.9 : 0.55} className="band-plume" />
+              </g>
               </g>
             </g>
           );
@@ -185,8 +242,8 @@ export function HalftimeBand({ espnId, home, away, badge, weather }: { espnId: s
       </svg>
       <p className="drive-cap">
         <span className="drive-dot" aria-hidden="true" />
-        <b>{label}</b>
-        <span> · {home.abbr ?? home.name} band: {f.name.toLowerCase()}</span>
+        <b>{phase === "exit" ? "Band clearing the field" : label}</b>
+        <span> · {home.abbr ?? home.name} band: {formationName}</span>
       </p>
     </div>
   );

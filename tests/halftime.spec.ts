@@ -65,7 +65,7 @@ test("a college game at halftime shows the band, second under the score, with a 
   await page.clock.fastForward(60_000);
   await expect(band).toContainText("Second half in 18:00");
   await page.clock.fastForward(20 * 60_000);
-  await expect(band).toContainText("Second half starting");
+  await expect(band).toContainText(/second half starting/i);
 });
 
 test("the band changes formation every few seconds", async ({ page }) => {
@@ -74,7 +74,9 @@ test("the band changes formation every few seconds", async ({ page }) => {
   await expect(dot).toBeAttached();
   const at = () => dot.evaluate((e) => (e as SVGElement).style.transform);
   const first = await at();
-  await expect(live(page).locator(".halftime-band")).toContainText("block");
+  await expect(live(page).locator(".halftime-band")).toContainText(/home logo|block/);
+  // A fast-forward fires each timer once, so one per formation step (the first step is the logo, the second the first formation).
+  await page.clock.fastForward(STEP_MS + 100);
   await page.clock.fastForward(STEP_MS + 100);
   await expect.poll(at).not.toBe(first);
   await expect(live(page).locator(".halftime-band")).toContainText("ring");
@@ -151,17 +153,17 @@ test("with reduced motion the band stays in one formation", async ({ page }) => 
   await page.emulateMedia({ reducedMotion: "reduce" });
   await open(page, "CFB", "Halftime");
   const band = live(page).locator(".halftime-band");
-  await expect(band).toContainText("block");
+  await expect(band).toContainText(/home logo|block/);
   await page.clock.fastForward(30_000);
-  await expect(band).toContainText("block");
+  await expect(band).toContainText(/home logo|block/);
   expect(await live(page).locator(".band-member").first().evaluate((e) => getComputedStyle(e).transitionDuration)).toBe("0s");
 });
 
 test("every member keeps marching, and the countdown also tops the expanded card", async ({ page }) => {
   await open(page, "CFB", "Halftime");
   const step = live(page).locator(".band-march").first();
-  expect(await step.evaluate((e) => getComputedStyle(e).animationName)).toBe("band-sway");
-  expect(await live(page).locator(".band-foot.a").first().evaluate((e) => getComputedStyle(e).animationName)).toBe("band-foot");
+  expect(await step.evaluate((e) => getComputedStyle(e).animationName)).toBe("band-cadence");
+  expect(await live(page).locator(".band-foot.a").first().evaluate((e) => getComputedStyle(e).animationName)).toMatch(/^band-(step|travel-step)$/);
   await live(page).locator("button.card-toggle, .cc-chevron").first().click();
   const first = await live(page).evaluate((e) => ([...e.children].find((c) => !c.classList.contains("upset-banner")) as HTMLElement).className); // past any upset strip
   expect(first).toContain("halftime-band");
