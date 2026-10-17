@@ -6626,6 +6626,13 @@ select,
     animation: none;
   }
 }
+/* On a phone the glow stays lit but does not pulse: animating a box-shadow repaints the scrolling ticker every frame, which tripled the page's frame cost and warmed the device. */
+@media (max-width: 760px), (pointer: coarse) {
+  .ticker-item.upset {
+    animation: none;
+    box-shadow: 0 0 0 1px rgb(57 255 136 / 0.65), 0 0 6px rgb(57 255 136 / 0.25);
+  }
+}
 
 /* an upset on a game card: the team FPI ranks lower is ahead (alert) or won (final) */
 .game-card.upset-alert,

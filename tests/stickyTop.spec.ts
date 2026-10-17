@@ -27,3 +27,13 @@ test("LSU: gold end zone on the left, purple on the right, and the tiger eye at 
   expect(ez.sides![1]).toMatchObject({ base: "#461d7c", ink: "#fdd023" });
   expect(MIDFIELD_ART.lsu.src).toBe("/field-art/lsu.webp");
 });
+
+test("the ticker's upset glow pulses on a computer and stays still (lit) on a phone", async ({ page, isMobile }) => {
+  await page.goto("/");
+  await page.waitForSelector(".ticker-item");
+  const upset = page.locator(".ticker-item.upset").first();
+  test.skip((await upset.count()) === 0, "no upset in the ticker on this slate");
+  const name = await upset.evaluate((e) => getComputedStyle(e).animationName);
+  const shadow = await upset.evaluate((e) => getComputedStyle(e).boxShadow);
+  if (isMobile) { expect(name).toBe("none"); expect(shadow).not.toBe("none"); } else expect(name).toBe("upset-glow");
+});
