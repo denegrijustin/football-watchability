@@ -146,7 +146,7 @@ test("end zones: each known program's look, and a readable default for everyone 
   expect([mo.base, mo.diamonds?.fill, mo.border]).toEqual(["#111111", "#f1b82d", "#f1b82d"]); // black, with gold lettered diamonds
   expect(endzoneFor({ short: "LSU", color: "#461d7c" })).toMatchObject({ base: "#fdd023", ink: "#461d7c", size: 116, word: "LSU" });
   expect(endzoneFor({ short: "LSU", color: "#461d7c" }).words).toBeUndefined(); // LSU at both ends
-  expect(endzoneFor({ short: "Kansas State", color: "#512888" })).toMatchObject({ base: "#4a2a7d", ink: "#ffffff", border: "#ffffff", word: "K-STATE", mark: "kansas-state" });
+  expect(endzoneFor({ short: "Kansas State", color: "#512888" })).toMatchObject({ base: "#432a6f", ink: "#ffffff", border: "#ffffff", word: "K-STATE", mark: "kansas-state" });
   expect(endzoneFor({ short: "Ole Miss", color: "#14213d" })).toMatchObject({ italic: true, ink: "#d4572e" });
   expect(endzoneFor({ short: "Oregon", color: "#154733" }).ink).toBe("#fee123");
   expect(endzoneFor({ short: "Bengals", color: "#fb4f14" }).tiger).toBe("#000000");
