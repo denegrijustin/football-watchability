@@ -2,9 +2,10 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNo
 
 export const C = {
   s: ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#2f9d2f", "#9085e9", "#e66767"],
-  other: "#898781", grid: "#2c2c2a", axis: "#383835", surface: "#1a1a19", ink: "#f0efec", ink2: "#c3c2b7", muted: "#898781",
+  // neutrals follow the tool's light or dark palette (the host's custom properties); the hues stay fixed
+  other: "var(--muted)", grid: "var(--grid)", axis: "var(--axis)", surface: "var(--surface)", ink: "var(--ink)", ink2: "var(--ink-2)", muted: "var(--muted)", sText: "var(--s4-text)",
   seq: ["#cde2fb", "#9ec5f4", "#6da7ec", "#3987e5", "#256abf", "#184f95", "#0d366b"],
-  lo: "#e66767", hi: "#3987e5", mid: "#383835",
+  lo: "#e66767", hi: "#3987e5", mid: "var(--axis)",
 };
 
 /** Eight conferences carry a categorical hue (fixed by name); every other conference stays neutral. */
@@ -98,4 +99,20 @@ export function LogoImg({ href, x, y, size, fallback }: { href: string | undefin
   const [bad, setBad] = useState(false);
   if (!href || bad) return <text x={x + size / 2} y={y + size / 2 + 3} textAnchor="middle" style={{ fontSize: 9 }}>{fallback}</text>;
   return <image href={href} x={x} y={y} width={size} height={size} onError={() => setBad(true)} />;
+}
+
+/** Dark or light text, whichever reads better on this color ("#rrggbb" or "rgb(r,g,b)"). */
+export function inkOn(color: string): string {
+  let r = 0, g = 0, b = 0;
+  const hex = color.match(/^#([0-9a-f]{6})$/i);
+  if (hex) [r, g, b] = [0, 2, 4].map((i) => parseInt(hex[1].slice(i, i + 2), 16));
+  else {
+    const m = color.match(/rgb\((\d+),\s*(\d+),\s*(\d+)/);
+    if (!m) return "#0d0d0d";
+    [r, g, b] = [+m[1], +m[2], +m[3]];
+  }
+  const f = (c: number) => ((c /= 255) <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+  const l = 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+  // whichever of the two inks has the higher contrast ratio on this color
+  return (l + 0.05) / 0.054 >= 1.05 / (l + 0.05) ? "#0d0d0d" : "#f5f5f2";
 }

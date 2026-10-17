@@ -42,7 +42,7 @@ export function MarginHistogram({ counts, n, aName, bName, expected, line, ariaL
         <text x={x(0) + 6} y={m.t - 10} style={{ fill: C.ink2 }}>{aName} win ▶</text>
         <text x={x(0) - 6} y={m.t - 10} textAnchor="end" style={{ fill: C.ink2 }}>◀ {bName} win</text>
         <line x1={x(expected)} x2={x(expected)} y1={m.t} y2={h - m.b} stroke={C.ink} strokeDasharray="5 3" strokeWidth={1.5} />
-        {line != null && <g><line x1={x(line)} x2={x(line)} y1={m.t} y2={h - m.b} stroke={C.s[3]} strokeWidth={2} /><text x={x(line)} y={h - m.b - 4} textAnchor="middle" style={{ fill: C.s[3], fontWeight: 700 }}>line</text></g>}
+        {line != null && <g><line x1={x(line)} x2={x(line)} y1={m.t} y2={h - m.b} stroke={C.s[3]} strokeWidth={2} /><text x={x(line)} y={h - m.b - 4} textAnchor="middle" style={{ fill: C.sText, fontWeight: 700 }}>line</text></g>}
       </svg>
       <div className="legend"><span><i style={{ background: C.s[0] }} />{aName} wins</span><span><i style={{ background: C.s[1] }} />{bName} wins</span><span><i style={{ border: `1.5px dashed ${C.ink}`, background: "transparent" }} />Expected margin</span>{line != null && <span><i style={{ background: C.s[3] }} />Spread line</span>}</div>
       <TipView tip={tip} width={w} />

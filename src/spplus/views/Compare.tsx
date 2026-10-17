@@ -96,7 +96,7 @@ export default function Compare() {
           <div className="panel">
             <h2>Exact values</h2>
             <div className="tbl-wrap"><table className="tbl">
-              <thead><tr><th>Rating</th>{teams.map((t, i) => <th key={t.id} className="r" style={{ color: colorOf(i) }}>{t.name}</th>)}<th className="r">Spread <Derived why="Largest minus smallest value among the teams" /></th></tr></thead>
+              <thead><tr><th>Rating</th>{teams.map((t, i) => <th key={t.id} className="r" style={{ color: `color-mix(in srgb, ${colorOf(i)} var(--series-text, 100%), var(--series-mix, transparent))` }}>{t.name}</th>)}<th className="r">Spread <Derived why="Largest minus smallest value among the teams" /></th></tr></thead>
               <tbody>
                 {metrics.map((m) => {
                   const vs = teams.map((t) => val(t, m.key)).filter((v): v is number => v != null);

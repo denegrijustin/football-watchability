@@ -2,12 +2,13 @@
   display: block;
   color-scheme: dark;
   --page: #0d0d0d; --surface: #1a1a19; --surface-2: #222220; --raise: #2a2a28;
-  --ink: #f0efec; --ink-2: #c3c2b7; --muted: #898781;
+  --ink: #f0efec; --ink-2: #c3c2b7; --muted: #9a9891;
   --grid: #2c2c2a; --axis: #383835; --border: rgba(255, 255, 255, 0.10); --border-2: rgba(255, 255, 255, 0.18);
   --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #2f9d2f; --s7: #9085e9; --s8: #e66767;
   --good: #0ca30c; --warn: #fab219; --bad: #d03b3b; --focus: #6da7ec;
   --seq-1: #cde2fb; --seq-3: #86b6ef; --seq-5: #3987e5; --seq-7: #1c5cab; --seq-9: #0d366b;
   --div-lo: #e66767; --div-mid: #383835; --div-hi: #3987e5;
+  --s4-text: #c98500; --dot-ink: #0d0d0d;
   --font: inherit;
   --gutter: 16px;
 }
@@ -16,7 +17,7 @@
 button, input, select { font: inherit; color: inherit; }
 button { cursor: pointer; }
 :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
-a { color: var(--s1); }
+a { color: var(--link, var(--s1)); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .num { font-variant-numeric: tabular-nums; }
 .muted { color: var(--muted); }
@@ -323,10 +324,10 @@ ol.steps b { color: var(--ink); }
     --page: #f4f4f1; --surface: #ffffff; --surface-2: #f0f0ec; --raise: #e6e6e0;
     --ink: #1a1a19; --ink-2: #44443f; --muted: #66655f;
     --grid: #dcdcd5; --axis: #c4c4bc; --border: rgba(0, 0, 0, 0.12); --border-2: rgba(0, 0, 0, 0.22);
-    --focus: #1f6feb;
+    --focus: #1f6feb; --s4-text: #8a5a00; --dot-ink: #0d0d0d; --link: #1a5fb4; --series-text: 70%; --series-mix: #000;
   }
-  /* white and light logos vanish on a light page, so each sits on a dark chip */
-  .tm img { box-sizing: border-box; width: 26px; height: 26px; padding: 3px; border-radius: 7px; background: #232b33; }
+  .delta.up { color: #12703c; } .delta.down { color: #b3261e; }
+  .tag.derived { color: #2a5fb0; border-color: #9db9e6; }
 }
 
 /* Phones: the ranking table fits the screen, so an opened row reads without sideways scrolling. */

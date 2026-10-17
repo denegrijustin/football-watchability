@@ -23,7 +23,7 @@ export function AtsChart({ weeks, ariaLabel }: { weeks: WeekLine[]; ariaLabel: s
         <line x1={m.l} x2={w - m.r} y1={y(0.5)} y2={y(0.5)} stroke={C.muted} strokeDasharray="4 4" />
         <line x1={m.l} x2={w - m.r} y1={y(BREAK_EVEN)} y2={y(BREAK_EVEN)} stroke={C.s[3]} strokeDasharray="2 3" />
         <text x={m.l + 4} y={y(0.5) + 12} className="lbl" style={{ fontSize: 10 }}>50%</text>
-        <text x={m.l + 4} y={y(BREAK_EVEN) - 4} style={{ fontSize: 10, fill: C.s[3] }}>break-even 52.4%</text>
+        <text x={m.l + 4} y={y(BREAK_EVEN) - 4} style={{ fontSize: 10, fill: C.sText }}>break-even 52.4%</text>
         {weeks.map((wk, i) => {
           const p = wk.rec.pct;
           const rows: [string, string][] = [["Week record", recordText(wk.rec)], ["ATS %", p == null ? "—" : `${(p * 100).toFixed(1)}%`], ["Season to date", `${recordText(wk.cumulative)} · ${wk.cumulative.pct == null ? "—" : (wk.cumulative.pct * 100).toFixed(1)}%`], ["Avg. cover margin", `${wk.avgCoverBy == null ? "—" : (wk.avgCoverBy > 0 ? "+" : "") + wk.avgCoverBy.toFixed(1)} pts`]];
