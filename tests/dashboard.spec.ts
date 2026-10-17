@@ -91,7 +91,7 @@ test("@smoke all games, conferences, history and logos remain available", async 
   expect(loaded.every(Boolean)).toBe(true);
   expect(errors).toEqual([]);
 });
-test("search, empty state, league switch and responsive layout", async ({
+test("@phone search, empty state, league switch and responsive layout", async ({
   page,
 }, testInfo) => {
   await page.goto("/?league=NFL");
@@ -968,7 +968,8 @@ test("@smoke @phone the persistent bar is slim and every filter is a pop-down me
   const above = Math.round((await page.locator(".ticker").boundingBox())!.height) + (phone ? 0 : Math.round((await page.locator(".site-header").boundingBox())!.height));
   expect(Math.round((await dock.boundingBox())!.y)).toBe(above);
   await page.evaluate(() => scrollTo(0, 0));
-  // Each menu narrows the board.
+  // Each menu narrows the board (on a phone they are in the Filters sheet).
+  if ((await sheetBtn.isVisible()) && !(await page.getByLabel("Watchability", { exact: true }).isVisible())) await sheetBtn.click();
   const nfl = slate.games.filter((g: any) => g.league === "NFL");
   await pick(page, "Watchability", "Must watch");
   await expect(page.locator(CARD)).toHaveCount(nfl.filter((g: any) => g.score >= 90).length);
