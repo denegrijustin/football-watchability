@@ -7443,3 +7443,14 @@ select,
 .live-fresh i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; animation: um-pulse 1.4s ease-in-out infinite; }
 .live-fresh.stale { color: #f3b681; background: rgb(243 182 129 / 10%); border-color: rgb(243 182 129 / 40%); }
 @media (max-width: 760px) { .live-fresh { margin-left: 6px; padding: 1px 7px; font-size: 11px; } }
+
+/* drive stats: full labels on a computer, a compact four-across grid with short labels on a phone */
+.lp-stats dt .short { display: none; }
+@media (max-width: 760px) {
+  .lp-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; margin-top: 8px; }
+  .lp-stats > div { padding: 4px 6px 5px; border-radius: 6px; min-width: 0; }
+  .lp-stats dt { font-size: 9px; letter-spacing: 0.02em; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lp-stats dt .full { display: none; }
+  .lp-stats dt .short { display: inline; }
+  .lp-stats dd { margin-top: 1px; font-size: 15px; line-height: 1.15; white-space: nowrap; }
+}
