@@ -36,7 +36,7 @@ export function EndZones({ ez, name }: { ez: EndzoneArt; name: string }) {
       </defs>
       {[0, EZ_W - EZ].map((x) => (
         <g key={x} data-endzone={name} transform={x === 0 ? undefined : `translate(${EZ_W} 0) scale(-1 1)`}>
-          <rect x="0" width={EZ} height={EZ_H} fill={ez.base} />
+          <rect x="0" width={EZ} height={EZ_H} fill={ez.sides ? ez.sides[x === 0 ? 0 : 1].base : ez.base} />
           {ez.checker && <rect x="0" width={EZ} height={EZ_H} fill={`url(#${id}c)`} />}
           {ez.hash && Array.from({ length: Math.ceil((EZ_H + EZ) / ez.hash.gap) }, (_, i) => (
             <line key={i} x1="8" x2={EZ - 8} y1={i * ez.hash!.gap + 40} y2={i * ez.hash!.gap - 40} stroke={ez.hash!.color} strokeWidth="3" />
@@ -57,7 +57,7 @@ export function EndZones({ ez, name }: { ez: EndzoneArt; name: string }) {
         </g>
       ))}
       {!ez.noWord && !ez.diamonds && [[EZ / 2 + 4, -90], [EZ_W - EZ / 2 - 4, 90]].map(([x, rot], side) => (
-        <text key={rot} transform={`translate(${x} ${CY}) rotate(${rot})`} {...fit} style={lettering(ez, size)}>{ez.words?.[side] ?? ez.word}</text>
+        <text key={rot} transform={`translate(${x} ${CY}) rotate(${rot})`} {...fit} style={lettering(ez.sides ? { ...ez, ...ez.sides[side] } : ez, size)}>{ez.words?.[side] ?? ez.word}</text>
       ))}
       {ez.ends && [0, 1].flatMap((side) => [0, 1].flatMap((bottom) => ez.ends!.map((color, i) => {
         const cx = side === 0 ? EZ / 2 : EZ_W - EZ / 2;

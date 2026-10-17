@@ -313,11 +313,11 @@ h1 em {
 /* ---------- Filters ---------- */
 .filter-dock {
   position: sticky;
-  top: var(--ticker-h, 0px);
-  z-index: 5;
+  top: var(--stk-dock, var(--ticker-h, 0px));
+  z-index: 37;
   margin: 0 -24px;
   padding: 12px 24px;
-  background: #0b1117ee;
+  background: #0b1117;
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--line);
@@ -6022,8 +6022,9 @@ select,
   }
 }
 .lf-helmet-shell {
-  stroke: #ffffff;
-  stroke-width: 0.35;
+  stroke: #07121c;
+  stroke-opacity: 0.55;
+  stroke-width: 0.3;
   stroke-linejoin: round;
 }
 .lf-helmet-ear {
@@ -7419,7 +7420,7 @@ select,
 .lp-num { fill: #fff; fill-opacity: 0.7; font-size: 21px; font-weight: 800; font-family: ui-sans-serif, system-ui, sans-serif; }
 .lp-route { filter: drop-shadow(0 1px 1px #102b1e); }
 .lp-shoulders { stroke: #111b24; stroke-width: 1; }
-.lp-player-shell { stroke: #edf2f6; stroke-width: 1; filter: drop-shadow(0 1px 1px #0a211b); }
+.lp-player-shell { stroke: #07121c; stroke-opacity: 0.55; stroke-width: 1; filter: drop-shadow(0 1px 1px #0a211b); }
 .lp-player-stripe { fill: none; stroke: #fff; stroke-width: 1.5; stroke-opacity: 0.8; }
 .lp-player-mask { fill: none; stroke: #cbd2d8; stroke-width: 1; stroke-linecap: round; stroke-linejoin: round; }
 .lp-p.hot .lp-shoulders { stroke: #ffd84a; stroke-width: 2; }
@@ -7460,3 +7461,31 @@ select,
 .lp-stats > div { background: rgb(255 255 255 / 5%); border: 1px solid rgb(255 255 255 / 10%); border-radius: 8px; padding: 6px 8px; }
 .lp-stats dt { color: var(--muted); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.04em; }
 .lp-stats dd { margin: 2px 0 0; font-size: 16px; font-weight: 800; font-variant-numeric: tabular-nums; }
+
+/* the header, the filters and the tab row stay with the ticker at the top of the page */
+.site-header {
+  position: sticky;
+  top: var(--stk-header, 0px);
+  z-index: 38;
+}
+.view-row {
+  position: sticky;
+  top: var(--stk-nav, 0px);
+  z-index: 36;
+  margin: 0 -24px;
+  padding: 8px 24px;
+  background: #0b1117;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+@media (max-width: 760px) {
+  /* on a phone only the ticker and the tab row stay: the header and filters would leave no room for the page */
+  .site-header,
+  .filter-dock {
+    position: static;
+  }
+  .view-row {
+    margin: 0 -16px;
+    padding: 6px 16px;
+  }
+}

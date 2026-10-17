@@ -57,6 +57,32 @@ export default function App() {
     window.addEventListener("fbwatch:open-view", open);
     return () => window.removeEventListener("fbwatch:open-view", open);
   });
+  // The ticker, the header, the filters and the tab row all stay at the top of the page. Each sticks under the ones above it, so each one's
+  // offset is the height of the sticky ones before it (the header and filters only stick on wide screens; see styles.css).
+  useEffect(() => {
+    const root = document.documentElement;
+    const pick = (sel: string) => document.querySelector<HTMLElement>(sel);
+    const apply = () => {
+      const tall = (el: HTMLElement | null) => (el && getComputedStyle(el).position === "sticky" ? el.offsetHeight : 0);
+      const t = tall(pick(".ticker"));
+      const h = tall(pick(".site-header"));
+      const d = tall(pick(".filter-dock"));
+      root.style.setProperty("--stk-header", `${t}px`);
+      root.style.setProperty("--stk-dock", `${t + h}px`);
+      root.style.setProperty("--stk-nav", `${t + h + d}px`);
+    };
+    apply();
+    const ro = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(apply);
+    for (const sel of [".ticker", ".site-header", ".filter-dock"]) {
+      const el = pick(sel);
+      if (el) ro?.observe(el);
+    }
+    window.addEventListener("resize", apply);
+    return () => {
+      ro?.disconnect();
+      window.removeEventListener("resize", apply);
+    };
+  }, [view, filters.league]);
   const { league } = filters;
   const board = useBoard(filters);
   const switchView = (v: View) => {
