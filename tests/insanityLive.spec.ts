@@ -79,6 +79,7 @@ test("a game that ended since the last rebuild is scored from its win-probabilit
   const card = page.locator(".ib-cards > li", { has: page.locator(".ic-fresh") }).first();
   await expect(card).toBeVisible();
   await expect(card.locator(".ic-fresh")).toHaveText("FINAL");
+  await expect(card.locator(".ic-watch.est")).toContainText("~"); // an estimated watch score until the archive has the real one
   await expect(card.locator(".ic-teams")).toContainText("27");
   expect(Number(await card.getAttribute("data-insanity"))).toBeGreaterThan(50);
   await expect(page.locator(".ib-live-head")).toHaveCount(0); // it is a final, not a live game

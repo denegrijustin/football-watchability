@@ -5,7 +5,8 @@ import { NFL_CONFERENCES, inConference } from "../teamConf";
 import { fetchData, refetchData } from "../data/load";
 import { latestFlow, useLiveMap } from "../live";
 import { rankGames, mostInsaneWeek, weekSummaries, sortGames, INSANITY_SORTS, type InsanitySort, type LedgerGame } from "../seasonRank";
-import { compareDone, forecastScoreOf, registerLedger, watchScoreOf } from "../completedSort";
+import { provisionalActual } from "../provisionalScore";
+import { compareDone, forecastScoreOf, registerLedger, registerProvisional, watchScoreOf } from "../completedSort";
 import { PlusRank } from "./PlusRank";
 import { usePlusRanks } from "../plusRanks";
 import { INSANITY_TIERS, insanity, thinWp } from "../insanity";
@@ -33,7 +34,7 @@ export function facts(g: LedgerGame) {
 }
 
 /** A game not yet in the ledger: in progress (live) or just ended and waiting for the hourly rebuild to archive it (live false). */
-type LiveLedgerGame = LedgerGame & { live: boolean; clock: string };
+type LiveLedgerGame = LedgerGame & { live: boolean; clock: string; watchEst?: number | null };
 /** The ledger names its teams only in the matchup ("Ball State @ Bowling Green"); the ranks are looked up by that name for college. */
 const teamsOf = (g: LedgerGame) => {
   const [a, h] = g.matchup.split(" @ ");
@@ -77,6 +78,9 @@ function useLiveInsanity(onLedger: (games: LedgerGame[]) => void, have: Set<stri
           const over = /ot/i.test(l.detail);
           const r = wp ? insanity(thinWp(wp), { final: !inPlay, overtime: over }) : null;
           if (!r) return null;
+          // A game that has ended gets the watch score the refresh will give it, estimated from the same line until it is archived.
+          const est = !inPlay ? provisionalActual(g.espnId, { away: l.away, home: l.home }, wp, over) : null;
+          if (est) registerProvisional(g.espnId, est.score);
           const [a, h] = g.teams as unknown as { abbr?: string; name: string; logoId: string; color?: string | null }[];
           return {
             id: g.espnId,
@@ -96,6 +100,7 @@ function useLiveInsanity(onLedger: (games: LedgerGame[]) => void, have: Set<stri
             mvp: null,
             live: inPlay,
             clock: l.detail,
+            watchEst: est?.score ?? null,
           };
         }),
       );
@@ -428,6 +433,11 @@ function InsanityCard({ g, rank, showWeek, onOpen, live, fresh }: { g: LedgerGam
         </span>
         <span className="ic-watch margin" title="Final score margin">Margin <strong>{Math.abs(g.away.score - g.home.score)}</strong></span>
         {forecastScoreOf(g.id) != null && <span className="ic-watch" title="Watch score forecast before kickoff (team quality, competitiveness, stakes)">Forecast <strong>{forecastScoreOf(g.id)}</strong></span>}
+        {watchScoreOf(g.id) == null && (g as Partial<LiveLedgerGame>).watchEst != null && (
+          <span className="ic-watch real est" title="Estimated watch score: calculated here from the final score and win-probability line until the refresh archives the game and replaces it with the official one">
+            Watch <strong>~{(g as LiveLedgerGame).watchEst}</strong> <small>est.</small>
+          </span>
+        )}
         {watchScoreOf(g.id) != null && <span className="ic-watch real" title="Watch score realized: re-scored from how the game was actually played">Watch <strong>{watchScoreOf(g.id)}</strong></span>}
         {live != null && <span className="ic-live" title="In progress: scored from the live win-probability line">LIVE{live ? ` · ${live}` : ""}</span>}
         {fresh && <span className="ic-fresh" title="Just ended: scored from the game's win-probability line until the hourly rebuild archives it">FINAL</span>}

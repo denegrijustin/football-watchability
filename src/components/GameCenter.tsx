@@ -1,3 +1,4 @@
+import { provisionalActual } from "../provisionalScore";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { ART_COUNT, attributePlays, impact, summarizeEvents, type ImpactEvent, type PlayLog, type PlayerRow } from "../playImpact";
 import { ART_LABEL, PlayArt } from "./PlayArt";
@@ -252,6 +253,8 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
     setTab(next.id);
     requestAnimationFrame(() => document.getElementById(`gc-tab-${next.id}`)?.focus());
   };
+  // A game that has just ended is not archived yet: estimate its actual watch score from what is on hand.
+  const est = !fin && state === "post" && up && game?.wp?.length ? provisionalActual(String(espnId), { away: scoreA ?? 0, home: scoreH ?? 0 }, game.wp as [number, number | null][], /ot/i.test(game.status.detail)) : null;
   const watch = up ? { score: up.score, tier: up.tier } : fin ? { score: fin.actual.score, tier: fin.actual.tier } : null;
 
   return (
@@ -308,7 +311,12 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
                 watch && (
                   <span className={`gc-watch ${watch.tier}`}>
                     {state === "post" ? "Forecast" : "Watchability"} {watch.score} · {tierLabel(watch.tier)}
-                    {state === "post" && <small className="gc-watch-note">Actual score posts with the next refresh</small>}
+                    {state === "post" && est && (
+                      <>
+                        {" "}→ Actual ~{est.score} · {est.label}
+                      </>
+                    )}
+                    {state === "post" && <small className="gc-watch-note">{est ? "Actual is an estimate until the next refresh archives the game" : "Actual score posts with the next refresh"}</small>}
                   </span>
                 )
               )}
