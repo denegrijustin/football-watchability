@@ -5,6 +5,7 @@ import { NFL_CONFERENCES, inConference } from "../teamConf";
 import { fetchData, refetchData } from "../data/load";
 import { latestFlow, useLiveMap } from "../live";
 import { rankGames, mostInsaneWeek, weekSummaries, sortGames, INSANITY_SORTS, type InsanitySort, type LedgerGame } from "../seasonRank";
+import { compareDone } from "../completedSort";
 import { INSANITY_TIERS, insanity, thinWp } from "../insanity";
 import { useOpenGame, type GameStub } from "./GameCenterContext";
 import { Headshot } from "./Headshot";
@@ -161,7 +162,7 @@ export function InsanityBoard({ defaultLeague }: { defaultLeague: "NFL" | "CFB" 
   const pool = useMemo(() => (scope === "season" ? mine : mine.filter((g) => g.week === week)), [mine, scope, week]);
   // Each game keeps its insanity rank (#1 is the wildest) whatever order the list is shown in.
   const rankOf = useMemo(() => new Map(rankGames(pool).map((g, i) => [g.id, i + 1])), [pool]);
-  const list = useMemo(() => sortGames(pool, sort), [pool, sort]);
+  const list = useMemo(() => (sort === "watch" || sort === "rank" ? rankGames(pool).sort((a, b) => compareDone(sort, a.id, b.id)) : sortGames(pool, sort)), [pool, sort]);
   const isLiveRow = (g: LedgerGame) => (g as Partial<LiveLedgerGame>).live === true;
   const liveRows = list.filter(isLiveRow);
   const isFreshRow = (g: LedgerGame) => (g as Partial<LiveLedgerGame>).live === false;

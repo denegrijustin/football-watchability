@@ -9,6 +9,8 @@ import { useLiveMap } from "../live";
 import { closestToFinal } from "../closing";
 import { useOpenGame, type GameStub } from "./GameCenterContext";
 import { buildRows, fillOf, ledgerResults, TIERS, type LedgerLike, type MeterRow, type MeterTeam, type WeeklyLike } from "../upsetMeter";
+import { compareDone, type DoneSort } from "../completedSort";
+import { DoneSortControl } from "./DoneSortControl";
 import "../upsetMeter.css";
 
 type Show = "all" | "live" | "upcoming" | "final" | "upsets";
@@ -72,6 +74,8 @@ export function UpsetMeter({ defaultLeague }: { defaultLeague: League }) {
   const [show, setShow] = useState<Show>("all");
   const [week, setWeek] = useState(slate.period);
   const [conf, setConf] = useState("all");
+  // Completed games: the upset gap (the list's own order), watch score, insanity or highest ranked. Viewing only the finals opens on watch score.
+  const [chosen, setChosen] = useState<DoneSort | "gap" | null>(null);
   const [ledger, setLedger] = useState<LedgerLike[] | null>(null);
   const [weekly, setWeekly] = useState<WeeklyLike | null>(null);
   const live = useLiveMap();
@@ -137,7 +141,8 @@ export function UpsetMeter({ defaultLeague }: { defaultLeague: League }) {
   };
   const upsets = done.filter((r) => r.upset);
   useEffect(() => { if (show === "live" && !inPlay.length) setShow("all"); }, [show, inPlay.length]);
-  const columns: { id: string; title: string; rows: MeterRow[]; empty: string }[] =
+  const doneSort = chosen ?? (show === "final" ? "watch" : "gap");
+  const columns0: { id: string; title: string; rows: MeterRow[]; empty: string }[] =
     !current
       ? [{ id: "done", title: show === "upsets" ? "Upsets" : "Completed", rows: show === "upsets" ? upsets : done, empty: show === "upsets" ? "No upsets that week." : "No games to show." }]
       : show === "all"
@@ -149,6 +154,8 @@ export function UpsetMeter({ defaultLeague }: { defaultLeague: League }) {
           : show === "final"
             ? [{ id: "done", title: "Completed", rows: done, empty: "No games have finished yet." }]
             : [{ id: "ups", title: "Upsets", rows: shownRows.filter((r) => r.upset || r.brewing), empty: "No upsets yet this week." }];
+  const columns = columns0.map((c) => (c.id === "done" && doneSort !== "gap" ? { ...c, rows: [...c.rows].sort((a, b) => compareDone(doneSort, a.espnId, b.espnId)) } : c));
+  const hasDone = columns.some((c) => c.id === "done" && c.rows.length > 0);
   const shows: [Show, string][] = current ? [["all", "All"], ...(inPlay.length ? [["live", "Live"] as [Show, string]] : []), ["upcoming", "Next"], ["final", "Final"], ["upsets", "Upsets"]] : [["all", "All"], ["upsets", "Upsets"]];
   const loading = current ? !plus : !ledger || !weekly;
 
@@ -180,6 +187,12 @@ export function UpsetMeter({ defaultLeague }: { defaultLeague: League }) {
           ))}
         </div>
       </div>
+      {hasDone && (
+        <div className="um-sortbar">
+          <span className="sort-label">Completed games</span>
+          <DoneSortControl value={doneSort} onChange={setChosen} extra={[{ id: "gap", label: "Upset gap" }]} />
+        </div>
+      )}
       {loading && <p className="ol-note" role="status">Loading…</p>}
       <ol className="um-legend" aria-label="Tiers">
         {[...TIERS].reverse().map((t) => <li key={t.id} style={{ ["--tier" as string]: t.color }}><i />{t.short}</li>)}
@@ -189,7 +202,7 @@ export function UpsetMeter({ defaultLeague }: { defaultLeague: League }) {
           <section key={c.id} className="um-col" aria-label={c.title}>
             <h3>{c.title}<span>{c.rows.length}</span></h3>
             {c.rows.length ? <div className="um-listhead" aria-hidden="true"><div className="um-hl"><span /><span /><span>Overall</span><span>Off</span><span>Def</span><span>{c.id === "todo" ? "" : "Pts"}</span></div><i>Upset gap</i></div> : null}
-            {c.rows.length ? <ol className="um-list" aria-label={`${c.title} games by upset chance, most lopsided first`}>{c.rows.map((r) => <Row key={r.key} r={r} league={league} biggest={r.upset && r.key === biggestKey} onOpen={() => open(r)} />)}</ol> : !loading && <p className="ol-note">{c.empty}</p>}
+            {c.rows.length ? <ol className="um-list" aria-label={c.id === "done" && doneSort !== "gap" ? `${c.title} games by ${doneSort === "watch" ? "watch score" : doneSort === "rank" ? "highest ranked" : "insanity"}` : `${c.title} games by upset chance, most lopsided first`}>{c.rows.map((r) => <Row key={r.key} r={r} league={league} biggest={r.upset && r.key === biggestKey} onOpen={() => open(r)} />)}</ol> : !loading && <p className="ol-note">{c.empty}</p>}
           </section>
         ))}
       </div>
