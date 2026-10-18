@@ -9,7 +9,7 @@ import { useLiveMap } from "../live";
 import { closestToFinal } from "../closing";
 import { useOpenGame, type GameStub } from "./GameCenterContext";
 import { buildRows, fillOf, ledgerResults, TIERS, type LedgerLike, type MeterRow, type MeterTeam, type WeeklyLike } from "../upsetMeter";
-import { compareDone, type DoneSort } from "../completedSort";
+import { compareDone, registerLedger, type DoneSort } from "../completedSort";
 import { DoneSortControl } from "./DoneSortControl";
 import "../upsetMeter.css";
 
@@ -86,7 +86,7 @@ export function UpsetMeter({ defaultLeague }: { defaultLeague: League }) {
   // The season ledger lists the earlier weeks; each week's own ranks load only when one of them is opened.
   useEffect(() => {
     let on = true;
-    fetchData<{ games: LedgerLike[] }>("season").then((m) => on && setLedger(m.games), () => {});
+    fetchData<{ games: LedgerLike[] }>("season").then((m) => { registerLedger(m.games as never); if (on) setLedger(m.games); }, () => {});
     return () => { on = false; };
   }, []);
   useEffect(() => {

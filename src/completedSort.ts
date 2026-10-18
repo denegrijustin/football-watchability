@@ -11,6 +11,11 @@ export const DONE_SORTS: { id: DoneSort; label: string; note: string }[] = [
 
 type Keys = { watch: number; insanity: number; rank: number };
 let byId: Map<string, Keys> | null = null;
+/** Insanity scores from the season ledger, which reaches back past the archive's last two weeks (set once a tab has loaded it). */
+const ledgerInsanity = new Map<string, number>();
+export function registerLedger(games: { id: string; insanity: number }[]) {
+  for (const g of games) ledgerInsanity.set(String(g.id), g.insanity);
+}
 
 /** Sort keys for a finished game from the archive (higher is better; a game with no data sorts last). */
 export function doneKeys(espnId: string | null | undefined): Keys {
@@ -26,7 +31,11 @@ export function doneKeys(espnId: string | null | undefined): Keys {
       });
     }
   }
-  return byId.get(espnId ?? "") ?? { watch: -1, insanity: -1, rank: -Infinity };
+  const id = String(espnId ?? "");
+  const k = byId.get(id);
+  if (k) return k;
+  // Not in the archive: only the ledger knows it (an earlier week), and it has the insanity score but no watch score or ranks.
+  return { watch: -1, insanity: ledgerInsanity.get(id) ?? -1, rank: -Infinity };
 }
 
 /** Compare two finished games under a sort; ties fall back to the other measures, then to the caller's own order. */
