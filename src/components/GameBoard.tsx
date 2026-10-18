@@ -2,7 +2,9 @@ import { useState } from "react";
 import { filterGames, filterResults, results, type FilterState, type Result } from "../data";
 import { gameStatus, useLiveMap, useNow } from "../live";
 import { timeOf, tzAbbr, useTz } from "../tz";
+import { compareDone, type DoneSort } from "../completedSort";
 import { insanity } from "../insanity";
+import { DoneSortControl } from "./DoneSortControl";
 import { useClosingUpsets } from "../brewing";
 import type { StatusCounts } from "./Filters";
 import { GameCard } from "./GameCard";
@@ -58,7 +60,7 @@ export function useBoard(filters: FilterState): Board {
 
 const SECTION_HELP = {
   live: "Kicked off and not final yet, kickoff slots in time order, best watchability first in each slot.",
-  final: "Finished games with forecast vs actual, newest week first, and the most insane games first within each week.",
+  final: "Finished games with forecast vs actual, newest week first, ordered within each week by the sort you pick.",
   upcoming: "Still to play, kickoff slots in time order, best watchability first in each slot.",
 };
 
@@ -96,6 +98,9 @@ export function GameBoard({
 }) {
   const [showAll, setShowAll] = useState(false);
   const [showCompleted, setShowCompleted] = useState(false);
+  // Viewing only completed games opens on the highest watch score; with everything showing, on the most insane (as before).
+  const [chosen, setChosen] = useState<DoneSort | null>(null);
+  const doneSort: DoneSort = chosen ?? (status === "final" ? "watch" : "insanity");
   const completedExpanded = status === "final" || showCompleted;
   const { live, closing, justFinal, finals, upcoming, counts } = board;
   const showClosing = (status === "all" || status === "live") && closing.length > 0;
@@ -173,6 +178,7 @@ export function GameBoard({
             <h3>Completed</h3>
             <span className="count">{counts.final}</span>
             <span className="section-note">{SECTION_HELP.final}</span>
+            <DoneSortControl value={doneSort} onChange={setChosen} />
             {status !== "final" && (
               <button className="completed-toggle" aria-expanded={completedExpanded} aria-controls="completed-games" onClick={() => setShowCompleted(!showCompleted)}>
                 {completedExpanded ? "Hide completed games" : "Show completed games"}
@@ -191,9 +197,7 @@ export function GameBoard({
             // Within a week, the most insane game first (a game with no play data goes last), the later kickoff first when tied.
             const rs = finals
               .filter((r) => r.week === w)
-              .map((r) => ({ r, i: insanity(r.wp, { final: true, overtime: r.final.overtime })?.score ?? -1 }))
-              .sort((a, b) => b.i - a.i || b.r.date.localeCompare(a.r.date))
-              .map((x) => x.r);
+              .sort((a, b) => compareDone(doneSort, a.espnId, b.espnId) || b.date.localeCompare(a.date));
             const shown = rs.slice(0, Math.max(0, limit - used));
             used += shown.length;
             const best = [...rs].sort((a, b) => b.delta - a.delta)[0];

@@ -1098,6 +1098,9 @@ test("completed games run from the most insane to the least within each week", a
   const { insanity } = await import("../src/insanity.js");
   await page.goto("/?league=NFL");
   await completed(page);
+  // Viewing only completed games opens on the highest watch score; Most insane is one click away.
+  await expect(page.getByRole("group", { name: "Sort completed games by" }).getByRole("button", { name: "Watch score" })).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("group", { name: "Sort completed games by" }).getByRole("button", { name: "Most insane" }).click();
   const blocks = page.locator(".week-block");
   await expect(blocks.first()).toBeVisible();
   const results = JSON.parse(readFileSync("src/data/results.json", "utf8")).games as any[];
@@ -1114,6 +1117,28 @@ test("completed games run from the most insane to the least within each week", a
     if (ids.length > 1) compared++;
   }
   expect(compared).toBeGreaterThan(0); // at least one week had several games to put in order
+});
+
+test("completed games can be sorted by watch score, insanity or highest ranked, and open on the highest watch score", async ({ page }) => {
+  const results = JSON.parse(readFileSync("src/data/results.json", "utf8")).games as any[];
+  const byId = new Map(results.map((r) => [String(r.espnId), r]));
+  await page.goto("/?league=CFB");
+  await completed(page);
+  const group = page.getByRole("group", { name: "Sort completed games by" });
+  await expect(group.getByRole("button", { name: "Watch score" })).toHaveAttribute("aria-pressed", "true");
+  const ids = async () => page.locator(".week-block").first().locator("article[aria-labelledby^='r-']").evaluateAll((els) => els.map((e) => (e.getAttribute("aria-labelledby") ?? "").slice(2)));
+  const watch = (await ids()).map((id) => byId.get(id)?.actual.score ?? -1);
+  expect(watch.length).toBeGreaterThan(1);
+  expect(watch).toEqual([...watch].sort((a, b) => b - a));
+  await group.getByRole("button", { name: "Highest ranked" }).click();
+  const best = (await ids()).map((id) => {
+    const ranks = (byId.get(id)?.teams ?? []).map((t: any) => t.ranks?.overall).filter((n: any) => typeof n === "number" && n > 0);
+    return ranks.length ? Math.min(...ranks) : Infinity;
+  });
+  expect(best).toEqual([...best].sort((a, b) => a - b));
+  // with everything showing, the order is still the most insane first
+  await page.getByLabel("Status", { exact: true }).selectOption({ label: "All status" });
+  await expect(page.getByRole("group", { name: "Sort completed games by" }).getByRole("button", { name: "Most insane" })).toHaveAttribute("aria-pressed", "false"); // the pick made above is kept
 });
 
 test("if the board's data never loads, the grey bars give way to a message and a Reload button (after one automatic reload)", async ({ page }) => {
