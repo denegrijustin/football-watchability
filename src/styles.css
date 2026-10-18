@@ -783,8 +783,8 @@ h1 em {
 }
 /* Season form + trends */
 :root {
-  --win: #3987e5;
-  --loss: #e66767;
+  --win: #2f74d0;
+  --loss: #c74545;
   --tie: #6b7785;
 }
 .form {
@@ -4358,7 +4358,7 @@ button.ic-inner:focus-visible {
   letter-spacing: 0.3px;
 }
 .inj-status.out {
-  background: #e5484d;
+  background: #c92a30;
   color: #fff;
 }
 .inj-status.doubtful {
@@ -7889,9 +7889,6 @@ select,
   .view-row {
     background: var(--bg);
   }
-  .ticker-item img {
-    filter: drop-shadow(0 0 1px rgb(0 0 0 / 55%));
-  }
   .ticker-item {
     border-right-color: rgb(0 0 0 / 10%);
   }
@@ -7943,13 +7940,94 @@ select,
   }
 }
 
-/* Light appearance: white team logos outside the dark cards get a thin dark outline so they stay visible. */
+
+
+/* Light appearance: accents deep enough for text on their own tints, and a dark island for the TV grid (its image export is dark). */
 @media (prefers-color-scheme: light) {
-  .sim-logo,
-  .imp-logo,
-  .kp-logo,
-  .um-row img,
-  .ic-mvp-logo {
-    filter: drop-shadow(0 0 0.5px rgb(0 0 0 / 90%)) drop-shadow(0 0 1px rgb(0 0 0 / 55%));
+  :root {
+    --lime: #2d6208;
+    --green: #126332;
+    --red: #a32018;
+    --gold: #7a5400;
+    --orange: #964500;
+  }
+  .brand-mark,
+  .skip-link,
+  .um-n {
+    color: #fff;
+  }
+  .ticker-item.upset .ticker-final {
+    color: #0d6b35;
+  }
+  .tv-scroll,
+  .tv-table {
+    --bg: #0b1117;
+    --surface: #121b23;
+    --surface-2: #17222c;
+    --surface-3: #1d2a35;
+    --line: #243441;
+    --line-strong: #33475a;
+    --text: #eaf0f4;
+    --text-2: #b9c6d0;
+    --muted: #8d9eac;
+    --lime: #c0ed80;
+    --green: #8fdcaa;
+    --red: #f59f9e;
+    --gold: #edd092;
+    --orange: #f3b681;
+    color: var(--text);
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  .insanity,
+  .ib {
+    --ins-calm: #4a5d70;
+    --ins-restless: #4a5cb8;
+    --ins-wild: #6a4fc0;
+    --ins-unhinged: #9a3fb0;
+    --ins-witching: #b0307f;
+  }
+  .um-controls .um-n {
+    color: #fff;
+  }
+}
+
+.ibw-name em {
+  color: color-mix(in srgb, var(--ins-witching) 65%, white);
+}
+@media (prefers-color-scheme: light) {
+  .ibw-name em {
+    color: color-mix(in srgb, var(--ins-witching) 80%, black);
+  }
+}
+
+/* Light appearance: surfaces drawn dark on purpose (team-color headers, the field, the Upset Meter banner) keep the dark palette inside. */
+@media (prefers-color-scheme: light) {
+  .gc-head,
+  .um-head,
+  .gc-bottom li.gc-pcard,
+  .ic-inner,
+  .kp-card,
+  .inj-team,
+  .band-count,
+  .gc-field {
+    --surface: #121b23;
+    --surface-2: #17222c;
+    --surface-3: #1d2a35;
+    --line: #243441;
+    --line-strong: #33475a;
+    --text: #eaf0f4;
+    --text-2: #b9c6d0;
+    --muted: #a3b2be;
+    --lime: #c0ed80;
+    --green: #8fdcaa;
+    --red: #f59f9e;
+    --gold: #edd092;
+    --orange: #f3b681;
+    color: var(--text);
+  }
+  .gc-spp-open {
+    color: #1a5fb4;
   }
 }

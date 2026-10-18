@@ -121,7 +121,7 @@ export default function Rankings() {
           </dl>
         )}
         {!all && r.team.top[week] && <p className="sub" style={{ margin: 0 }}>On the 772-team list: {fmt(r.team.top[week].sp)} SP+, rank {r.team.top[week].spRk} <span className="tag">different scale</span></p>}
-        <div style={{ display: "flex", gap: 8 }}><CompareToggle id={r.team.id} /><button type="button" className="btn small" onClick={() => nav({ view: "team", team: r.team.id })}>Open team</button>{r.team.division === "FBS" && <button type="button" className="btn small" onClick={() => nav({ view: "simulator", p: { a: r.team.id } })}>Simulate a game</button>}</div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}><CompareToggle id={r.team.id} /><button type="button" className="btn small" onClick={() => nav({ view: "team", team: r.team.id })}>Open team</button>{r.team.division === "FBS" && <button type="button" className="btn small" onClick={() => nav({ view: "simulator", p: { a: r.team.id } })}>Simulate a game</button>}</div>
         {rows.length === 0 && null}
       </div>
     );

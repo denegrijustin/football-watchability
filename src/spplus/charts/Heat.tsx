@@ -1,4 +1,4 @@
-import { C, TipView, centreIn, useTip, useWidth } from "./kit";
+import { C, inkOn, TipView, centreIn, useTip, useWidth } from "./kit";
 
 export interface HeatCell { value: number | null; text: string; tip?: [string, string][] }
 export interface HeatRow { id: string; label: string; cells: HeatCell[] }
@@ -33,7 +33,7 @@ export function Heatmap({ rows, cols, ariaLabel, cellH = 34, labelW = 124, rowTi
                   onFocus={(e) => { const p = centreIn(ref.current, e.currentTarget); show({ x: p.x, y: p.y, title: `${r.label} · ${cols[ci]}`, rows: cell.tip ?? [["Value", cell.text]] }); }}
                   onBlur={hide}>
                   <rect x={x + 1} y={y + 1} width={Math.max(cw - 2, 1)} height={cellH - 2} rx={4} fill={cell.value == null ? "transparent" : heatColor(cell.value)} stroke={cell.value == null ? C.axis : "none"} strokeDasharray={cell.value == null ? "3 3" : undefined} />
-                  <text x={x + cw / 2} y={y + cellH / 2 + 4} textAnchor="middle" style={{ fill: cell.value != null && cell.value > 58 ? "#0d0d0d" : C.ink, fontWeight: 600, fontSize: cw < 38 ? 9.5 : 12 }}>{cell.text}</text>
+                  <text x={x + cw / 2} y={y + cellH / 2 + 4} textAnchor="middle" style={{ fill: cell.value != null ? inkOn(heatColor(cell.value)) : C.ink, fontWeight: 600, fontSize: cw < 38 ? 9.5 : 12 }}>{cell.text}</text>
                   <rect className="ring" x={x + 1} y={y + 1} width={Math.max(cw - 2, 1)} height={cellH - 2} rx={4} fill="none" />
                 </g>
               );

@@ -68,7 +68,7 @@ const dayText = (iso: string) => new Date(`${iso}T12:00:00Z`).toLocaleDateString
 
 function Logo({ t }: { t: Team }) {
   const src = t.logoId ? logos[t.logoId] : undefined;
-  return src ? <img src={src} alt="" width="28" height="28" loading="lazy" decoding="async" /> : <span className="ol-chip" aria-hidden="true">{t.abbr.slice(0, 3)}</span>;
+  return src ? <img className="ol-logo" src={src} alt="" width="28" height="28" loading="lazy" decoding="async" /> : <span className="ol-chip" aria-hidden="true">{t.abbr.slice(0, 3)}</span>;
 }
 
 function SeedRow({ s, odds, tag }: { s: Seed; odds: [string, number | null | undefined][]; tag: string }) {

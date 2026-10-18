@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { C, Legend as _L, TipView, niceTicks, useTip, useWidth } from "./kit";
+import { C, inkOn, Legend as _L, TipView, niceTicks, useTip, useWidth } from "./kit";
 
 export interface LineSeries { id: string; label: string; color: string; values: (number | null)[]; dash?: boolean }
 
@@ -85,7 +85,7 @@ export function LinesChart(p: Props) {
             <g key={s.id} opacity={dim ? 0.22 : 1}>
               <path d={path(s)} fill="none" stroke={s.color} strokeWidth={on ? 3 : 2} strokeDasharray={s.dash ? "5 4" : undefined} strokeLinecap="round" strokeLinejoin="round" />
               {s.values.map((v, i) => v == null ? null : p.pointText ? (
-                <g key={i}><circle cx={x(i)} cy={y(v)} r={String(p.pointText(v, s, i)).length > 2 ? 11 : on ? 10 : 8} fill={s.color} stroke={C.surface} strokeWidth={2} /><text x={x(i)} y={y(v) + 3.5} textAnchor="middle" style={{ fill: "#0d0d0d", fontSize: 9.5, fontWeight: 700 }}>{p.pointText(v, s, i)}</text></g>
+                <g key={i}><circle cx={x(i)} cy={y(v)} r={String(p.pointText(v, s, i)).length > 2 ? 11 : on ? 10 : 8} fill={s.color} stroke={C.surface} strokeWidth={2} /><text x={x(i)} y={y(v) + 3.5} textAnchor="middle" style={{ fill: inkOn(s.color), fontSize: 9.5, fontWeight: 700 }}>{p.pointText(v, s, i)}</text></g>
               ) : (
                 <circle key={i} cx={x(i)} cy={y(v)} r={on ? 4.5 : 3.5} fill={s.color} stroke={C.surface} strokeWidth={2} />
               ))}

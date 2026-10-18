@@ -1,3 +1,4 @@
+import { guardLogos } from "../logoGuard";
 import { useEffect, useRef } from "react";
 import { LiveMirror, useLiveMap, type LiveMap } from "../live";
 import { createRoot } from "react-dom/client";
@@ -23,6 +24,7 @@ export default function NflTab() {
     style.textContent = css;
     const mount = document.createElement("div");
     shadow.append(style, mount);
+    guardLogos(shadow);
     const root = createRoot(mount);
     draw.current = (m) => root.render(<LiveMirror map={m}><NflProvider><NflApp /></NflProvider></LiveMirror>);
     draw.current(latest.current);
