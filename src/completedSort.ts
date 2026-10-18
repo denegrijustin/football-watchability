@@ -21,6 +21,13 @@ export function registerLedger(games: { id: string; insanity: number }[]) {
   for (const g of games) ledgerInsanity.set(String(g.id), g.insanity);
 }
 
+/** Estimated realized watch scores for games that just ended and are not archived yet (see provisionalScore.ts). */
+const provisional = new Map<string, number>();
+export function registerProvisional(id: string, score: number) {
+  provisional.set(String(id), score);
+}
+export const provisionalWatchOf = (id: string | null | undefined): number | null => provisional.get(String(id ?? "")) ?? null;
+
 function keys(id: string | null | undefined): Keys {
   if (!byId) {
     byId = new Map();
@@ -35,7 +42,7 @@ function keys(id: string | null | undefined): Keys {
   const k = byId.get(String(id ?? ""));
   if (k) return k;
   // Not in the archive: only the ledger knows it (an earlier week), and it has the insanity score but no watch score.
-  return { watch: -1, forecast: forecastScoreOf(id) ?? -1, insanity: ledgerInsanity.get(String(id ?? "")) ?? -1 };
+  return { watch: provisional.get(String(id ?? "")) ?? -1, forecast: forecastScoreOf(id) ?? -1, insanity: ledgerInsanity.get(String(id ?? "")) ?? -1 };
 }
 
 /** The watch score forecast before kickoff (the archive keeps it with the result; a game not yet archived still has it on the slate). */
@@ -49,8 +56,8 @@ export const forecastScoreOf = (id: string | null | undefined): number | null =>
 
 /** The game's watch score, or null when the archive no longer holds it (an earlier week). */
 export const watchScoreOf = (id: string | null | undefined): number | null => {
-  const w = keys(id).watch;
-  return w >= 0 ? w : null;
+  keys(id); // builds the archive lookup
+  return byId?.get(String(id ?? ""))?.watch ?? null;
 };
 
 /** The SP+ (college) or NFL+ (NFL) rank of each team, in the order given; null when a team has none. */

@@ -15,20 +15,21 @@
     "date": "2026-10-18T17:00Z",
     "neutralSite": false,
     "conferenceCompetition": false,
-    "boxscoreAvailable": false,
+    "boxscoreAvailable": true,
     "commentaryAvailable": false,
     "liveAvailable": false,
     "onWatchESPN": false,
     "recent": true,
-    "wallclockAvailable": false,
-    "boxscoreSource": "none",
-    "playByPlaySource": "none",
+    "wallclockAvailable": true,
+    "boxscoreSource": "full",
+    "playByPlaySource": "full",
     "competitors": [
      {
       "id": "1",
       "uid": "s:20~l:28~t:1",
       "order": 0,
       "homeAway": "home",
+      "winner": false,
       "team": {
        "id": "1",
        "guid": "49fd392a-86fe-4df3-1b77-9bbfa18b2ad5",
@@ -242,21 +243,31 @@
         }
        ]
       },
+      "score": "23",
+      "linescores": [
+       {
+        "displayValue": "0"
+       },
+       {
+        "displayValue": "7"
+       },
+       {
+        "displayValue": "0"
+       },
+       {
+        "displayValue": "16"
+       }
+      ],
       "record": [
        {
         "type": "total",
-        "summary": "2-3",
-        "displayValue": "2-3"
+        "summary": "2-4",
+        "displayValue": "2-4"
        },
        {
         "type": "home",
-        "summary": "0-2",
-        "displayValue": "0-2"
-       },
-       {
-        "type": "vsconf",
-        "summary": "2-1",
-        "displayValue": "2-1"
+        "summary": "0-3",
+        "displayValue": "0-3"
        }
       ],
       "possession": false
@@ -266,6 +277,7 @@
       "uid": "s:20~l:28~t:3",
       "order": 1,
       "homeAway": "away",
+      "winner": true,
       "team": {
        "id": "3",
        "guid": "19d73366-b5a5-cca2-a176-a2c024ce0bb3",
@@ -479,21 +491,31 @@
         }
        ]
       },
+      "score": "31",
+      "linescores": [
+       {
+        "displayValue": "14"
+       },
+       {
+        "displayValue": "7"
+       },
+       {
+        "displayValue": "7"
+       },
+       {
+        "displayValue": "3"
+       }
+      ],
       "record": [
        {
         "type": "total",
-        "summary": "3-2",
-        "displayValue": "3-2"
+        "summary": "4-2",
+        "displayValue": "4-2"
        },
        {
         "type": "road",
-        "summary": "1-1",
-        "displayValue": "1-1"
-       },
-       {
-        "type": "vsconf",
-        "summary": "2-2",
-        "displayValue": "2-2"
+        "summary": "2-1",
+        "displayValue": "2-1"
        }
       ],
       "possession": false
@@ -501,13 +523,13 @@
     ],
     "status": {
      "type": {
-      "id": "1",
-      "name": "STATUS_SCHEDULED",
-      "state": "pre",
-      "completed": false,
-      "description": "Scheduled",
-      "detail": "Sun, October 18th at 1:00 PM EDT",
-      "shortDetail": "10/18 - 1:00 PM EDT"
+      "id": "3",
+      "name": "STATUS_FINAL",
+      "state": "post",
+      "completed": true,
+      "description": "Final",
+      "detail": "Final",
+      "shortDetail": "Final"
      },
      "isTBDFlex": false
     },
@@ -529,7 +551,7 @@
       "isNational": true
      }
     ],
-    "boxscoreMinutes": false
+    "boxscoreMinutes": true
    }
   ],
   "links": [
@@ -547,25 +569,62 @@
    },
    {
     "rel": [
-     "preview",
+     "recap",
      "desktop",
      "event"
     ],
-    "href": "https://www.espn.com/nfl/preview/_/gameId/401872999",
-    "text": "Preview",
-    "shortText": "Preview",
+    "href": "https://www.espn.com/nfl/recap?gameId=401872999",
+    "text": "Recap",
+    "shortText": "Recap",
     "isExternal": false,
     "isPremium": false
    },
    {
     "rel": [
-     "tickets",
-     "desktop"
+     "boxscore",
+     "desktop",
+     "event"
     ],
-    "href": "https://www.vividseats.com/atlanta-falcons-tickets-atlanta-mercedes-benz-stadium-3-4-2026/production/6487162?wsUser=717",
-    "text": "Tickets",
-    "shortText": "Tickets",
-    "isExternal": true,
+    "href": "https://www.espn.com/nfl/boxscore/_/gameId/401872999",
+    "text": "Box Score",
+    "shortText": "Box Score",
+    "isExternal": false,
+    "isPremium": false
+   },
+   {
+    "rel": [
+     "pbp",
+     "desktop",
+     "event"
+    ],
+    "href": "https://www.espn.com/nfl/playbyplay/_/gameId/401872999",
+    "text": "Play-by-Play",
+    "shortText": "Play-by-Play",
+    "isExternal": false,
+    "isPremium": false
+   },
+   {
+    "rel": [
+     "teamstats",
+     "desktop",
+     "event"
+    ],
+    "href": "https://www.espn.com/nfl/matchup?gameId=401872999",
+    "text": "Team Stats",
+    "shortText": "Team Stats",
+    "isExternal": false,
+    "isPremium": false
+   },
+   {
+    "rel": [
+     "videos",
+     "desktop",
+     "event"
+    ],
+    "href": "https://www.espn.com/nfl/video?gameId=401872999",
+    "text": "Videos",
+    "shortText": "Videos",
+    "isExternal": false,
     "isPremium": false
    }
   ],
@@ -776,22 +835,11 @@
    ]
   }
  },
- "predictor": {
-  "header": "Matchup Predictor",
-  "homeTeam": {
-   "id": "1",
-   "gameProjection": "33.7"
-  },
-  "awayTeam": {
-   "id": "3",
-   "gameProjection": "66.1"
-  }
- },
  "pickcenter": [
   {
    "provider": {
     "id": "100",
-    "name": "DraftKings",
+    "name": "Draft Kings",
     "priority": 1,
     "logos": [
      {
@@ -809,15 +857,15 @@
     ]
    },
    "details": "CHI -1.5",
-   "overUnder": 51.5,
+   "overUnder": 50.5,
    "spread": 1.5,
-   "overOdds": -105,
-   "underOdds": -115,
+   "overOdds": -115,
+   "underOdds": -105,
    "awayTeamOdds": {
     "favorite": true,
     "underdog": false,
-    "moneyLine": -118,
-    "spreadOdds": -108,
+    "moneyLine": -115,
+    "spreadOdds": -102,
     "team": {
      "$ref": "http://sports.core.api.espn.pvt/v2/sports/football/leagues/nfl/seasons/2026/teams/3?lang=en&region=us"
     },
@@ -827,8 +875,8 @@
    "homeTeamOdds": {
     "favorite": false,
     "underdog": true,
-    "moneyLine": -102,
-    "spreadOdds": -112,
+    "moneyLine": -105,
+    "spreadOdds": -118,
     "team": {
      "$ref": "http://sports.core.api.espn.pvt/v2/sports/football/leagues/nfl/seasons/2026/teams/1?lang=en&region=us"
     },
@@ -842,23 +890,13 @@
       "home",
       "desktop",
       "bets",
-      "draftkings"
+      "draft-kings"
      ],
      "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34118076%3Foutcomes%3D0ML84695509_1",
      "text": "Home Bet",
      "shortText": "Home Bet",
      "isExternal": true,
-     "isPremium": false,
-     "tracking": {
-      "campaign": "betting-integrations",
-      "tags": {
-       "league": "nfl",
-       "sport": "football",
-       "gameId": 401872999,
-       "betSide": "home",
-       "betType": "straight"
-      }
-     }
+     "isPremium": false
     },
     {
      "language": "en-US",
@@ -866,23 +904,13 @@
       "away",
       "desktop",
       "bets",
-      "draftkings"
+      "draft-kings"
      ],
      "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34118076%3Foutcomes%3D0ML84695509_3",
      "text": "Away Bet",
      "shortText": "Away Bet",
      "isExternal": true,
-     "isPremium": false,
-     "tracking": {
-      "campaign": "betting-integrations",
-      "tags": {
-       "league": "nfl",
-       "sport": "football",
-       "gameId": 401872999,
-       "betSide": "away",
-       "betType": "straight"
-      }
-     }
+     "isPremium": false
     },
     {
      "language": "en-US",
@@ -895,18 +923,7 @@
      "text": "Home Point Spread",
      "shortText": "Home Point Spread",
      "isExternal": true,
-     "isPremium": false,
-     "tracking": {
-      "campaign": "betting-integrations",
-      "tags": {
-       "league": "nfl",
-       "sport": "football",
-       "gameId": 401872999,
-       "betSide": "none",
-       "betType": "straight",
-       "betDetails": "Spread:ATL+1.5"
-      }
-     }
+     "isPremium": false
     },
     {
      "language": "en-US",
@@ -919,18 +936,7 @@
      "text": "Away Point Spread",
      "shortText": "Away Point Spread",
      "isExternal": true,
-     "isPremium": false,
-     "tracking": {
-      "campaign": "betting-integrations",
-      "tags": {
-       "league": "nfl",
-       "sport": "football",
-       "gameId": 401872999,
-       "betSide": "none",
-       "betType": "straight",
-       "betDetails": "Spread:CHI-1.5"
-      }
-     }
+     "isPremium": false
     },
     {
      "language": "en-US",
@@ -939,22 +945,11 @@
       "desktop",
       "bets"
      ],
-     "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34118076%3Foutcomes%3D0OU84695509O5150_1",
+     "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34118076%3Foutcomes%3D0OU84695509O5050_1",
      "text": "Over Odds",
      "shortText": "Over Odds",
      "isExternal": true,
-     "isPremium": false,
-     "tracking": {
-      "campaign": "betting-integrations",
-      "tags": {
-       "league": "nfl",
-       "sport": "football",
-       "gameId": 401872999,
-       "betSide": "over",
-       "betType": "straight",
-       "betDetails": "Over:51.5"
-      }
-     }
+     "isPremium": false
     },
     {
      "language": "en-US",
@@ -963,22 +958,11 @@
       "desktop",
       "bets"
      ],
-     "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34118076%3Foutcomes%3D0OU84695509U5150_3",
+     "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34118076%3Foutcomes%3D0OU84695509U5050_3",
      "text": "Under Odds",
      "shortText": "Under Odds",
      "isExternal": true,
-     "isPremium": false,
-     "tracking": {
-      "campaign": "betting-integrations",
-      "tags": {
-       "league": "nfl",
-       "sport": "football",
-       "gameId": 401872999,
-       "betSide": "under",
-       "betType": "straight",
-       "betDetails": "Under:51.5"
-      }
-     }
+     "isPremium": false
     },
     {
      "language": "en-US",
@@ -999,31 +983,7 @@
     "shortDisplayName": "ML",
     "home": {
      "close": {
-      "odds": "-102",
-      "link": {
-       "language": "en-US",
-       "rel": [
-        "home",
-        "desktop",
-        "bets",
-        "draftkings"
-       ],
-       "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34118076%3Foutcomes%3D0ML84695509_1",
-       "text": "Home Bet",
-       "shortText": "Home Bet",
-       "isExternal": true,
-       "isPremium": false,
-       "tracking": {
-        "campaign": "betting-integrations",
-        "tags": {
-         "league": "nfl",
-         "sport": "football",
-         "gameId": 401872999,
-         "betSide": "home",
-         "betType": "straight"
-        }
-       }
-      }
+      "odds": "-105"
      },
      "open": {
       "odds": "+140"
@@ -1031,31 +991,7 @@
     },
     "away": {
      "close": {
-      "odds": "-118",
-      "link": {
-       "language": "en-US",
-       "rel": [
-        "away",
-        "desktop",
-        "bets",
-        "draftkings"
-       ],
-       "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34118076%3Foutcomes%3D0ML84695509_3",
-       "text": "Away Bet",
-       "shortText": "Away Bet",
-       "isExternal": true,
-       "isPremium": false,
-       "tracking": {
-        "campaign": "betting-integrations",
-        "tags": {
-         "league": "nfl",
-         "sport": "football",
-         "gameId": 401872999,
-         "betSide": "away",
-         "betType": "straight"
-        }
-       }
-      }
+      "odds": "-115"
      },
      "open": {
       "odds": "-166"
@@ -1068,31 +1004,7 @@
     "home": {
      "close": {
       "line": "+1.5",
-      "odds": "-112",
-      "link": {
-       "language": "en-US",
-       "rel": [
-        "homeSpread",
-        "desktop",
-        "bets"
-       ],
-       "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34118076%3Foutcomes%3D0HC84695509P150_1",
-       "text": "Home Point Spread",
-       "shortText": "Home Point Spread",
-       "isExternal": true,
-       "isPremium": false,
-       "tracking": {
-        "campaign": "betting-integrations",
-        "tags": {
-         "league": "nfl",
-         "sport": "football",
-         "gameId": 401872999,
-         "betSide": "none",
-         "betType": "straight",
-         "betDetails": "Spread:ATL+1.5"
-        }
-       }
-      }
+      "odds": "-118"
      },
      "open": {
       "line": "+3",
@@ -1102,31 +1014,7 @@
     "away": {
      "close": {
       "line": "-1.5",
-      "odds": "-108",
-      "link": {
-       "language": "en-US",
-       "rel": [
-        "awaySpread",
-        "desktop",
-        "bets"
-       ],
-       "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34118076%3Foutcomes%3D0HC84695509N150_3",
-       "text": "Away Point Spread",
-       "shortText": "Away Point Spread",
-       "isExternal": true,
-       "isPremium": false,
-       "tracking": {
-        "campaign": "betting-integrations",
-        "tags": {
-         "league": "nfl",
-         "sport": "football",
-         "gameId": 401872999,
-         "betSide": "none",
-         "betType": "straight",
-         "betDetails": "Spread:CHI-1.5"
-        }
-       }
-      }
+      "odds": "-102"
      },
      "open": {
       "line": "-3",
@@ -1139,32 +1027,8 @@
     "shortDisplayName": "Total",
     "over": {
      "close": {
-      "line": "o51.5",
-      "odds": "-105",
-      "link": {
-       "language": "en-US",
-       "rel": [
-        "over",
-        "desktop",
-        "bets"
-       ],
-       "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34118076%3Foutcomes%3D0OU84695509O5150_1",
-       "text": "Over Odds",
-       "shortText": "Over Odds",
-       "isExternal": true,
-       "isPremium": false,
-       "tracking": {
-        "campaign": "betting-integrations",
-        "tags": {
-         "league": "nfl",
-         "sport": "football",
-         "gameId": 401872999,
-         "betSide": "over",
-         "betType": "straight",
-         "betDetails": "Over:51.5"
-        }
-       }
-      }
+      "line": "o50.5",
+      "odds": "-115"
      },
      "open": {
       "line": "o47.5",
@@ -1173,32 +1037,8 @@
     },
     "under": {
      "close": {
-      "line": "u51.5",
-      "odds": "-115",
-      "link": {
-       "language": "en-US",
-       "rel": [
-        "under",
-        "desktop",
-        "bets"
-       ],
-       "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34118076%3Foutcomes%3D0OU84695509U5150_3",
-       "text": "Under Odds",
-       "shortText": "Under Odds",
-       "isExternal": true,
-       "isPremium": false,
-       "tracking": {
-        "campaign": "betting-integrations",
-        "tags": {
-         "league": "nfl",
-         "sport": "football",
-         "gameId": 401872999,
-         "betSide": "under",
-         "betType": "straight",
-         "betDetails": "Under:51.5"
-        }
-       }
-      }
+      "line": "u50.5",
+      "odds": "-105"
      },
      "open": {
       "line": "u47.5",
@@ -1207,16 +1047,15 @@
     }
    },
    "link": {
+    "text": "See More Odds",
     "language": "en-US",
     "rel": [
-     "odds",
+     "main",
      "desktop",
-     "event"
+     "bets"
     ],
-    "href": "https://www.espn.com/nfl/odds/_/gameId/401872999",
-    "text": "See More Odds and Props",
-    "shortText": "Odds",
-    "isExternal": false,
+    "href": "https://sportsbook.draftkings.com",
+    "isExternal": true,
     "isPremium": false
    },
    "header": {
@@ -1259,25 +1098,7 @@
     }
    ]
   },
-  "weather": {
-   "temperature": 60,
-   "highTemperature": 60,
-   "lowTemperature": 60,
-   "conditionId": "1",
-   "gust": 23,
-   "precipitation": 0,
-   "link": {
-    "language": "en-US",
-    "rel": [
-     "30313"
-    ],
-    "href": "http://www.accuweather.com/en/us/mercedes-benz-stadium-ga/30303/hourly-weather-forecast/17252_poi?day=1&hbhhour=13&lang=en-us",
-    "text": "Weather",
-    "shortText": "Weather",
-    "isExternal": true,
-    "isPremium": false
-   }
-  },
+  "attendance": 72301,
   "officials": [
    {
     "fullName": "Scott Novak",
@@ -1459,6 +1280,107 @@
           "dark"
          ],
          "lastUpdated": "2024-06-25T18:53Z"
+        }
+       ]
+      },
+      {
+       "team": "Chicago",
+       "link": "https://www.espn.com/nfl/team/_/name/chi/chicago-bears",
+       "id": "3",
+       "uid": "s:20~l:28~t:3",
+       "stats": [
+        {
+         "name": "losses",
+         "displayName": "Losses",
+         "shortDisplayName": "L",
+         "description": "Losses",
+         "abbreviation": "L",
+         "type": "losses",
+         "value": 2,
+         "displayValue": "2"
+        },
+        {
+         "name": "pointsAgainst",
+         "displayName": "Points Against",
+         "shortDisplayName": "PA",
+         "description": "Total Points Against",
+         "abbreviation": "PA",
+         "type": "pointsagainst",
+         "value": 119,
+         "displayValue": "119"
+        },
+        {
+         "name": "pointsFor",
+         "displayName": "Points For",
+         "shortDisplayName": "PF",
+         "description": "Total Points For",
+         "abbreviation": "PF",
+         "type": "pointsfor",
+         "value": 150,
+         "displayValue": "150"
+        },
+        {
+         "name": "ties",
+         "displayName": "Ties",
+         "shortDisplayName": "T",
+         "description": "Ties",
+         "abbreviation": "T",
+         "type": "ties",
+         "value": 0,
+         "displayValue": "0"
+        },
+        {
+         "name": "winPercent",
+         "displayName": "Win Percentage",
+         "shortDisplayName": "PCT",
+         "description": "Winning Percentage",
+         "abbreviation": "PCT",
+         "type": "winpercent",
+         "value": 0.6666667,
+         "displayValue": ".667"
+        },
+        {
+         "name": "wins",
+         "displayName": "Wins",
+         "shortDisplayName": "W",
+         "description": "Wins",
+         "abbreviation": "W",
+         "type": "wins",
+         "value": 4,
+         "displayValue": "4"
+        },
+        {
+         "id": "0",
+         "name": "overall",
+         "abbreviation": "Any",
+         "type": "total",
+         "summary": "4-2",
+         "displayValue": "4-2"
+        }
+       ],
+       "logo": [
+        {
+         "href": "https://a.espncdn.com/i/teamlogos/nfl/500/chi.png",
+         "width": 500,
+         "height": 500,
+         "alt": "",
+         "rel": [
+          "full",
+          "default"
+         ],
+         "lastUpdated": "2024-06-25T18:46Z"
+        },
+        {
+         "href": "https://a.espncdn.com/i/teamlogos/nfl/500-dark/scoreboard/chi.png",
+         "width": 500,
+         "height": 500,
+         "alt": "",
+         "rel": [
+          "full",
+          "scoreboard",
+          "dark"
+         ],
+         "lastUpdated": "2024-06-25T18:46Z"
         }
        ]
       },
@@ -1663,12 +1585,22 @@
          "lastUpdated": "2024-06-25T18:48Z"
         }
        ]
-      },
+      }
+     ]
+    },
+    "header": "2026 NFC North Standings",
+    "href": "https://www.espn.com/nfl/standings/_/group/10",
+    "conferenceHeader": "National Football Conference",
+    "divisionHeader": "NFC North"
+   },
+   {
+    "standings": {
+     "entries": [
       {
-       "team": "Chicago",
-       "link": "https://www.espn.com/nfl/team/_/name/chi/chicago-bears",
-       "id": "3",
-       "uid": "s:20~l:28~t:3",
+       "team": "Carolina",
+       "link": "https://www.espn.com/nfl/team/_/name/car/carolina-panthers",
+       "id": "29",
+       "uid": "s:20~l:28~t:29",
        "stats": [
         {
          "name": "losses",
@@ -1687,8 +1619,8 @@
          "description": "Total Points Against",
          "abbreviation": "PA",
          "type": "pointsagainst",
-         "value": 96,
-         "displayValue": "96"
+         "value": 123,
+         "displayValue": "123"
         },
         {
          "name": "pointsFor",
@@ -1697,8 +1629,8 @@
          "description": "Total Points For",
          "abbreviation": "PF",
          "type": "pointsfor",
-         "value": 119,
-         "displayValue": "119"
+         "value": 146,
+         "displayValue": "146"
         },
         {
          "name": "ties",
@@ -1741,117 +1673,6 @@
        ],
        "logo": [
         {
-         "href": "https://a.espncdn.com/i/teamlogos/nfl/500/chi.png",
-         "width": 500,
-         "height": 500,
-         "alt": "",
-         "rel": [
-          "full",
-          "default"
-         ],
-         "lastUpdated": "2024-06-25T18:46Z"
-        },
-        {
-         "href": "https://a.espncdn.com/i/teamlogos/nfl/500-dark/scoreboard/chi.png",
-         "width": 500,
-         "height": 500,
-         "alt": "",
-         "rel": [
-          "full",
-          "scoreboard",
-          "dark"
-         ],
-         "lastUpdated": "2024-06-25T18:46Z"
-        }
-       ]
-      }
-     ]
-    },
-    "header": "2026 NFC North Standings",
-    "href": "https://www.espn.com/nfl/standings/_/group/10",
-    "conferenceHeader": "National Football Conference",
-    "divisionHeader": "NFC North"
-   },
-   {
-    "standings": {
-     "entries": [
-      {
-       "team": "Carolina",
-       "link": "https://www.espn.com/nfl/team/_/name/car/carolina-panthers",
-       "id": "29",
-       "uid": "s:20~l:28~t:29",
-       "stats": [
-        {
-         "name": "losses",
-         "displayName": "Losses",
-         "shortDisplayName": "L",
-         "description": "Losses",
-         "abbreviation": "L",
-         "type": "losses",
-         "value": 2,
-         "displayValue": "2"
-        },
-        {
-         "name": "pointsAgainst",
-         "displayName": "Points Against",
-         "shortDisplayName": "PA",
-         "description": "Total Points Against",
-         "abbreviation": "PA",
-         "type": "pointsagainst",
-         "value": 109,
-         "displayValue": "109"
-        },
-        {
-         "name": "pointsFor",
-         "displayName": "Points For",
-         "shortDisplayName": "PF",
-         "description": "Total Points For",
-         "abbreviation": "PF",
-         "type": "pointsfor",
-         "value": 121,
-         "displayValue": "121"
-        },
-        {
-         "name": "ties",
-         "displayName": "Ties",
-         "shortDisplayName": "T",
-         "description": "Ties",
-         "abbreviation": "T",
-         "type": "ties",
-         "value": 0,
-         "displayValue": "0"
-        },
-        {
-         "name": "winPercent",
-         "displayName": "Win Percentage",
-         "shortDisplayName": "PCT",
-         "description": "Winning Percentage",
-         "abbreviation": "PCT",
-         "type": "winpercent",
-         "value": 0.5,
-         "displayValue": ".500"
-        },
-        {
-         "name": "wins",
-         "displayName": "Wins",
-         "shortDisplayName": "W",
-         "description": "Wins",
-         "abbreviation": "W",
-         "type": "wins",
-         "value": 2,
-         "displayValue": "2"
-        },
-        {
-         "id": "0",
-         "name": "overall",
-         "abbreviation": "Any",
-         "type": "total",
-         "summary": "2-2",
-         "displayValue": "2-2"
-        }
-       ],
-       "logo": [
-        {
          "href": "https://a.espncdn.com/i/teamlogos/nfl/500/car.png",
          "width": 500,
          "height": 500,
@@ -1889,8 +1710,8 @@
          "description": "Losses",
          "abbreviation": "L",
          "type": "losses",
-         "value": 3,
-         "displayValue": "3"
+         "value": 4,
+         "displayValue": "4"
         },
         {
          "name": "pointsAgainst",
@@ -1899,8 +1720,8 @@
          "description": "Total Points Against",
          "abbreviation": "PA",
          "type": "pointsagainst",
-         "value": 122,
-         "displayValue": "122"
+         "value": 153,
+         "displayValue": "153"
         },
         {
          "name": "pointsFor",
@@ -1909,8 +1730,8 @@
          "description": "Total Points For",
          "abbreviation": "PF",
          "type": "pointsfor",
-         "value": 119,
-         "displayValue": "119"
+         "value": 142,
+         "displayValue": "142"
         },
         {
          "name": "ties",
@@ -1929,8 +1750,8 @@
          "description": "Winning Percentage",
          "abbreviation": "PCT",
          "type": "winpercent",
-         "value": 0.4,
-         "displayValue": ".400"
+         "value": 0.33333334,
+         "displayValue": ".333"
         },
         {
          "name": "wins",
@@ -1947,8 +1768,8 @@
          "name": "overall",
          "abbreviation": "Any",
          "type": "total",
-         "summary": "2-3",
-         "displayValue": "2-3"
+         "summary": "2-4",
+         "displayValue": "2-4"
         }
        ],
        "logo": [
@@ -1978,107 +1799,6 @@
        ]
       },
       {
-       "team": "Tampa Bay",
-       "link": "https://www.espn.com/nfl/team/_/name/tb/tampa-bay-buccaneers",
-       "id": "27",
-       "uid": "s:20~l:28~t:27",
-       "stats": [
-        {
-         "name": "losses",
-         "displayName": "Losses",
-         "shortDisplayName": "L",
-         "description": "Losses",
-         "abbreviation": "L",
-         "type": "losses",
-         "value": 4,
-         "displayValue": "4"
-        },
-        {
-         "name": "pointsAgainst",
-         "displayName": "Points Against",
-         "shortDisplayName": "PA",
-         "description": "Total Points Against",
-         "abbreviation": "PA",
-         "type": "pointsagainst",
-         "value": 112,
-         "displayValue": "112"
-        },
-        {
-         "name": "pointsFor",
-         "displayName": "Points For",
-         "shortDisplayName": "PF",
-         "description": "Total Points For",
-         "abbreviation": "PF",
-         "type": "pointsfor",
-         "value": 100,
-         "displayValue": "100"
-        },
-        {
-         "name": "ties",
-         "displayName": "Ties",
-         "shortDisplayName": "T",
-         "description": "Ties",
-         "abbreviation": "T",
-         "type": "ties",
-         "value": 0,
-         "displayValue": "0"
-        },
-        {
-         "name": "winPercent",
-         "displayName": "Win Percentage",
-         "shortDisplayName": "PCT",
-         "description": "Winning Percentage",
-         "abbreviation": "PCT",
-         "type": "winpercent",
-         "value": 0.2,
-         "displayValue": ".200"
-        },
-        {
-         "name": "wins",
-         "displayName": "Wins",
-         "shortDisplayName": "W",
-         "description": "Wins",
-         "abbreviation": "W",
-         "type": "wins",
-         "value": 1,
-         "displayValue": "1"
-        },
-        {
-         "id": "0",
-         "name": "overall",
-         "abbreviation": "Any",
-         "type": "total",
-         "summary": "1-4",
-         "displayValue": "1-4"
-        }
-       ],
-       "logo": [
-        {
-         "href": "https://a.espncdn.com/i/teamlogos/nfl/500/tb.png",
-         "width": 500,
-         "height": 500,
-         "alt": "",
-         "rel": [
-          "full",
-          "default"
-         ],
-         "lastUpdated": "2024-06-25T18:57Z"
-        },
-        {
-         "href": "https://a.espncdn.com/i/teamlogos/nfl/500-dark/scoreboard/tb.png",
-         "width": 500,
-         "height": 500,
-         "alt": "",
-         "rel": [
-          "full",
-          "scoreboard",
-          "dark"
-         ],
-         "lastUpdated": "2024-06-25T18:57Z"
-        }
-       ]
-      },
-      {
        "team": "New Orleans",
        "link": "https://www.espn.com/nfl/team/_/name/no/new-orleans-saints",
        "id": "18",
@@ -2101,8 +1821,8 @@
          "description": "Total Points Against",
          "abbreviation": "PA",
          "type": "pointsagainst",
-         "value": 151,
-         "displayValue": "151"
+         "value": 178,
+         "displayValue": "178"
         },
         {
          "name": "pointsFor",
@@ -2111,8 +1831,8 @@
          "description": "Total Points For",
          "abbreviation": "PF",
          "type": "pointsfor",
-         "value": 118,
-         "displayValue": "118"
+         "value": 152,
+         "displayValue": "152"
         },
         {
          "name": "ties",
@@ -2131,8 +1851,8 @@
          "description": "Winning Percentage",
          "abbreviation": "PCT",
          "type": "winpercent",
-         "value": 0.2,
-         "displayValue": ".200"
+         "value": 0.33333334,
+         "displayValue": ".333"
         },
         {
          "name": "wins",
@@ -2141,16 +1861,16 @@
          "description": "Wins",
          "abbreviation": "W",
          "type": "wins",
-         "value": 1,
-         "displayValue": "1"
+         "value": 2,
+         "displayValue": "2"
         },
         {
          "id": "0",
          "name": "overall",
          "abbreviation": "Any",
          "type": "total",
-         "summary": "1-4",
-         "displayValue": "1-4"
+         "summary": "2-4",
+         "displayValue": "2-4"
         }
        ],
        "logo": [
@@ -2176,6 +1896,107 @@
           "dark"
          ],
          "lastUpdated": "2024-06-25T18:54Z"
+        }
+       ]
+      },
+      {
+       "team": "Tampa Bay",
+       "link": "https://www.espn.com/nfl/team/_/name/tb/tampa-bay-buccaneers",
+       "id": "27",
+       "uid": "s:20~l:28~t:27",
+       "stats": [
+        {
+         "name": "losses",
+         "displayName": "Losses",
+         "shortDisplayName": "L",
+         "description": "Losses",
+         "abbreviation": "L",
+         "type": "losses",
+         "value": 5,
+         "displayValue": "5"
+        },
+        {
+         "name": "pointsAgainst",
+         "displayName": "Points Against",
+         "shortDisplayName": "PA",
+         "description": "Total Points Against",
+         "abbreviation": "PA",
+         "type": "pointsagainst",
+         "value": 138,
+         "displayValue": "138"
+        },
+        {
+         "name": "pointsFor",
+         "displayName": "Points For",
+         "shortDisplayName": "PF",
+         "description": "Total Points For",
+         "abbreviation": "PF",
+         "type": "pointsfor",
+         "value": 119,
+         "displayValue": "119"
+        },
+        {
+         "name": "ties",
+         "displayName": "Ties",
+         "shortDisplayName": "T",
+         "description": "Ties",
+         "abbreviation": "T",
+         "type": "ties",
+         "value": 0,
+         "displayValue": "0"
+        },
+        {
+         "name": "winPercent",
+         "displayName": "Win Percentage",
+         "shortDisplayName": "PCT",
+         "description": "Winning Percentage",
+         "abbreviation": "PCT",
+         "type": "winpercent",
+         "value": 0.16666667,
+         "displayValue": ".167"
+        },
+        {
+         "name": "wins",
+         "displayName": "Wins",
+         "shortDisplayName": "W",
+         "description": "Wins",
+         "abbreviation": "W",
+         "type": "wins",
+         "value": 1,
+         "displayValue": "1"
+        },
+        {
+         "id": "0",
+         "name": "overall",
+         "abbreviation": "Any",
+         "type": "total",
+         "summary": "1-5",
+         "displayValue": "1-5"
+        }
+       ],
+       "logo": [
+        {
+         "href": "https://a.espncdn.com/i/teamlogos/nfl/500/tb.png",
+         "width": 500,
+         "height": 500,
+         "alt": "",
+         "rel": [
+          "full",
+          "default"
+         ],
+         "lastUpdated": "2024-06-25T18:57Z"
+        },
+        {
+         "href": "https://a.espncdn.com/i/teamlogos/nfl/500-dark/scoreboard/tb.png",
+         "width": 500,
+         "height": 500,
+         "alt": "",
+         "rel": [
+          "full",
+          "scoreboard",
+          "dark"
+         ],
+         "lastUpdated": "2024-06-25T18:57Z"
         }
        ]
       }
@@ -2261,8 +2082,8 @@
      "displayName": "Passing Yards",
      "leaders": [
       {
-       "displayValue": "52/77, 719 YDS, 3 TD, 1 INT",
-       "value": 719,
+       "displayValue": "19/33, 225 YDS, 3 TD",
+       "value": 225,
        "athlete": {
         "id": "4360423",
         "uid": "s:20~l:28~a:4360423",
@@ -2292,10 +2113,13 @@
          "displayName": "Quarterback",
          "abbreviation": "QB"
         },
+        "team": {
+         "$ref": "http://sports.core.api.espn.pvt/v2/sports/football/leagues/nfl/seasons/2026/teams/1?lang=en&region=us"
+        },
         "status": "Active",
         "injuries": {
          "status": "Active",
-         "date": "2026-10-16T17:40Z",
+         "date": "2026-10-18T17:36Z",
          "type": {
           "id": "0",
           "name": "INJURY_STATUS_ACTIVE",
@@ -2305,10 +2129,10 @@
         }
        },
        "mainStat": {
-        "value": "719",
+        "value": "225",
         "label": "YDS"
        },
-       "summary": "52/77, 3 TD, 1 INT"
+       "summary": "19/33, 3 TD"
       }
      ]
     },
@@ -2317,8 +2141,8 @@
      "displayName": "Rushing Yards",
      "leaders": [
       {
-       "displayValue": "102 CAR, 580 YDS, 4 TD",
-       "value": 580,
+       "displayValue": "9 CAR, 61 YDS",
+       "value": 61,
        "athlete": {
         "id": "4430807",
         "uid": "s:20~l:28~a:4430807",
@@ -2348,6 +2172,9 @@
          "displayName": "Running Back",
          "abbreviation": "RB"
         },
+        "team": {
+         "$ref": "http://sports.core.api.espn.pvt/v2/sports/football/leagues/nfl/seasons/2026/teams/1?lang=en&region=us"
+        },
         "status": "Active",
         "injuries": {
          "status": "Active",
@@ -2361,10 +2188,10 @@
         }
        },
        "mainStat": {
-        "value": "580",
+        "value": "61",
         "label": "YDS"
        },
-       "summary": "102 CAR, 4 TD"
+       "summary": "9 CAR"
       }
      ]
     },
@@ -2373,16 +2200,16 @@
      "displayName": "Receiving Yards",
      "leaders": [
       {
-       "displayValue": "27 REC, 488 YDS",
-       "value": 488,
+       "displayValue": "3 REC, 87 YDS, 1 TD",
+       "value": 87,
        "athlete": {
-        "id": "4426502",
-        "uid": "s:20~l:28~a:4426502",
-        "guid": "4eb7948a-431b-ee11-32de-2f4044548c60",
-        "lastName": "London",
-        "fullName": "Drake London",
-        "displayName": "Drake London",
-        "shortName": "D. London",
+        "id": "4361409",
+        "uid": "s:20~l:28~a:4361409",
+        "guid": "26171769-a750-2898-5ffd-aa95c1ed7621",
+        "lastName": "Dotson",
+        "fullName": "Jahan Dotson",
+        "displayName": "Jahan Dotson",
+        "shortName": "J. Dotson",
         "links": [
          {
           "rel": [
@@ -2390,24 +2217,27 @@
            "desktop",
            "athlete"
           ],
-          "href": "https://www.espn.com/nfl/player/_/id/4426502/drake-london",
+          "href": "https://www.espn.com/nfl/player/_/id/4361409/jahan-dotson",
           "text": "Player Card"
          }
         ],
         "headshot": {
-         "href": "https://a.espncdn.com/i/headshots/nfl/players/full/4426502.png",
-         "alt": "Drake London"
+         "href": "https://a.espncdn.com/i/headshots/nfl/players/full/4361409.png",
+         "alt": "Jahan Dotson"
         },
-        "jersey": "5",
+        "jersey": "4",
         "position": {
          "name": "Wide Receiver",
          "displayName": "Wide Receiver",
          "abbreviation": "WR"
         },
+        "team": {
+         "$ref": "http://sports.core.api.espn.pvt/v2/sports/football/leagues/nfl/seasons/2026/teams/1?lang=en&region=us"
+        },
         "status": "Active",
         "injuries": {
          "status": "Active",
-         "date": "2026-10-12T04:20Z",
+         "date": "2026-10-14T01:55Z",
          "type": {
           "id": "0",
           "name": "INJURY_STATUS_ACTIVE",
@@ -2417,10 +2247,10 @@
         }
        },
        "mainStat": {
-        "value": "488",
+        "value": "87",
         "label": "YDS"
        },
-       "summary": "27 REC"
+       "summary": "3 REC, 1 TD"
       }
      ]
     },
@@ -2429,8 +2259,8 @@
      "displayName": "Sacks",
      "leaders": [
       {
-       "displayValue": "2.5",
-       "value": 2.5,
+       "displayValue": "1",
+       "value": 1,
        "athlete": {
         "id": "3043168",
         "uid": "s:20~l:28~a:3043168",
@@ -2460,10 +2290,13 @@
          "displayName": "Defensive End",
          "abbreviation": "DE"
         },
+        "team": {
+         "$ref": "http://sports.core.api.espn.pvt/v2/sports/football/leagues/nfl/seasons/2026/teams/1?lang=en&region=us"
+        },
         "status": "Active",
         "injuries": {
          "status": "Active",
-         "date": "2026-10-18T16:10Z",
+         "date": "2026-10-18T16:26Z",
          "type": {
           "id": "0",
           "name": "INJURY_STATUS_ACTIVE",
@@ -2473,7 +2306,7 @@
         }
        },
        "mainStat": {
-        "value": "2.5",
+        "value": "1",
         "label": "SACKS"
        },
        "summary": ""
@@ -2485,16 +2318,16 @@
      "displayName": "Tackles",
      "leaders": [
       {
-       "displayValue": "34",
-       "value": 34,
+       "displayValue": "7",
+       "value": 7,
        "athlete": {
-        "id": "4431005",
-        "uid": "s:20~l:28~a:4431005",
-        "guid": "138f98fa-b2b6-318b-a1df-8d0bb7edd8a9",
-        "lastName": "Watts",
-        "fullName": "Xavier Watts",
-        "displayName": "Xavier Watts",
-        "shortName": "X. Watts",
+        "id": "3895841",
+        "uid": "s:20~l:28~a:3895841",
+        "guid": "6c95f3e1-a92f-62c0-34e6-c4f4f01257fb",
+        "lastName": "Hughes",
+        "fullName": "Mike Hughes",
+        "displayName": "Mike Hughes",
+        "shortName": "M. Hughes",
         "links": [
          {
           "rel": [
@@ -2502,24 +2335,27 @@
            "desktop",
            "athlete"
           ],
-          "href": "https://www.espn.com/nfl/player/_/id/4431005/xavier-watts",
+          "href": "https://www.espn.com/nfl/player/_/id/3895841/mike-hughes",
           "text": "Player Card"
          }
         ],
         "headshot": {
-         "href": "https://a.espncdn.com/i/headshots/nfl/players/full/4431005.png",
-         "alt": "Xavier Watts"
+         "href": "https://a.espncdn.com/i/headshots/nfl/players/full/3895841.png",
+         "alt": "Mike Hughes"
         },
-        "jersey": "31",
+        "jersey": "21",
         "position": {
-         "name": "Safety",
-         "displayName": "Safety",
-         "abbreviation": "S"
+         "name": "Cornerback",
+         "displayName": "Cornerback",
+         "abbreviation": "CB"
+        },
+        "team": {
+         "$ref": "http://sports.core.api.espn.pvt/v2/sports/football/leagues/nfl/seasons/2026/teams/1?lang=en&region=us"
         },
         "status": "Active",
         "injuries": {
          "status": "Active",
-         "date": "2026-09-27T03:46Z",
+         "date": "2026-07-29T23:01Z",
          "type": {
           "id": "0",
           "name": "INJURY_STATUS_ACTIVE",
@@ -2529,10 +2365,10 @@
         }
        },
        "mainStat": {
-        "value": "34",
+        "value": "7",
         "label": "TOT"
        },
-       "summary": ""
+       "summary": "5 SOLO"
       }
      ]
     }
@@ -2609,16 +2445,16 @@
      "displayName": "Passing Yards",
      "leaders": [
       {
-       "displayValue": "42/64, 409 YDS, 3 INT",
-       "value": 409,
+       "displayValue": "30/36, 305 YDS, 1 TD",
+       "value": 305,
        "athlete": {
-        "id": "4434153",
-        "uid": "s:20~l:28~a:4434153",
-        "guid": "4018c360-10de-36b9-b13b-847a6898c00e",
-        "lastName": "Bagent",
-        "fullName": "Tyson Bagent",
-        "displayName": "Tyson Bagent",
-        "shortName": "T. Bagent",
+        "id": "4431611",
+        "uid": "s:20~l:28~a:4431611",
+        "guid": "dd15176c-3004-333f-beaa-149216c42968",
+        "lastName": "Williams",
+        "fullName": "Caleb Williams",
+        "displayName": "Caleb Williams",
+        "shortName": "C. Williams",
         "links": [
          {
           "rel": [
@@ -2626,24 +2462,27 @@
            "desktop",
            "athlete"
           ],
-          "href": "https://www.espn.com/nfl/player/_/id/4434153/tyson-bagent",
+          "href": "https://www.espn.com/nfl/player/_/id/4431611/caleb-williams",
           "text": "Player Card"
          }
         ],
         "headshot": {
-         "href": "https://a.espncdn.com/i/headshots/nfl/players/full/4434153.png",
-         "alt": "Tyson Bagent"
+         "href": "https://a.espncdn.com/i/headshots/nfl/players/full/4431611.png",
+         "alt": "Caleb Williams"
         },
-        "jersey": "17",
+        "jersey": "18",
         "position": {
          "name": "Quarterback",
          "displayName": "Quarterback",
          "abbreviation": "QB"
         },
+        "team": {
+         "$ref": "http://sports.core.api.espn.pvt/v2/sports/football/leagues/nfl/seasons/2026/teams/3?lang=en&region=us"
+        },
         "status": "Active",
         "injuries": {
          "status": "Active",
-         "date": "2026-10-16T23:33Z",
+         "date": "2026-10-18T15:46Z",
          "type": {
           "id": "0",
           "name": "INJURY_STATUS_ACTIVE",
@@ -2653,10 +2492,10 @@
         }
        },
        "mainStat": {
-        "value": "409",
+        "value": "305",
         "label": "YDS"
        },
-       "summary": "42/64, 3 INT"
+       "summary": "30/36, 1 TD"
       }
      ]
     },
@@ -2665,16 +2504,16 @@
      "displayName": "Rushing Yards",
      "leaders": [
       {
-       "displayValue": "78 CAR, 354 YDS, 4 TD",
-       "value": 354,
+       "displayValue": "13 CAR, 51 YDS, 1 TD",
+       "value": 51,
        "athlete": {
-        "id": "4259545",
-        "uid": "s:20~l:28~a:4259545",
-        "guid": "53a49a95-4f5b-fb94-9672-ef5787f431ee",
-        "lastName": "Swift",
-        "fullName": "D'Andre Swift",
-        "displayName": "D'Andre Swift",
-        "shortName": "D. Swift",
+        "id": "4426386",
+        "uid": "s:20~l:28~a:4426386",
+        "guid": "21ceb60a-e2be-da9e-bd22-dd5f3560220c",
+        "lastName": "Johnson",
+        "fullName": "Roschon Johnson",
+        "displayName": "Roschon Johnson",
+        "shortName": "R. Johnson",
         "links": [
          {
           "rel": [
@@ -2682,24 +2521,27 @@
            "desktop",
            "athlete"
           ],
-          "href": "https://www.espn.com/nfl/player/_/id/4259545/dandre-swift",
+          "href": "https://www.espn.com/nfl/player/_/id/4426386/roschon-johnson",
           "text": "Player Card"
          }
         ],
         "headshot": {
-         "href": "https://a.espncdn.com/i/headshots/nfl/players/full/4259545.png",
-         "alt": "D'Andre Swift"
+         "href": "https://a.espncdn.com/i/headshots/nfl/players/full/4426386.png",
+         "alt": "Roschon Johnson"
         },
-        "jersey": "4",
+        "jersey": "23",
         "position": {
          "name": "Running Back",
          "displayName": "Running Back",
          "abbreviation": "RB"
         },
+        "team": {
+         "$ref": "http://sports.core.api.espn.pvt/v2/sports/football/leagues/nfl/seasons/2026/teams/3?lang=en&region=us"
+        },
         "status": "Active",
         "injuries": {
          "status": "Active",
-         "date": "2026-10-16T23:44Z",
+         "date": "2026-10-06T03:57Z",
          "type": {
           "id": "0",
           "name": "INJURY_STATUS_ACTIVE",
@@ -2709,10 +2551,10 @@
         }
        },
        "mainStat": {
-        "value": "354",
+        "value": "51",
         "label": "YDS"
        },
-       "summary": "78 CAR, 4 TD"
+       "summary": "13 CAR, 1 TD"
       }
      ]
     },
@@ -2721,16 +2563,16 @@
      "displayName": "Receiving Yards",
      "leaders": [
       {
-       "displayValue": "17 REC, 273 YDS",
-       "value": 273,
+       "displayValue": "8 REC, 95 YDS",
+       "value": 95,
        "athlete": {
-        "id": "4431299",
-        "uid": "s:20~l:28~a:4431299",
-        "guid": "774cc71b-e83e-340d-bcda-4a8558265bb5",
-        "lastName": "Odunze",
-        "fullName": "Rome Odunze",
-        "displayName": "Rome Odunze",
-        "shortName": "R. Odunze",
+        "id": "4685278",
+        "uid": "s:20~l:28~a:4685278",
+        "guid": "f78ad5c7-c991-3940-b213-79f9a8d77008",
+        "lastName": "Burden III",
+        "fullName": "Luther Burden III",
+        "displayName": "Luther Burden III",
+        "shortName": "L. Burden III",
         "links": [
          {
           "rel": [
@@ -2738,24 +2580,27 @@
            "desktop",
            "athlete"
           ],
-          "href": "https://www.espn.com/nfl/player/_/id/4431299/rome-odunze",
+          "href": "https://www.espn.com/nfl/player/_/id/4685278/luther-burden-iii",
           "text": "Player Card"
          }
         ],
         "headshot": {
-         "href": "https://a.espncdn.com/i/headshots/nfl/players/full/4431299.png",
-         "alt": "Rome Odunze"
+         "href": "https://a.espncdn.com/i/headshots/nfl/players/full/4685278.png",
+         "alt": "Luther Burden III"
         },
-        "jersey": "15",
+        "jersey": "10",
         "position": {
          "name": "Wide Receiver",
          "displayName": "Wide Receiver",
          "abbreviation": "WR"
         },
+        "team": {
+         "$ref": "http://sports.core.api.espn.pvt/v2/sports/football/leagues/nfl/seasons/2026/teams/3?lang=en&region=us"
+        },
         "status": "Active",
         "injuries": {
          "status": "Active",
-         "date": "2026-10-11T22:34Z",
+         "date": "2026-10-11T22:25Z",
          "type": {
           "id": "0",
           "name": "INJURY_STATUS_ACTIVE",
@@ -2765,10 +2610,10 @@
         }
        },
        "mainStat": {
-        "value": "273",
+        "value": "95",
         "label": "YDS"
        },
-       "summary": "17 REC"
+       "summary": "8 REC"
       }
      ]
     },
@@ -2777,16 +2622,16 @@
      "displayName": "Sacks",
      "leaders": [
       {
-       "displayValue": "4",
-       "value": 4,
+       "displayValue": "3",
+       "value": 3,
        "athlete": {
-        "id": "4683553",
-        "uid": "s:20~l:28~a:4683553",
-        "guid": "fd2271b2-6604-31e8-9b52-991e8d685603",
-        "lastName": "Booker",
-        "fullName": "Austin Booker",
-        "displayName": "Austin Booker",
-        "shortName": "A. Booker",
+        "id": "4361093",
+        "uid": "s:20~l:28~a:4361093",
+        "guid": "a2a25046-4d98-447c-c664-48f6c4335608",
+        "lastName": "Gordon",
+        "fullName": "Kyler Gordon",
+        "displayName": "Kyler Gordon",
+        "shortName": "K. Gordon",
         "links": [
          {
           "rel": [
@@ -2794,24 +2639,27 @@
            "desktop",
            "athlete"
           ],
-          "href": "https://www.espn.com/nfl/player/_/id/4683553/austin-booker",
+          "href": "https://www.espn.com/nfl/player/_/id/4361093/kyler-gordon",
           "text": "Player Card"
          }
         ],
         "headshot": {
-         "href": "https://a.espncdn.com/i/headshots/nfl/players/full/4683553.png",
-         "alt": "Austin Booker"
+         "href": "https://a.espncdn.com/i/headshots/nfl/players/full/4361093.png",
+         "alt": "Kyler Gordon"
         },
-        "jersey": "94",
+        "jersey": "6",
         "position": {
-         "name": "Defensive End",
-         "displayName": "Defensive End",
-         "abbreviation": "DE"
+         "name": "Cornerback",
+         "displayName": "Cornerback",
+         "abbreviation": "CB"
+        },
+        "team": {
+         "$ref": "http://sports.core.api.espn.pvt/v2/sports/football/leagues/nfl/seasons/2026/teams/3?lang=en&region=us"
         },
         "status": "Active",
         "injuries": {
          "status": "Active",
-         "date": "2026-09-09T23:21Z",
+         "date": "2026-10-18T16:01Z",
          "type": {
           "id": "0",
           "name": "INJURY_STATUS_ACTIVE",
@@ -2821,7 +2669,7 @@
         }
        },
        "mainStat": {
-        "value": "4",
+        "value": "3",
         "label": "SACKS"
        },
        "summary": ""
@@ -2833,16 +2681,16 @@
      "displayName": "Tackles",
      "leaders": [
       {
-       "displayValue": "37",
-       "value": 37,
+       "displayValue": "7",
+       "value": 7,
        "athlete": {
-        "id": "4954445",
-        "uid": "s:20~l:28~a:4954445",
-        "guid": "317d2e19-df14-3924-ad24-d745aadafad3",
-        "lastName": "Thieneman",
-        "fullName": "Dillon Thieneman",
-        "displayName": "Dillon Thieneman",
-        "shortName": "D. Thieneman",
+        "id": "4036261",
+        "uid": "s:20~l:28~a:4036261",
+        "guid": "104d2c30-3385-ced1-12ca-5f2c9d4ebcbc",
+        "lastName": "Bush",
+        "fullName": "Devin Bush",
+        "displayName": "Devin Bush",
+        "shortName": "D. Bush",
         "links": [
          {
           "rel": [
@@ -2850,24 +2698,27 @@
            "desktop",
            "athlete"
           ],
-          "href": "https://www.espn.com/nfl/player/_/id/4954445/dillon-thieneman",
+          "href": "https://www.espn.com/nfl/player/_/id/4036261/devin-bush",
           "text": "Player Card"
          }
         ],
         "headshot": {
-         "href": "https://a.espncdn.com/i/headshots/nfl/players/full/4954445.png",
-         "alt": "Dillon Thieneman"
+         "href": "https://a.espncdn.com/i/headshots/nfl/players/full/4036261.png",
+         "alt": "Devin Bush"
         },
-        "jersey": "31",
+        "jersey": "12",
         "position": {
-         "name": "Safety",
-         "displayName": "Safety",
-         "abbreviation": "S"
+         "name": "Linebacker",
+         "displayName": "Linebacker",
+         "abbreviation": "LB"
+        },
+        "team": {
+         "$ref": "http://sports.core.api.espn.pvt/v2/sports/football/leagues/nfl/seasons/2026/teams/3?lang=en&region=us"
         },
         "status": "Active",
         "injuries": {
          "status": "Active",
-         "date": "2026-10-07T02:49Z",
+         "date": "2026-09-23T01:43Z",
          "type": {
           "id": "0",
           "name": "INJURY_STATUS_ACTIVE",
@@ -2877,10 +2728,10 @@
         }
        },
        "mainStat": {
-        "value": "37",
+        "value": "7",
         "label": "TOT"
        },
-       "summary": ""
+       "summary": "4 SOLO"
       }
      ]
     }
@@ -2905,44 +2756,154 @@
     },
     "statistics": [
      {
-      "name": "totalPointsPerGame",
-      "displayValue": "23.8",
-      "label": "Points Per Game"
+      "name": "firstDowns",
+      "displayValue": "20",
+      "value": 20,
+      "label": "1st Downs"
      },
      {
-      "name": "yardsPerGame",
-      "displayValue": "407.4",
+      "name": "firstDownsPassing",
+      "displayValue": "12",
+      "value": 12,
+      "label": "Passing 1st downs"
+     },
+     {
+      "name": "firstDownsRushing",
+      "displayValue": "7",
+      "value": 7,
+      "label": "Rushing 1st downs"
+     },
+     {
+      "name": "firstDownsPenalty",
+      "displayValue": "1",
+      "value": 1,
+      "label": "1st downs from penalties"
+     },
+     {
+      "name": "thirdDownEff",
+      "displayValue": "9-17",
+      "value": 0.5294117647,
+      "label": "3rd down efficiency"
+     },
+     {
+      "name": "fourthDownEff",
+      "displayValue": "0-0",
+      "value": "-",
+      "label": "4th down efficiency"
+     },
+     {
+      "name": "totalOffensivePlays",
+      "displayValue": "73",
+      "value": 73,
+      "label": "Total Plays"
+     },
+     {
+      "name": "totalYards",
+      "displayValue": "368",
+      "value": "-",
       "label": "Total Yards"
      },
      {
-      "name": "passingYardsPerGame",
-      "displayValue": "234.2",
-      "label": "Yards Passing"
+      "name": "yardsPerPlay",
+      "displayValue": "5.0",
+      "value": 5.0410958904,
+      "label": "Yards per Play"
      },
      {
-      "name": "rushingYardsPerGame",
-      "displayValue": "173.2",
-      "label": "Yards Rushing"
+      "name": "totalDrives",
+      "displayValue": "14",
+      "value": 14,
+      "label": "Total Drives"
      },
      {
-      "name": "totalPointsPerGameAllowed",
-      "displayValue": "19.2",
-      "label": "Points Allowed Per Game"
+      "name": "netPassingYards",
+      "displayValue": "270",
+      "value": 270,
+      "label": "Passing"
      },
      {
-      "name": "yardsPerGameAllowed",
-      "displayValue": "324.6",
-      "label": "Yards Allowed"
+      "name": "completionAttempts",
+      "displayValue": "30/36",
+      "value": "-",
+      "label": "Comp/Att"
      },
      {
-      "name": "passingYardsPerGameAllowed",
-      "displayValue": "228.6",
-      "label": "Pass Yards Allowed"
+      "name": "yardsPerPass",
+      "displayValue": "6.8",
+      "value": 6.75,
+      "label": "Yards per pass"
      },
      {
-      "name": "rushingYardsPerGameAllowed",
-      "displayValue": "96.0",
-      "label": "Rush Yards Allowed"
+      "name": "interceptions",
+      "displayValue": "0",
+      "value": 0,
+      "label": "Interceptions thrown"
+     },
+     {
+      "name": "sacksYardsLost",
+      "displayValue": "4-35",
+      "value": "-",
+      "label": "Sacks-Yards Lost"
+     },
+     {
+      "name": "rushingYards",
+      "displayValue": "98",
+      "value": 98,
+      "label": "Rushing"
+     },
+     {
+      "name": "rushingAttempts",
+      "displayValue": "33",
+      "value": 33,
+      "label": "Rushing Attempts"
+     },
+     {
+      "name": "yardsPerRushAttempt",
+      "displayValue": "3.0",
+      "value": 2.97,
+      "label": "Yards per rush"
+     },
+     {
+      "name": "redZoneAttempts",
+      "displayValue": "4-5",
+      "value": 0.8,
+      "label": "Red Zone (Made-Att)"
+     },
+     {
+      "name": "totalPenaltiesYards",
+      "displayValue": "12-133",
+      "value": "-",
+      "label": "Penalties"
+     },
+     {
+      "name": "turnovers",
+      "displayValue": "1",
+      "value": "-",
+      "label": "Turnovers"
+     },
+     {
+      "name": "fumblesLost",
+      "displayValue": "1",
+      "value": 1,
+      "label": "Fumbles lost"
+     },
+     {
+      "name": "interceptions",
+      "displayValue": "0",
+      "value": 0,
+      "label": "Interceptions thrown"
+     },
+     {
+      "name": "defensiveTouchdowns",
+      "displayValue": "0",
+      "value": 0,
+      "label": "Defensive / Special Teams TDs"
+     },
+     {
+      "name": "possessionTime",
+      "displayValue": "40:08",
+      "value": 2408,
+      "label": "Possession"
      }
     ],
     "displayOrder": 1,
@@ -2964,44 +2925,154 @@
     },
     "statistics": [
      {
-      "name": "totalPointsPerGame",
-      "displayValue": "23.8",
-      "label": "Points Per Game"
+      "name": "firstDowns",
+      "displayValue": "13",
+      "value": 13,
+      "label": "1st Downs"
      },
      {
-      "name": "yardsPerGame",
-      "displayValue": "375.0",
+      "name": "firstDownsPassing",
+      "displayValue": "9",
+      "value": 9,
+      "label": "Passing 1st downs"
+     },
+     {
+      "name": "firstDownsRushing",
+      "displayValue": "1",
+      "value": 1,
+      "label": "Rushing 1st downs"
+     },
+     {
+      "name": "firstDownsPenalty",
+      "displayValue": "3",
+      "value": 3,
+      "label": "1st downs from penalties"
+     },
+     {
+      "name": "thirdDownEff",
+      "displayValue": "3-12",
+      "value": 0.25,
+      "label": "3rd down efficiency"
+     },
+     {
+      "name": "fourthDownEff",
+      "displayValue": "0-3",
+      "value": 0,
+      "label": "4th down efficiency"
+     },
+     {
+      "name": "totalOffensivePlays",
+      "displayValue": "50",
+      "value": 50,
+      "label": "Total Plays"
+     },
+     {
+      "name": "totalYards",
+      "displayValue": "257",
+      "value": "-",
       "label": "Total Yards"
      },
      {
-      "name": "passingYardsPerGame",
-      "displayValue": "208.2",
-      "label": "Yards Passing"
+      "name": "yardsPerPlay",
+      "displayValue": "5.1",
+      "value": 5.14,
+      "label": "Yards per Play"
      },
      {
-      "name": "rushingYardsPerGame",
-      "displayValue": "166.8",
-      "label": "Yards Rushing"
+      "name": "totalDrives",
+      "displayValue": "12",
+      "value": 12,
+      "label": "Total Drives"
      },
      {
-      "name": "totalPointsPerGameAllowed",
-      "displayValue": "24.4",
-      "label": "Points Allowed Per Game"
+      "name": "netPassingYards",
+      "displayValue": "194",
+      "value": 194,
+      "label": "Passing"
      },
      {
-      "name": "yardsPerGameAllowed",
-      "displayValue": "341.6",
-      "label": "Yards Allowed"
+      "name": "completionAttempts",
+      "displayValue": "19/33",
+      "value": "-",
+      "label": "Comp/Att"
      },
      {
-      "name": "passingYardsPerGameAllowed",
-      "displayValue": "261.4",
-      "label": "Pass Yards Allowed"
+      "name": "yardsPerPass",
+      "displayValue": "5.1",
+      "value": 5.105263157894737,
+      "label": "Yards per pass"
      },
      {
-      "name": "rushingYardsPerGameAllowed",
-      "displayValue": "80.2",
-      "label": "Rush Yards Allowed"
+      "name": "interceptions",
+      "displayValue": "0",
+      "value": 0,
+      "label": "Interceptions thrown"
+     },
+     {
+      "name": "sacksYardsLost",
+      "displayValue": "5-31",
+      "value": "-",
+      "label": "Sacks-Yards Lost"
+     },
+     {
+      "name": "rushingYards",
+      "displayValue": "63",
+      "value": 63,
+      "label": "Rushing"
+     },
+     {
+      "name": "rushingAttempts",
+      "displayValue": "12",
+      "value": 12,
+      "label": "Rushing Attempts"
+     },
+     {
+      "name": "yardsPerRushAttempt",
+      "displayValue": "5.3",
+      "value": 5.25,
+      "label": "Yards per rush"
+     },
+     {
+      "name": "redZoneAttempts",
+      "displayValue": "3-3",
+      "value": 1,
+      "label": "Red Zone (Made-Att)"
+     },
+     {
+      "name": "totalPenaltiesYards",
+      "displayValue": "4-31",
+      "value": "-",
+      "label": "Penalties"
+     },
+     {
+      "name": "turnovers",
+      "displayValue": "3",
+      "value": "-",
+      "label": "Turnovers"
+     },
+     {
+      "name": "fumblesLost",
+      "displayValue": "3",
+      "value": 3,
+      "label": "Fumbles lost"
+     },
+     {
+      "name": "interceptions",
+      "displayValue": "0",
+      "value": 0,
+      "label": "Interceptions thrown"
+     },
+     {
+      "name": "defensiveTouchdowns",
+      "displayValue": "0",
+      "value": 0,
+      "label": "Defensive / Special Teams TDs"
+     },
+     {
+      "name": "possessionTime",
+      "displayValue": "19:52",
+      "value": 1192,
+      "label": "Possession"
      }
     ],
     "displayOrder": 2,
@@ -3009,11 +3080,786 @@
    }
   ]
  },
- "winprobability": [],
+ "winprobability": [
+  [
+   0.338,
+   null
+  ],
+  [
+   0.313,
+   1
+  ],
+  [
+   0.295,
+   1
+  ],
+  [
+   0.298,
+   1
+  ],
+  [
+   0.283,
+   1
+  ],
+  [
+   0.315,
+   1
+  ],
+  [
+   0.302,
+   1
+  ],
+  [
+   0.335,
+   1
+  ],
+  [
+   0.325,
+   1
+  ],
+  [
+   0.266,
+   1
+  ],
+  [
+   0.25,
+   1
+  ],
+  [
+   0.237,
+   1
+  ],
+  [
+   0.256,
+   1
+  ],
+  [
+   0.279,
+   1
+  ],
+  [
+   0.212,
+   1
+  ],
+  [
+   0.21,
+   1
+  ],
+  [
+   0.206,
+   1
+  ],
+  [
+   0.211,
+   1
+  ],
+  [
+   0.189,
+   1
+  ],
+  [
+   0.175,
+   1
+  ],
+  [
+   0.175,
+   1
+  ],
+  [
+   0.175,
+   1
+  ],
+  [
+   0.186,
+   1
+  ],
+  [
+   0.21,
+   1
+  ],
+  [
+   0.161,
+   1
+  ],
+  [
+   0.136,
+   1
+  ],
+  [
+   0.122,
+   1
+  ],
+  [
+   0.127,
+   1
+  ],
+  [
+   0.127,
+   1
+  ],
+  [
+   0.137,
+   1
+  ],
+  [
+   0.104,
+   1
+  ],
+  [
+   0.103,
+   1
+  ],
+  [
+   0.105,
+   1
+  ],
+  [
+   0.106,
+   1
+  ],
+  [
+   0.096,
+   1
+  ],
+  [
+   0.095,
+   1
+  ],
+  [
+   0.086,
+   2
+  ],
+  [
+   0.087,
+   2
+  ],
+  [
+   0.082,
+   2
+  ],
+  [
+   0.076,
+   2
+  ],
+  [
+   0.082,
+   2
+  ],
+  [
+   0.088,
+   2
+  ],
+  [
+   0.096,
+   2
+  ],
+  [
+   0.098,
+   2
+  ],
+  [
+   0.098,
+   2
+  ],
+  [
+   0.109,
+   2
+  ],
+  [
+   0.109,
+   2
+  ],
+  [
+   0.12,
+   2
+  ],
+  [
+   0.109,
+   2
+  ],
+  [
+   0.115,
+   2
+  ],
+  [
+   0.092,
+   2
+  ],
+  [
+   0.077,
+   2
+  ],
+  [
+   0.077,
+   2
+  ],
+  [
+   0.068,
+   2
+  ],
+  [
+   0.08,
+   2
+  ],
+  [
+   0.069,
+   2
+  ],
+  [
+   0.076,
+   2
+  ],
+  [
+   0.088,
+   2
+  ],
+  [
+   0.105,
+   2
+  ],
+  [
+   0.111,
+   2
+  ],
+  [
+   0.152,
+   2
+  ],
+  [
+   0.144,
+   2
+  ],
+  [
+   0.134,
+   2
+  ],
+  [
+   0.189,
+   2
+  ],
+  [
+   0.191,
+   2
+  ],
+  [
+   0.193,
+   2
+  ],
+  [
+   0.188,
+   2
+  ],
+  [
+   0.183,
+   2
+  ],
+  [
+   0.189,
+   2
+  ],
+  [
+   0.212,
+   2
+  ],
+  [
+   0.194,
+   2
+  ],
+  [
+   0.215,
+   2
+  ],
+  [
+   0.214,
+   2
+  ],
+  [
+   0.206,
+   2
+  ],
+  [
+   0.205,
+   2
+  ],
+  [
+   0.11,
+   2
+  ],
+  [
+   0.108,
+   2
+  ],
+  [
+   0.117,
+   2
+  ],
+  [
+   0.116,
+   2
+  ],
+  [
+   0.08,
+   2
+  ],
+  [
+   0.082,
+   2
+  ],
+  [
+   0.077,
+   2
+  ],
+  [
+   0.085,
+   2
+  ],
+  [
+   0.08,
+   2
+  ],
+  [
+   0.066,
+   2
+  ],
+  [
+   0.067,
+   2
+  ],
+  [
+   0.071,
+   2
+  ],
+  [
+   0.072,
+   2
+  ],
+  [
+   0.089,
+   2
+  ],
+  [
+   0.091,
+   2
+  ],
+  [
+   0.101,
+   2
+  ],
+  [
+   0.097,
+   2
+  ],
+  [
+   0.092,
+   2
+  ],
+  [
+   0.075,
+   2
+  ],
+  [
+   0.085,
+   3
+  ],
+  [
+   0.1,
+   3
+  ],
+  [
+   0.102,
+   3
+  ],
+  [
+   0.099,
+   3
+  ],
+  [
+   0.074,
+   3
+  ],
+  [
+   0.106,
+   3
+  ],
+  [
+   0.101,
+   3
+  ],
+  [
+   0.078,
+   3
+  ],
+  [
+   0.088,
+   3
+  ],
+  [
+   0.058,
+   3
+  ],
+  [
+   0.058,
+   3
+  ],
+  [
+   0.056,
+   3
+  ],
+  [
+   0.056,
+   3
+  ],
+  [
+   0.047,
+   3
+  ],
+  [
+   0.047,
+   3
+  ],
+  [
+   0.046,
+   3
+  ],
+  [
+   0.051,
+   3
+  ],
+  [
+   0.063,
+   3
+  ],
+  [
+   0.064,
+   3
+  ],
+  [
+   0.053,
+   3
+  ],
+  [
+   0.049,
+   3
+  ],
+  [
+   0.048,
+   3
+  ],
+  [
+   0.034,
+   3
+  ],
+  [
+   0.032,
+   3
+  ],
+  [
+   0.038,
+   3
+  ],
+  [
+   0.028,
+   3
+  ],
+  [
+   0.028,
+   3
+  ],
+  [
+   0.031,
+   3
+  ],
+  [
+   0.021,
+   3
+  ],
+  [
+   0.016,
+   3
+  ],
+  [
+   0.017,
+   3
+  ],
+  [
+   0.008,
+   3
+  ],
+  [
+   0.004,
+   3
+  ],
+  [
+   0.006,
+   3
+  ],
+  [
+   0.006,
+   3
+  ],
+  [
+   0.005,
+   3
+  ],
+  [
+   0.005,
+   3
+  ],
+  [
+   0.002,
+   4
+  ],
+  [
+   0.003,
+   4
+  ],
+  [
+   0.003,
+   4
+  ],
+  [
+   0.002,
+   4
+  ],
+  [
+   0.001,
+   4
+  ],
+  [
+   0.001,
+   4
+  ],
+  [
+   0.001,
+   4
+  ],
+  [
+   0.002,
+   4
+  ],
+  [
+   0.001,
+   4
+  ],
+  [
+   0.001,
+   4
+  ],
+  [
+   0.001,
+   4
+  ],
+  [
+   0.001,
+   4
+  ],
+  [
+   0.001,
+   4
+  ],
+  [
+   0.001,
+   4
+  ],
+  [
+   0.001,
+   4
+  ],
+  [
+   0.002,
+   4
+  ],
+  [
+   0.003,
+   4
+  ],
+  [
+   0.003,
+   4
+  ],
+  [
+   0.002,
+   4
+  ],
+  [
+   0.005,
+   4
+  ],
+  [
+   0.007,
+   4
+  ],
+  [
+   0.009,
+   4
+  ],
+  [
+   0.004,
+   4
+  ],
+  [
+   0.002,
+   4
+  ],
+  [
+   0.009,
+   4
+  ],
+  [
+   0.024,
+   4
+  ],
+  [
+   0.018,
+   4
+  ],
+  [
+   0.017,
+   4
+  ],
+  [
+   0.024,
+   4
+  ],
+  [
+   0.031,
+   4
+  ],
+  [
+   0.061,
+   4
+  ],
+  [
+   0.075,
+   4
+  ],
+  [
+   0.071,
+   4
+  ],
+  [
+   0.101,
+   4
+  ],
+  [
+   0.08,
+   4
+  ],
+  [
+   0.077,
+   4
+  ],
+  [
+   0.06,
+   4
+  ],
+  [
+   0.033,
+   4
+  ],
+  [
+   0.011,
+   4
+  ],
+  [
+   0.009,
+   4
+  ],
+  [
+   0.005,
+   4
+  ],
+  [
+   0.011,
+   4
+  ],
+  [
+   0.007,
+   4
+  ],
+  [
+   0.001,
+   4
+  ],
+  [
+   0.001,
+   4
+  ],
+  [
+   0.001,
+   4
+  ],
+  [
+   0.001,
+   4
+  ],
+  [
+   0.001,
+   4
+  ],
+  [
+   0.001,
+   4
+  ],
+  [
+   0.001,
+   4
+  ],
+  [
+   0.001,
+   4
+  ],
+  [
+   0,
+   4
+  ]
+ ],
  "injuries": [
   {
    "team": "1",
    "players": [
+    {
+     "name": "Kendal Daniels",
+     "short": "K. Daniels",
+     "pos": "LB",
+     "jersey": "53",
+     "headshot": "https://a.espncdn.com/i/headshots/nfl/players/full/4595343.png",
+     "status": "Questionable",
+     "code": "Q",
+     "type": "Neck",
+     "detail": null,
+     "side": null,
+     "returnDate": "2026-10-25",
+     "date": "2026-10-18T19:51Z"
+    },
+    {
+     "name": "Billy Bowman Jr.",
+     "short": "B. Bowman Jr.",
+     "pos": "CB",
+     "jersey": "33",
+     "headshot": "https://a.espncdn.com/i/headshots/nfl/players/full/4431194.png",
+     "status": "Questionable",
+     "code": "Q",
+     "type": "Hamstring",
+     "detail": null,
+     "side": null,
+     "returnDate": "2026-10-18",
+     "date": "2026-10-18T19:38Z"
+    },
+    {
+     "name": "Divine Deablo",
+     "short": "D. Deablo",
+     "pos": "LB",
+     "jersey": "0",
+     "headshot": "https://a.espncdn.com/i/headshots/nfl/players/full/4037626.png",
+     "status": "Questionable",
+     "code": "Q",
+     "type": "Arm",
+     "detail": null,
+     "side": null,
+     "returnDate": "2026-10-25",
+     "date": "2026-10-18T18:07Z"
+    },
     {
      "name": "Cooper Rush",
      "short": "C. Rush",
@@ -3041,48 +3887,6 @@
      "side": null,
      "returnDate": "2026-10-25",
      "date": "2026-10-18T15:51Z"
-    },
-    {
-     "name": "Ethan Onianwa",
-     "short": "E. Onianwa",
-     "pos": "OT",
-     "jersey": "75",
-     "headshot": "https://a.espncdn.com/i/headshots/nfl/players/full/4683194.png",
-     "status": "Out",
-     "code": "O",
-     "type": "Coach's Decision",
-     "detail": null,
-     "side": null,
-     "returnDate": "2026-10-25",
-     "date": "2026-10-18T15:51Z"
-    },
-    {
-     "name": "Christian Harris",
-     "short": "C. Harris",
-     "pos": "LB",
-     "jersey": "45",
-     "headshot": "https://a.espncdn.com/i/headshots/nfl/players/full/4567099.png",
-     "status": "Out",
-     "code": "O",
-     "type": "Coach's Decision",
-     "detail": null,
-     "side": null,
-     "returnDate": "2026-10-25",
-     "date": "2026-10-18T15:51Z"
-    },
-    {
-     "name": "C.J. Henderson",
-     "short": "C.J. Henderson",
-     "pos": "CB",
-     "jersey": "26",
-     "headshot": "https://a.espncdn.com/i/headshots/nfl/players/full/4240596.png",
-     "status": "Out",
-     "code": "O",
-     "type": "Groin",
-     "detail": null,
-     "side": null,
-     "returnDate": "2026-10-25",
-     "date": "2026-10-18T15:51Z"
     }
    ]
   },
@@ -3095,13 +3899,27 @@
      "pos": "S",
      "jersey": "26",
      "headshot": "https://a.espncdn.com/i/headshots/nfl/players/full/4361748.png",
-     "status": "Injured Reserve",
-     "code": "IR",
+     "status": "Out",
+     "code": "O",
      "type": "Undisclosed",
      "detail": null,
      "side": null,
      "returnDate": "2026-10-18",
-     "date": "2026-10-18T16:04Z"
+     "date": "2026-10-18T21:21Z"
+    },
+    {
+     "name": "Jonah Jackson",
+     "short": "J. Jackson",
+     "pos": "G",
+     "jersey": "73",
+     "headshot": "https://a.espncdn.com/i/headshots/nfl/players/full/3930040.png",
+     "status": "Questionable",
+     "code": "Q",
+     "type": "Hip",
+     "detail": null,
+     "side": null,
+     "returnDate": "2026-10-18",
+     "date": "2026-10-18T19:39Z"
     },
     {
      "name": "Case Keenum",
@@ -3144,23 +3962,74 @@
      "side": null,
      "returnDate": "2026-10-22",
      "date": "2026-10-18T15:49Z"
-    },
-    {
-     "name": "Jayden Loving",
-     "short": "J. Loving",
-     "pos": "DT",
-     "jersey": "91",
-     "headshot": "https://a.espncdn.com/i/headshots/nfl/players/full/4877376.png",
-     "status": "Out",
-     "code": "O",
-     "type": "Coach's Decision",
-     "detail": null,
-     "side": null,
-     "returnDate": "2026-10-22",
-     "date": "2026-10-18T15:49Z"
     }
    ]
   }
  ],
- "scoringPlays": []
+ "scoringPlays": [
+  {
+   "period": 1,
+   "clock": "8:15",
+   "team": "3",
+   "text": "Colston Loveland 14 Yd pass from Caleb Williams (Cairo Santos Kick)",
+   "away": 7,
+   "home": 0
+  },
+  {
+   "period": 1,
+   "clock": "1:07",
+   "team": "3",
+   "text": "D'Andre Swift 4 Yd Rush (Cairo Santos Kick)",
+   "away": 14,
+   "home": 0
+  },
+  {
+   "period": 2,
+   "clock": "5:45",
+   "team": "1",
+   "text": "Jahan Dotson 13 Yd pass from Michael Penix Jr. (Nick Folk Kick)",
+   "away": 14,
+   "home": 7
+  },
+  {
+   "period": 2,
+   "clock": "1:26",
+   "team": "3",
+   "text": "D'Andre Swift 2 Yd Rush (Cairo Santos Kick)",
+   "away": 21,
+   "home": 7
+  },
+  {
+   "period": 3,
+   "clock": "1:48",
+   "team": "3",
+   "text": "Roschon Johnson 4 Yd Rush (Cairo Santos Kick)",
+   "away": 28,
+   "home": 7
+  },
+  {
+   "period": 4,
+   "clock": "14:56",
+   "team": "3",
+   "text": "Cairo Santos 50 Yd Field Goal",
+   "away": 31,
+   "home": 7
+  },
+  {
+   "period": 4,
+   "clock": "9:34",
+   "team": "1",
+   "text": "Kyle Pitts Sr. 10 Yd pass from Michael Penix Jr. (Michael Penix Jr. Pass to Zachariah Branch for Two-Point Conversion)",
+   "away": 31,
+   "home": 15
+  },
+  {
+   "period": 4,
+   "clock": "5:41",
+   "team": "1",
+   "text": "Kyle Pitts Sr. 5 Yd pass from Michael Penix Jr. (Michael Penix Jr. Pass to Drake London for Two-Point Conversion)",
+   "away": 31,
+   "home": 23
+  }
+ ]
 }
