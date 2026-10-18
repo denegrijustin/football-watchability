@@ -5,7 +5,7 @@ import { NFL_CONFERENCES, inConference } from "../teamConf";
 import { fetchData, refetchData } from "../data/load";
 import { latestFlow, useLiveMap } from "../live";
 import { rankGames, mostInsaneWeek, weekSummaries, sortGames, INSANITY_SORTS, type InsanitySort, type LedgerGame } from "../seasonRank";
-import { compareDone, registerLedger, watchScoreOf } from "../completedSort";
+import { compareDone, forecastScoreOf, registerLedger, watchScoreOf } from "../completedSort";
 import { PlusRank } from "./PlusRank";
 import { usePlusRanks } from "../plusRanks";
 import { INSANITY_TIERS, insanity, thinWp } from "../insanity";
@@ -211,8 +211,9 @@ export function InsanityBoard({ defaultLeague }: { defaultLeague: "NFL" | "CFB" 
         </div>
         <div className="segmented" role="group" aria-label="Sort games by">
           {INSANITY_SORTS.map((o) => (
-            <button key={o.id} aria-pressed={sort === o.id} onClick={() => { setSort(o.id); setShown(PAGE); }}>
-              {o.label}
+            <button key={o.id} aria-pressed={sort === o.id} aria-label={o.label} onClick={() => { setSort(o.id); setShown(PAGE); }}>
+              <span className="sort-long">{o.label}</span>
+              <span className="sort-short">{o.short ?? o.label}</span>
             </button>
           ))}
         </div>
@@ -435,7 +436,8 @@ function InsanityCard({ g, rank, showWeek, onOpen, live, fresh }: { g: LedgerGam
         <span className="ic-ins" title="Insanity score">
           <strong>{g.insanity}</strong> {tierLabel(g.tier)}
         </span>
-        {watchScoreOf(g.id) != null && <span className="ic-watch" title="Watch score: how worth watching the game was">Watch <strong>{watchScoreOf(g.id)}</strong></span>}
+        {forecastScoreOf(g.id) != null && <span className="ic-watch" title="Watch score forecast before kickoff (team quality, competitiveness, stakes)">Forecast <strong>{forecastScoreOf(g.id)}</strong></span>}
+        {watchScoreOf(g.id) != null && <span className="ic-watch real" title="Watch score realized: re-scored from how the game was actually played">Watch <strong>{watchScoreOf(g.id)}</strong></span>}
         {live != null && <span className="ic-live" title="In progress: scored from the live win-probability line">LIVE{live ? ` · ${live}` : ""}</span>}
         {fresh && <span className="ic-fresh" title="Just ended: scored from the game's win-probability line until the hourly rebuild archives it">FINAL</span>}
         {showWeek && <span className="ic-week">{g.week}</span>}

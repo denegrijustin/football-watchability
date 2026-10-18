@@ -1,13 +1,13 @@
-import { results } from "./data";
+import { results, slate } from "./data";
 import { insanity } from "./insanity";
 import { currentPlusRanks, plusRankFor, type TeamRef } from "./plusRanks";
 
 /** How completed games can be ordered on every tab that lists them. */
 export type DoneSort = "watch" | "insanity" | "rank";
-export const DONE_SORTS: { id: DoneSort; label: string; note: string }[] = [
-  { id: "watch", label: "Watch score", note: "Highest watch score first" },
+export const DONE_SORTS: { id: DoneSort; label: string; short?: string; note: string }[] = [
+  { id: "watch", label: "Watch score", short: "Watch", note: "Highest watch score first" },
   { id: "insanity", label: "Most insane", note: "Highest insanity score first" },
-  { id: "rank", label: "Highest ranked", note: "Best-ranked team first (the SP+ / NFL+ rank beside each team)" },
+  { id: "rank", label: "Highest ranked", short: "Ranked", note: "Best-ranked team first (the SP+ / NFL+ rank beside each team)" },
 ];
 
 /** What a sort needs to know about a game, whichever list it comes from. */
@@ -36,6 +36,15 @@ function keys(id: string | null | undefined): Keys {
   // Not in the archive: only the ledger knows it (an earlier week), and it has the insanity score but no watch score.
   return { watch: -1, insanity: ledgerInsanity.get(String(id ?? "")) ?? -1 };
 }
+
+/** The watch score forecast before kickoff (the archive keeps it with the result; a game not yet archived still has it on the slate). */
+export const forecastScoreOf = (id: string | null | undefined): number | null => {
+  const key = String(id ?? "");
+  const r = results.find((x) => x.espnId === key);
+  if (r) return r.forecast.score;
+  const g = slate.games.find((x) => x.espnId === key);
+  return g ? g.score : null;
+};
 
 /** The game's watch score, or null when the archive no longer holds it (an earlier week). */
 export const watchScoreOf = (id: string | null | undefined): number | null => {

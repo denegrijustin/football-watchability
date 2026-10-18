@@ -10,8 +10,9 @@ export function DoneSortControl({ value, onChange, extra }: { value: DoneSort | 
         </button>
       ))}
       {DONE_SORTS.map((o) => (
-        <button key={o.id} type="button" aria-pressed={value === o.id} title={o.note} onClick={() => onChange(o.id)}>
-          {o.label}
+        <button key={o.id} type="button" aria-pressed={value === o.id} aria-label={o.label} title={o.note} onClick={() => onChange(o.id)}>
+          <span className="sort-long">{o.label}</span>
+          <span className="sort-short">{o.short ?? o.label}</span>
         </button>
       ))}
     </div>
