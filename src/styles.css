@@ -2995,7 +2995,9 @@ details.proj summary strong {
   color: var(--score-color);
 }
 .gc-lines {
-  margin: 0 28px;
+  margin: 12px auto;
+  width: min(calc(100% - 56px), 440px);
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: 0.8125rem;
   font-variant-numeric: tabular-nums;
@@ -3006,9 +3008,20 @@ details.proj summary strong {
   text-align: center;
   color: var(--text-2);
 }
+.gc-lines thead th:first-child,
+.gc-lines tbody th {
+  width: 22%;
+}
 .gc-lines tbody th {
   text-align: left;
   color: var(--text);
+}
+.gc-watch-note {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--muted);
 }
 .gc-lines .t {
   font-weight: 800;
@@ -3500,7 +3513,8 @@ details.proj summary strong {
     order: 3;
   }
   .gc-lines {
-    margin: 0 16px;
+    margin: 10px auto;
+    width: calc(100% - 32px);
   }
   .gc-grid,
   .gc-tb,

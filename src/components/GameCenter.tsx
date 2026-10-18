@@ -300,10 +300,17 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
                   net
                 )}
               </span>
-              {watch && (
-                <span className={`gc-watch ${watch.tier}`}>
-                  {fin ? "Actual" : "Watchability"} {watch.score} · {tierLabel(watch.tier)}
+              {fin ? (
+                <span className={`gc-watch ${fin.actual.tier}`}>
+                  Forecast {fin.forecast.score} → Actual {fin.actual.score} · {tierLabel(fin.actual.tier)}
                 </span>
+              ) : (
+                watch && (
+                  <span className={`gc-watch ${watch.tier}`}>
+                    {state === "post" ? "Forecast" : "Watchability"} {watch.score} · {tierLabel(watch.tier)}
+                    {state === "post" && <small className="gc-watch-note">Actual score posts with the next refresh</small>}
+                  </span>
+                )
               )}
             </div>
             <TeamHead t={home} score={scoreH} poss={!!game?.situation?.possession && game.situation.possession === game.teams[1]?.id} win={state === "post" && scoreH! > scoreA!} right />
