@@ -16,3 +16,17 @@ test("the Upset Meter's completed games sort by insanity in an earlier week too 
   expect(scores.length).toBeGreaterThan(10);
   expect(scores).toEqual([...scores].sort((a, b) => b - a));
 });
+
+test("the Insanity tab shows each game's watch score and each team's rank, and Highest ranked orders by the better rank shown", async ({ page }) => {
+  await page.goto("/?league=CFB");
+  await page.getByRole("navigation", { name: "Sections" }).getByRole("button", { name: /^Insanity/ }).click();
+  await page.getByRole("group", { name: "Sort games by" }).getByRole("button", { name: "Highest ranked" }).click();
+  await expect(page.locator(".ic .ic-watch").first()).toBeVisible();
+  await expect(page.locator(".ic .plus-rank").first()).toBeVisible();
+  const best = await page.locator(".ic").evaluateAll((els) => els.map((e) => {
+    const n = [...e.querySelectorAll(".plus-rank [aria-hidden]")].map((x) => +(x.textContent ?? "NaN")).filter((x) => x > 0);
+    return n.length ? Math.min(...n) : Infinity;
+  }));
+  expect(best.length).toBeGreaterThan(3);
+  expect(best).toEqual([...best].sort((a, b) => a - b));
+});

@@ -21,6 +21,9 @@ export function loadPlusRanks(): Promise<PlusRanks | null> {
   return load;
 }
 
+/** The ranks once loaded (for sorting; a component that sorts calls usePlusRanks too, so it re-renders when they arrive). */
+export const currentPlusRanks = () => loaded;
+
 export function usePlusRanks(): PlusRanks | null {
   const [data, setData] = useState<PlusRanks | null>(loaded);
   useEffect(() => {

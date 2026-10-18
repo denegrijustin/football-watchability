@@ -4,6 +4,7 @@ import { gameStatus, useLiveMap, useNow } from "../live";
 import { timeOf, tzAbbr, useTz } from "../tz";
 import { compareDone, type DoneSort } from "../completedSort";
 import { insanity } from "../insanity";
+import { usePlusRanks } from "../plusRanks";
 import { DoneSortControl } from "./DoneSortControl";
 import { useClosingUpsets } from "../brewing";
 import type { StatusCounts } from "./Filters";
@@ -11,6 +12,7 @@ import { GameCard } from "./GameCard";
 import { ResultCard } from "./ResultCard";
 
 type Game = ReturnType<typeof filterGames>[number];
+const refOf = (r: Result) => ({ id: r.espnId, league: r.league, teams: r.teams });
 const avg = (xs: number[]) => Math.round(xs.reduce((a, b) => a + b, 0) / (xs.length || 1));
 const archived = new Set(results.map((r) => r.espnId));
 /** Completed games shown under "All" before a "Show all" button, so Upcoming isn't buried. */
@@ -96,6 +98,7 @@ export function GameBoard({
   filtered: boolean;
   onReset: () => void;
 }) {
+  usePlusRanks(); // the "highest ranked" order needs the ranks, and re-sorts when they arrive
   const [showAll, setShowAll] = useState(false);
   const [showCompleted, setShowCompleted] = useState(false);
   // Viewing only completed games opens on the highest watch score; with everything showing, on the most insane (as before).
@@ -197,7 +200,7 @@ export function GameBoard({
             // Within a week, the most insane game first (a game with no play data goes last), the later kickoff first when tied.
             const rs = finals
               .filter((r) => r.week === w)
-              .sort((a, b) => compareDone(doneSort, a.espnId, b.espnId) || b.date.localeCompare(a.date));
+              .sort((a, b) => compareDone(doneSort, refOf(a), refOf(b)) || b.date.localeCompare(a.date));
             const shown = rs.slice(0, Math.max(0, limit - used));
             used += shown.length;
             const best = [...rs].sort((a, b) => b.delta - a.delta)[0];

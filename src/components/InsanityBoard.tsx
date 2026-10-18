@@ -5,7 +5,9 @@ import { NFL_CONFERENCES, inConference } from "../teamConf";
 import { fetchData, refetchData } from "../data/load";
 import { latestFlow, useLiveMap } from "../live";
 import { rankGames, mostInsaneWeek, weekSummaries, sortGames, INSANITY_SORTS, type InsanitySort, type LedgerGame } from "../seasonRank";
-import { compareDone, registerLedger } from "../completedSort";
+import { compareDone, registerLedger, watchScoreOf } from "../completedSort";
+import { PlusRank } from "./PlusRank";
+import { usePlusRanks } from "../plusRanks";
 import { INSANITY_TIERS, insanity, thinWp } from "../insanity";
 import { useOpenGame, type GameStub } from "./GameCenterContext";
 import { Headshot } from "./Headshot";
@@ -32,6 +34,12 @@ export function facts(g: LedgerGame) {
 
 /** A game not yet in the ledger: in progress (live) or just ended and waiting for the hourly rebuild to archive it (live false). */
 type LiveLedgerGame = LedgerGame & { live: boolean; clock: string };
+/** The ledger names its teams only in the matchup ("Ball State @ Bowling Green"); the ranks are looked up by that name for college. */
+const teamsOf = (g: LedgerGame) => {
+  const [a, h] = g.matchup.split(" @ ");
+  return [{ ...g.away, name: a }, { ...g.home, name: h }];
+};
+const refOf = (g: LedgerGame) => ({ id: g.id, league: g.league, teams: teamsOf(g) });
 const archived = new Set(results.map((r) => r.espnId));
 
 /**
@@ -121,6 +129,7 @@ export function InsanityBoard({ defaultLeague }: { defaultLeague: "NFL" | "CFB" 
   const [scope, setScope] = useState<Scope>("week");
   const [pick, setPick] = useState<string | null>(null);
   const [shown, setShown] = useState(PAGE);
+  const plus = usePlusRanks(); // the ranked order needs the ranks, and re-sorts when they arrive
   const [sort, setSort] = useState<InsanitySort>("insanity");
   const [conf, setConf] = useState("all-fbs");
   const [weeksView, setWeeksView] = useState<WeeksView>("weeks");
@@ -162,7 +171,7 @@ export function InsanityBoard({ defaultLeague }: { defaultLeague: "NFL" | "CFB" 
   const pool = useMemo(() => (scope === "season" ? mine : mine.filter((g) => g.week === week)), [mine, scope, week]);
   // Each game keeps its insanity rank (#1 is the wildest) whatever order the list is shown in.
   const rankOf = useMemo(() => new Map(rankGames(pool).map((g, i) => [g.id, i + 1])), [pool]);
-  const list = useMemo(() => (registerLedger(pool), sort === "watch" || sort === "rank" ? rankGames(pool).sort((a, b) => compareDone(sort, a.id, b.id)) : sortGames(pool, sort)), [pool, sort]);
+  const list = useMemo(() => (registerLedger(pool), sort === "watch" || sort === "rank" ? rankGames(pool).sort((a, b) => compareDone(sort, refOf(a), refOf(b))) : sortGames(pool, sort)), [pool, sort, plus]);
   const isLiveRow = (g: LedgerGame) => (g as Partial<LiveLedgerGame>).live === true;
   const liveRows = list.filter(isLiveRow);
   const isFreshRow = (g: LedgerGame) => (g as Partial<LiveLedgerGame>).live === false;
@@ -426,6 +435,7 @@ function InsanityCard({ g, rank, showWeek, onOpen, live, fresh }: { g: LedgerGam
         <span className="ic-ins" title="Insanity score">
           <strong>{g.insanity}</strong> {tierLabel(g.tier)}
         </span>
+        {watchScoreOf(g.id) != null && <span className="ic-watch" title="Watch score: how worth watching the game was">Watch <strong>{watchScoreOf(g.id)}</strong></span>}
         {live != null && <span className="ic-live" title="In progress: scored from the live win-probability line">LIVE{live ? ` · ${live}` : ""}</span>}
         {fresh && <span className="ic-fresh" title="Just ended: scored from the game's win-probability line until the hourly rebuild archives it">FINAL</span>}
         {showWeek && <span className="ic-week">{g.week}</span>}
@@ -443,7 +453,7 @@ function InsanityCard({ g, rank, showWeek, onOpen, live, fresh }: { g: LedgerGam
           return (
             <span key={k} className={`ic-team ${k ? "home" : "away"}${won ? " won" : ""}`}>
               {logos[t.logoId] ? <img src={logos[t.logoId]} alt="" width="40" height="40" loading="lazy" decoding="async" /> : <i className="ic-nologo" />}
-              <span className="ic-abbr">{t.abbr}</span>
+              <span className="ic-abbr"><PlusRank league={g.league} team={teamsOf(g)[k]} />{t.abbr}</span>
               <b>{t.score}</b>
             </span>
           );

@@ -14,6 +14,7 @@ import { DoneSortControl } from "./DoneSortControl";
 import "../upsetMeter.css";
 
 type Show = "all" | "live" | "upcoming" | "final" | "upsets";
+const refOf = (r: MeterRow) => ({ id: r.espnId, league: r.league, teams: r.teams, ranks: r.teams.map((t) => t.rank) });
 const known = new Set([...slate.games.map((g) => g.espnId), ...results.map((r) => r.espnId)]);
 
 function Logo({ team }: { team: MeterTeam }) {
@@ -154,7 +155,7 @@ export function UpsetMeter({ defaultLeague }: { defaultLeague: League }) {
           : show === "final"
             ? [{ id: "done", title: "Completed", rows: done, empty: "No games have finished yet." }]
             : [{ id: "ups", title: "Upsets", rows: shownRows.filter((r) => r.upset || r.brewing), empty: "No upsets yet this week." }];
-  const columns = columns0.map((c) => (c.id === "done" && doneSort !== "gap" ? { ...c, rows: [...c.rows].sort((a, b) => compareDone(doneSort, a.espnId, b.espnId)) } : c));
+  const columns = columns0.map((c) => (c.id === "done" && doneSort !== "gap" ? { ...c, rows: [...c.rows].sort((a, b) => compareDone(doneSort, refOf(a), refOf(b))) } : c));
   const hasDone = columns.some((c) => c.id === "done" && c.rows.length > 0);
   const shows: [Show, string][] = current ? [["all", "All"], ...(inPlay.length ? [["live", "Live"] as [Show, string]] : []), ["upcoming", "Next"], ["final", "Final"], ["upsets", "Upsets"]] : [["all", "All"], ["upsets", "Upsets"]];
   const loading = current ? !plus : !ledger || !weekly;

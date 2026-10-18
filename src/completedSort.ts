@@ -1,15 +1,19 @@
 import { results } from "./data";
 import { insanity } from "./insanity";
+import { currentPlusRanks, plusRankFor, type TeamRef } from "./plusRanks";
 
 /** How completed games can be ordered on every tab that lists them. */
 export type DoneSort = "watch" | "insanity" | "rank";
 export const DONE_SORTS: { id: DoneSort; label: string; note: string }[] = [
   { id: "watch", label: "Watch score", note: "Highest watch score first" },
   { id: "insanity", label: "Most insane", note: "Highest insanity score first" },
-  { id: "rank", label: "Highest ranked", note: "Best-ranked team first (ESPN FPI)" },
+  { id: "rank", label: "Highest ranked", note: "Best-ranked team first (the SP+ / NFL+ rank beside each team)" },
 ];
 
-type Keys = { watch: number; insanity: number; rank: number };
+/** What a sort needs to know about a game, whichever list it comes from. */
+export type DoneRef = { id: string | null | undefined; league: string; teams: TeamRef[]; /** ranks already known for the teams (the Upset Meter's), in place of the current SP+ / NFL+ ones */ ranks?: (number | null)[] };
+
+type Keys = { watch: number; insanity: number };
 let byId: Map<string, Keys> | null = null;
 /** Insanity scores from the season ledger, which reaches back past the archive's last two weeks (set once a tab has loaded it). */
 const ledgerInsanity = new Map<string, number>();
@@ -17,31 +21,47 @@ export function registerLedger(games: { id: string; insanity: number }[]) {
   for (const g of games) ledgerInsanity.set(String(g.id), g.insanity);
 }
 
-/** Sort keys for a finished game from the archive (higher is better; a game with no data sorts last). */
-export function doneKeys(espnId: string | null | undefined): Keys {
+function keys(id: string | null | undefined): Keys {
   if (!byId) {
     byId = new Map();
     for (const r of results) {
-      const ranks = r.teams.map((t) => t.ranks?.overall).filter((n): n is number => typeof n === "number" && n > 0);
       byId.set(r.espnId, {
         watch: r.actual.score,
         insanity: insanity(r.wp, { final: true, overtime: r.final.overtime })?.score ?? -1,
-        // the better of the two teams' ranks, with the other team's rank as the tie-break (a lower number is better, so negate)
-        rank: ranks.length ? -(Math.min(...ranks) * 1000 + Math.max(...ranks)) : -Infinity,
       });
     }
   }
-  const id = String(espnId ?? "");
-  const k = byId.get(id);
+  const k = byId.get(String(id ?? ""));
   if (k) return k;
-  // Not in the archive: only the ledger knows it (an earlier week), and it has the insanity score but no watch score or ranks.
-  return { watch: -1, insanity: ledgerInsanity.get(id) ?? -1, rank: -Infinity };
+  // Not in the archive: only the ledger knows it (an earlier week), and it has the insanity score but no watch score.
+  return { watch: -1, insanity: ledgerInsanity.get(String(id ?? "")) ?? -1 };
+}
+
+/** The game's watch score, or null when the archive no longer holds it (an earlier week). */
+export const watchScoreOf = (id: string | null | undefined): number | null => {
+  const w = keys(id).watch;
+  return w >= 0 ? w : null;
+};
+
+/** The SP+ (college) or NFL+ (NFL) rank of each team, in the order given; null when a team has none. */
+export const teamRanksOf = (ref: DoneRef): (number | null)[] => ref.ranks ?? ref.teams.map((t) => plusRankFor(currentPlusRanks(), ref.league, t)?.n ?? null);
+
+/** Higher is better: the better-ranked team decides, the other team's rank breaks a tie, and a game with no ranked team sorts last. */
+function rankKey(ref: DoneRef): number {
+  const n = teamRanksOf(ref).filter((x): x is number => x != null);
+  if (!n.length) return -Infinity;
+  const worst = n.length === 2 ? Math.max(...n) : 9999;
+  return -(Math.min(...n) * 10000 + worst);
 }
 
 /** Compare two finished games under a sort; ties fall back to the other measures, then to the caller's own order. */
-export function compareDone(by: DoneSort, a: string | null | undefined, b: string | null | undefined) {
-  const x = doneKeys(a), y = doneKeys(b);
-  const order: (keyof Keys)[] = by === "watch" ? ["watch", "insanity"] : by === "rank" ? ["rank", "watch"] : ["insanity", "watch"];
-  for (const k of order) if (x[k] !== y[k]) return y[k] - x[k] || 0;
+export function compareDone(by: DoneSort, a: DoneRef, b: DoneRef) {
+  const ka = keys(a.id), kb = keys(b.id);
+  const val = (k: Keys, r: DoneRef, m: "watch" | "insanity" | "rank") => (m === "rank" ? rankKey(r) : k[m]);
+  const order: ("watch" | "insanity" | "rank")[] = by === "watch" ? ["watch", "insanity"] : by === "rank" ? ["rank", "watch", "insanity"] : ["insanity", "watch"];
+  for (const m of order) {
+    const x = val(ka, a, m), y = val(kb, b, m);
+    if (x !== y) return y - x || 0;
+  }
   return 0;
 }
