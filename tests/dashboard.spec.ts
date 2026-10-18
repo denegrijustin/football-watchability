@@ -53,6 +53,8 @@ test("@smoke all games, conferences, history and logos remain available", async 
     );
   }
   await pick(page, "Conference", "All conferences");
+  // Late in the week (Sunday, Monday) every college game can be final and so off the slate; the card to open is then an NFL one.
+  if (!slate.games.some((g: any) => g.league === "CFB")) await league(page, "NFL");
   await expandAll(page);
   const completedToggle = page.getByRole("button", { name: "Show completed games", exact: true });
   if (await completedToggle.count()) await completedToggle.click();
