@@ -2995,7 +2995,9 @@ details.proj summary strong {
   color: var(--score-color);
 }
 .gc-lines {
-  margin: 0 28px;
+  margin: 12px auto;
+  width: min(calc(100% - 56px), 440px);
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: 0.8125rem;
   font-variant-numeric: tabular-nums;
@@ -3006,9 +3008,20 @@ details.proj summary strong {
   text-align: center;
   color: var(--text-2);
 }
+.gc-lines thead th:first-child,
+.gc-lines tbody th {
+  width: 22%;
+}
 .gc-lines tbody th {
   text-align: left;
   color: var(--text);
+}
+.gc-watch-note {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--muted);
 }
 .gc-lines .t {
   font-weight: 800;
@@ -3500,7 +3513,8 @@ details.proj summary strong {
     order: 3;
   }
   .gc-lines {
-    margin: 0 16px;
+    margin: 10px auto;
+    width: calc(100% - 32px);
   }
   .gc-grid,
   .gc-tb,
@@ -8033,10 +8047,6 @@ select,
 }
 
 /* ---------- Sorting completed games ---------- */
-.done-sort {
-  flex-wrap: wrap;
-  max-width: 100%;
-}
 .section-head .done-sort {
   margin-left: auto;
 }
@@ -8053,7 +8063,79 @@ select,
     width: 100%;
   }
 }
-.segmented[aria-label="Sort games by"] {
-  flex-wrap: wrap;
+/* Sort menus stay on one row; on a narrow screen the row scrolls sideways instead of wrapping into a second line. */
+.segmented[aria-label="Sort games by"],
+.done-sort {
+  flex-wrap: nowrap;
   max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.segmented[aria-label="Sort games by"]::-webkit-scrollbar,
+.done-sort::-webkit-scrollbar {
+  display: none;
+}
+.segmented[aria-label="Sort games by"] button,
+.done-sort button {
+  flex: none;
+  white-space: nowrap;
+}
+
+/* Insanity cards: the watch score beside the insanity score, and each team's SP+ / NFL+ rank beside its name. */
+.ic-watch {
+  padding: 1px 8px;
+  border-radius: 99px;
+  background: rgb(255 255 255 / 10%);
+  color: var(--text-2);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+.ic-watch strong {
+  color: var(--text);
+  font-weight: 800;
+}
+.ic-watch.real {
+  background: color-mix(in srgb, var(--lime) 22%, transparent);
+}
+.ic-abbr .plus-rank {
+  margin-right: 5px;
+  padding: 0 5px;
+  border-radius: 5px;
+  background: rgb(255 255 255 / 14%);
+  color: var(--text);
+  font-size: 0.75rem;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+/* Sort menus: full names on a computer, short ones on a phone so the whole menu fits one row. */
+.sort-short {
+  display: none;
+}
+@media (max-width: 760px) {
+  .sort-long {
+    display: none;
+  }
+  .sort-short {
+    display: inline;
+  }
+  .segmented[aria-label="Sort games by"] button,
+  .done-sort button {
+    padding-inline: 10px;
+  }
+  .ic-top {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+  .ic-ins {
+    white-space: nowrap;
+  }
+}
+
+.ic-ins-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  opacity: 0.85;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }

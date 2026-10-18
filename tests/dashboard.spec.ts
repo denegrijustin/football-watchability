@@ -53,6 +53,8 @@ test("@smoke all games, conferences, history and logos remain available", async 
     );
   }
   await pick(page, "Conference", "All conferences");
+  // Late in the week (Sunday, Monday) every college game can be final and so off the slate; the card to open is then an NFL one.
+  if (!slate.games.some((g: any) => g.league === "CFB")) await league(page, "NFL");
   await expandAll(page);
   const completedToggle = page.getByRole("button", { name: "Show completed games", exact: true });
   if (await completedToggle.count()) await completedToggle.click();
@@ -1131,10 +1133,14 @@ test("completed games can be sorted by watch score, insanity or highest ranked, 
   expect(watch.length).toBeGreaterThan(1);
   expect(watch).toEqual([...watch].sort((a, b) => b - a));
   await group.getByRole("button", { name: "Highest ranked" }).click();
-  const best = (await ids()).map((id) => {
-    const ranks = (byId.get(id)?.teams ?? []).map((t: any) => t.ranks?.overall).filter((n: any) => typeof n === "number" && n > 0);
-    return ranks.length ? Math.min(...ranks) : Infinity;
-  });
+  // the rank each card shows beside its teams (SP+ for college): the better team's rank leads, so the best of each card never rises down the list
+  const best = await page.locator(".week-block").first().locator("article[aria-labelledby^='r-']").evaluateAll((els) =>
+    els.map((e) => {
+      const n = [...e.querySelectorAll(".plus-rank [aria-hidden]")].map((x) => +(x.textContent ?? "NaN")).filter((x) => x > 0);
+      return n.length ? Math.min(...n) : Infinity;
+    }),
+  );
+  expect(best.length).toBeGreaterThan(1);
   expect(best).toEqual([...best].sort((a, b) => a - b));
   // with everything showing, the order is still the most insane first
   await page.getByLabel("Status", { exact: true }).selectOption({ label: "All status" });

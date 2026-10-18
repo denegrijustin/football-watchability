@@ -30,12 +30,11 @@ export const rankGames = (games: LedgerGame[]) =>
   [...games].sort((a, b) => b.insanity - a.insanity || b.swing - a.swing || b.date.localeCompare(a.date));
 
 export type InsanitySort = "insanity" | "kickoff" | "margin" | "watch" | "rank";
-export const INSANITY_SORTS: { id: InsanitySort; label: string; note: string }[] = [
+export const INSANITY_SORTS: { id: InsanitySort; label: string; short?: string; note: string }[] = [
   { id: "insanity", label: "Insanity", note: "Most insane first" },
-  { id: "kickoff", label: "Kickoff", note: "Most recent first" },
-  { id: "margin", label: "Margin", note: "Closest finish first" },
-  { id: "watch", label: "Watch score", note: "Highest watch score first" },
-  { id: "rank", label: "Highest ranked", note: "Best-ranked team first (ESPN FPI)" },
+  { id: "margin", label: "Score margin", short: "Margin", note: "Closest finish first" },
+  { id: "watch", label: "Watch score", note: "Highest realized watch score first" },
+  { id: "rank", label: "Highest ranked", short: "Ranked", note: "Best-ranked team first (ESPN FPI)" },
 ];
 const marginOf = (g: LedgerGame) => Math.abs(g.away.score - g.home.score);
 /** The games in the chosen order. Insanity is the ranking itself; the others break ties by it. */

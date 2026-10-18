@@ -1,10 +1,10 @@
 name: Scheduled refresh
 # Refreshes the board at 8am Central on Tuesday, Thursday, Friday, Sunday and
-# Monday, then deploys it:
+# Monday (and again at 3am Central on Sunday), then deploys it:
 #   Tue  new week's slate (Tue–Mon window), plus Monday night's final archived
 #   Thu  midweek update (lines, weather, injuries in odds)
 #   Fri  Thursday games move to Final with forecast vs actual
-#   Sun  Saturday college games move to Final
+#   Sun  Saturday college games move to Final (3am, and again at 8am)
 #   Mon  Sunday NFL games move to Final
 # Plus an hourly check: when a game kicked off 3–9 hours ago and isn't final
 # on the site yet, or ESPN shows any FBS or NFL game final that finals.json lacks
@@ -21,6 +21,9 @@ on:
   schedule:
     - cron: "2 13 * * 0,1,2,4,5"
     - cron: "2 14 * * 0,1,2,4,5"
+    # Sunday 3am Central: the college week's last game is over, so its finals land before anyone wakes up.
+    - cron: "2 8 * * 0"
+    - cron: "2 9 * * 0"
     - cron: "37 * * * *"
   workflow_dispatch:
     inputs:
@@ -51,6 +54,8 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then mode=daily
           elif [ "$sched" = "2 13 * * 0,1,2,4,5" ] && [ "$offset" = "-0500" ]; then mode=daily
           elif [ "$sched" = "2 14 * * 0,1,2,4,5" ] && [ "$offset" = "-0600" ]; then mode=daily
+          elif [ "$sched" = "2 8 * * 0" ] && [ "$offset" = "-0500" ]; then mode=daily
+          elif [ "$sched" = "2 9 * * 0" ] && [ "$offset" = "-0600" ]; then mode=daily
           elif [ "$sched" = "37 * * * *" ]; then mode=check
           fi
           echo "Chicago offset $offset, schedule '$sched' -> mode=$mode"
