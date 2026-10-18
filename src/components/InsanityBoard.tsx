@@ -433,9 +433,10 @@ function InsanityCard({ g, rank, showWeek, onOpen, live, fresh }: { g: LedgerGam
     <>
       <div className="ic-top">
         <span className="ic-rank">#{rank}</span>
-        <span className="ic-ins" title="Insanity score">
-          <strong>{g.insanity}</strong> {tierLabel(g.tier)}
+        <span className="ic-ins" title="Insanity score: how wild the game was, from its win-probability line">
+          <small className="ic-ins-label">Insanity</small> <strong>{g.insanity}</strong> {tierLabel(g.tier)}
         </span>
+        <span className="ic-watch margin" title="Final score margin">Margin <strong>{Math.abs(g.away.score - g.home.score)}</strong></span>
         {forecastScoreOf(g.id) != null && <span className="ic-watch" title="Watch score forecast before kickoff (team quality, competitiveness, stakes)">Forecast <strong>{forecastScoreOf(g.id)}</strong></span>}
         {watchScoreOf(g.id) != null && <span className="ic-watch real" title="Watch score realized: re-scored from how the game was actually played">Watch <strong>{watchScoreOf(g.id)}</strong></span>}
         {live != null && <span className="ic-live" title="In progress: scored from the live win-probability line">LIVE{live ? ` · ${live}` : ""}</span>}

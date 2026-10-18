@@ -5,7 +5,7 @@ import { currentPlusRanks, plusRankFor, type TeamRef } from "./plusRanks";
 /** How completed games can be ordered on every tab that lists them. */
 export type DoneSort = "watch" | "insanity" | "rank";
 export const DONE_SORTS: { id: DoneSort; label: string; short?: string; note: string }[] = [
-  { id: "watch", label: "Watch score", short: "Watch", note: "Highest watch score first" },
+  { id: "watch", label: "Watch score", note: "Highest realized watch score first" },
   { id: "insanity", label: "Most insane", note: "Highest insanity score first" },
   { id: "rank", label: "Highest ranked", short: "Ranked", note: "Best-ranked team first (the SP+ / NFL+ rank beside each team)" },
 ];
@@ -13,7 +13,7 @@ export const DONE_SORTS: { id: DoneSort; label: string; short?: string; note: st
 /** What a sort needs to know about a game, whichever list it comes from. */
 export type DoneRef = { id: string | null | undefined; league: string; teams: TeamRef[]; /** ranks already known for the teams (the Upset Meter's), in place of the current SP+ / NFL+ ones */ ranks?: (number | null)[] };
 
-type Keys = { watch: number; insanity: number };
+type Keys = { watch: number; insanity: number; forecast: number };
 let byId: Map<string, Keys> | null = null;
 /** Insanity scores from the season ledger, which reaches back past the archive's last two weeks (set once a tab has loaded it). */
 const ledgerInsanity = new Map<string, number>();
@@ -27,6 +27,7 @@ function keys(id: string | null | undefined): Keys {
     for (const r of results) {
       byId.set(r.espnId, {
         watch: r.actual.score,
+        forecast: r.forecast.score,
         insanity: insanity(r.wp, { final: true, overtime: r.final.overtime })?.score ?? -1,
       });
     }
@@ -34,7 +35,7 @@ function keys(id: string | null | undefined): Keys {
   const k = byId.get(String(id ?? ""));
   if (k) return k;
   // Not in the archive: only the ledger knows it (an earlier week), and it has the insanity score but no watch score.
-  return { watch: -1, insanity: ledgerInsanity.get(String(id ?? "")) ?? -1 };
+  return { watch: -1, forecast: forecastScoreOf(id) ?? -1, insanity: ledgerInsanity.get(String(id ?? "")) ?? -1 };
 }
 
 /** The watch score forecast before kickoff (the archive keeps it with the result; a game not yet archived still has it on the slate). */
@@ -66,8 +67,8 @@ function rankKey(ref: DoneRef): number {
 /** Compare two finished games under a sort; ties fall back to the other measures, then to the caller's own order. */
 export function compareDone(by: DoneSort, a: DoneRef, b: DoneRef) {
   const ka = keys(a.id), kb = keys(b.id);
-  const val = (k: Keys, r: DoneRef, m: "watch" | "insanity" | "rank") => (m === "rank" ? rankKey(r) : k[m]);
-  const order: ("watch" | "insanity" | "rank")[] = by === "watch" ? ["watch", "insanity"] : by === "rank" ? ["rank", "watch", "insanity"] : ["insanity", "watch"];
+  const val = (k: Keys, r: DoneRef, m: "watch" | "forecast" | "insanity" | "rank") => (m === "rank" ? rankKey(r) : k[m]);
+  const order: ("watch" | "forecast" | "insanity" | "rank")[] = by === "watch" ? ["watch", "forecast", "insanity"] : by === "rank" ? ["rank", "watch", "insanity"] : ["insanity", "watch"];
   for (const m of order) {
     const x = val(ka, a, m), y = val(kb, b, m);
     if (x !== y) return y - x || 0;
