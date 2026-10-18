@@ -175,8 +175,8 @@ export function InsanityBoard({ defaultLeague }: { defaultLeague: "NFL" | "CFB" 
   const isLiveRow = (g: LedgerGame) => (g as Partial<LiveLedgerGame>).live === true;
   const liveRows = list.filter(isLiveRow);
   const isFreshRow = (g: LedgerGame) => (g as Partial<LiveLedgerGame>).live === false;
-  const freshRows = list.filter(isFreshRow);
-  const finished = list.filter((g) => !isLiveRow(g) && !isFreshRow(g));
+  // Games that just ended and wait for the hourly rebuild stay in the list, in the chosen order, marked FINAL.
+  const finished = list.filter((g) => !isLiveRow(g));
   const avg = list.length ? Math.round(list.reduce((a, g) => a + g.insanity, 0) / list.length) : 0;
   const wild = list.filter((g) => g.tier === "unhinged" || g.tier === "witching").length;
   const nameOf = league === "NFL" ? "NFL" : "College";
@@ -270,19 +270,9 @@ export function InsanityBoard({ defaultLeague }: { defaultLeague: "NFL" | "CFB" 
             </ol>
           </>
         )}
-        {freshRows.length > 0 && (
-          <>
-            <h3 className="micro-label ib-live-head ib-fresh-head">Final · scored from the live feed until the hourly rebuild archives it</h3>
-            <ol className="ib-cards ib-live-cards">
-              {freshRows.map((g) => (
-                <InsanityCard key={g.id} g={g} rank={rankOf.get(g.id) ?? 0} fresh showWeek={scope === "season"} onOpen={() => (known.has(g.id) ? openGame(g.id) : openGame(g.id, stubOf(g)))} />
-              ))}
-            </ol>
-          </>
-        )}
         <ol className="ib-cards">
           {finished.slice(0, shown).map((g, i) => (
-            <InsanityCard key={g.id} g={g} rank={rankOf.get(g.id) ?? i + 1} showWeek={scope === "season"} onOpen={() => (known.has(g.id) ? openGame(g.id) : openGame(g.id, stubOf(g)))} />
+            <InsanityCard key={g.id} g={g} rank={rankOf.get(g.id) ?? i + 1} fresh={isFreshRow(g)} showWeek={scope === "season"} onOpen={() => (known.has(g.id) ? openGame(g.id) : openGame(g.id, stubOf(g)))} />
           ))}
         </ol>
         </>

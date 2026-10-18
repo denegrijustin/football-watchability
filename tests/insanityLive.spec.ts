@@ -74,14 +74,14 @@ test("a game that ended since the last rebuild is scored from its win-probabilit
   await page.getByRole("button", { name: "Insanity", exact: true }).click();
   const group = page.getByRole("group", { name: "Ranking" });
   await group.getByRole("button", { name: "Season" }).click();
-  // It is pinned above the ranked list (whatever its rank), tagged FINAL, with its score.
-  await expect(page.locator(".ib-fresh-head")).toContainText("Final");
-  const card = page.locator(".ib-live-cards > li", { has: page.locator(".ic-fresh") }).first();
+  // It sits in the ranked list at its place under the chosen sort (not pinned above it), tagged FINAL, with its score.
+  for (let i = 0; i < 40 && !(await page.locator(".ic-fresh").count()); i++) await page.getByRole("button", { name: /^Show more/ }).click(); // it can rank beyond the first page
+  const card = page.locator(".ib-cards > li", { has: page.locator(".ic-fresh") }).first();
   await expect(card).toBeVisible();
   await expect(card.locator(".ic-fresh")).toHaveText("FINAL");
   await expect(card.locator(".ic-teams")).toContainText("27");
   expect(Number(await card.getAttribute("data-insanity"))).toBeGreaterThan(50);
-  await expect(page.locator(".ib-live-head:not(.ib-fresh-head)")).toHaveCount(0); // it is a final, not a live game
+  await expect(page.locator(".ib-live-head")).toHaveCount(0); // it is a final, not a live game
   // And it is not listed twice.
   await expect(page.locator(".ic-fresh")).toHaveCount(1);
 });
