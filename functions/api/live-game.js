@@ -10,7 +10,7 @@ export async function onRequestGet({ request, waitUntil }) {
   if (!["nfl", "cfb"].includes(league) || !/^\d{6,12}$/.test(event ?? ""))
     return new Response(JSON.stringify({ error: "league=nfl|cfb and event=ID required" }), { status: 400 });
   const load = async () => {
-    const res = await game({ request: new Request(`${url.origin}/api/game?league=${league}&event=${event}&fresh=4`) });
+    const res = await game({ request: new Request(`${url.origin}/api/game?league=${league}&event=${event}&fresh=4${url.searchParams.get("format") === "raw" ? "&format=raw" : ""}`) });
     return res.ok ? res.text() : null;
   };
   return eventStream("game", load, waitUntil, request.signal);

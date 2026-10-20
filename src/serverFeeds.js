@@ -23,7 +23,7 @@ export async function eventStream(event, load, _waitUntil, signal) {
   try { body = await load(); } catch { /* reconnect and retain the last good snapshot */ }
   if (signal?.aborted) return new Response(null, { status: 204 });
   // A failed upstream read must not become a successful freshness event.
-  const data = body ? `event: ${event}\ndata: ${body}\n\n` : ": unavailable\n\n";
+  const data = body ? `event: ${event}\ndata: ${body.replace(/\r?\n/g, "\ndata: ")}\n\n` : ": unavailable\n\n";
   return new Response(`retry: ${STREAM_STEP_MS}\n\n${data}`, {
     headers: { "content-type": "text/event-stream", "cache-control": "no-store", "x-accel-buffering": "no" },
   });

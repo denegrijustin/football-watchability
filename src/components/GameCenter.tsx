@@ -1,3 +1,4 @@
+import { decodeGame } from '../gameFeed';
 import { provisionalActual } from "../provisionalScore";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { ART_COUNT, attributePlays, impact, summarizeEvents, type ImpactEvent, type PlayLog, type PlayerRow } from "../playImpact";
@@ -57,8 +58,8 @@ export type LiveGame = {
 const PATHS: Record<string, string> = { nfl: "nfl", cfb: "college-football" };
 async function fetchGame(league: string, id: string): Promise<LiveGame | null> {
   try {
-    const r = await fetch(`/api/game?league=${league}&event=${id}`, { cache: "no-store" });
-    if (r.ok && (r.headers.get("content-type") ?? "").includes("json")) return rename(await r.json());
+    const r = await fetch(`/api/game?league=${league}&event=${id}&format=raw`, { cache: "no-store" });
+    if (r.ok && (r.headers.get("content-type") ?? "").includes("json")) return rename(await decodeGame(await r.json(), league));
   } catch {
     /* fall through */
   }
@@ -101,9 +102,10 @@ function useLiveGame(league: string | null, id: string | null, started: boolean)
     };
     tick();
     // The open Game Center also gets the summary pushed the moment it changes (the polling above stays as the fallback).
-    stream = openStream<LiveGame>(`/api/live-game?league=${league}&event=${id}`, "game", (g) => {
+    stream = openStream<LiveGame>(`/api/live-game?league=${league}&event=${id}&format=raw`, "game", async (g) => {
       if (stop) return;
-      const next = rename(g) as LiveGame;
+      const next = rename(await decodeGame(g, league)) as LiveGame;
+      if (stop) return;
       setGame(next);
       setUpdated(new Date());
       const l = liveFromSummary(next as never, id);

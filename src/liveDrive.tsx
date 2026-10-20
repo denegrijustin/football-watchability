@@ -1,3 +1,4 @@
+import { decodeGame } from './gameFeed';
 import { useEffect, useRef, useState } from "react";
 import { logos, teamColor } from "./data";
 import { rename } from "./data/load";
@@ -36,8 +37,8 @@ async function fetchSummary(league: string, id: string): Promise<Summary | null>
   if (hit && Date.now() - hit.at < POLL_MS - 1000) return hit.data;
   let data: Summary | null = null;
   try {
-    const r = await fetch(`/api/game?league=${PATHS[league]}&event=${id}`, { cache: "no-store" });
-    if (r.ok && (r.headers.get("content-type") ?? "").includes("json")) data = rename(await r.json());
+    const r = await fetch(`/api/game?league=${PATHS[league]}&event=${id}&format=raw`, { cache: "no-store" });
+    if (r.ok && (r.headers.get("content-type") ?? "").includes("json")) data = rename(await decodeGame(await r.json(), PATHS[league]));
   } catch {
     /* offline: keep what we had */
   }
