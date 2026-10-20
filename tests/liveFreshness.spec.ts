@@ -54,7 +54,7 @@ test("while a game is live the board asks for scores every 15 seconds, and a sco
   await expect(card.locator(".team-score").first()).toHaveText("21");
 });
 
-test("/api/live is an event stream that sends the scores as they change, and /api/scores honours fresh= by refetching a copy that is too old", async () => {
+test("live streams send one snapshot per execution, reconnect after four seconds, and honour cache freshness", async () => {
   const g = globalThis as unknown as { caches: unknown; fetch: typeof fetch };
   const realFetch = g.fetch;
   const store = new Map<string, Response>();
@@ -67,22 +67,17 @@ test("/api/live is an event stream that sends the scores as they change, and /ap
   try {
     const res = await liveHandler({ request: new Request("https://x/api/live?league=cfb&date=20261017") } as never);
     expect(res.headers.get("content-type")).toBe("text/event-stream");
-    const reader = res.body!.getReader();
-    const dec = new TextDecoder();
-    let text = "";
-    const read = async () => { text += dec.decode((await reader.read()).value); };
-    await read(); // retry:
-    await read(); // the first scores
+    const text = await res.text();
+    expect(text).toContain("retry: 4000");
     expect(text).toContain("event: scores");
     expect(text).toContain('"away":7');
     expect(asked).toBe(1);
-    // a touchdown: the next look (a copy older than 4 seconds is refetched) sends it
+    // Reading to EOF does not schedule a server polling loop. Reconnection obtains the next snapshot.
     away = 14;
     for (const k of store.keys()) store.set(k, new Response(await store.get(k)!.text(), { headers: { "content-type": "application/json", "x-fetched": String(Date.now() - 6000) } }));
-    await read();
-    await read();
-    expect(text).toContain('"away":14');
-    await reader.cancel();
+    const next = await liveHandler({ request: new Request("https://x/api/live?league=cfb&date=20261017") } as never);
+    expect(await next.text()).toContain('"away":14');
+    expect(asked).toBe(2);
   } finally {
     g.fetch = realFetch;
   }
@@ -118,4 +113,18 @@ test("the header says how fresh the live scores are, and the Game Center shows w
   await page.clock.resume();
   await page.locator(".board-section .game-card", { hasText: a.name }).first().locator(".cc-gc").click();
   await expect(page.locator("dialog.gc .gc-head")).toContainText("21");
+});
+
+test('the browser reconnects a completed one-snapshot stream and receives the next score', async ({ page }) => {
+  const g = slate.games.find((x: any) => x.league === 'NFL');
+  await page.clock.install({ time: new Date(g.date).getTime() + 90 * 60e3 });
+  const board = (away: number) => slate.games.map((x: any) => ({ id: x.espnId, state: x.espnId === g.espnId ? 'in' : 'pre', detail: '5:12 - 3rd', away, home: 17, ball: null }));
+  await page.route('**/api/scores**', r => r.fulfill({ json: board(14) }));
+  await page.route('**/api/flow**', r => r.fulfill({ json: { wp: [] } }));
+  const snapshots = new Map<string, number>();
+  await page.route('**/api/live?**', r => { const key = r.request().url(); const count = (snapshots.get(key) ?? 0) + 1; snapshots.set(key, count); return r.fulfill({ status: 200, contentType: 'text/event-stream', body: `retry: 4000\n\nevent: scores\ndata: ${JSON.stringify(board(count > 1 ? 21 : 14))}\n\n` }); });
+  await page.goto('/?league=NFL');
+  await expect.poll(() => Math.max(0, ...snapshots.values()), { timeout: 10000 }).toBeGreaterThan(1);
+  const card = page.locator('.board-section .game-card', { hasText: g.teams[0].name }).first();
+  await expect(card.locator('.team-score').first()).toHaveText('21');
 });

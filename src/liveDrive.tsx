@@ -4,7 +4,7 @@ import { rename } from "./data/load";
 import { FootballIcon, liveFromSummary, useReportLive } from "./live";
 import { LogoMark } from "./logoTone";
 import { helmetFor } from "./helmets";
-import { WeatherLayer, weatherCaption } from "./WeatherFx";
+import { WeatherLayer, weatherCaption } from "./WeatherEffects";
 import { ConfMark } from "./ConfMark";
 import { EndZones, EZ_H, EZ_W } from "./sim/EndZones";
 import { endzoneFor } from "./sim/endzone";

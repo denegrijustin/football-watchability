@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { teamColor } from "./data";
 import type { GameBadge } from "./gameLogo";
-import { WeatherLayer } from "./WeatherFx";
+import { WeatherLayer } from "./WeatherEffects";
 import type { WeatherLike } from "./weatherFx";
 import { FieldArt, type Side } from "./halftime";
 import { NFL_HALFTIME_MS, actFor, clockText, firstSeen, halftimeLeft } from "./halftimeLogic";

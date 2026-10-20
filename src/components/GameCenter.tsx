@@ -16,8 +16,8 @@ import { InsanityMeter } from "./InsanityMeter";
 import { Headshot } from "./Headshot";
 import { GameDetails } from "./GameDetails";
 import { FootballIcon, liveFromSummary, useLive, useReportLive } from "../live";
-import { openStream } from "../liveStream";
-import { LastPlay, latestShape } from "../LastPlay";
+import { openStream, type Stream } from "../liveStream";
+import { LastPlay, latestShape } from "../LastPlayView";
 import type { WeatherLike } from "../weatherFx";
 import { HalftimeBand } from "../halftime";
 import { HalftimeAct } from "../nflHalftime";
@@ -80,8 +80,14 @@ function useLiveGame(league: string | null, id: string | null, started: boolean)
     if (!id || !league || !started) return;
     let stop = false;
     let timer: ReturnType<typeof setTimeout>;
+    let stream: Stream | undefined;
+    let busy = false;
+    let finished = false;
     const tick = async () => {
+      if (stop || busy || document.hidden || finished) return;
+      busy = true;
       const g = await fetchGame(league, id);
+      busy = false;
       if (stop) return;
       if (g) {
         setGame(g);
@@ -89,23 +95,28 @@ function useLiveGame(league: string | null, id: string | null, started: boolean)
         const l = liveFromSummary(g as never, id);
         if (l) report(l);
       }
+      if (g?.status.state === "post") { finished = true; stream?.close(); }
       // Every 15 seconds while live; a finished game needs one load.
       if (!g || g.status.state === "in") timer = setTimeout(tick, g ? 15_000 : 60_000);
     };
     tick();
     // The open Game Center also gets the summary pushed the moment it changes (the polling above stays as the fallback).
-    const stream = openStream<LiveGame>(`/api/live-game?league=${league}&event=${id}`, "game", (g) => {
+    stream = openStream<LiveGame>(`/api/live-game?league=${league}&event=${id}`, "game", (g) => {
       if (stop) return;
       const next = rename(g) as LiveGame;
       setGame(next);
       setUpdated(new Date());
       const l = liveFromSummary(next as never, id);
       if (l) report(l);
+      if (next.status.state === "post") { finished = true; clearTimeout(timer); stream?.close(); }
     });
+    const visible = () => { clearTimeout(timer); if (!document.hidden) void tick(); };
+    document.addEventListener("visibilitychange", visible);
     return () => {
       stop = true;
       clearTimeout(timer);
-      stream.close();
+      stream?.close();
+      document.removeEventListener("visibilitychange", visible);
     };
   }, [league, id, started]);
   return { game, updated };

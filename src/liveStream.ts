@@ -7,18 +7,36 @@ export type Stream = { close: () => void; /** When the last event arrived (ms), 
 export function openStream<T>(url: string, event: string, onData: (data: T) => void): Stream {
   let last = 0;
   if (typeof EventSource === "undefined") return { close: () => {}, lastAt: () => 0 };
-  const es = new EventSource(url);
-  es.addEventListener(event, (e) => {
-    try {
-      onData(JSON.parse((e as MessageEvent).data));
-      last = Date.now();
-    } catch {
-      /* a malformed event is ignored; the next one carries everything */
-    }
-  });
-  // A response that is not an event stream (the local preview answers every address with the page) closes for good: stop trying.
-  es.onerror = () => {
-    if (es.readyState === EventSource.CLOSED) es.close();
+  let es: EventSource | null = null;
+  let closed = false;
+  const connect = () => {
+    if (closed || document.hidden || es) return;
+    const current = new EventSource(url);
+    es = current;
+    current.addEventListener(event, (e) => {
+      if (closed || document.hidden || es !== current) return;
+      try {
+        onData(JSON.parse((e as MessageEvent).data));
+        last = Date.now();
+      } catch { /* keep the last good snapshot */ }
+    });
+    current.onerror = () => {
+      if (current.readyState === EventSource.CLOSED) current.close();
+    };
   };
-  return { close: () => es.close(), lastAt: () => last };
+  const visible = () => {
+    if (document.hidden) { es?.close(); es = null; }
+    else connect();
+  };
+  document.addEventListener("visibilitychange", visible);
+  connect();
+  return {
+    close: () => {
+      closed = true;
+      es?.close();
+      es = null;
+      document.removeEventListener("visibilitychange", visible);
+    },
+    lastAt: () => last,
+  };
 }

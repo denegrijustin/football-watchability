@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { logos, teamColor } from "./data";
 import type { GameBadge } from "./gameLogo";
 import { LogoMark } from "./logoTone";
-import { WeatherLayer } from "./WeatherFx";
+import { WeatherLayer } from "./WeatherEffects";
 import { ConfMark, confEntry } from "./ConfMark";
 import { EndZones, EZ_H, EZ_W } from "./sim/EndZones";
 import { endzoneFor } from "./sim/endzone";
