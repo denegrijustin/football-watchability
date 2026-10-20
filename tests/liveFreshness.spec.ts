@@ -128,3 +128,22 @@ test('the browser reconnects a completed one-snapshot stream and receives the ne
   const card = page.locator('.board-section .game-card', { hasText: g.teams[0].name }).first();
   await expect(card.locator('.team-score').first()).toHaveText('21');
 });
+
+test('Game Center keeps four-second score updates with short requests and retains the momentum data', async ({ page }) => {
+  const g = slate.games.find((x: any) => x.league === 'NFL'), [a,h] = g.teams;
+  await page.clock.install({ time: new Date(g.date).getTime() + 90 * 60e3 });
+  const full = JSON.parse(readFileSync('tests/fixtures/game-nfl.json', 'utf8'));
+  let away = 14;
+  await page.route('**/api/scores**', r => r.fulfill({ json: slate.games.map((x: any) => ({ id: x.espnId, state: x.espnId === g.espnId ? 'in' : 'pre', detail: '5:12 - 3rd', away: 14, home: 17 })) }));
+  await page.route('**/api/flow**', r => r.fulfill({ json: { wp: [] } }));
+  await page.route('**/api/game**', r => r.fulfill({ json: { id: g.espnId, status: { state: 'in', detail: '5:12 - 3rd', period: 3, clock: '5:12' },
+    teams: [{ id: a.espnId, abbr: a.abbr, name: a.name, homeAway: 'away', score: away, linescores: [], possession: false }, { id: h.espnId, abbr: h.abbr, name: h.name, homeAway: 'home', score: 17, linescores: [], possession: true }],
+    situation: { text: '1st & 10', possession: h.espnId, toGo: 60, redZone: false, lastPlay: 'Pass complete' }, drives: full.drives, curPlays: full.curPlays, plays: full.plays, wp: full.wp, allOffense: [], scoring: [], teamStats: {}, players: {} } }));
+  await page.goto('/?league=NFL');
+  await page.locator('.board-section .game-card', { hasText: a.name }).first().locator('.cc-gc').click();
+  await expect(page.locator('dialog.gc .gc-head')).toContainText('14');
+  away = 21;
+  await page.clock.runFor(4100);
+  await expect(page.locator('dialog.gc .gc-head')).toContainText('21');
+  await expect(page.locator('dialog.gc')).toContainText('Momentum');
+});

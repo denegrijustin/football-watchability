@@ -17,7 +17,6 @@ import { InsanityMeter } from "./InsanityMeter";
 import { Headshot } from "./Headshot";
 import { GameDetails } from "./GameDetails";
 import { FootballIcon, liveFromSummary, useLive, useReportLive } from "../live";
-import { openStream, type Stream } from "../liveStream";
 import { LastPlay, latestShape } from "../LastPlayView";
 import type { WeatherLike } from "../weatherFx";
 import { HalftimeBand } from "../halftime";
@@ -81,7 +80,6 @@ function useLiveGame(league: string | null, id: string | null, started: boolean)
     if (!id || !league || !started) return;
     let stop = false;
     let timer: ReturnType<typeof setTimeout>;
-    let stream: Stream | undefined;
     let busy = false;
     let finished = false;
     const tick = async () => {
@@ -96,28 +94,16 @@ function useLiveGame(league: string | null, id: string | null, started: boolean)
         const l = liveFromSummary(g as never, id);
         if (l) report(l);
       }
-      if (g?.status.state === "post") { finished = true; stream?.close(); }
-      // Every 15 seconds while live; a finished game needs one load.
-      if (!g || g.status.state === "in") timer = setTimeout(tick, g ? 15_000 : 60_000);
+      if (g?.status.state === "post") { finished = true; }
+      // One compressed, cached snapshot every four seconds while live; finals stop and pregame checks continue through kickoff.
+      if (!finished) timer = setTimeout(tick, !g ? 60_000 : g.status.state === "in" ? 4_000 : 15_000);
     };
     tick();
-    // The open Game Center also gets the summary pushed the moment it changes (the polling above stays as the fallback).
-    stream = openStream<LiveGame>(`/api/live-game?league=${league}&event=${id}&format=raw`, "game", async (g) => {
-      if (stop) return;
-      const next = rename(await decodeGame(g, league)) as LiveGame;
-      if (stop) return;
-      setGame(next);
-      setUpdated(new Date());
-      const l = liveFromSummary(next as never, id);
-      if (l) report(l);
-      if (next.status.state === "post") { finished = true; clearTimeout(timer); stream?.close(); }
-    });
     const visible = () => { clearTimeout(timer); if (!document.hidden) void tick(); };
     document.addEventListener("visibilitychange", visible);
     return () => {
       stop = true;
       clearTimeout(timer);
-      stream?.close();
       document.removeEventListener("visibilitychange", visible);
     };
   }, [league, id, started]);
@@ -339,7 +325,7 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
           {game && (game.teams[0].linescores.length > 0) && <Linescore game={game} />}
           {updated && state === "in" && (
             <p className="gc-updated" role="status">
-              Updating every 15 seconds · last {updated.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", second: "2-digit" })}
+              Updating every 4 seconds · last {updated.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", second: "2-digit" })}
             </p>
           )}
 
