@@ -42,7 +42,7 @@ test.describe("the NFL+ tab", () => {
     await openTab(page);
     await expect(page.getByRole("button", { name: "NFL+" })).toHaveAttribute("aria-pressed", "true");
     await expect(page.locator(".spp .tbl tbody tr:not(.detail)")).toHaveCount(32);
-    for (const name of ["Ratings", "Simulator", "ATS tracker", "Matchups", "Movement", "Team"]) await expect(page.locator(".spp").getByRole("tab", { name })).toBeVisible();
+    for (const name of ["Ratings", "Simulator", "ATS tracker", "Matchups", "Movement", "Team"]) await expect(page.locator(".spp").getByRole("tab", { name, exact: true })).toBeVisible();
     await expect(page.locator(".spp .foot")).toContainText("nflverse");
     expect(await page.getByTestId("nfl-host").evaluate((el) => !!el.shadowRoot)).toBe(true);
     const [sw, iw] = await page.evaluate(() => [document.documentElement.scrollWidth, innerWidth]);
@@ -129,7 +129,7 @@ test.describe("the NFL+ tab", () => {
     const bump = page.locator('.spp svg[aria-label="Bump chart of rating rank by week"]');
     await expect(bump).toBeVisible();
     await expect(bump.locator("path")).toHaveCount(12);
-    await page.locator(".spp").getByRole("tab", { name: "Team" }).click();
+    await page.locator(".spp").getByRole("tab", { name: "Team", exact: true }).click();
     await page.locator('.spp select[aria-label="Team"]').selectOption("KC");
     await expect(page.locator(".spp h2", { hasText: "Kansas City Chiefs" })).toBeVisible();
     await expect(page.locator('.spp svg[aria-label^="Kansas City Chiefs league percentile"] g.pt')).toHaveCount(4 * nfl.ratingsThroughWeek);
