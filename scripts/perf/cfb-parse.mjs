@@ -29,9 +29,13 @@
 //    the previous drive's result (punt, interception, fumble, downs, missed FG); else OTHER (overtime starts).
 //  - startYl: yards to the opponent's goal at the first snap (ESPN's drive.start.yardLine is not consistently oriented, so the first
 //    scrimmage play's yardsToEndzone is used; the drive start text is the fallback).
-//  - Fumbles: fu[0] counts scrimmage plays whose text mentions a fumble ("fumble"), fu[1] those where ESPN flags the play a turnover.
+//  - Fumbles: see HAS_FUMBLES (off): fu stays [0,0] and the fumbles-lost vector slot stays 0; the validator still measures how unreliable the feed is.
 import { EXPLOSIVE, GARBAGE_GAP, V, emptyVec, addPlay, isGarbage, RESULT, HOW } from "./lib.mjs";
 
+/** Fumble support: ESPN's play feed flags fumbles inconsistently (isTurnover missing on sack-fumbles, the "(Own)/(Opponent)" label wrong, fumbles
+ *  missing from the text), so per-game fumble totals agree with the box score only about 60% of the time and fumbles lost about 80-90%. Counted
+ *  in `diag` for the validator but NOT written to the output (fu stays [0,0], RFUM stays 0). Drive results still carry ESPN's FUMBLE (lost). */
+export const HAS_FUMBLES = false;
 const SCRIMMAGE_TYPES = new Set([
   "Rush", "Rushing Touchdown", "Pass Reception", "Pass Incompletion", "Passing Touchdown", "Sack", "Interception",
   "Pass Interception Return", "Interception Return Touchdown", "Fumble", "Fumble Recovery (Own)", "Fumble Recovery (Opponent)", "Safety",
@@ -61,6 +65,20 @@ export function textYards(text) {
   return 0;
 }
 
+const sameAbbr = (a, b) => !!a && !!b && (a === b || a.startsWith(b) || b.startsWith(a));
+/** Yards to the opponent's goal from ESPN's "at ABC 40" spot text; null when it cannot be told which side of the field ABC is. */
+function spotFromText(start, offAbbr, defAbbr) {
+  const t = start?.downDistanceText ?? start?.possessionText ?? "";
+  if (/\bat 50$/.test(t) || /^50$/.test(start?.possessionText ?? "")) return 50;
+  const m = /(?:at |^)([A-Za-z&.\-]+) (\d+)$/.exec(t) ?? /^([A-Za-z&.\-]+) (\d+)$/.exec(start?.possessionText ?? "");
+  if (!m) return null;
+  const a = m[1].toUpperCase(), n = Number(m[2]);
+  const own = sameAbbr(a, offAbbr), theirs = sameAbbr(a, defAbbr);
+  if (own && !theirs) return 100 - n;
+  if (theirs && !own) return n;
+  return null;
+}
+
 function kindOf(type, text) {
   if (type === "Rush" || type === "Rushing Touchdown") return "rush";
   if (type === "Pass Reception" || type === "Pass Incompletion" || type === "Passing Touchdown" || type === "Sack" || /Interception/.test(type ?? "")) return "pass";
@@ -82,10 +100,11 @@ export function parseSummary(sum) {
   if (!home || !away || !Array.isArray(drives) || !drives.length) return null;
   const H = String(home.team.id), A = String(away.team.id);
   const other = (id) => (id === H ? A : H);
+  const abbr = { [H]: String(home.team.abbreviation ?? "").toUpperCase(), [A]: String(away.team.abbreviation ?? "").toUpperCase() };
   const run = { [H]: 0, [A]: 0 };
   const teams = { [H]: { c: emptyVec(), x: emptyVec(), d: [], k: [], fu: [0, 0] }, [A]: { c: emptyVec(), x: emptyVec(), d: [], k: [], fu: [0, 0] } };
   const zero = () => ({ rush: 0, pass: 0, sack: 0, kneel: 0, spike: 0, twoPt: 0, fumbles: 0, fumLost: 0, fumLostSt: 0, fumblesSt: 0 });
-  const diag = { [H]: zero(), [A]: zero(), pts: { [H]: { off: 0, def: 0, st: 0, loose: 0 }, [A]: { off: 0, def: 0, st: 0, loose: 0 } }, homeId: H, awayId: A, finalHome: num(home.score), finalAway: num(away.score), mismatchedOffense: 0 };
+  const diag = { [H]: zero(), [A]: zero(), pts: { [H]: { off: 0, def: 0, st: 0, loose: 0 }, [A]: { off: 0, def: 0, st: 0, loose: 0 } }, homeId: H, awayId: A, finalHome: num(home.score), finalAway: num(away.score), mismatchedOffense: 0, recoveredYl: 0, otherFumblePlays: 0 };
   const skipped = { missing: 0, unclassified: 0, nullified: 0, duplicate: 0 };
   const seenSeq = new Set();
   let nPlays = 0;
@@ -122,9 +141,11 @@ export function parseSummary(sum) {
       if (type === "Kickoff Return Touchdown") dv.kickReturnTd = true;
       if (dv.ylFromKick == null && /^Kickoff/.test(type) && num(p.end?.yardsToEndzone) != null && String(p.end?.team?.id) === team) dv.ylFromKick = num(p.end.yardsToEndzone);
       // A "Penalty" entry that describes a snap and is not marked "NO PLAY" is the play itself (penalty declined, or a foul after the whistle;
-      // its yards come from the text since statYardage is the penalty). Penalties that erase the snap say "NO PLAY" and are not plays.
-      const scrimmage = SCRIMMAGE_TYPES.has(type) || (!type && /sacked|rush|pass/i.test(text)) || (type === "Penalty" && !/NO PLAY/i.test(text) && /sacked|rush|\brun\b|pass/i.test(text));
+      // its yards come from the text since statYardage is the penalty; an incompletion with an enforced penalty, i.e. pass interference, is not a play).
+      // Penalties that erase the snap say "NO PLAY" and are not plays.
+      const scrimmage = SCRIMMAGE_TYPES.has(type) || (!type && /sacked|rush|pass/i.test(text)) || (type === "Penalty" && !/NO PLAY/i.test(text) && !(/incomplete/i.test(text) && /\d+ yards? from/i.test(text)) && /sacked|rush|\brun\b|pass/i.test(text));
       if (scrimmage) classify(p, type, text, margin, period);
+      else if (/fumbl/i.test(text) && type !== "Penalty") diag.otherFumblePlays++;
       bumpScore(p);
     }
 
@@ -134,31 +155,37 @@ export function parseSummary(sum) {
         return;
       }
       if (TWO_PT_RE.test(text)) { diag[team].twoPt++; return; }
+      const spot = num(p.start?.yardsToEndzone);
+      if (dv.anyYl == null && spot != null && spot >= 1) dv.anyYl = spot;
       if (/kneel|victory formation/i.test(text)) { diag[team].kneel++; return; }
       if (/\bspike|spiked\b|clock the ball/i.test(text)) { diag[team].spike++; return; }
       if (/NO PLAY/i.test(text)) { skipped.nullified++; return; }
       const kind = kindOf(type, text);
       if (!kind) { skipped.unclassified++; return; }
-      const down = num(p.start?.down), ytg = num(p.start?.distance), yl = num(p.start?.yardsToEndzone);
+      const down = num(p.start?.down), ytg = num(p.start?.distance);
+      let yl = num(p.start?.yardsToEndzone);
+      // yardsToEndzone is sometimes 0 on a real snap; the spot is still in the text ("3rd & 6 at LOU 40"), so recover it from there.
+      if (yl === 0 || yl == null) { const r = spotFromText(p.start, abbr[team], abbr[opp]); if (r != null) { yl = r; diag.recoveredYl++; } }
       if (down == null || ytg == null || yl == null || down < 1 || down > 4 || ytg < 1 || yl < 1 || yl > 100) { skipped.missing++; return; }
-      // ESPN sometimes appends a second copy of a snap (same sequenceNumber, new id, yardsToEndzone 0, no offense): keep the first valid one.
-      // (sequenceNumber alone is not unique in a game, so the key includes the description.)
-      const key = `${p.sequenceNumber}|${period}|${text.replace(/^\(\d+:\d+\)\s*/, "")}`;
-      if (p.sequenceNumber != null) { if (seenSeq.has(key)) { skipped.duplicate++; return; } seenSeq.add(key); }
+      // ESPN sometimes lists a snap twice (the copy has yardsToEndzone 0 and no offense, or differs only in a name): keep the first.
+      // Some snaps appear twice (e.g. the same fumble with two different "forced by" names): same period, clock, down, distance and opening text.
+      const key = `${period}|${p.clock?.displayValue}|${down}|${ytg}|${text.slice(0, 80)}`;
+      if (seenSeq.has(key)) { skipped.duplicate++; return; }
+      seenSeq.add(key);
       const startTeam = String(p.start?.team?.id ?? "");
       if (startTeam && startTeam !== team) diag.mismatchedOffense++;
       const isInt = /Interception/.test(type) || (!type && /intercept/i.test(text));
       const sack = type === "Sack" || /sacked/i.test(text);
       let yards = num(p.statYardage) ?? 0;
       if (isInt) yards = 0;
-      else if (TEXT_YARD_TYPES.has(type) || !type || type === "Penalty") { const ty = textYards(text); if (ty != null) yards = ty; else if (p.isTurnover) { skipped.unclassified++; return; } }
+      else if (TEXT_YARD_TYPES.has(type) || !type || type === "Penalty") { const ty = textYards(text); if (ty != null) yards = ty; else if (p.isTurnover) { skipped.unclassified++; return; } else if (type === "Penalty") yards = 0; }
       const td = type === "Rushing Touchdown" || type === "Passing Touchdown";
       const fumble = /fumbl/i.test(text) && !isInt;
       // ESPN's isTurnover and its "(Own)/(Opponent)" label are unreliable on sack-fumbles, so a fumble is also lost when it is the last
       // fumble play of a drive that ESPN ends with a fumble result (settled after the loop below).
       const fumLost = fumble && p.isTurnover === true;
       const garbage = isGarbage(period, Math.abs(margin));
-      const pl = { kind, down, ytg, yl, yards, td, sack, int: isInt, fumLost: kind === "rush" && fumLost, margin, epa: null };
+      const pl = { kind, down, ytg, yl, yards, td, sack, int: isInt, fumLost: HAS_FUMBLES && kind === "rush" && fumLost, margin, epa: null };
       addPlay(garbage ? t.x : t.c, pl);
       nPlays++; dv.scrim++; dv.plays++;
       dv.yards += yards;
@@ -168,8 +195,9 @@ export function parseSummary(sum) {
       if (garbage) dv.garbage = 1;
       if (kind === "pass") { diag[team].pass++; if (sack) diag[team].sack++; } else diag[team].rush++;
       if (fumble) {
-        t.fu[0]++; diag[team].fumbles++;
-        if (fumLost) { t.fu[1]++; diag[team].fumLost++; }
+        if (HAS_FUMBLES) t.fu[0]++;
+        diag[team].fumbles++;
+        if (fumLost) { if (HAS_FUMBLES) t.fu[1]++; diag[team].fumLost++; }
         dv.lastFumble = { lost: fumLost, rush: kind === "rush", vec: garbage ? t.x : t.c };
       }
       const thr = kind === "pass" ? EXPLOSIVE.pass : EXPLOSIVE.rush;
@@ -178,17 +206,20 @@ export function parseSummary(sum) {
 
     const lf = dv.lastFumble;
     if (lf && !lf.lost && (resultKey === "FUMBLE" || resultKey === "FUMBLE TD" || resultKey === "FUMBLE RETURN TD")) {
-      t.fu[1]++; diag[team].fumLost++;
-      if (lf.rush) lf.vec[V.RFUM]++;
+      if (HAS_FUMBLES) t.fu[1]++;
+      diag[team].fumLost++;
+      if (HAS_FUMBLES && lf.rush) lf.vec[V.RFUM]++;
     }
     const deltaOff = run[team] - before, deltaOpp = run[opp] - beforeOpp;
     const res = RESULT_MAP[resultKey ?? ""];
     // Not an offensive drive: kickoff-return touchdown filed under the returner, phantom drives around half-ends.
     if (dv.scrim === 0 && (resultKey === "TD" || res == null)) {
-      if (resultKey === "TD") diag.pts[team].st += deltaOff; else diag.pts[team].loose += deltaOff;
-      diag.pts[opp].loose += deltaOpp;
-      // A phantom drive ends the chain: the next drive's start is decided from its own first play.
-      prevResult = null;
+      // (ESPN sometimes files the return touchdown under the kicking team, so whichever side's score moved gets the special-teams points.)
+      const bucket = resultKey === "TD" ? "st" : "loose";
+      diag.pts[team][bucket] += deltaOff;
+      diag.pts[opp][bucket] += deltaOpp;
+      // (A kickoff-return touchdown means the next drive starts with a kickoff; a phantom drive changes nothing.)
+      if (resultKey === "TD") prevResult = RESULT.TD;
       return;
     }
     let result = res ?? RESULT.OTHER;
@@ -201,22 +232,26 @@ export function parseSummary(sum) {
     else if (result === RESULT.FG) diag.pts[team].off += 3;
     else if (result === RESULT.DEF_SCORE || result === RESULT.SAFETY) diag.pts[opp].def += deltaOpp;
     else diag.pts[opp].loose += deltaOpp;
-    if (result !== RESULT.TD && result !== RESULT.FG && deltaOff > 0) diag.pts[team].loose += deltaOff;
+    // Points this team scored during its own drive without an offensive TD/FG: a safety forced on a punt return, a returned blocked kick...
+    if (result !== RESULT.TD && result !== RESULT.FG && deltaOff > 0) diag.pts[team].st += deltaOff;
     const pts = result === RESULT.TD ? Math.min(8, Math.max(6, deltaOff)) : result === RESULT.FG ? 3 : 0;
 
     const sp = num(d.start?.period?.number) ?? num(first?.period?.number) ?? 1;
     const period = Math.min(5, Math.max(1, sp));
     const cs = clockSec(d.start?.clock?.displayValue ?? first?.clock?.displayValue);
     const startSec = period <= 4 ? Math.max(0, (period - 1) * 900 + (900 - (cs ?? 900))) : 3600;
-    let startYl = dv.startYl ?? dv.ylFromKick;
+    let startYl = dv.startYl ?? dv.ylFromKick ?? dv.anyYl;
     if (startYl == null) {
       const m = /^(\S+)\s+(\d+)$/.exec(d.start?.text ?? "");
       if (m) startYl = m[1].toUpperCase() === String(d.team?.abbreviation ?? "").toUpperCase() ? 100 - Number(m[2]) : Number(m[2]);
       else if (/^\d+$/.test(d.start?.text ?? "")) startYl = Number(d.start.text);
     }
-    startYl = startYl ?? 75;
+    startYl = Math.min(99, Math.max(1, startYl ?? 75));
     const secs = clockSec(d.timeElapsed?.displayValue) ?? 0;
-    const how = dv.hasKickoff ? HOW.KICKOFF : (HOW_BY_PREV[prevResult] ?? HOW.OTHER);
+    // A kickoff starts the drive after any score, a safety (free kick), and each half; ESPN does not always list the kickoff play itself.
+    const afterScore = prevResult === RESULT.TD || prevResult === RESULT.FG || prevResult === RESULT.SAFETY || prevResult === RESULT.DEF_SCORE;
+    const halfStart = period <= 4 && (cs ?? 0) >= 895 && (period === 1 || period === 3);
+    const how = dv.hasKickoff || afterScore || halfStart ? HOW.KICKOFF : (HOW_BY_PREV[prevResult] ?? HOW.OTHER);
     const nPl = num(d.offensivePlays) ?? dv.plays;
     t.d.push([period, startSec, startYl, nPl, dv.yards, secs, result, pts, how, Math.min(startYl, dv.minYl ?? startYl), dv.garbage]);
     prevResult = result;

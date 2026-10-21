@@ -157,6 +157,8 @@ jobs:
           # Team-performance tabs (NFL+ and CFP+): drives, situations, big plays and the rest, counted from the same play-by-play. NFL reuses the
           # nflverse file fetched above; each builder keeps the saved file (and records the failure in perf-status.json) when its source fails.
           timeout 300s node scripts/perf/build-nfl.mjs || echo "NFL performance data failed; keeping the saved file"
+          # College: ESPN game summaries (no key). Finished games are fetched once and again within a day of kickoff; later runs make only a handful of calls.
+          timeout 600s node scripts/perf/build-cfb.mjs || echo "college performance data failed; keeping the saved file"
           # Imperialism Map: replays every finished game from the finals the schedule fetches saved (Python, standard library only).
           timeout 120s python3 scripts/imperialism/build.py || echo "imperialism map failed; keeping the saved map"
 
