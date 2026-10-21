@@ -2,7 +2,7 @@ import registry from "./data/conference-logos.json" with { type: "json" };
 import { useSyncExternalStore } from "react";
 import { LogoMark } from "./logoTone";
 
-type Entry = { label: string; color: string; src?: string; remote?: string[] };
+type Entry = { label: string; color: string; src?: string; remote?: string[]; /** The logo is white or light: it sits on a dark chip instead of a light one. */ dark?: boolean };
 const conferences = registry.conferences as Record<string, Entry>;
 
 /** The conference's entry, or null for independents and anything not listed. */
@@ -85,7 +85,7 @@ export function ConfLogo({ conf, size = 20 }: { conf?: string | null; size?: num
   const src = e?.src ?? remote;
   if (!e || !src) return null;
   return (
-    <span data-conf-logo={name} style={{ display: "inline-grid", placeItems: "center", width: size, height: size, borderRadius: size * 0.3, background: "rgba(255,255,255,0.92)", verticalAlign: "middle", flex: "none" }}>
+    <span data-conf-logo={name} style={{ display: "inline-grid", placeItems: "center", width: size, height: size, borderRadius: size * 0.3, background: e.dark ? "rgba(24,24,23,0.95)" : "rgba(255,255,255,0.92)", verticalAlign: "middle", flex: "none" }}>
       <img src={src} alt="" width={size * 0.78} height={size * 0.78} style={{ objectFit: "contain" }} />
     </span>
   );
@@ -100,7 +100,7 @@ export function ConfLogoSvg({ conf, x, y, size = 20 }: { conf?: string | null; x
   if (!e || !src) return null;
   return (
     <g data-conf-logo={name} aria-hidden="true">
-      <rect x={x} y={y} width={size} height={size} rx={size * 0.3} fill="rgba(255,255,255,0.92)" />
+      <rect x={x} y={y} width={size} height={size} rx={size * 0.3} fill={e.dark ? "rgba(24,24,23,0.95)" : "rgba(255,255,255,0.92)"} />
       <image href={src} x={x + size * 0.11} y={y + size * 0.11} width={size * 0.78} height={size * 0.78} preserveAspectRatio="xMidYMid meet" />
     </g>
   );
