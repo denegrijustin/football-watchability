@@ -2,6 +2,7 @@ import type { Cell, SheetSnapshot, Snapshot } from "./snapshotTypes";
 import { dateOf, num, parseRecord, raw, recordOf, str, timeOf } from "./cells";
 import { DIVISIONS, type DivKey, type GameResult, type Model, type PerfRow, type Projection, type SeasonLine, type SmallGame, type Team, type TeamWeek, type TopRow } from "./types";
 import logoMap from "../logoMap";
+import fcsLogos from "../../data/fcs-logos.json" with { type: "json" };
 
 type Keyed = Record<string, number>;
 
@@ -181,6 +182,9 @@ function parsePerf(sh: SheetSnapshot): PerfRow[] {
   return out;
 }
 
+/** An FCS school's logo (ESPN's, fetched by scripts/fetch-fcs-logos.mjs), or null when the school has none yet. */
+const fcsLogo = (name: string): { local: string } | null => { const e = (fcsLogos.teams as Record<string, { src: string }>)[name]; return e ? { local: e.src } : null; };
+
 export function buildModel(snap: Snapshot): Model {
   const sheets = sheetMap(snap);
   const issues: string[] = [];
@@ -217,7 +221,7 @@ export function buildModel(snap: Snapshot): Model {
     let t = byId.get(id);
     if (!t) {
       const lg = (logoMap as Record<string, { local?: string; remote?: string }>)[tw.team];
-      t = { id, name: tw.team, division: tw.division, weeks: {}, top: {}, latest: 0, logo: tw.division === "FBS" && lg ? lg : null };
+      t = { id, name: tw.team, division: tw.division, weeks: {}, top: {}, latest: 0, logo: tw.division === "FBS" && lg ? lg : tw.division === "FCS" ? fcsLogo(tw.team) : null };
       byId.set(id, t); teams.push(t);
       byName.set(tw.team, [...(byName.get(tw.team) ?? []), t]);
     }

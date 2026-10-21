@@ -1,5 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { usePerf } from "./data";
+import { ConfLogo } from "../ConfMark";
 import { indexOf, leagueSummaries, summarize } from "./engine";
 import type { PerfSelection } from "./types";
 
@@ -133,7 +134,7 @@ export function TeamBanner({ showOpp }: { showOpp?: boolean }) {
   const one = (id: string, color: string, role: string) => (
     <div className="pbn" style={{ ["--bn" as string]: color }}>
       <span className="pbn-logo">{adapter.mark(id, 44)}</span>
-      <span className="pbn-text"><b>{adapter.name(id)}</b><small>{[adapter.conf(id), `${record(id)} in games counted`].filter(Boolean).join(" · ")}</small></span>
+      <span className="pbn-text"><b>{adapter.name(id)}</b><small className="pbn-sub">{adapter.conf(id) && <><ConfLogo conf={adapter.conf(id)} size={16} />{adapter.conf(id)} · </>}{record(id)} in games counted</small></span>
       <span className="sr-only">{role}</span>
     </div>
   );

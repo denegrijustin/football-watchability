@@ -23,7 +23,10 @@ const norm = (s = "") => s.toLowerCase().replace(/[^a-z0-9]+/g, "");
 
 // ESPN's conference listing: names, group ids and (usually) a logo.
 const listings = [];
+// ONLY=FCS limits the run to the FCS conferences (so the FBS and NFL entries keep loading from ESPN's CDN in the browser, as before).
+const ONLY = process.env.ONLY ?? "";
 for (const url of [
+  "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard/conferences?groups=81",
   "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard/conferences",
   "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard/conferences",
 ]) {
@@ -32,7 +35,7 @@ for (const url of [
     if (r.ok) {
       const j = await r.json();
       for (const c of j.conferences ?? []) listings.push(c);
-      if (listings.length) break;
+      if (listings.length && !url.includes("groups=81")) break;
     }
   } catch {}
 }
@@ -43,6 +46,7 @@ const NCAA_IDS = { SEC: 8, "Big Ten": 5, "Big 12": 4, ACC: 1, "Pac-12": 9, "Moun
 const candidates = (name) => {
   const out = [];
   const l = listed(name);
+  if (registry.conferences[name]?.remote) out.push(...registry.conferences[name].remote);
   if (l?.logo) out.push(l.logo);
   if (Array.isArray(l?.logos)) out.push(...l.logos.map((x) => x.href));
   const id = l?.groupId ?? NCAA_IDS[name];
@@ -56,6 +60,7 @@ const candidates = (name) => {
 
 const report = { fetched: [], kept: [], missing: [] };
 for (const [name, entry] of Object.entries(registry.conferences)) {
+  if (ONLY === "FCS" && entry.division !== "FCS") continue;
   if (entry.src && !FORCE) {
     report.kept.push(name);
     continue;

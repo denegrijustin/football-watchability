@@ -96,7 +96,7 @@ const versionFile = (): Plugin => ({
 
 // Logos are cached for a year; a changed logo set changes this stamp, which is appended to every logo URL.
 const logoVersion = createHash("sha1")
-  .update(readdirSync(new URL("./public/logos", import.meta.url)).sort().map((f) => {
+  .update((readdirSync(new URL("./public/logos", import.meta.url), { recursive: true }) as string[]).filter((f) => /\.\w+$/.test(f)).sort().map((f) => {
     const b = readFileSync(new URL(`./public/logos/${f}`, import.meta.url));
     return `${f}:${b.length}:${createHash("sha1").update(b).digest("hex").slice(0, 8)}`;
   }).join("|"))

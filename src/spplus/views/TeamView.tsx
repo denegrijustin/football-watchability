@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { ConfLogo, hasConfLogo } from "../../ConfMark";
 import { useData } from "../data/useData";
 import { useRoute } from "../store";
 import { conferenceRanks, dateLabel, fmt, fmtPct, fmtSigned, ord, percentile, rowsFor, timeLabel } from "../data/derive";
@@ -92,7 +93,7 @@ export default function TeamView() {
         <div style={{ flex: 1, minWidth: 180 }}>
           <h2 style={{ fontSize: 20, margin: 0 }}>{team.name}</h2>
           <p className="sub" style={{ margin: 0 }}>
-            <i style={{ display: "inline-block", width: 8, height: 8, borderRadius: 2, background: confColor(tw?.conf), marginRight: 6 }} />{tw?.conf ?? "—"} · {DIV_LABEL[team.division]} · {tw?.record ? tw.record.text : "no record"}{tw?.record?.recovered ? "*" : ""} · Week {latest}
+            {hasConfLogo(tw?.conf) ? <span style={{ marginRight: 6 }}><ConfLogo conf={tw?.conf} size={18} /></span> : <i style={{ display: "inline-block", width: 8, height: 8, borderRadius: 2, background: confColor(tw?.conf), marginRight: 6 }} />}{tw?.conf ?? "—"} · {DIV_LABEL[team.division]} · {tw?.record ? tw.record.text : "no record"}{tw?.record?.recovered ? "*" : ""} · Week {latest}
           </p>
         </div>
         <div className="kv" style={{ gridTemplateColumns: "repeat(4, auto)", gap: "4px 20px" }}>

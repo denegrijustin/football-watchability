@@ -68,6 +68,12 @@ export function ConfMark({ conf, cx, cy, size }: { conf?: string | null; cx: num
 /** The names the SP+ sheet and the NFL ratings use for the conferences, by the name the logo registry has. */
 const ALIAS: Record<string, string> = { AAC: "American", MWC: "Mountain West", CUSA: "Conference USA", MAC: "Mid-American", "Big Ten": "Big Ten", "Indies": "" };
 
+/** Whether a logo exists (or is on its way from ESPN's CDN) for the conference as the SP+ sheet or the NFL ratings name it. */
+export const hasConfLogo = (conf?: string | null) => {
+  const e = confEntry(conf != null ? (conf in ALIAS ? ALIAS[conf] : conf) : null);
+  return !!(e && (e.src || e.remote?.length));
+};
+
 /**
  * A conference's official logo as a small image on a light chip (it has to read on a dark page), for tables and lists. Nothing at all for a conference
  * with no logo (independents), so the caller keeps its own marker.
