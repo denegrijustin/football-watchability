@@ -43,6 +43,16 @@ if (data.nfl && days(data.nfl.updatedAt) > 10) warn(`NFL data (nflverse) was bui
 if (existsSync(new URL("dist/", root)) && !existsSync(new URL("dist/data/spplus-lite.json", root))) problems.push("dist/data/spplus-lite.json was not built");
 if (data.finals && (!Array.isArray(data.finals.games) || data.finals.games.some((g) => !g.id || !g.a || !g.h || !Number.isFinite(g.a.s) || !Number.isFinite(g.h.s)))) problems.push("finals has a game without an id, teams or scores");
 if (data.finals && days(data.finals.updated) > 4) warn(`finals (ESPN) were built ${Math.round(days(data.finals.updated))} days ago`);
+// Team-performance files (NFL+ and CFP+ tabs): optional until first built, but never published malformed.
+for (const league of ["nfl", "cfb"]) {
+  const file = new URL(`src/data/perf-${league}.json`, root);
+  if (!existsSync(file)) { warn(`perf-${league}.json has not been built yet`); continue; }
+  let perf;
+  try { perf = JSON.parse(readFileSync(file, "utf8")); } catch (e) { problems.push(`perf-${league}.json is not valid JSON: ${e.message}`); continue; }
+  if (perf.league !== league || !Array.isArray(perf.rows) || !perf.rows.length || !perf.teams || !perf.config || !perf.coverage) problems.push(`perf-${league}.json is missing rows, teams, config or coverage`);
+  else if (perf.rows.some((r) => !r.t || !r.o || !Array.isArray(r.c) || !Array.isArray(r.x) || !Array.isArray(r.d))) problems.push(`perf-${league}.json has a team-game without its counts`);
+  if (perf.dataUpdatedAt && days(perf.dataUpdatedAt) > 21) warn(`${league.toUpperCase()} performance data last changed ${Math.round(days(perf.dataUpdatedAt))} days ago`);
+}
 if (data.imperialism && !data.imperialism.leagues && !data.imperialism.counties) problems.push("imperialism snapshot has no leagues or counties");
 for (const league of ["cfb", "nfl"]) {
   const built = data.outlook?.[league]?.built;
