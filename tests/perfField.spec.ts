@@ -8,6 +8,7 @@ import {
   FAVORABLE_GAP, NBINS, afterTakeawayLine, bandDrives, binBand, binLabel, expectedFromField, fieldData, fieldSlot, fieldTakeaway, fumbleStats, fumblesSupported, histogram, mix,
   parseFieldSlot, turnoversByGame,
 } from "../src/perf/fieldCalc";
+import { goPerf } from "./helpers/perf";
 
 const data: PerfData = JSON.parse(readFileSync("src/data/perf-nfl.json", "utf8"));
 const SEL = { ...DEFAULT_SELECTION, team: "SEA" };
@@ -140,7 +141,7 @@ test.describe("Field position: the numbers", () => {
 const openField = async (page: Page) => {
   await page.goto("/?league=NFL");
   await page.getByRole("button", { name: "NFL+" }).click();
-  await page.getByRole("tab", { name: "Field Position & Turnovers", exact: true }).click();
+  await goPerf(page, "Field Position & Turnovers");
   await expect(page.locator(".fl-brow").first()).toBeVisible({ timeout: 15_000 });
 };
 const fd = fieldData(data, SEL, (id) => id)!;
@@ -205,9 +206,9 @@ test.describe("Field position: the tab", () => {
     await expect(panel).toContainText(`${g.takes} takeaway`);
     await expect(panel).toContainText(`${g.gives} giveaway`);
     await expect(panel.locator("tbody tr")).toHaveCount(g.gives + g.takes);
-    await page.getByRole("tab", { name: "Drives", exact: true }).click();
+    await goPerf(page, "Drives");
     await expect(page.locator(".dv-gsel")).toHaveValue(g.row.g);
-    await page.getByRole("tab", { name: "Field Position & Turnovers", exact: true }).click();
+    await goPerf(page, "Field Position & Turnovers");
     await expect(page.locator(".fl-col").nth(withTurnovers)).toHaveAttribute("aria-pressed", "true");
   });
 
@@ -269,7 +270,7 @@ test.describe("Field position: the tab", () => {
     await page.route("**/data/perf-nfl.json*", (r) => r.fulfill({ json: { ...data, rows: [] } }));
     await page.goto("/?league=NFL");
     await page.getByRole("button", { name: "NFL+" }).click();
-    await page.getByRole("tab", { name: "Field Position & Turnovers", exact: true }).click();
+    await goPerf(page, "Field Position & Turnovers");
     await expect(page.locator(".empty")).toContainText("No games with play-by-play data yet");
   });
 });
@@ -280,7 +281,7 @@ test("college: the Field Position tab opens when the college file exists", async
   test.skip(!existsSync("src/data/perf-cfb.json"), "perf-cfb.json is not in this checkout");
   await page.goto("/?league=CFB");
   await page.getByRole("button", { name: "CFB SP+" }).click();
-  await page.getByRole("tab", { name: "Field Position & Turnovers", exact: true }).click();
+  await goPerf(page, "Field Position & Turnovers");
   await expect(page.locator(".fl-brow").first()).toBeVisible({ timeout: 20_000 });
   const [sw, iw] = await page.evaluate(() => [document.documentElement.scrollWidth, innerWidth]);
   expect(sw).toBeLessThanOrEqual(iw + 1);

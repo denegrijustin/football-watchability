@@ -5,6 +5,7 @@ import { ratingsAt } from "./model";
 import { PerfProvider } from "../perf/data";
 import { useNflAdapter } from "../perf/adapters";
 import { PERF_VIEWS, isPerfKey } from "../perf/tabs";
+import { PerfMenu } from "../perf/PerfMenu";
 
 const views: Record<Exclude<NflView, `p-${string}`>, React.LazyExoticComponent<() => ReactNode>> = {
   rankings: lazy(() => import("./views/Ratings")),
@@ -15,6 +16,8 @@ const views: Record<Exclude<NflView, `p-${string}`>, React.LazyExoticComponent<(
   standings: lazy(() => import("./views/Standings")),
   team: lazy(() => import("./views/TeamPage")),
 };
+
+const BASE_VIEWS = NFL_VIEWS.filter((v) => !isPerfKey(v.key));
 
 export function NflApp() {
   const { data, error, retry } = useNfl();
@@ -30,18 +33,21 @@ export function NflApp() {
       <header className="bar">
         <div className="bar-in">
           <div className="bar-top"><span className="brand">NFL+ <small>EPA-based team ratings, simulator and against-the-spread tracker</small></span><span className="grow" /></div>
+          <div className="tabrow">
           <nav className="tabs" role="tablist" aria-label="NFL views" onKeyDown={(e) => {
-            const i = NFL_VIEWS.findIndex((v) => v.key === route.view);
+            const i = BASE_VIEWS.findIndex((v) => v.key === route.view);
             const d = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
-            if (!d) return;
-            const next = NFL_VIEWS[(i + d + NFL_VIEWS.length) % NFL_VIEWS.length];
+            if (!d || i < 0) return;
+            const next = BASE_VIEWS[(i + d + BASE_VIEWS.length) % BASE_VIEWS.length];
             nav({ view: next.key });
             requestAnimationFrame(() => (e.currentTarget.querySelector(`#nfl-tab-${next.key}`) as HTMLElement | null)?.focus());
           }}>
-            {NFL_VIEWS.map((v) => (
-              <button key={v.key} id={`nfl-tab-${v.key}`} role="tab" type="button" className={`tab${isPerfKey(v.key) ? " perf" : ""}${v.key === "p-profile" ? " first" : ""}`} aria-selected={route.view === v.key} tabIndex={route.view === v.key ? 0 : -1} onClick={() => nav({ view: v.key })}>{v.label}</button>
+            {BASE_VIEWS.map((v, i) => (
+              <button key={v.key} id={`nfl-tab-${v.key}`} role="tab" type="button" className="tab" aria-selected={route.view === v.key} tabIndex={route.view === v.key || (isPerfKey(route.view) && i === 0) ? 0 : -1} onClick={() => nav({ view: v.key })}>{v.label}</button>
             ))}
           </nav>
+          <PerfMenu view={route.view} onPick={(key) => nav({ view: key })} />
+          </div>
         </div>
       </header>
 

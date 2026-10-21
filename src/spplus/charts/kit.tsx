@@ -27,7 +27,7 @@ export function useWidth<T extends HTMLElement>(): [React.RefObject<T | null>, n
   return [ref, w];
 }
 
-export interface TipState { x: number; y: number; title: string; rows: [string, string][]; swatch?: string }
+export interface TipState { x: number; y: number; title: string; rows: [string, string][]; swatch?: string; logo?: import("react").ReactNode }
 
 /** Tooltip state for one chart: show it at a point inside the chart box, hide on leave/blur/escape. */
 export function useTip() {
@@ -47,7 +47,7 @@ export function TipView({ tip, width }: { tip: TipState | null; width: number })
   const left = Math.max(4, Math.min(width - 190, tip.x + 12));
   return (
     <div className="tip" role="status" style={{ left, top: Math.max(0, tip.y - 12), transform: tip.y > 120 ? "translateY(-100%)" : "none" }}>
-      <b>{tip.swatch && <i style={{ display: "inline-block", width: 9, height: 9, borderRadius: 2, background: tip.swatch, marginRight: 6 }} />}{tip.title}</b>
+      <b>{tip.logo && <span className="tip-logo">{tip.logo}</span>}{tip.swatch && !tip.logo && <i style={{ display: "inline-block", width: 9, height: 9, borderRadius: 2, background: tip.swatch, marginRight: 6 }} />}{tip.title}</b>
       {tip.rows.map(([k, v]) => (
         <div className="tr" key={k}><span>{k}</span><span>{v}</span></div>
       ))}

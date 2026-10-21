@@ -6,7 +6,7 @@ export interface TrendPoint {
   /** Two-line x label: the week, and the opponent ("@LAR"). */
   opp: string;
   y: number | null; roll: number | null;
-  tipTitle: string; tip: [string, string][]; aria: string; small?: boolean;
+  logo?: import("react").ReactNode; tipTitle: string; tip: [string, string][]; aria: string; small?: boolean;
 }
 export interface TrendLine { label: string; color: string; pts: { week: number; v: number }[]; hollow?: boolean }
 
@@ -53,7 +53,7 @@ export function TrendChart(p: Props) {
   const last = p.pts[p.pts.length - 1];
   const lastRoll = [...p.pts].reverse().find((d) => d.roll != null);
 
-  const tipFor = (d: TrendPoint) => { if (d.y != null) show({ x: x(d.week), y: y(d.y), title: d.tipTitle, swatch: p.color, rows: d.tip }); };
+  const tipFor = (d: TrendPoint) => { if (d.y != null) show({ x: x(d.week), y: y(d.y), title: d.tipTitle, logo: d.logo, swatch: p.color, rows: d.tip }); };
   const move = (i: number) => { const j = Math.max(0, Math.min(p.pts.length - 1, i)); setFocusIx(j); nodes.current[j]?.focus(); };
   const nearest = (e: React.PointerEvent | React.MouseEvent) => {
     const r = (e.currentTarget as SVGSVGElement).getBoundingClientRect();

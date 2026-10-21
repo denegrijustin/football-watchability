@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import { usePerf } from "./data";
-import { leagueSummaries, summarize } from "./engine";
+import { indexOf, leagueSummaries, summarize } from "./engine";
 import type { PerfSelection } from "./types";
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -109,11 +109,39 @@ export function TeamSelect({ label, value, onChange, none, exclude }: { label: s
   return (
     <label className="field">
       <span>{label}</span>
-      <select className="ctl" value={value ?? ""} onChange={(e) => onChange(e.target.value || null)}>
-        {none && <option value="">{none}</option>}
-        {ids.map((t) => <option key={t} value={t}>{adapter.name(t)}</option>)}
-      </select>
+      <span className={`tsel${value ? " has" : ""}`}>
+        {value && <span className="tsel-logo" aria-hidden="true">{adapter.mark(value, 24)}</span>}
+        <select className="ctl" value={value ?? ""} onChange={(e) => onChange(e.target.value || null)}>
+          {none && <option value="">{none}</option>}
+          {ids.map((t) => <option key={t} value={t}>{adapter.name(t)}</option>)}
+        </select>
+      </span>
     </label>
+  );
+}
+
+/** Who the page is about: the team's logo, name, conference and record, and the comparison team when the tab uses one. */
+export function TeamBanner({ showOpp }: { showOpp?: boolean }) {
+  const { data, sel, adapter } = usePerf();
+  const colors = useTeamColors();
+  if (!data || !sel.team || !data.teams[sel.team]) return null;
+  const record = (id: string) => {
+    let w = 0, l = 0, t = 0;
+    for (const r of indexOf(data).byTeam.get(id) ?? []) { if (r.pf > r.pa) w++; else if (r.pf < r.pa) l++; else t++; }
+    return `${w}-${l}${t ? `-${t}` : ""}`;
+  };
+  const one = (id: string, color: string, role: string) => (
+    <div className="pbn" style={{ ["--bn" as string]: color }}>
+      <span className="pbn-logo">{adapter.mark(id, 44)}</span>
+      <span className="pbn-text"><b>{adapter.name(id)}</b><small>{[adapter.conf(id), `${record(id)} in games counted`].filter(Boolean).join(" · ")}</small></span>
+      <span className="sr-only">{role}</span>
+    </div>
+  );
+  return (
+    <div className={`pbanner${showOpp && sel.opp ? " two" : ""}`} role="group" aria-label={showOpp && sel.opp ? "Teams shown" : "Team shown"}>
+      {one(sel.team, colors.a, "Selected team")}
+      {showOpp && sel.opp && <><span className="pbn-vs" aria-hidden="true">vs</span>{one(sel.opp, colors.b, "Comparison team")}</>}
+    </div>
   );
 }
 
@@ -200,6 +228,7 @@ export function PerfFrame({ title, question, show, takeaway, takeSmall, children
         <h1>{title}</h1>
         <p className="pq">{question}</p>
       </header>
+      <TeamBanner showOpp={show.opp} />
       <Controls show={show} />
       <PerfState>
         <Takeaway small={takeSmall}>{takeaway}</Takeaway>

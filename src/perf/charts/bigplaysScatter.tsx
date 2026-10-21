@@ -1,5 +1,6 @@
 import { useRef, useState, type KeyboardEvent } from "react";
 import { TipView, centreIn, niceTicks, useTip, useWidth } from "../../spplus/charts/kit";
+import { usePerf } from "../data";
 import { modeDef, neighbor, quadrant, quadrantCounts, type BpMode, type BpPoint, type Dir } from "../bigplaysCalc";
 
 export interface ScatterDot extends BpPoint { name: string }
@@ -19,6 +20,7 @@ export function BigPlaysScatter({ dots, line, mode, selected, compare, inspected
   selected: string | null; compare: string | null; inspected: string | null; colorA: string; colorB: string;
   onInspect: (id: string) => void; onClear: () => void;
 }) {
+  const { adapter } = usePerf();
   const [ref, width] = useWidth<HTMLDivElement>();
   const { tip, show, hide } = useTip();
   const svgRef = useRef<SVGSVGElement>(null);
@@ -52,7 +54,7 @@ export function BigPlaysScatter({ dots, line, mode, selected, compare, inspected
     const q = quadrant(mode, d.x >= line.x, d.y >= line.y);
     return [[defense ? "Success allowed" : "Success rate", pc(d.x, 1)], [defense ? "Explosive allowed" : "Explosive rate", pc(d.y, 1)], ["Plays", `${d.n} in ${d.games} game${d.games === 1 ? "" : "s"}${d.small ? " (small)" : ""}`], ["Corner", q.label]];
   };
-  const open = (d: ScatterDot, el?: Element | null) => { const c = el ? centreIn(ref.current, el) : { x: fx(d.x), y: fy(d.y) }; show({ x: c.x, y: c.y, title: d.name, rows: tipFor(d) }); };
+  const open = (d: ScatterDot, el?: Element | null) => { const c = el ? centreIn(ref.current, el) : { x: fx(d.x), y: fy(d.y) }; show({ x: c.x, y: c.y, title: d.name, logo: adapter.mark(d.id, 20), rows: tipFor(d) }); };
   const focusDot = (id: string) => { setActive(id); items.current.get(id)?.focus(); };
   const onKey = (e: KeyboardEvent, d: ScatterDot) => {
     const dir: Dir | null = e.key === "ArrowRight" ? "right" : e.key === "ArrowLeft" ? "left" : e.key === "ArrowUp" ? "up" : e.key === "ArrowDown" ? "down" : null;

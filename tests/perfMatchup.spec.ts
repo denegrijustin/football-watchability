@@ -5,6 +5,7 @@ import { DRIVE, RESULT, V, ddIndex } from "../scripts/perf/lib.mjs";
 import { DEFAULT_SELECTION, type PerfData, type PerfRow, type PerfSelection } from "../src/perf/types";
 import { compareTeams, edgeLevel, facetById, facetStat, leaderOf, matchupTakeaway, rowSentence, biggestGaps, leanCounts, playedBetween, playedSentence, NOT_A_PREDICTION, type MatchupRow } from "../src/perf/matchupCalc";
 import { leagueSummaries } from "../src/perf/engine";
+import { goPerf } from "./helpers/perf";
 
 const data: PerfData = JSON.parse(readFileSync("src/data/perf-nfl.json", "utf8"));
 const sel = (p: Partial<PerfSelection> = {}): PerfSelection => ({ ...DEFAULT_SELECTION, team: "SEA", opp: "KC", ...p });
@@ -130,7 +131,7 @@ test.beforeEach(async ({ page }) => { await stubFinals(page); });
 async function openMatchup(page: Page) {
   await page.goto("/?league=NFL");
   await page.getByRole("button", { name: "NFL+" }).click();
-  await page.locator(".spp").getByRole("tab", { name: "Matchup", exact: true }).click();
+  await goPerf(page, "Matchup");
   await expect(page.locator(".pcontrols")).toBeVisible({ timeout: 15_000 });
 }
 const teamSel = (page: Page) => page.locator(".pcontrols select").nth(0);
@@ -182,10 +183,10 @@ test("swap, clear and choose; selections persist across tabs", async ({ page }) 
   await expect(oppSel(page)).toHaveValue("SEA");
   await oppSel(page).selectOption("DEN");
   await page.locator('.mu-row[data-key="mu:a:rush"] .mu-btn').click();
-  await page.locator(".spp").getByRole("tab", { name: "Team Profile", exact: true }).click();
+  await goPerf(page, "Team Profile");
   await expect(teamSel(page)).toHaveValue("KC");
   await expect(oppSel(page)).toHaveValue("DEN");
-  await page.locator(".spp").getByRole("tab", { name: "Matchup", exact: true }).click();
+  await goPerf(page, "Matchup");
   await expect(teamSel(page)).toHaveValue("KC");
   await expect(oppSel(page)).toHaveValue("DEN");
   await expect(page.locator('.mu-row[data-key="mu:a:rush"] .mu-btn')).toHaveAttribute("aria-expanded", "true");
@@ -247,7 +248,7 @@ test("when the college file is missing the tab shows its error state instead of 
   test.skip(existsSync("src/data/perf-cfb.json"), "college file present: covered by the college test");
   await page.goto("/?league=CFB");
   await page.getByRole("button", { name: "CFB SP+" }).click();
-  await page.locator(".spp").getByRole("tab", { name: "Matchup", exact: true }).click();
+  await goPerf(page, "Matchup");
   await expect(page.getByRole("alert")).toContainText("Could not load", { timeout: 30_000 });
 });
 
@@ -255,6 +256,6 @@ test("college matchup uses success rate and says why", async ({ page }) => {
   test.skip(!existsSync("src/data/perf-cfb.json"), "college file not generated in this tree");
   await page.goto("/?league=CFB");
   await page.getByRole("button", { name: "CFB SP+" }).click();
-  await page.locator(".spp").getByRole("tab", { name: "Matchup", exact: true }).click();
+  await goPerf(page, "Matchup");
   await expect(page.locator(".mu")).toContainText("Expected points added (EPA) is not available", { timeout: 20_000 });
 });

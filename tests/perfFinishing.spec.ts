@@ -6,6 +6,7 @@ import { DEFAULT_SELECTION } from "../src/perf/types";
 import { DENOMINATORS, finishing, gamesFor, leagueAverage, type Denominator } from "../src/perf/engine";
 import { oppRowOf } from "../src/perf/drivesCalc";
 import { BUCKETS, SMALL_N, drivesBehind, emptyBreakdown, finSlot, finishingRows, finishingTakeaway, parseFinSlot } from "../src/perf/finishingCalc";
+import { goPerf } from "./helpers/perf";
 
 const data: PerfData = JSON.parse(readFileSync("src/data/perf-nfl.json", "utf8"));
 const SEL = { ...DEFAULT_SELECTION, team: "SEA" };
@@ -123,7 +124,7 @@ test.describe("Finishing: the numbers", () => {
 const openFinishing = async (page: Page) => {
   await page.goto("/?league=NFL");
   await page.getByRole("button", { name: "NFL+" }).click();
-  await page.getByRole("tab", { name: "Finishing Drives", exact: true }).click();
+  await goPerf(page, "Finishing Drives");
   await expect(page.locator(".fn-row").first()).toBeVisible({ timeout: 15_000 });
 };
 const seg = (page: Page, name: RegExp) => page.locator(".fn-group").first().locator(".fn-row").first().locator(".fn-seg", { hasText: name });
@@ -214,8 +215,8 @@ test.describe("Finishing: the tab", () => {
   test("the selected segment persists when you leave the tab and come back", async ({ page }) => {
     await openFinishing(page);
     await seg(page, /^FG/).click();
-    await page.getByRole("tab", { name: "Team Profile" }).click();
-    await page.getByRole("tab", { name: "Finishing Drives", exact: true }).click();
+    await goPerf(page, "Team Profile");
+    await goPerf(page, "Finishing Drives");
     await expect(seg(page, /^FG/)).toHaveAttribute("aria-pressed", "true");
   });
 
@@ -241,7 +242,7 @@ test.describe("Finishing: the tab", () => {
     await page.route("**/data/perf-nfl.json*", (r) => r.fulfill({ status: 500, body: "x" }));
     await page.goto("/?league=NFL");
     await page.getByRole("button", { name: "NFL+" }).click();
-    await page.getByRole("tab", { name: "Finishing Drives", exact: true }).click();
+    await goPerf(page, "Finishing Drives");
     await expect(page.locator("[role=alert]")).toContainText("Could not load", { timeout: 30_000 });
     await expect(page.getByRole("button", { name: "Try again" })).toBeVisible();
   });
@@ -251,6 +252,6 @@ test("college: the Finishing tab opens when the college file exists", async ({ p
   test.skip(!existsSync("src/data/perf-cfb.json"), "perf-cfb.json is not in this checkout");
   await page.goto("/?league=CFB");
   await page.getByRole("button", { name: "CFB SP+" }).click();
-  await page.getByRole("tab", { name: "Finishing Drives", exact: true }).click();
+  await goPerf(page, "Finishing Drives");
   await expect(page.locator(".fn-row").first()).toBeVisible({ timeout: 20_000 });
 });

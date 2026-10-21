@@ -4,6 +4,7 @@ import { stubFinals } from "./helpers/finals";
 import { DRIVE, RESULT, V } from "../scripts/perf/lib.mjs";
 import { DEFAULT_SELECTION, type PerfData, type PerfRow, type PerfSelection } from "../src/perf/types";
 import { buildSeries, contribution, direction, gameDetail, higherIsBetter, leagueValue, trendMetrics, trendSentence, type TMetric } from "../src/perf/trendsCalc";
+import { goPerf } from "./helpers/perf";
 
 const data: PerfData = JSON.parse(readFileSync("src/data/perf-nfl.json", "utf8"));
 const sel = (p: Partial<PerfSelection> = {}): PerfSelection => ({ ...DEFAULT_SELECTION, team: "SEA", ...p });
@@ -130,7 +131,7 @@ test.beforeEach(async ({ page }) => { await stubFinals(page); });
 async function openTrends(page: Page) {
   await page.goto("/?league=NFL");
   await page.getByRole("button", { name: "NFL+" }).click();
-  await page.locator(".spp").getByRole("tab", { name: "Trends", exact: true }).click();
+  await goPerf(page, "Trends");
   await expect(page.locator(".tr")).toBeVisible({ timeout: 15_000 });
 }
 const points = (page: Page) => page.locator(".tr-chart .pt");
@@ -157,8 +158,8 @@ test("selecting a point opens the game: value vs season figure, drives and bigge
   await expect(d).toContainText("Without this game");
   await expect(d.locator(".tbl tbody tr")).toHaveCount(g.d.filter((x) => x[DRIVE.RESULT] !== RESULT.END).length);
   await expect(d.locator(".tr-plays li").first()).toContainText("yards");
-  await page.locator(".spp").getByRole("tab", { name: "Team Profile", exact: true }).click();
-  await page.locator(".spp").getByRole("tab", { name: "Trends", exact: true }).click();
+  await goPerf(page, "Team Profile");
+  await goPerf(page, "Trends");
   await expect(page.locator(".tr-detail")).toContainText(`Week ${g.w}`);
   await page.getByRole("button", { name: "Close", exact: true }).click();
   await expect(page.locator(".tr-detail")).toHaveCount(0);
@@ -227,8 +228,15 @@ test("opponent-adjusted view uses the NFL+ rating, with its note, and the raw vi
 test("when the team has no adjusted ratings the page says so instead of drawing raw results as adjusted", async ({ page }) => {
   const nfl = JSON.parse(readFileSync("src/data/nfl.json", "utf8"));
   for (const t of Object.values(nfl.teams) as { r?: unknown }[]) delete t.r;
-  await page.route("**/data/nfl.json", (r) => r.fulfill({ json: nfl }));
-  await openTrends(page);
+  // Hold the data back until the Trends view is open, so the ratings table (which needs the ratings this test removes) never renders.
+  let release!: () => void;
+  const gate = new Promise<void>((res) => { release = res; });
+  await page.route("**/data/nfl.json", async (r) => { await gate; await r.fulfill({ json: nfl }); });
+  await page.goto("/?league=NFL");
+  await page.getByRole("button", { name: "NFL+" }).click();
+  await goPerf(page, "Trends");
+  release();
+  await expect(page.locator(".tr")).toBeVisible({ timeout: 15_000 });
   await page.getByRole("button", { name: "Opponent-adjusted" }).click();
   await expect(page.locator(".tr-panel .note-box")).toContainText("not available");
   await expect(page.locator(".tr-chart")).toHaveCount(0);
@@ -274,7 +282,7 @@ test("college file missing: the error state, not a crash", async ({ page }) => {
   test.skip(existsSync("src/data/perf-cfb.json"), "college file present: covered by the college test");
   await page.goto("/?league=CFB");
   await page.getByRole("button", { name: "CFB SP+" }).click();
-  await page.locator(".spp").getByRole("tab", { name: "Trends", exact: true }).click();
+  await goPerf(page, "Trends");
   await expect(page.getByRole("alert")).toContainText("Could not load", { timeout: 30_000 });
 });
 
@@ -282,7 +290,7 @@ test("college trends use success rate and say why", async ({ page }) => {
   test.skip(!existsSync("src/data/perf-cfb.json"), "college file not generated in this tree");
   await page.goto("/?league=CFB");
   await page.getByRole("button", { name: "CFB SP+" }).click();
-  await page.locator(".spp").getByRole("tab", { name: "Trends", exact: true }).click();
+  await goPerf(page, "Trends");
   await expect(page.locator(".tr")).toContainText("Expected points added (EPA) is not available", { timeout: 20_000 });
   await expect(page.locator(".tr-panel h2")).toContainText("Success rate");
 });

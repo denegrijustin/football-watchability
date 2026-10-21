@@ -6,6 +6,7 @@ import { downDistanceGrid, summarize } from "../src/perf/engine";
 import { isSuccess, V, emptyVec, addPlay } from "../scripts/perf/lib.mjs";
 import { EVEN_BELOW, TAKE_MIN_GAP, TAKE_MIN_N, breakdown, makeCell, parseSpec, situationModel, situationTakeaway, specKey, verdictOf, type SituationModel } from "../src/perf/situationsCalc";
 import { forEachRow } from "../scripts/nflverse/csv.mjs";
+import { goPerf } from "./helpers/perf";
 
 test.beforeEach(async ({ page }) => { await stubFinals(page); });
 
@@ -34,7 +35,7 @@ async function open(page: Page, tab = "Situations", vw = 1280) {
   await page.locator(".view-switch").first().waitFor();
   if (!(await nflBtn.isVisible())) await page.locator(".view-switch button", { hasText: "More" }).click();
   await nflBtn.click();
-  await page.getByRole("tab", { name: tab }).click();
+  await goPerf(page, tab);
   await expect(page.getByRole("heading", { level: 1, name: tab })).toBeVisible({ timeout: 15_000 });
   await expect(page.locator(".pcontrols select").first()).not.toHaveValue("", { timeout: 15_000 });
 }
@@ -317,10 +318,10 @@ test.describe("Situations: in the browser", () => {
     await teamSelect(page).selectOption(other);
     await cells(page).nth(5).click();
     await page.getByRole("button", { name: "Defense" }).first().click();
-    await page.getByRole("tab", { name: "Big Plays" }).click();
+    await goPerf(page, "Big Plays");
     await expect(page.getByRole("heading", { level: 1, name: "Big Plays" })).toBeVisible();
     await expect(teamSelect(page)).toHaveValue(other);
-    await page.getByRole("tab", { name: "Situations" }).click();
+    await goPerf(page, "Situations");
     await expect(teamSelect(page)).toHaveValue(other);
     await expect(page.getByRole("heading", { level: 2 }).first()).toContainText("Opponents against");
     await expect(page.locator('[role="gridcell"][aria-selected="true"]')).toHaveCount(1);
@@ -368,7 +369,7 @@ test.describe("Situations: in the browser", () => {
     await stubFinals(page);
     await page.goto("/?league=CFB");
     await page.getByRole("button", { name: "CFB SP+" }).click();
-    await page.getByRole("tab", { name: "Situations" }).click();
+    await goPerf(page, "Situations");
     await expect(page.getByRole("note").filter({ hasText: "EPA" })).toBeVisible({ timeout: 15_000 });
     await expect(cells(page)).toHaveCount(16);
   });

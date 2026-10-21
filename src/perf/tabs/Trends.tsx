@@ -131,7 +131,7 @@ export default function Trends() {
     if (!adjusted && oppId && sel.bench === "opp" && oppAt?.value != null) rows.push([adapter.short(oppId), metric.fmt(oppAt.value)]);
     rows.push([adjusted ? "Adjusted for opponent" : "Not adjusted for opponent", ""]);
     return {
-      g: p.g, week: p.week, opp, y, roll: adjusted ? null : p.rolling, tipTitle: `Week ${p.week} ${where(p.home)} ${abbr(data!, p.opp)}`, tip: rows, small: !adjusted && p.small,
+      g: p.g, week: p.week, opp, y, roll: adjusted ? null : p.rolling, logo: adapter.mark(p.opp, 18), tipTitle: `Week ${p.week} ${where(p.home)} ${abbr(data!, p.opp)}`, tip: rows, small: !adjusted && p.small,
       aria: `Week ${p.week}, ${where(p.home)} ${adapter.name(p.opp)}, ${res}. ${adjusted ? adapter.adjustedLabel : metric.label} ${f(y)}. Press Enter to ${p.g === sel.game ? "close" : "inspect"} this game.`,
     };
   });

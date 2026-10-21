@@ -7,6 +7,7 @@ import { dateLabel } from "./data/derive";
 import { PerfProvider } from "../perf/data";
 import { useCfbAdapter } from "../perf/adapters";
 import { PERF_VIEWS, isPerfKey } from "../perf/tabs";
+import { PerfMenu } from "../perf/PerfMenu";
 
 const views: Record<Exclude<ViewKey, `p-${string}`>, React.LazyExoticComponent<() => ReactNode>> = {
   rankings: lazy(() => import("./views/Rankings")),
@@ -39,6 +40,8 @@ const FILTERS: Record<Exclude<ViewKey, `p-${string}`>, { div?: boolean; all?: bo
   explorer: {},
 };
 
+const BASE_VIEWS = VIEWS.filter((v) => !isPerfKey(v.key));
+
 export function SpPlusApp() {
   const { model, snapshot, loadError, retry } = useData();
   const [route, nav] = useRoute();
@@ -65,18 +68,21 @@ export function SpPlusApp() {
             <span className="brand">CFB SP+ <small>SP+ ratings, simulator and against-the-spread tracker</small></span>
             <span className="grow" />
           </div>
+          <div className="tabrow">
           <nav className="tabs" role="tablist" aria-label="Views" onKeyDown={(e) => {
-            const i = VIEWS.findIndex((v) => v.key === route.view);
+            const i = BASE_VIEWS.findIndex((v) => v.key === route.view);
             const d = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
-            if (!d) return;
-            const next = VIEWS[(i + d + VIEWS.length) % VIEWS.length];
+            if (!d || i < 0) return;
+            const next = BASE_VIEWS[(i + d + BASE_VIEWS.length) % BASE_VIEWS.length];
             nav({ view: next.key });
             requestAnimationFrame(() => document.getElementById(`tab-${next.key}`)?.focus());
           }}>
-            {VIEWS.map((v) => (
-              <button key={v.key} id={`tab-${v.key}`} role="tab" type="button" className={`tab${isPerfKey(v.key) ? " perf" : ""}${v.key === "p-profile" ? " first" : ""}`} aria-selected={route.view === v.key} tabIndex={route.view === v.key ? 0 : -1} onClick={() => nav({ view: v.key })}>{v.label}</button>
+            {BASE_VIEWS.map((v, i) => (
+              <button key={v.key} id={`tab-${v.key}`} role="tab" type="button" className="tab" aria-selected={route.view === v.key} tabIndex={route.view === v.key || (perf && i === 0) ? 0 : -1} onClick={() => nav({ view: v.key })}>{v.label}</button>
             ))}
           </nav>
+          <PerfMenu view={route.view} onPick={(key) => nav({ view: key })} />
+          </div>
         </div>
       </header>
 

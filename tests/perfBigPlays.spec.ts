@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { stubFinals } from "./helpers/finals";
 import { DEFAULT_SELECTION, type PerfData, type PerfRow, type PerfSelection } from "../src/perf/types";
 import { BP_MODES, DEADBAND, bigPlayTakeaway, levelOf, longestPlays, modeOf, modePatch, neighbor, population, quadrant, quadrantCounts, quadrantOf, sortPoints, type BpMode, type BpPoint } from "../src/perf/bigplaysCalc";
+import { goPerf } from "./helpers/perf";
 
 test.beforeEach(async ({ page }) => { await stubFinals(page); });
 
@@ -22,7 +23,7 @@ async function open(page: Page, vw = 1280) {
   await page.locator(".view-switch").first().waitFor();
   if (!(await nflBtn.isVisible())) await page.locator(".view-switch button", { hasText: "More" }).click();
   await nflBtn.click();
-  await page.getByRole("tab", { name: "Big Plays" }).click();
+  await goPerf(page, "Big Plays");
   await expect(page.getByRole("heading", { level: 1, name: "Big Plays" })).toBeVisible({ timeout: 15_000 });
   await expect(page.locator(".pcontrols select").first()).not.toHaveValue("", { timeout: 15_000 });
 }
@@ -288,9 +289,9 @@ test.describe("Big Plays: in the browser", () => {
     const other = teams.find((t) => t !== "SEA")!;
     await page.locator(".pcontrols select").first().selectOption(other);
     await page.getByRole("button", { name: "Defense", exact: true }).click();
-    await page.getByRole("tab", { name: "Situations" }).click();
+    await goPerf(page, "Situations");
     await expect(page.getByRole("heading", { level: 2 }).first()).toContainText("Opponents against");
-    await page.getByRole("tab", { name: "Big Plays" }).click();
+    await goPerf(page, "Big Plays");
     await expect(page.locator(".pcontrols select").first()).toHaveValue(other);
     await expect(page.getByRole("button", { name: "Defense", exact: true })).toHaveAttribute("aria-pressed", "true");
   });
@@ -326,7 +327,7 @@ test.describe("Big Plays: in the browser", () => {
     const fbs = Object.keys(cfb.teams).filter((t) => cfb.teams[t].fbs && cfb.rows.some((r) => r.t === t)).length;
     await page.goto("/?league=CFB");
     await page.getByRole("button", { name: "CFB SP+" }).click();
-    await page.getByRole("tab", { name: "Big Plays" }).click();
+    await goPerf(page, "Big Plays");
     await expect(dots(page).first()).toBeVisible({ timeout: 15_000 });
     expect(await dots(page).count()).toBeLessThanOrEqual(fbs);
   });

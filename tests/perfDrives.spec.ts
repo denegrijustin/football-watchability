@@ -8,6 +8,7 @@ import {
   NO_FILTER, bigPlaysByDrive, buildGameDrives, driveCards, driveSlot, drivesTakeaway, filterDrives, kindOf, optionCounts, oppRowOf, parseDriveSlot,
   playsForDrive, poss, resolveTeamId, type LogPlay,
 } from "../src/perf/drivesCalc";
+import { goPerf } from "./helpers/perf";
 
 const data: PerfData = JSON.parse(readFileSync("src/data/perf-nfl.json", "utf8"));
 const SEL = { ...DEFAULT_SELECTION, team: "SEA" };
@@ -158,7 +159,7 @@ test.describe("Drives: the numbers", () => {
 const openDrives = async (page: Page) => {
   await page.goto("/?league=NFL");
   await page.getByRole("button", { name: "NFL+" }).click();
-  await page.getByRole("tab", { name: "Drives", exact: true }).click();
+  await goPerf(page, "Drives");
   await expect(page.locator(".dv-lane > button").first()).toBeVisible({ timeout: 15_000 });
 };
 const latest = rowsOf("SEA").at(-1)!;
@@ -281,9 +282,9 @@ test.describe("Drives: the tab", () => {
     await page.locator(".dv-gsel").selectOption(earlier.g);
     await expect(page.locator(".dv-lane > button")).toHaveCount(buildGameDrives(data, earlier, "all").length);
     await page.locator(".dv-lane > button").nth(1).click();
-    await page.getByRole("tab", { name: "Team Profile" }).click();
+    await goPerf(page, "Team Profile");
     await expect(page.locator(".phd h1")).toHaveText("Team Profile");
-    await page.getByRole("tab", { name: "Drives", exact: true }).click();
+    await goPerf(page, "Drives");
     await expect(page.locator(".dv-gsel")).toHaveValue(earlier.g);
     await expect(page.locator(".dv-lane > button").nth(1)).toHaveAttribute("aria-expanded", "true");
     // changing the team clears the game
@@ -336,7 +337,7 @@ test.describe("Drives: the tab", () => {
     await page.route("**/data/perf-nfl.json*", (r) => r.fulfill({ json: { ...data, rows: [] } }));
     await page.goto("/?league=NFL");
     await page.getByRole("button", { name: "NFL+" }).click();
-    await page.getByRole("tab", { name: "Drives", exact: true }).click();
+    await goPerf(page, "Drives");
     await expect(page.locator(".empty")).toContainText("No games with play-by-play data yet");
   });
 });
@@ -345,7 +346,7 @@ test("college: the Drives tab opens when the college file exists", async ({ page
   test.skip(!existsSync("src/data/perf-cfb.json"), "perf-cfb.json is not in this checkout");
   await page.goto("/?league=CFB");
   await page.getByRole("button", { name: "CFB SP+" }).click();
-  await page.getByRole("tab", { name: "Drives", exact: true }).click();
+  await goPerf(page, "Drives");
   await expect(page.locator(".dv-card").first()).toBeVisible({ timeout: 20_000 });
   const [sw, iw] = await page.evaluate(() => [document.documentElement.scrollWidth, innerWidth]);
   expect(sw).toBeLessThanOrEqual(iw + 1);
