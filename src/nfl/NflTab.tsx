@@ -4,6 +4,7 @@ import { LiveMirror, useLiveMap, type LiveMap } from "../live";
 import { createRoot } from "react-dom/client";
 import { NflProvider } from "./useNfl";
 import { NflApp } from "./NflApp";
+import perfCss from "../perf/perf.css?inline";
 import css from "../spplus/spplus.css?inline";
 
 /** The NFL+ tab. Like the CFB SP+ tab it renders in a shadow root, and it shares that tab's stylesheet and chart components. */
@@ -21,7 +22,7 @@ export default function NflTab() {
     const shadow = el.shadowRoot ?? el.attachShadow({ mode: "open" });
     shadow.replaceChildren();
     const style = document.createElement("style");
-    style.textContent = css;
+    style.textContent = css + perfCss;
     const mount = document.createElement("div");
     shadow.append(style, mount);
     guardLogos(shadow);

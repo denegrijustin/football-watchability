@@ -4,8 +4,11 @@ import { DIVISIONS, type DivKey } from "./data/types";
 import { VIEWS, useRoute, type ViewKey } from "./store";
 import { Mark } from "./components/common";
 import { dateLabel } from "./data/derive";
+import { PerfProvider } from "../perf/data";
+import { useCfbAdapter } from "../perf/adapters";
+import { PERF_VIEWS, isPerfKey } from "../perf/tabs";
 
-const views: Record<ViewKey, React.LazyExoticComponent<() => ReactNode>> = {
+const views: Record<Exclude<ViewKey, `p-${string}`>, React.LazyExoticComponent<() => ReactNode>> = {
   rankings: lazy(() => import("./views/Rankings")),
   simulator: lazy(() => import("./views/Simulator")),
   ats: lazy(() => import("./views/Ats")),
@@ -21,7 +24,7 @@ const views: Record<ViewKey, React.LazyExoticComponent<() => ReactNode>> = {
 };
 
 /** Which shared filters each view uses. */
-const FILTERS: Record<ViewKey, { div?: boolean; all?: boolean; week?: boolean; conf?: boolean; q?: boolean }> = {
+const FILTERS: Record<Exclude<ViewKey, `p-${string}`>, { div?: boolean; all?: boolean; week?: boolean; conf?: boolean; q?: boolean }> = {
   rankings: { div: true, all: true, week: true, conf: true, q: true },
   simulator: {},
   ats: {},
@@ -39,7 +42,8 @@ const FILTERS: Record<ViewKey, { div?: boolean; all?: boolean; week?: boolean; c
 export function SpPlusApp() {
   const { model, snapshot, loadError, retry } = useData();
   const [route, nav] = useRoute();
-  const f = FILTERS[route.view];
+  const perf = isPerfKey(route.view);
+  const f = perf ? {} : FILTERS[route.view as Exclude<ViewKey, `p-${string}`>];
 
   const confs = useMemo(() => {
     if (!model) return [];
@@ -49,7 +53,7 @@ export function SpPlusApp() {
   }, [model, route.div, route.view]);
 
 
-  const View = views[route.view];
+  const View = perf ? PERF_VIEWS[route.view as keyof typeof PERF_VIEWS] : views[route.view as Exclude<ViewKey, `p-${string}`>];
   const week = route.week ?? model?.latest ?? 0;
   const compareTeams = model ? route.compare.map((id) => model.byId.get(id)).filter(Boolean) : [];
 
@@ -70,7 +74,7 @@ export function SpPlusApp() {
             requestAnimationFrame(() => document.getElementById(`tab-${next.key}`)?.focus());
           }}>
             {VIEWS.map((v) => (
-              <button key={v.key} id={`tab-${v.key}`} role="tab" type="button" className="tab" aria-selected={route.view === v.key} tabIndex={route.view === v.key ? 0 : -1} onClick={() => nav({ view: v.key })}>{v.label}</button>
+              <button key={v.key} id={`tab-${v.key}`} role="tab" type="button" className={`tab${isPerfKey(v.key) ? " perf" : ""}${v.key === "p-profile" ? " first" : ""}`} aria-selected={route.view === v.key} tabIndex={route.view === v.key ? 0 : -1} onClick={() => nav({ view: v.key })}>{v.label}</button>
             ))}
           </nav>
         </div>
@@ -133,7 +137,7 @@ export function SpPlusApp() {
         {!model && !loadError && <div className="empty" role="status">Loading…</div>}
         {model && (
           <Suspense fallback={<div className="empty" role="status">Loading view…</div>}>
-            <View />
+            {perf ? <PerfProvider league="cfb" useAdapter={useCfbAdapter}><View /></PerfProvider> : <View />}
           </Suspense>
         )}
       </main>

@@ -2,8 +2,11 @@ import { Suspense, lazy, type ReactNode } from "react";
 import { NFL_VIEWS, useNflRoute, type NflView } from "./store";
 import { useNfl } from "./useNfl";
 import { ratingsAt } from "./model";
+import { PerfProvider } from "../perf/data";
+import { useNflAdapter } from "../perf/adapters";
+import { PERF_VIEWS, isPerfKey } from "../perf/tabs";
 
-const views: Record<NflView, React.LazyExoticComponent<() => ReactNode>> = {
+const views: Record<Exclude<NflView, `p-${string}`>, React.LazyExoticComponent<() => ReactNode>> = {
   rankings: lazy(() => import("./views/Ratings")),
   simulator: lazy(() => import("./views/Simulator")),
   ats: lazy(() => import("./views/Ats")),
@@ -16,7 +19,8 @@ const views: Record<NflView, React.LazyExoticComponent<() => ReactNode>> = {
 export function NflApp() {
   const { data, error, retry } = useNfl();
   const [route, nav] = useNflRoute();
-  const View = views[route.view];
+  const perf = isPerfKey(route.view);
+  const View = perf ? PERF_VIEWS[route.view as keyof typeof PERF_VIEWS] : views[route.view as Exclude<NflView, `p-${string}`>];
   const week = route.week ?? data?.ratingsThroughWeek ?? 1;
   const groups = data ? ["", "AFC", "NFC", ...[...new Set(Object.values(data.teams).map((t) => t.div))].sort()] : [];
   const filters = route.view === "rankings" || route.view === "movement";
@@ -35,7 +39,7 @@ export function NflApp() {
             requestAnimationFrame(() => (e.currentTarget.querySelector(`#nfl-tab-${next.key}`) as HTMLElement | null)?.focus());
           }}>
             {NFL_VIEWS.map((v) => (
-              <button key={v.key} id={`nfl-tab-${v.key}`} role="tab" type="button" className="tab" aria-selected={route.view === v.key} tabIndex={route.view === v.key ? 0 : -1} onClick={() => nav({ view: v.key })}>{v.label}</button>
+              <button key={v.key} id={`nfl-tab-${v.key}`} role="tab" type="button" className={`tab${isPerfKey(v.key) ? " perf" : ""}${v.key === "p-profile" ? " first" : ""}`} aria-selected={route.view === v.key} tabIndex={route.view === v.key ? 0 : -1} onClick={() => nav({ view: v.key })}>{v.label}</button>
             ))}
           </nav>
         </div>
@@ -66,7 +70,7 @@ export function NflApp() {
       <main className="main" role="tabpanel" aria-labelledby={`nfl-tab-${route.view}`}>
         {error && !data && <div className="note-box" role="alert">Could not load the NFL data: {error} <button type="button" className="btn small" onClick={retry}>Try again</button></div>}
         {!data && !error && <div className="empty" role="status">Loading…</div>}
-        {data && <Suspense fallback={<div className="empty" role="status">Loading view…</div>}><View /></Suspense>}
+        {data && <Suspense fallback={<div className="empty" role="status">Loading view…</div>}>{perf ? <PerfProvider league="nfl" useAdapter={useNflAdapter}><View /></PerfProvider> : <View />}</Suspense>}
       </main>
 
       <footer className="foot">
