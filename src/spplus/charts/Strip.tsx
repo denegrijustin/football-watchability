@@ -10,7 +10,7 @@ export interface StripGroup {
 const quant = (a: number[], q: number) => { const s = [...a].sort((x, y) => x - y); const p = (s.length - 1) * q; const lo = Math.floor(p); return s[lo] + (s[Math.min(lo + 1, s.length - 1)] - s[lo]) * (p - lo); };
 
 /** One row per group: every team is a dot on the shared rating axis, with the middle half shaded and the median ticked. */
-export function StripPlot({ groups, selected, onSelect, axisTitle, lowerBetter, ariaLabel, natMean }: { groups: StripGroup[]; selected: string | null; onSelect: (id: string) => void; axisTitle: string; lowerBetter?: boolean; ariaLabel: string; natMean?: number }) {
+export function StripPlot({ groups, selected, onSelect, axisTitle, lowerBetter, ariaLabel, natMean, division }: { division?: string; groups: StripGroup[]; selected: string | null; onSelect: (id: string) => void; axisTitle: string; lowerBetter?: boolean; ariaLabel: string; natMean?: number }) {
   const [ref, width] = useWidth<HTMLDivElement>();
   const { tip, show, hide } = useTip();
   const w = Math.max(width, 300);
@@ -52,7 +52,7 @@ export function StripPlot({ groups, selected, onSelect, axisTitle, lowerBetter, 
           return (
             <g key={g.id}>
               <line x1={m.l} x2={w - m.r} y1={y0 + rh} y2={y0 + rh} stroke={C.grid} />
-              <ConfLogoSvg conf={g.id} x={4} y={cy - 10} size={20} />
+              <ConfLogoSvg conf={g.id} division={division} x={4} y={cy - 10} size={20} />
               <text x={m.l - 8} y={cy + 4} textAnchor="end" style={{ fill: C.ink, fontWeight: 600 }}>{g.label.length > (narrow ? 9 : 14) ? `${g.label.slice(0, narrow ? 8 : 13)}…` : g.label}</text>
               <rect x={Math.min(x(q1), x(q3))} y={cy - rh / 2 + 4} width={Math.abs(x(q3) - x(q1))} height={rh - 8} fill={g.color} fillOpacity={0.12} rx={4} />
               <line x1={x(med)} x2={x(med)} y1={cy - rh / 2 + 4} y2={cy + rh / 2 - 4} stroke={g.color} strokeWidth={2} />

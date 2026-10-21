@@ -1,8 +1,8 @@
-// Downloads the FCS or Division II schools' logos from ESPN's CDN (the same source as the FBS and NFL logos) and wires them into the SP+ tab.
+// Downloads the FCS, Division II or Division III schools' logos from ESPN's CDN (the same source as the FBS and NFL logos) and wires them into the SP+ tab.
 // Network required; run by hand, never during a normal build.
 //
 //   node scripts/fetch-school-logos.mjs            (FCS)
-//   DIVISION=D2 node scripts/fetch-school-logos.mjs
+//   DIVISION=D2 node scripts/fetch-school-logos.mjs   (or D3)
 //
 // For every team of that division in the SP+ sheet it finds the ESPN team by name, downloads the 500px logo, fits it into a 128px
 // transparent WebP at public/logos/<division>/<slug>.webp and records it in src/data/<division>-logos.json (sheet team name -> file,
@@ -13,7 +13,8 @@ import sharp from "sharp";
 
 const root = new URL("..", import.meta.url);
 const DIV = (process.env.DIVISION ?? "FCS").toUpperCase();
-if (!["FCS", "D2"].includes(DIV)) throw new Error(`DIVISION must be FCS or D2, not ${DIV}`);
+const GROUP = { FCS: 81, D2: 57, D3: 58 }[DIV]; // ESPN group ids
+if (!GROUP) throw new Error(`DIVISION must be FCS, D2 or D3, not ${DIV}`);
 const DIR = DIV.toLowerCase();
 const out = new URL(`src/data/${DIR}-logos.json`, root);
 mkdirSync(new URL(`public/logos/${DIR}/`, root), { recursive: true });
@@ -34,7 +35,7 @@ async function list(q) {
   if (!r.ok) throw new Error(`${q}: ${r.status}`);
   return (await r.json()).sports[0].leagues[0].teams.map((t) => t.team);
 }
-const fcs = await list(`groups=${DIV === "D2" ? 57 : 81}&limit=1000`);
+const fcs = await list(`groups=${GROUP}&limit=1000`);
 const all = await list("limit=1000");
 
 const norm = (s = "") => s.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[ʻ'’.]/g, "").replace(/&/g, "and").replace(/\bstate\b/g, "st").replace(/[^a-z0-9]+/gi, " ").trim().toLowerCase();

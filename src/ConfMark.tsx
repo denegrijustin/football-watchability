@@ -68,9 +68,19 @@ export function ConfMark({ conf, cx, cy, size }: { conf?: string | null; cx: num
 /** The names the SP+ sheet and the NFL ratings use for the conferences, by the name the logo registry has. */
 const ALIAS: Record<string, string> = { AAC: "American", MWC: "Mountain West", CUSA: "Conference USA", MAC: "Mid-American", "Big Ten": "Big Ten", "Indies": "" };
 
+/**
+ * The registry name for a conference as the SP+ sheet or the NFL ratings spell it. Division III abbreviations clash with FBS ones (MWC, MAC, PAC), so a
+ * Division III conference is looked up as "D3:<name>" when the caller says which division it is in.
+ */
+const keyOf = (conf?: string | null, division?: string | null): string | null => {
+  if (conf == null) return null;
+  if (division && `${division}:${conf}` in conferences) return `${division}:${conf}`;
+  return conf in ALIAS ? ALIAS[conf] : conf;
+};
+
 /** Whether a logo exists (or is on its way from ESPN's CDN) for the conference as the SP+ sheet or the NFL ratings name it. */
-export const hasConfLogo = (conf?: string | null) => {
-  const e = confEntry(conf != null ? (conf in ALIAS ? ALIAS[conf] : conf) : null);
+export const hasConfLogo = (conf?: string | null, division?: string | null) => {
+  const e = confEntry(keyOf(conf, division));
   return !!(e && (e.src || e.remote?.length));
 };
 
@@ -78,8 +88,8 @@ export const hasConfLogo = (conf?: string | null) => {
  * A conference's official logo as a small image on a light chip (it has to read on a dark page), for tables and lists. Nothing at all for a conference
  * with no logo (independents), so the caller keeps its own marker.
  */
-export function ConfLogo({ conf, size = 20 }: { conf?: string | null; size?: number }) {
-  const name = conf != null ? (conf in ALIAS ? ALIAS[conf] : conf) : null;
+export function ConfLogo({ conf, size = 20, division }: { conf?: string | null; size?: number; division?: string | null }) {
+  const name = keyOf(conf, division);
   const e = confEntry(name);
   const remote = useRemote(name, e?.src ? undefined : e?.remote);
   const src = e?.src ?? remote;
@@ -92,8 +102,8 @@ export function ConfLogo({ conf, size = 20 }: { conf?: string | null; size?: num
 }
 
 /** The same conference logo drawn inside an SVG (chart labels): a light chip with the official logo. Nothing when the conference has none. */
-export function ConfLogoSvg({ conf, x, y, size = 20 }: { conf?: string | null; x: number; y: number; size?: number }) {
-  const name = conf != null ? (conf in ALIAS ? ALIAS[conf] : conf) : null;
+export function ConfLogoSvg({ conf, x, y, size = 20, division }: { conf?: string | null; x: number; y: number; size?: number; division?: string | null }) {
+  const name = keyOf(conf, division);
   const e = confEntry(name);
   const remote = useRemote(name, e?.src ? undefined : e?.remote);
   const src = e?.src ?? remote;

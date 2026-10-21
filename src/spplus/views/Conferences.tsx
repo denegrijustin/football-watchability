@@ -66,7 +66,7 @@ export default function Conferences() {
   if (sel && selTw && selCr) notes.push(`${sel.name}: ${ord(selTw[rkKey(useMetric)])} nationally and ${ord(selCr[useMetric])} of ${selCr.size} in the ${selTw.conf}.`);
 
   const cols: Col<ConfStat>[] = [
-    { key: "c", label: "Conference", get: (s) => s.conf, render: (s) => <span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}><i style={{ display: "inline-block", width: 8, height: 8, borderRadius: 2, background: confColor(s.conf) }} /><ConfLogo conf={s.conf} size={20} />{s.conf}</span> },
+    { key: "c", label: "Conference", get: (s) => s.conf, render: (s) => <span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}><i style={{ display: "inline-block", width: 8, height: 8, borderRadius: 2, background: confColor(s.conf) }} /><ConfLogo conf={s.conf} division={div} size={20} />{s.conf}</span> },
     { key: "n", label: "Teams", align: "r", first: "desc", get: (s) => s.n },
     { key: "mean", label: `Mean ${mm.label}`, align: "r", first: mm.lowerBetter ? "asc" : "desc", get: (s) => s.mean, render: (s) => fmt(s.mean) },
     { key: "med", label: "Median", align: "r", first: mm.lowerBetter ? "asc" : "desc", get: (s) => s.median, render: (s) => fmt(s.median) },
@@ -84,7 +84,7 @@ export default function Conferences() {
             {METRICS.filter((m) => m.key !== "st" || div === "FBS").map((m) => <button key={m.key} type="button" aria-pressed={m.key === useMetric} onClick={() => nav({ p: { metric: m.key === "sp" ? null : m.key } }, { replace: true })}>{m.label}</button>)}
           </div>
         </div>
-        <StripPlot groups={groups} selected={route.team || null} onSelect={(id) => { nav({ team: id }, { replace: true }); setPopup(id); }} axisTitle={`${mm.long}${mm.lowerBetter ? " · axis reversed, right is better" : ""}`} lowerBetter={mm.lowerBetter} natMean={natMean} ariaLabel={`${mm.label} by conference`} />
+        <StripPlot division={div} groups={groups} selected={route.team || null} onSelect={(id) => { nav({ team: id }, { replace: true }); setPopup(id); }} axisTitle={`${mm.long}${mm.lowerBetter ? " · axis reversed, right is better" : ""}`} lowerBetter={mm.lowerBetter} natMean={natMean} ariaLabel={`${mm.label} by conference`} />
         {sel && selTw && <p className="note-box" style={{ marginTop: 8 }}>Selected: <TeamLink team={sel} size={18} /> · {selTw.conf} · {mm.label} {fmt(selTw[useMetric])}</p>}
         <Notes items={notes} />
       </div>
@@ -94,7 +94,7 @@ export default function Conferences() {
           <div className="team-pop-back" onClick={() => setPopup(null)}>
             <div className="team-pop" role="dialog" aria-modal="true" aria-label={`${t.name} profile`} onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.key === "Escape" && setPopup(null)}>
               <button type="button" className="team-pop-x" aria-label="Close" onClick={() => setPopup(null)} autoFocus>×</button>
-              <div className="team-pop-head"><Mark team={t} size={44} /><div><h3>{t.name}</h3><p className="sub" style={{ margin: 0 }}><ConfLogo conf={tw?.conf} size={18} /> {tw?.conf ?? "No conference"}{tw?.record ? ` · ${tw.record.text}` : ""}</p></div></div>
+              <div className="team-pop-head"><Mark team={t} size={44} /><div><h3>{t.name}</h3><p className="sub" style={{ margin: 0 }}><ConfLogo conf={tw?.conf} division={div} size={18} /> {tw?.conf ?? "No conference"}{tw?.record ? ` · ${tw.record.text}` : ""}</p></div></div>
               <dl className="team-pop-grid">
                 <div><dt>SP+ rating</dt><dd>{fmt(tw?.sp)} <span className="muted">#{tw?.spRk ?? "—"}</span></dd></div>
                 <div><dt>Offense</dt><dd>{fmt(tw?.off)} <span className="muted">#{tw?.offRk ?? "—"}</span></dd></div>
