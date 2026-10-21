@@ -5,6 +5,7 @@ import logoMap from "../logoMap";
 import fcsLogos from "../../data/fcs-logos.json" with { type: "json" };
 import d2Logos from "../../data/d2-logos.json" with { type: "json" };
 import d3Logos from "../../data/d3-logos.json" with { type: "json" };
+import naiaLogos from "../../data/naia-logos.json" with { type: "json" };
 
 type Keyed = Record<string, number>;
 
@@ -184,9 +185,9 @@ function parsePerf(sh: SheetSnapshot): PerfRow[] {
   return out;
 }
 
-/** An FCS, Division II or Division III school's logo (ESPN's, or its own site's, fetched by scripts/fetch-school-logos.mjs), or null when the school has none yet. */
+/** An FCS, Division II, Division III or NAIA school's logo (ESPN's, or its own site's, fetched by scripts/fetch-school-logos.mjs), or null when the school has none yet. */
 const schoolLogo = (division: string, name: string): { local: string } | null => {
-  const e = ((division === "FCS" ? fcsLogos : division === "D2" ? d2Logos : division === "D3" ? d3Logos : null)?.teams as Record<string, { src: string }> | undefined)?.[name];
+  const e = ((division === "FCS" ? fcsLogos : division === "D2" ? d2Logos : division === "D3" ? d3Logos : division === "NAIA" ? naiaLogos : null)?.teams as Record<string, { src: string }> | undefined)?.[name];
   return e ? { local: e.src } : null;
 };
 
