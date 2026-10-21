@@ -14,10 +14,9 @@
 //  - Sacks are pass plays with negative yards; the sack-fumble types are classified from the text.
 //  - Interceptions count 0 pass yards (ESPN's statYardage is the return). Plays with a turnover return (fumble types) take their yards
 //    from the play text ("rush ... for 2 yards gain ... fumbled ... return for 57 yds") because statYardage includes the return.
-//  - Plays without start.down 1-4, distance or yardsToEndzone are skipped and counted (skipped.missing), never zero-filled. Plays whose
+//  - Plays without start.down 1-4, distance or yardsToEndzone (ESPN also uses 0 for "unknown") are skipped and counted (skipped.missing), never zero-filled. Plays whose
 //    kind cannot be told ("Team Safety", a bare "Fumble Return Touchdown" with no snap description) are counted in skipped.unclassified.
-//  - Pre-play margin comes from a running score (the max of the after-play scores seen so far, so a stale score in ESPN's feed cannot
-//    move it backwards). Overtime (period 5+) is never garbage time.
+//  - Pre-play margin comes from a running score updated only by scoring plays (ESPN's after-play scores on other plays are unreliable). Overtime (period 5+) is never garbage time.
 //  - Drives: the drive belongs to the team in possession (drive.team). Result: ESPN's drive result. TD/FG/PUNT/INT/FUMBLE/DOWNS/MISSED FG/
 //    END OF HALF|GAME|QUARTER/SF map straight across. "INT TD", "FUMBLE TD", "FUMBLE RETURN TD", "PUNT TD" and "MISSED FG TD" are scores
 //    BY THE OTHER SIDE on this offense's drive -> RESULT.DEF_SCORE (the pick-six is the throwing team's drive, as in the NFL file); SF
@@ -87,7 +86,8 @@ export function parseSummary(sum) {
   const teams = { [H]: { c: emptyVec(), x: emptyVec(), d: [], k: [], fu: [0, 0] }, [A]: { c: emptyVec(), x: emptyVec(), d: [], k: [], fu: [0, 0] } };
   const zero = () => ({ rush: 0, pass: 0, sack: 0, kneel: 0, spike: 0, twoPt: 0, fumbles: 0, fumLost: 0, fumLostSt: 0, fumblesSt: 0 });
   const diag = { [H]: zero(), [A]: zero(), pts: { [H]: { off: 0, def: 0, st: 0, loose: 0 }, [A]: { off: 0, def: 0, st: 0, loose: 0 } }, homeId: H, awayId: A, finalHome: num(home.score), finalAway: num(away.score), mismatchedOffense: 0 };
-  const skipped = { missing: 0, unclassified: 0, nullified: 0 };
+  const skipped = { missing: 0, unclassified: 0, nullified: 0, duplicate: 0 };
+  const seenSeq = new Set();
   let nPlays = 0;
   let prevResult = null;
 
@@ -105,7 +105,10 @@ export function parseSummary(sum) {
     const firstType = first?.type?.text ?? "";
     dv.hasKickoff = /^Kickoff/.test(firstType);
 
+    // ESPN's after-play scores on non-scoring plays are often stale or ahead of the play (a kickoff can show the next touchdown), so the
+    // running score moves only on plays flagged scoringPlay, and never backwards.
     function bumpScore(p) {
+      if (p.scoringPlay !== true) return;
       const a = num(p.awayScore), h = num(p.homeScore);
       if (a != null && a > run[A]) run[A] = a;
       if (h != null && h > run[H]) run[H] = h;
@@ -118,7 +121,9 @@ export function parseSummary(sum) {
       const period = num(p.period?.number) ?? 1;
       if (type === "Kickoff Return Touchdown") dv.kickReturnTd = true;
       if (dv.ylFromKick == null && /^Kickoff/.test(type) && num(p.end?.yardsToEndzone) != null && String(p.end?.team?.id) === team) dv.ylFromKick = num(p.end.yardsToEndzone);
-      const scrimmage = SCRIMMAGE_TYPES.has(type) || (!type && /sacked|rush|pass/i.test(text));
+      // A "Penalty" entry that describes a snap and is not marked "NO PLAY" is the play itself (penalty declined, or a foul after the whistle;
+      // its yards come from the text since statYardage is the penalty). Penalties that erase the snap say "NO PLAY" and are not plays.
+      const scrimmage = SCRIMMAGE_TYPES.has(type) || (!type && /sacked|rush|pass/i.test(text)) || (type === "Penalty" && !/NO PLAY/i.test(text) && /sacked|rush|\brun\b|pass/i.test(text));
       if (scrimmage) classify(p, type, text, margin, period);
       bumpScore(p);
     }
@@ -135,16 +140,22 @@ export function parseSummary(sum) {
       const kind = kindOf(type, text);
       if (!kind) { skipped.unclassified++; return; }
       const down = num(p.start?.down), ytg = num(p.start?.distance), yl = num(p.start?.yardsToEndzone);
-      if (down == null || ytg == null || yl == null || down < 1 || down > 4 || ytg < 1 || yl < 0 || yl > 100) { skipped.missing++; return; }
+      if (down == null || ytg == null || yl == null || down < 1 || down > 4 || ytg < 1 || yl < 1 || yl > 100) { skipped.missing++; return; }
+      // ESPN sometimes appends a second copy of a snap (same sequenceNumber, new id, yardsToEndzone 0, no offense): keep the first valid one.
+      // (sequenceNumber alone is not unique in a game, so the key includes the description.)
+      const key = `${p.sequenceNumber}|${period}|${text.replace(/^\(\d+:\d+\)\s*/, "")}`;
+      if (p.sequenceNumber != null) { if (seenSeq.has(key)) { skipped.duplicate++; return; } seenSeq.add(key); }
       const startTeam = String(p.start?.team?.id ?? "");
       if (startTeam && startTeam !== team) diag.mismatchedOffense++;
       const isInt = /Interception/.test(type) || (!type && /intercept/i.test(text));
       const sack = type === "Sack" || /sacked/i.test(text);
       let yards = num(p.statYardage) ?? 0;
       if (isInt) yards = 0;
-      else if (TEXT_YARD_TYPES.has(type) || !type) { const ty = textYards(text); if (ty != null) yards = ty; else if (p.isTurnover) { skipped.unclassified++; return; } }
+      else if (TEXT_YARD_TYPES.has(type) || !type || type === "Penalty") { const ty = textYards(text); if (ty != null) yards = ty; else if (p.isTurnover) { skipped.unclassified++; return; } }
       const td = type === "Rushing Touchdown" || type === "Passing Touchdown";
       const fumble = /fumbl/i.test(text) && !isInt;
+      // ESPN's isTurnover and its "(Own)/(Opponent)" label are unreliable on sack-fumbles, so a fumble is also lost when it is the last
+      // fumble play of a drive that ESPN ends with a fumble result (settled after the loop below).
       const fumLost = fumble && p.isTurnover === true;
       const garbage = isGarbage(period, Math.abs(margin));
       const pl = { kind, down, ytg, yl, yards, td, sack, int: isInt, fumLost: kind === "rush" && fumLost, margin, epa: null };
@@ -156,11 +167,20 @@ export function parseSummary(sum) {
       if (dv.startYl == null) dv.startYl = yl;
       if (garbage) dv.garbage = 1;
       if (kind === "pass") { diag[team].pass++; if (sack) diag[team].sack++; } else diag[team].rush++;
-      if (fumble) { t.fu[0]++; diag[team].fumbles++; if (fumLost) { t.fu[1]++; diag[team].fumLost++; } }
+      if (fumble) {
+        t.fu[0]++; diag[team].fumbles++;
+        if (fumLost) { t.fu[1]++; diag[team].fumLost++; }
+        dv.lastFumble = { lost: fumLost, rush: kind === "rush", vec: garbage ? t.x : t.c };
+      }
       const thr = kind === "pass" ? EXPLOSIVE.pass : EXPLOSIVE.rush;
       if (yards >= thr) t.k.push([period, p.clock?.displayValue ?? "", yards, kind === "pass" ? 1 : 0, text.replace(/^\(\d+:\d+\)\s*/, "").slice(0, 120), dno, garbage ? 1 : 0]);
     }
 
+    const lf = dv.lastFumble;
+    if (lf && !lf.lost && (resultKey === "FUMBLE" || resultKey === "FUMBLE TD" || resultKey === "FUMBLE RETURN TD")) {
+      t.fu[1]++; diag[team].fumLost++;
+      if (lf.rush) lf.vec[V.RFUM]++;
+    }
     const deltaOff = run[team] - before, deltaOpp = run[opp] - beforeOpp;
     const res = RESULT_MAP[resultKey ?? ""];
     // Not an offensive drive: kickoff-return touchdown filed under the returner, phantom drives around half-ends.
@@ -171,7 +191,12 @@ export function parseSummary(sum) {
       prevResult = null;
       return;
     }
-    const result = res ?? RESULT.OTHER;
+    let result = res ?? RESULT.OTHER;
+    // ESPN sometimes files a touchdown scored BY the other side (punt/kick return, pick-six) as this drive's "TD": if this offense's score did
+    // not move and the opponent's moved by a touchdown, it is a score against.
+    if ((result === RESULT.TD || result === RESULT.FG) && deltaOff === 0 && deltaOpp >= 6) result = RESULT.DEF_SCORE;
+    // A touchdown or field goal that never moved the score is a feed glitch (e.g. a stray copy of a drive): not a score for this offense.
+    else if ((result === RESULT.TD && deltaOff < 6) || (result === RESULT.FG && deltaOff < 3)) result = RESULT.OTHER;
     if (result === RESULT.TD) diag.pts[team].off += Math.min(8, Math.max(6, deltaOff));
     else if (result === RESULT.FG) diag.pts[team].off += 3;
     else if (result === RESULT.DEF_SCORE || result === RESULT.SAFETY) diag.pts[opp].def += deltaOpp;
