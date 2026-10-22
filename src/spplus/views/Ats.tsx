@@ -5,7 +5,7 @@ import { atsGames, byEdge, BREAK_EVEN, recordText, tally, weeklyTracker, type At
 import { dateLabel, fmt, fmtPct, fmtSigned } from "../data/derive";
 import { Derived, Mark, Notes, TeamLink, useTeamLookup } from "../components/common";
 import { LivePicks, type LivePickItem } from "../components/LivePicks";
-import { findBoardGame, lineText } from "../../livePicks";
+import { STRENGTH_LABEL, findBoardGame, lineText, strengthOf } from "../../livePicks";
 import { slate } from "../../data";
 import { SortTable, type Col } from "../components/SortTable";
 import { AtsChart } from "../charts/AtsChart";
@@ -65,7 +65,7 @@ export default function Ats() {
     return {
       id: p.id, by: "SP+", pickName: p.atsPick as string, pickMark: <Mark team={lookup(p.atsPick as string)} size={28} />, line, pickIsHome, liveIsHome: hit?.swapped ? !pickIsHome : pickIsHome,
       awayName: p.away, homeName: p.home, when: `${dateLabel(p.date)}${t?.date ? ` · ${new Date(t.date).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}` : ""}`,
-      gap: p.spreadDiff == null ? null : fmt(p.spreadDiff), cover, espnId: t?.espnId ?? null,
+      gap: p.spreadDiff == null ? null : fmt(p.spreadDiff), gapNum: p.spreadDiff, at: `${p.date ?? ""} ${t?.date ?? ""}`, cover, espnId: t?.espnId ?? null,
     };
   }), [pending, espn, lookup]);
 
@@ -83,18 +83,15 @@ export default function Ats() {
   const cols: Col<AtsGame>[] = [
     { key: "date", label: "Date", get: (g) => g.date, render: (g) => dateLabel(g.date) },
     { key: "wk", label: "Wk", align: "r", get: (g) => g.week },
-    { key: "game", label: "Game", get: (g) => g.game },
-    { key: "pick", label: "SP+ pick", get: (g) => g.pick, render: (g) => <><TeamLink team={lookup(g.pick)} size={18} /> <b className="pickline">{lineText(g.pickIsFavorite ? g.spreadPts : -g.spreadPts)}</b></> },
-    { key: "line", label: "Spread", get: (g) => g.spread },
-    { key: "edge", label: "Gap to line", align: "r", first: "desc", get: (g) => g.edge, render: (g) => fmt(g.edge) },
-    { key: "final", label: "Final", get: (g) => g.final },
-    { key: "cover", label: "Covered by", align: "r", first: "desc", get: (g) => g.coverBy, render: (g) => fmtSigned(g.coverBy) },
-    { key: "res", label: "Result", get: (g) => g.result, render: (g) => <span className={`delta ${g.result === "win" ? "up" : g.result === "loss" ? "down" : "flat"}`}>{g.result === "win" ? "✓ Covered" : g.result === "loss" ? "✗ Missed" : "Push"}</span> },
+    { key: "game", label: "Game", get: (g) => g.game, render: (g) => <>{g.game}<small className="muted block">Final: {g.final}</small></> },
+    { key: "pick", label: "Pick", get: (g) => g.pick, render: (g) => <><TeamLink team={lookup(g.pick)} size={18} /> <b className="pickline" title="The line the pick had to beat">{lineText(g.pickIsFavorite ? g.spreadPts : -g.spreadPts)}</b></> },
+    { key: "edge", label: "Edge (pts)", align: "r", first: "desc", get: (g) => g.edge, render: (g) => fmt(g.edge) },
+    { key: "res", label: "Result", first: "desc", get: (g) => g.coverBy, render: (g) => <span className={`delta ${g.result === "win" ? "up" : g.result === "loss" ? "down" : "flat"}`} title="Final margin for the pick's side minus the line">{g.result === "win" ? `✓ Covered by ${fmt(Math.abs(g.coverBy))}` : g.result === "loss" ? `✗ Missed by ${fmt(Math.abs(g.coverBy))}` : "= Push"}</span> },
   ];
 
   return (
     <div className="stack">
-      <LivePicks items={liveItems} title={`Week ${model.latest} picks`} note="The side SP+ likes against the spread, with its line. A game on the field shows whether the pick is covering, not covering or on the number right now, and turns into the final grade at the horn." />
+      <LivePicks track={season.n ? `Track record this season: ${recordText(season)} (${fmtPct(season.pct, 1)}) against the ${fmtPct(BREAK_EVEN, 1)} needed to break even at −110. An edge ranks the picks; it does not guarantee a cover.` : undefined} items={liveItems} title={`Week ${model.latest} picks`} note="The side SP+ likes against the spread, with its line. A game on the field shows whether the pick is covering, not covering or on the number right now, and turns into the final grade at the horn." />
       <div className="panel">
         <div className="phead">
           <div>
@@ -154,17 +151,17 @@ export default function Ats() {
       {pending.length > 0 && (
         <div className="panel">
           <h2>Week {model.latest} picks, not yet graded</h2>
-          <p className="sub">Each moves into the tracker when its final reaches the sheet. “Cover chance” is the simulator's probability that the pick covers.</p>
+          <p className="sub">Each moves into the tracker when its final reaches the sheet. “Cover chance” is the simulator's probability that the pick covers; strongest first.</p>
           <div className="tbl-wrap"><table className="tbl">
-            <thead><tr><th>Date</th><th>Game</th><th>SP+ pick</th><th>Line</th><th className="r">Gap to line</th><th className="r">Cover chance</th></tr></thead>
-            <tbody>{pending.map(({ p, cover }) => <tr key={p.id}><td>{dateLabel(p.date)}</td><td>{p.game}</td><td><TeamLink team={lookup(p.atsPick)} size={18} /></td><td>{p.spread}</td><td className="r num">{fmt(p.spreadDiff)}</td><td className="r num">{cover == null ? "—" : fmtPct(cover, 0)}</td></tr>)}</tbody>
+            <thead><tr><th>Date</th><th>Game</th><th>Pick</th><th className="r">Edge (pts)</th><th className="r">Cover chance</th><th>Strength</th></tr></thead>
+            <tbody>{[...pending].sort((a, b) => (b.cover ?? 0) - (a.cover ?? 0)).map(({ p, cover }) => { const pts = p.spreadPts as number, line = pts === 0 ? 0 : p.spreadTeam === p.atsPick ? pts : -pts, st = strengthOf(cover); return <tr key={p.id}><td>{dateLabel(p.date)}</td><td>{p.game}</td><td><TeamLink team={lookup(p.atsPick)} size={18} /> <b className="pickline">{lineText(line)}</b></td><td className="r num">{fmt(p.spreadDiff)}</td><td className="r num">{cover == null ? "—" : fmtPct(cover, 0)}</td><td>{st ? <span className={`lp-tier ${st}`}>{STRENGTH_LABEL[st]}</span> : "—"}</td></tr>; })}</tbody>
           </table></div>
         </div>
       )}
 
       <div className="panel">
         <h2>Every graded pick</h2>
-        <p className="sub">{games.length} picks · sort any column · expand a row for the sheet row it came from</p>
+        <p className="sub">{games.length} picks · “Edge” is how far the pick was from the line · “Result” is how much it covered or missed by · sort any column · expand a row for the sheet row it came from</p>
         <SortTable label="Graded picks" cols={cols} rows={games} rowKey={(g) => g.id} max={limit}
           sort={{ key: route.p.sort || "date", dir: (route.p.dir as "asc" | "desc") || "desc", set: (key, dir) => nav({ p: { sort: key, dir } }, { replace: true }) }}
           expand={(g) => <dl className="kv"><div><dt>Source</dt><dd>{g.src.sheet}, row {g.src.row}</dd></div><div><dt>Line</dt><dd>{g.spread}</dd></div><div><dt>Pick's side</dt><dd>{g.pickIsFavorite ? "Favorite" : "Underdog"}{g.neutral ? ", neutral site" : g.pick === g.home ? ", at home" : ", on the road"}</dd></div><div><dt>Final margin for the pick</dt><dd>{fmtSigned(g.margin, 0)}</dd></div><div><dt>Covered by <Derived why="Final margin minus the line, from the pick's side" /></dt><dd>{fmtSigned(g.coverBy)}</dd></div></dl>} />

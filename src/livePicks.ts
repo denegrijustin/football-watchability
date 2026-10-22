@@ -18,6 +18,25 @@ export function pickStanding(live: LiveLike | undefined, pickIsHome: boolean, li
 /** The line as written from the pick's side: "−3.5" for a favorite, "+7" for an underdog, "PK" for a pick'em. */
 export const lineText = (line: number) => (line === 0 ? "PK" : `${line < 0 ? "+" : "−"}${Math.abs(line)}`);
 
+/**
+ * How strongly the data backs a pick, from the chance it covers (0 to 1). Anything near a coin flip is a slight lean at best: the line already holds most of
+ * what the ratings know, so the tiers are deliberately modest.
+ */
+export type Strength = "strong" | "lean" | "slight";
+export const strengthOf = (cover: number | null | undefined): Strength | null => (cover == null ? null : cover >= 0.6 ? "strong" : cover >= 0.55 ? "lean" : "slight");
+export const STRENGTH_LABEL: Record<Strength, string> = { strong: "Big edge", lean: "Edge", slight: "Slight edge" };
+
+/** What has to happen for the pick to cover, in plain words. `line` is the margin the pick has to win by (negative for an underdog getting points). */
+export function coverRule(name: string, line: number): string {
+  if (line === 0) return `Covers if ${name} wins (a tie is a push).`;
+  if (line > 0) return `Covers if ${name} wins by more than ${line}${Number.isInteger(line) ? ` (exactly ${line} is a push)` : ""}.`;
+  const pts = -line;
+  return `Covers if ${name} wins, or loses by less than ${pts}${Number.isInteger(pts) ? ` (losing by exactly ${pts} is a push)` : ""}.`;
+}
+
+/** The ratings' own margin for the pick's side: the line plus the gap (the pick is the side the ratings like better than the line). */
+export const ratingsMargin = (line: number, gap: number) => Math.round((line + gap) * 10) / 10;
+
 /** What the pick needs, in words, for the status chip. */
 export function standingText(s: ReturnType<typeof pickStanding>): string {
   if (s.phase === "pre") return "Not started";
