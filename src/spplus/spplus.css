@@ -362,3 +362,40 @@ ol.steps b { color: var(--ink); }
 .ccols .pt .ring { stroke: transparent; }
 .ccols .pt:focus-visible .ring { stroke: var(--focus); stroke-width: 2; }
 .ccols-axis-title { margin: 2px 0 0 40px; font-size: 0.75rem; color: var(--ink-2); }
+
+/* Play against results board */
+.prb { display: grid; grid-template-columns: 7.5rem repeat(3, minmax(0, 1fr)); gap: 8px; align-items: stretch; }
+.prb-axis { grid-column: 2 / -1; font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); text-align: center; }
+.prb-colh { text-align: center; border-bottom: 2px solid var(--border-2); padding-bottom: 6px; }
+.prb-colh b, .prb-rowh b { display: block; font-size: 0.9375rem; text-transform: uppercase; letter-spacing: 0.02em; }
+.prb-colh small, .prb-rowh small { color: var(--muted); font-size: 0.75rem; }
+.prb-row { display: contents; }
+.prb-rowh { display: flex; flex-direction: column; justify-content: center; border-right: 2px solid var(--border-2); padding-right: 10px; }
+.prb-cell { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 8px 8px 10px; min-width: 0; min-height: 5.5rem; }
+.prb-cell h3 { margin: 0 0 6px; font-size: 0.8125rem; text-transform: uppercase; letter-spacing: 0.03em; display: flex; justify-content: space-between; gap: 6px; }
+.prb-cell h3 span { color: var(--muted); font-weight: 500; }
+.prb-cell.good { background: color-mix(in srgb, var(--good) 14%, var(--surface)); }
+.prb-cell.warn { background: color-mix(in srgb, var(--warn) 13%, var(--surface)); }
+.prb-cell.bad { background: color-mix(in srgb, var(--bad) 15%, var(--surface)); }
+.prb-cell ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 4px; }
+.prb-cell li { display: flex; }
+.prb-cell button { background: none; border: 0; padding: 4px 2px; min-width: 44px; min-height: 44px; display: flex; flex-direction: column; align-items: center; gap: 2px; color: var(--muted); font-size: 0.75rem; border-radius: 8px; cursor: pointer; }
+.prb-cell button img, .prb-cell button .mono { width: 32px; height: 32px; object-fit: contain; }
+.prb-cell button:hover { background: color-mix(in srgb, var(--ink) 8%, transparent); }
+.prb-cell button.sel { outline: 2px solid var(--focus); }
+.prb-cell li.top button span, .prb-foot .g { color: var(--good); font-weight: 600; }
+.prb-cell li.bot button span, .prb-foot .r { color: var(--bad); font-weight: 600; }
+.prb-foot { grid-column: 1 / -1; color: var(--muted); font-size: 0.8125rem; margin: 6px 0 0; }
+@media (max-width: 700px) {
+  .prb { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .prb-corner { display: none; }
+  .prb-axis { grid-column: 1 / -1; }
+  .prb-rowh { grid-column: 1 / -1; flex-direction: row; align-items: baseline; gap: 8px; border-right: 0; border-bottom: 2px solid var(--border-2); padding: 8px 0 4px; }
+  .prb-cell { padding: 6px 4px 8px; }
+  .prb-cell h3 { font-size: 0.75rem; }
+  .prb-cell button { min-width: 40px; }
+  .prb-cell button img, .prb-cell button .mono { width: 26px; height: 26px; }
+  .prb.dense .prb-cell ul { gap: 2px; }
+  .prb.dense .prb-cell button { min-width: 36px; min-height: 36px; padding: 2px; }
+  .prb.dense .prb-cell button img, .prb.dense .prb-cell button .mono { width: 24px; height: 24px; }
+}

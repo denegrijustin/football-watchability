@@ -1,7 +1,7 @@
 import { useCallback, useSyncExternalStore } from "react";
 import { PERF_TABS, type PerfKey } from "../perf/tabs";
 
-export type NflView = PerfKey | "rankings" | "simulator" | "ats" | "matchups" | "movement" | "standings" | "team";
+export type NflView = PerfKey | "rankings" | "simulator" | "ats" | "matchups" | "movement" | "standings" | "playresults" | "team";
 export const NFL_VIEWS: { key: NflView; label: string }[] = [
   { key: "rankings", label: "Ratings" },
   { key: "simulator", label: "Simulator" },
@@ -9,6 +9,7 @@ export const NFL_VIEWS: { key: NflView; label: string }[] = [
   { key: "matchups", label: "Matchups" },
   { key: "movement", label: "Movement" },
   { key: "standings", label: "Conf & Div" },
+  { key: "playresults", label: "Play vs Results" },
   { key: "team", label: "Team" },
   ...PERF_TABS.map((t) => ({ key: t.key as NflView, label: t.label })),
 ];
