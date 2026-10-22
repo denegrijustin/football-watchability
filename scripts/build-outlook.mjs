@@ -34,6 +34,31 @@ if (existsSync(logoFile))
   for (const l of read(logoFile).logos ?? []) logoOf.set(`${l.league ?? (nflNames.has(l.team) ? "NFL" : "CFB")}:${l.espnId}`, l.logoId);
 const withLogo = (league) => (t) => ({ ...t, logoId: logoOf.get(`${league}:${t.id}`) ?? null });
 
+// Playoff leverage: each team's playoff odds now, and after winning and after losing its game in the next week to be played.
+// A team that has already played that week (a Thursday game) is left out; a team with no game that week is on a bye.
+const playedIn = (finalsFeed, week) => new Set((finalsFeed?.games ?? []).filter((g) => !g.postseason && Number(g.week) === week).flatMap((g) => [g.home, g.away]));
+const firstWeek = (games) => Math.min(...games.map((g) => Number(g.week)).filter(Number.isFinite));
+function leverageOut(teams, sim, logo, extra = () => ({}), keep = () => true) {
+  const lv = sim?.leverage;
+  if (!lv || !Number.isFinite(lv.week)) return null;
+  const rows = [];
+  const byId = new Map();
+  for (const t of teams) {
+    const r = lv.byId.get(t.id);
+    if (!r) continue;
+    const cur = sim.byId.get(t.id)?.pPlayoffs ?? 0;
+    const row = { ...logo({ id: t.id, name: t.name, abbr: t.abbr }), ...extra(t), cur, ...(r.bye ? { bye: true } : { ifWin: r.ifWin, ifLoss: r.ifLoss }) };
+    byId.set(t.id, row);
+    if (keep(row)) rows.push(row);
+  }
+  const swing = (t) => (t && t.ifWin != null && t.ifLoss != null ? t.ifWin - t.ifLoss : 0);
+  const games = lv.games
+    .map((g) => ({ date: g.date, away: byId.get(g.away), home: byId.get(g.home) }))
+    .filter((g) => g.away && g.home && g.away.ifWin != null && g.home.ifWin != null)
+    .map((g) => ({ date: g.date, away: g.away, home: g.home, total: Math.round((swing(g.away) + swing(g.home)) * 10) / 10 }));
+  return { week: lv.week, rows: rows.sort((x, y) => y.cur - x.cur), games: games.sort((x, y) => String(x.date).localeCompare(String(y.date))) };
+}
+
 function stamp(feedName, key) {
   const f = feed(feedName);
   return { cycle: key, built: now.toISOString().slice(0, 10), fpiUpdated: f?.lastUpdated ?? null };
@@ -50,7 +75,8 @@ if (force || saved.cfb?.cycle !== cfbKey || (!saved.cfb?.sim && cfbSchedule)) {
     const logo = withLogo("CFB");
     const dress = (t) => logo(t);
     const playoff = cfbPlayoff(rows);
-    const sim = cfbSchedule ? simulateCfb(teams, cfbSchedule.games, parseConfRecords(feed("cfb-standings.json")), { seed: hashSeed(cfbKey) }) : null;
+    const lvWeek = cfbSchedule ? firstWeek(cfbSchedule.games) : NaN;
+    const sim = cfbSchedule ? simulateCfb(teams, cfbSchedule.games, parseConfRecords(feed("cfb-standings.json")), { seed: hashSeed(cfbKey), sims: 20000, playedWeek: playedIn(feed("cfb-finals.json"), lvWeek) }) : null;
     if (cfbSchedule && !sim) console.log("College seed simulation skipped: too few games left in the schedule.");
     const seen = new Map();
     const confRanks = new Map(rows.map((t) => [t.id, (seen.set(t.conf, (seen.get(t.conf) ?? 0) + 1), seen.get(t.conf))]));
@@ -71,6 +97,11 @@ if (force || saved.cfb?.cycle !== cfbKey || (!saved.cfb?.sim && cfbSchedule)) {
         confRank: confRanks.get(t.id),
       })),
       sim: sim ? { sims: sim.sims, games: cfbSchedule.games.length } : null,
+      // Teams still in the hunt (a real chance now, or after a win), for the leverage chart; the game table keeps the 30 biggest swings.
+      leverage: (() => {
+        const lv = leverageOut(teams, sim, logo, (t) => ({ conf: t.independent ? "Ind" : t.conf, record: `${t.wins}-${t.losses}${t.ties ? `-${t.ties}` : ""}` }), (r) => r.cur >= 1 || (r.ifWin ?? 0) >= 3);
+        return lv && { ...lv, games: lv.games.filter((g) => g.total >= 1).sort((x, y) => y.total - x.total).slice(0, 30).sort((x, y) => String(x.date).localeCompare(String(y.date))) };
+      })(),
       // Teams with at least a one-in-200 chance, most likely first: every other team is effectively out.
       grid: sim
         ? rows
@@ -99,13 +130,15 @@ if (force || saved.nfl?.cycle !== nflKey || (!saved.nfl?.sim && schedule?.games?
   else {
     const logo = withLogo("NFL");
     const po = nflPlayoff(teams);
-    const sim = schedule?.games?.length ? simulateNfl(teams, schedule.games, { seed: hashSeed(nflKey) }) : null;
+    const lvWeek = schedule?.games?.length ? firstWeek(schedule.games) : NaN;
+    const sim = schedule?.games?.length ? simulateNfl(teams, schedule.games, { seed: hashSeed(nflKey), sims: 50000, playedWeek: playedIn(feed("nfl-finals.json"), lvWeek) }) : null;
     if (schedule?.games?.length && !sim) console.log("NFL seed simulation skipped: the schedule does not cover the rest of the season.");
     const rating = (t) => ({ ...t, ...logo(t) });
     out.nfl = {
       ...stamp("nfl-fpi.json", nflKey),
       rules: NFL_FIELD,
       sim: sim ? { sims: sim.sims, games: schedule.games.length } : null,
+      leverage: leverageOut(teams, sim, logo, (t) => ({ conf: t.conf, record: `${t.wins}-${t.losses}${t.ties ? `-${t.ties}` : ""}` })),
       conferences: Object.fromEntries(
         Object.entries(po).map(([c, v]) => [
           c,
