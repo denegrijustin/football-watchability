@@ -23,7 +23,10 @@ const norm = (s = "") => s.toLowerCase().replace(/[^a-z0-9]+/g, "");
 
 // ESPN's conference listing: names, group ids and (usually) a logo.
 const listings = [];
+// ONLY=FCS or ONLY=D2 limits the run to that division's conferences (D2 ones come from "sources": ESPN has no logo for them, so the conference's own site is used) (so the FBS and NFL entries keep loading from ESPN's CDN in the browser, as before).
+const ONLY = process.env.ONLY ?? "";
 for (const url of [
+  "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard/conferences?groups=81",
   "https://site.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard/conferences",
   "https://site.web.api.espn.com/apis/site/v2/sports/football/college-football/scoreboard/conferences",
 ]) {
@@ -32,7 +35,7 @@ for (const url of [
     if (r.ok) {
       const j = await r.json();
       for (const c of j.conferences ?? []) listings.push(c);
-      if (listings.length) break;
+      if (listings.length && !url.includes("groups=81")) break;
     }
   } catch {}
 }
@@ -43,6 +46,8 @@ const NCAA_IDS = { SEC: 8, "Big Ten": 5, "Big 12": 4, ACC: 1, "Pac-12": 9, "Moun
 const candidates = (name) => {
   const out = [];
   const l = listed(name);
+  if (registry.conferences[name]?.sources) out.push(...registry.conferences[name].sources);
+  if (registry.conferences[name]?.remote) out.push(...registry.conferences[name].remote);
   if (l?.logo) out.push(l.logo);
   if (Array.isArray(l?.logos)) out.push(...l.logos.map((x) => x.href));
   const id = l?.groupId ?? NCAA_IDS[name];
@@ -56,6 +61,7 @@ const candidates = (name) => {
 
 const report = { fetched: [], kept: [], missing: [] };
 for (const [name, entry] of Object.entries(registry.conferences)) {
+  if (ONLY && entry.division !== ONLY) continue;
   if (entry.src && !FORCE) {
     report.kept.push(name);
     continue;
@@ -67,7 +73,7 @@ for (const [name, entry] of Object.entries(registry.conferences)) {
       if (!res.ok || !(res.headers.get("content-type") ?? "").startsWith("image/")) continue;
       const file = `public/conf-logos/${slug(name)}.webp`;
       const info = await sharp(Buffer.from(await res.arrayBuffer()))
-        .trim({ threshold: 1 })
+        .trim({ threshold: 10 })
         .resize(128, 128, { fit: "contain", background: { r: 0, g: 0, b: 0, alpha: 0 } })
         .webp({ quality: 90, alphaQuality: 100 })
         .toFile(new URL(file, root).pathname);

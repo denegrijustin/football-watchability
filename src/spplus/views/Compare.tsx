@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { ConfLogo } from "../../ConfMark";
 import { useData } from "../data/useData";
 import { useRoute } from "../store";
 import { fmt, METRICS, metricMeta, resolveWeek, rkKey, rowsFor, type Metric } from "../data/derive";
@@ -105,7 +106,7 @@ export default function Compare() {
                   );
                 })}
                 <tr><td>Record</td>{teams.map((t) => <td key={t.id} className="r num">{available(t)?.record?.text ?? "—"}</td>)}<td /></tr>
-                <tr><td>Conference</td>{teams.map((t) => <td key={t.id} className="r">{available(t)?.conf ?? "—"}</td>)}<td /></tr>
+                <tr><td>Conference</td>{teams.map((t) => <td key={t.id} className="r"><span style={{ display: "inline-flex", alignItems: "center", gap: 6, justifyContent: "flex-end" }}><ConfLogo conf={available(t)?.conf} division={t.division} size={18} />{available(t)?.conf ?? "—"}</span></td>)}<td /></tr>
                 {teams.length === 2 && sameDiv && (
                   <tr><td>Rank gap <Derived why="Difference of the two source ranks" /></td><td colSpan={3} className="r num">{(() => { const a = rk(teams[0], "sp"), b = rk(teams[1], "sp"); return a == null || b == null ? "—" : `${Math.abs(a - b)} spots`; })()}</td></tr>
                 )}

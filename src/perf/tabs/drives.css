@@ -1,0 +1,112 @@
+/* Drives tab. Also defines the drive-ending marks (--rs-*) the Finishing and Field tabs reuse. */
+
+.pframe {
+  --rs-td: #1fb57a; --rs-fg: #4a90e2; --rs-punt: #a8a79f; --rs-turnover: #ef5350; --rs-downs: #e8890c; --rs-missed: #e0679a; --rs-against: #9d93f0; --rs-other: #8a8983;
+  --rs-fill: var(--surface); --rs-edge: rgba(0, 0, 0, 0.45);
+  --dv-turf: #1d3326; --dv-line: rgba(255, 255, 255, 0.16); --dv-line2: rgba(255, 255, 255, 0.34); --dv-barline: rgba(0, 0, 0, 0.55);
+}
+@media (prefers-color-scheme: light) {
+  .pframe {
+    --rs-td: #0f8a5f; --rs-fg: #1f6fd0; --rs-punt: #6b6a63; --rs-turnover: #cf3a3a; --rs-downs: #b36b00; --rs-missed: #c03a70; --rs-against: #6354d6; --rs-other: #77766f;
+    --rs-edge: rgba(0, 0, 0, 0.35);
+    --dv-turf: #dcebdc; --dv-line: rgba(0, 0, 0, 0.16); --dv-line2: rgba(0, 0, 0, 0.36); --dv-barline: rgba(0, 0, 0, 0.35);
+  }
+}
+
+/* marks and chips */
+.rs-glyph { flex: none; display: inline-block; vertical-align: -2px; }
+.rs-chip { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px 2px 7px; border-radius: 999px; border: 1px solid var(--border-2); background: var(--surface); font-size: 0.8125rem; font-weight: 600; color: var(--ink); white-space: nowrap; }
+.rs-legend { list-style: none; padding: 0; margin: 4px 0 6px; display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.rs-legend li { display: inline-flex; align-items: center; gap: 5px; }
+
+/* season cards */
+.dv-h { font-size: 0.9375rem; margin: 4px 0 8px; font-weight: 650; }
+.dv-h .sub { font-weight: 400; margin-left: 6px; }
+.dv-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(158px, 1fr)); gap: 10px; }
+.dv-card { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); min-width: 0; }
+.dv-card .lab { font-size: 0.75rem; color: var(--ink-2); }
+.dv-card b { font-size: 1.5rem; line-height: 1.15; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.dv-card small { color: var(--muted); font-size: 0.75rem; min-height: 1.1em; }
+.dv-card em { font-style: normal; font-size: 0.75rem; font-weight: 600; color: var(--ink-2); }
+.dv-card em.v-better { color: var(--rs-td); }
+.dv-card em.v-worse { color: var(--rs-turnover); }
+
+/* game panel */
+.dv-panel { padding: 14px; }
+.dv-ghead { display: flex; flex-wrap: wrap; align-items: end; gap: 8px 14px; }
+.pframe select.dv-gsel { height: 40px; min-width: 0; max-width: 100%; width: min(380px, 100%); }
+.dv-step { display: flex; gap: 6px; }
+.dv-step .btn { height: 40px; }
+.dv-score { display: grid; gap: 4px; margin: 10px 0; }
+.dv-score > div { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; }
+.dv-score i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; align-self: center; }
+.dv-score small { color: var(--ink-2); font-size: 0.8125rem; }
+.dv-filters { display: flex; flex-wrap: wrap; gap: 10px 16px; margin: 8px 0 4px; align-items: end; }
+.dv-filters .seg { height: 36px; }
+.dv-n { color: var(--muted); font-size: 0.6875rem; }
+.dv-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.dv-chip { height: 34px; padding: 0 11px; border-radius: 999px; border: 1px solid var(--border-2); background: var(--surface); color: var(--ink-2); }
+.dv-chip:hover:not(:disabled) { background: var(--raise); color: var(--ink); }
+.dv-chip[aria-pressed="true"] { background: var(--raise); color: var(--ink); border-color: var(--s1); font-weight: 600; }
+.dv-chip:disabled, .seg button:disabled { opacity: 0.45; cursor: default; }
+.dv-outwrap { flex: 1 1 100%; }
+.dv-count { margin: 8px 0 2px; color: var(--ink-2); font-size: 0.8125rem; min-height: 30px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.dv-teams { margin: 2px 0; }
+.dv-teams i { width: 12px; height: 8px; border-radius: 4px; }
+
+/* the field */
+.dv-field { position: relative; margin-top: 6px; }
+.dv-row { display: grid; grid-template-columns: 34px minmax(0, 1fr) 96px; gap: 8px; align-items: center; }
+.dv-axis { min-height: 22px; }
+.dv-axissvg { display: block; }
+.dv-ezt { fill: #fff; font-size: 8px; font-weight: 700; letter-spacing: 0.02em; paint-order: stroke; stroke: rgba(0, 0, 0, 0.45); stroke-width: 2px; }
+.dv-yn { fill: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+.dv-lanes { list-style: none; margin: 0; padding: 0; }
+.dv-qhead { padding: 10px 0 3px 42px; font-size: 0.6875rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.dv-lane { border-radius: 10px; }
+.dv-lane.sel { background: var(--surface-2); }
+.dv-btn { width: 100%; min-height: 40px; padding: 3px 4px; background: none; border: 0; border-radius: 10px; color: inherit; text-align: left; }
+.dv-btn:hover { background: var(--surface-2); }
+.dv-btn[aria-expanded="true"] .dv-svg { box-shadow: 0 0 0 2px var(--focus); }
+.dv-no { display: flex; flex-direction: column; align-items: center; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.dv-no b { font-size: 0.8125rem; }
+.dv-no small { font-size: 0.625rem; color: var(--muted); }
+.dv-col { display: block; min-width: 0; }
+.dv-svg { display: block; border-radius: 5px; }
+.dv-turf { fill: var(--dv-turf); }
+.dv-ez { opacity: 0.55; }
+.dv-yd { stroke: var(--dv-line); stroke-width: 1; }
+.dv-mid { stroke: var(--dv-line2); stroke-width: 1.5; }
+.dv-goal { stroke: var(--dv-line2); stroke-width: 2; }
+.dv-halo { fill: var(--dv-turf); opacity: 0.85; }
+.dv-bar { stroke: var(--dv-barline); stroke-width: 1; }
+.dv-res { display: inline-flex; align-items: center; gap: 5px; font-size: 0.75rem; font-weight: 600; white-space: nowrap; color: var(--ink); }
+
+.dv-detail { margin: 4px 4px 10px 42px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); font-size: 0.8125rem; }
+.dv-detail h3 { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 0 0 8px; font-size: 0.9375rem; color: var(--ink); }
+.dv-story { margin: 0 0 10px; font-size: 0.9375rem; line-height: 1.45; color: var(--ink); }
+.dv-detail .kv { margin-bottom: 10px; }
+.dv-key h4 { margin: 8px 0 4px; font-size: 0.8125rem; color: var(--ink-2); }
+.dv-key ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.dv-key li { display: grid; grid-template-columns: auto auto; gap: 0 8px; justify-content: start; }
+.dv-key li span { grid-column: 1 / -1; color: var(--ink-2); }
+.dv-plays { margin-top: 10px; }
+.dv-playbox { margin-top: 8px; }
+.dv-playlist { list-style: none; margin: 0 0 6px; padding: 0; display: grid; gap: 2px; }
+.dv-playlist li { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 8px; padding: 6px 4px; border-bottom: 1px solid var(--grid); align-items: baseline; }
+.dv-playlist li.score { background: rgba(31, 181, 122, 0.12); }
+.dv-playlist li.turn { background: rgba(239, 83, 80, 0.12); }
+.dv-playlist .clk { color: var(--muted); font-variant-numeric: tabular-nums; }
+.dv-playlist .txt { overflow-wrap: anywhere; }
+.dv-playlist .yds { color: var(--ink-2); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.dv-foot { margin-top: 10px; }
+
+@media (max-width: 640px) {
+  .dv-row { grid-template-columns: 28px minmax(0, 1fr) 76px; gap: 6px; }
+  .dv-res { font-size: 0.6875rem; gap: 3px; }
+  .dv-qhead { padding-left: 34px; }
+  .dv-detail { margin-left: 0; margin-right: 0; padding: 10px 12px; }
+  .dv-panel { padding: 12px 10px; }
+  .dv-playlist li { grid-template-columns: 38px minmax(0, 1fr); }
+  .dv-playlist .yds { grid-column: 2; }
+}

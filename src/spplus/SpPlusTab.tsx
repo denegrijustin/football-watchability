@@ -5,6 +5,7 @@ import { createRoot } from "react-dom/client";
 import { DataProvider } from "./data/useData";
 import { SpPlusApp } from "./SpPlusApp";
 import css from "./spplus.css?inline";
+import perfCss from "../perf/perf.css?inline";
 
 /**
  * The CFB SP+ tab. It renders inside a shadow root, so its styles cannot leak into the board and the board's styles cannot reach it.
@@ -24,7 +25,7 @@ export default function SpPlusTab() {
     const shadow = el.shadowRoot ?? el.attachShadow({ mode: "open" });
     shadow.replaceChildren();
     const style = document.createElement("style");
-    style.textContent = css;
+    style.textContent = css + perfCss;
     const mount = document.createElement("div");
     shadow.append(style, mount);
     guardLogos(shadow);

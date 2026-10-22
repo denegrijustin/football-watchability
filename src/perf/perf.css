@@ -1,0 +1,167 @@
+@import "./tabs/profile.css";
+@import "./tabs/drives.css";
+@import "./tabs/trends.css";
+@import "./tabs/situations.css";
+@import "./tabs/bigplays.css";
+@import "./tabs/finishing.css";
+@import "./tabs/matchup.css";
+@import "./tabs/field.css";
+
+/* Team-performance tabs. Loaded inside the CFB SP+ and NFL+ shadow roots after spplus.css, so it uses that file's palette (--ink, --muted,
+   --surface, --raise, --border, --s1 ...) and light/dark switching. Charts come first; explanations stay short and the numbers open on demand. */
+
+/* The tab bar: ordinary tabs scroll, the Team performance menu stays pinned at the right edge. */
+.tabrow { display: flex; align-items: stretch; margin: 6px calc(var(--gutter) * -1) 0; }
+.tabrow .tabs { flex: 1 1 auto; min-width: 0; margin: 0; padding: 0 0 0 var(--gutter); }
+.pmenu { position: relative; flex: none; display: flex; align-items: stretch; padding: 0 var(--gutter) 0 8px; margin-left: 2px; border-left: 1px solid var(--border-2); background: linear-gradient(90deg, transparent, var(--page) 14px); }
+.pmenu-btn { display: inline-flex; align-items: center; gap: 7px; min-height: 44px; padding: 0 10px; background: none; border: 0; border-bottom: 2px solid transparent; color: var(--ink-2); font-weight: 500; white-space: nowrap; border-radius: 8px 8px 0 0; transition: color 0.15s, background-color 0.15s; }
+.pmenu-btn:hover { color: var(--ink); background: var(--surface); }
+.pmenu-btn.on { color: var(--ink); font-weight: 600; border-bottom-color: var(--s1); }
+.pmenu-btn .pm-chev { transition: transform 0.2s ease; opacity: 0.8; }
+.pmenu-btn[aria-expanded="true"] .pm-chev { transform: rotate(180deg); }
+.pmenu-btn[aria-expanded="true"] { background: var(--surface); color: var(--ink); }
+.pmenu-pop { position: absolute; z-index: 40; right: var(--gutter); top: calc(100% + 6px); width: min(380px, calc(100vw - 24px)); max-height: min(70vh, 560px); overflow: auto; padding: 8px; border-radius: 16px; background: var(--surface); border: 1px solid var(--border-2); box-shadow: 0 18px 48px rgba(0, 0, 0, 0.32); animation: pm-in 0.16s ease-out; transform-origin: top right; }
+.pmenu-head { margin: 4px 10px 6px; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.pmenu-grab, .pmenu-scrim { display: none; }
+.pmenu-item { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 8px 10px; border: 0; border-radius: 12px; background: none; color: var(--ink); text-align: left; transition: background-color 0.12s; }
+.pmenu-item:hover, .pmenu-item:focus-visible { background: var(--raise); }
+.pmenu-item[aria-checked="true"] { background: color-mix(in srgb, var(--s1) 14%, transparent); }
+.pm-badge { flex: none; width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; background: var(--surface-2); color: var(--s1); border: 1px solid var(--border); }
+.pmenu-item[aria-checked="true"] .pm-badge { background: var(--s1); color: #fff; border-color: transparent; }
+.pm-text { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.pm-text b { font-weight: 600; font-size: 0.9375rem; }
+.pm-text small { color: var(--ink-2); font-size: 0.8125rem; line-height: 1.3; }
+.pm-check { flex: none; color: var(--s1); opacity: 0; }
+.pmenu-item[aria-checked="true"] .pm-check { opacity: 1; }
+@keyframes pm-in { from { opacity: 0; transform: translateY(-6px) scale(0.98); } to { opacity: 1; transform: none; } }
+@keyframes pm-up { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes pm-fade { from { opacity: 0; } to { opacity: 1; } }
+
+@media (max-width: 520px) {
+  .pmenu { padding-right: 10px; }
+  .pmenu-btn { padding: 0 8px; max-width: 46vw; }
+  .pmenu-btn .pm-label { overflow: hidden; text-overflow: ellipsis; }
+  .pmenu-scrim { display: block; position: fixed; inset: 0; z-index: 90; background: rgb(0 0 0 / 45%); animation: pm-fade 0.2s ease-out; }
+  .pmenu-pop { position: fixed; z-index: 91; left: 0; right: 0; top: auto; bottom: 0; width: auto; max-height: 82vh; border-radius: 20px 20px 0 0; border-bottom: 0; padding: 6px 12px calc(16px + env(safe-area-inset-bottom)); animation: pm-up 0.26s cubic-bezier(0.2, 0.8, 0.2, 1); transform-origin: bottom; }
+  .pmenu-grab { display: block; width: 36px; height: 5px; border-radius: 3px; background: var(--border-2); margin: 4px auto 6px; }
+  .pmenu-item { min-height: 60px; }
+}
+@media (prefers-reduced-motion: reduce) { .pmenu-pop, .pmenu-scrim { animation: none; } .pmenu-btn .pm-chev { transition: none; } }
+
+.pframe { display: flex; flex-direction: column; gap: 14px; }
+.phd h1 { margin: 6px 0 0; font-size: 1.5rem; line-height: 1.2; font-weight: 700; letter-spacing: -0.01em; }
+.phd .pq { margin: 2px 0 0; color: var(--ink-2); font-size: 1.0625rem; }
+
+.pcontrols { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: start; padding: 12px 14px; border: 1px solid var(--border); border-radius: 14px; background: var(--surface); }
+.pcontrols .ctl { height: 40px; min-width: 150px; }
+.pcontrols .seg { height: 40px; }
+.pcontrols .btn { height: 40px; }
+.plink { margin-top: 2px; align-self: start; }
+
+.ptake { border-radius: 14px; padding: 14px 16px; background: var(--surface-2); border: 1px solid var(--border); }
+.ptake p { margin: 0; font-size: 1.0625rem; line-height: 1.45; color: var(--ink); }
+.ptake .sub { margin-top: 6px; font-size: 0.8125rem; }
+
+.pfresh { border-top: 1px solid var(--border); padding-top: 10px; color: var(--ink-2); font-size: 0.8125rem; }
+.pfresh p { margin: 0 0 4px; }
+.pfresh .sub { margin: 0; }
+
+.ptip { position: relative; display: inline-block; }
+.ptip-btn { width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--border-2); background: var(--surface); color: var(--ink-2); font-size: 0.75rem; line-height: 1; padding: 0; margin-left: 4px; vertical-align: middle; }
+.ptip-btn:hover, .ptip-btn[aria-expanded="true"] { background: var(--raise); color: var(--ink); }
+.ptip-pop { position: absolute; z-index: 30; left: 0; top: 26px; width: min(300px, 80vw); padding: 10px 12px; border-radius: 10px; background: var(--surface); border: 1px solid var(--border-2); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35); font-size: 0.8125rem; line-height: 1.4; text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--ink); }
+
+.pload { display: flex; align-items: center; justify-content: center; gap: 8px; }
+
+.pdefs { font-size: 0.8125rem; }
+.pdefs summary { cursor: pointer; color: var(--ink-2); min-height: 32px; display: flex; align-items: center; }
+.pdefs dl { margin: 6px 0 0; display: grid; gap: 8px; }
+.pdefs dt { font-weight: 600; }
+.pdefs dd { margin: 0; color: var(--ink-2); }
+
+/* Percentile bars */
+.pbars { display: flex; flex-direction: column; gap: 6px; }
+.pbars-scale { display: grid; grid-template-columns: minmax(130px, 220px) 1fr minmax(70px, 120px); font-size: 0.75rem; color: var(--muted); }
+.pbars-scale span:nth-child(1) { grid-column: 2; text-align: left; }
+.pbars-scale span:nth-child(2) { display: none; }
+.pbars-scale span:nth-child(3) { grid-column: 2; text-align: right; margin-top: -1.1em; }
+.pbar { border-radius: 12px; }
+.pbar.sel { background: var(--surface-2); }
+.pbar-btn { width: 100%; display: grid; grid-template-columns: minmax(130px, 220px) 1fr minmax(70px, 120px); gap: 12px; align-items: center; text-align: left; background: none; border: 0; padding: 8px 10px; min-height: 52px; border-radius: 12px; color: var(--ink); }
+.pbar-btn:hover { background: var(--surface-2); }
+.pbar-lab b { display: block; font-weight: 600; font-size: 0.9375rem; }
+.pbar-lab small { display: block; color: var(--muted); font-size: 0.75rem; }
+.pbar-track { position: relative; height: 18px; border-radius: 9px; background: var(--grid); overflow: hidden; }
+.pbar-track .mid { position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: var(--muted); opacity: 0.7; z-index: 2; }
+.pbar-track .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 9px; transition: width 0.35s ease; }
+.pbar-track .fill.b { background: transparent; border: 2px solid; top: 4px; bottom: 4px; border-radius: 6px; z-index: 1; }
+.pbar-track .na { position: absolute; inset: 0; display: grid; place-items: center; font-size: 0.75rem; font-style: normal; color: var(--muted); }
+.pbar-val { text-align: right; font-variant-numeric: tabular-nums; }
+.pbar-val b { display: block; font-size: 0.9375rem; }
+.pbar-val .vb { color: var(--ink-2); font-weight: 500; font-size: 0.8125rem; }
+.pbar-val small { display: block; color: var(--muted); font-size: 0.75rem; }
+.small-flag { color: #e0a23a; }
+.plegend { margin-top: 6px; align-items: center; }
+.plegend i { vertical-align: middle; }
+@media (max-width: 640px) {
+  .pbars-scale { display: none; }
+  .pbar-btn { grid-template-columns: 1fr auto; grid-template-areas: "lab val" "track track"; row-gap: 6px; }
+  .pbar-lab { grid-area: lab; }
+  .pbar-val { grid-area: val; }
+  .pbar-track { grid-area: track; }
+}
+@media (prefers-reduced-motion: reduce) { .pbar-track .fill { transition: none; } }
+
+.pdetail { border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); padding: 12px 14px; margin: 2px 4px 8px; font-size: 0.8125rem; }
+.pdetail h3 { margin: 0 0 6px; font-size: 0.9375rem; color: var(--ink); }
+.pdetail p { margin: 0 0 6px; color: var(--ink-2); }
+
+/* ---- Who the page is about ---- */
+.pbanner { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; }
+.pbn { --bn: var(--s1); display: flex; align-items: center; gap: 12px; min-width: 0; padding: 8px 16px 8px 10px; border-radius: 16px; background: var(--surface); border: 1px solid var(--border); box-shadow: inset 4px 0 0 var(--bn); }
+.pbn-logo { flex: none; display: grid; place-items: center; width: 44px; height: 44px; }
+.pbn-logo > * { max-width: 44px; max-height: 44px; }
+.pbn-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+.pbn-text b { font-size: 1.0625rem; font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pbn-text small { color: var(--ink-2); font-size: 0.8125rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pbn-vs { color: var(--muted); font-size: 0.8125rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
+
+/* A team picker that shows the team's logo (the list itself stays the system's own, which is the smoothest on a phone). */
+.tsel { position: relative; display: block; }
+.tsel-logo { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); display: grid; place-items: center; width: 24px; height: 24px; pointer-events: none; z-index: 1; }
+.tsel.has .ctl { padding-left: 40px; }
+.pcontrols .tsel .ctl { width: 100%; }
+
+/* ---- Motion: one calm entrance, and numbers that move rather than jump ---- */
+.pframe > * { animation: p-rise 0.28s ease-out both; }
+.pframe > :nth-child(2) { animation-delay: 0.03s; } .pframe > :nth-child(3) { animation-delay: 0.06s; } .pframe > :nth-child(4) { animation-delay: 0.09s; }
+@keyframes p-rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.pbar .fill { transition: width 0.45s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.2s; }
+.ptake, .pbn, .pcontrols, .panel { transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s; }
+.pframe .btn, .pframe .seg button, .pframe .ctl { transition: background-color 0.15s, border-color 0.15s, color 0.15s, box-shadow 0.15s; }
+.pframe .ctl:focus-visible, .pframe .btn:focus-visible, .pframe button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.pframe .panel, .ptake, .pcontrols { box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03), 0 6px 18px -12px rgba(0, 0, 0, 0.35); }
+@media (prefers-reduced-motion: reduce) { .pframe > *, .pbar .fill { animation: none; transition: none; } }
+
+@media (max-width: 520px) {
+  .pbn { flex: 1 1 100%; padding: 8px 12px 8px 8px; }
+  .pbanner.two { flex-wrap: nowrap; gap: 6px; }
+  .pbanner.two .pbn { flex: 1 1 0; padding: 8px 8px 8px 6px; gap: 8px; }
+  .pbanner.two .pbn-logo, .pbanner.two .pbn-logo > * { width: 36px; height: 36px; max-width: 36px; max-height: 36px; }
+  .pbanner.two .pbn-text small { display: none; }
+  .pbanner.two .pbn-text b { font-size: 0.9375rem; white-space: normal; line-height: 1.15; }
+  .pbn-vs { flex: none; }
+  .phd h1 { font-size: 1.375rem; }
+  .pcontrols { padding: 12px; gap: 10px; }
+  .pcontrols .field { flex: 1 1 calc(50% - 8px); min-width: 0; }
+  .pcontrols .field:first-child, .pcontrols .field:nth-child(2) { flex-basis: 100%; }
+  .pcontrols .ctl { min-width: 0; width: 100%; }
+  .pcontrols .seg { width: 100%; } .pcontrols .seg button { flex: 1; }
+  .pcontrols .btn { width: 100%; justify-content: center; }
+}
+
+/* Chart tooltips: label left, value right, a logo when the point is a team. */
+.tip .tr { flex-direction: row; gap: 14px; margin: 0; }
+.tip b { display: flex; align-items: center; gap: 6px; }
+.tip .tip-logo { display: inline-grid; place-items: center; width: 20px; height: 20px; flex: none; }
+.pbn-sub { display: flex; align-items: center; gap: 6px; }

@@ -4,8 +4,12 @@ import { DIVISIONS, type DivKey } from "./data/types";
 import { VIEWS, useRoute, type ViewKey } from "./store";
 import { Mark } from "./components/common";
 import { dateLabel } from "./data/derive";
+import { PerfProvider } from "../perf/data";
+import { useCfbAdapter } from "../perf/adapters";
+import { PERF_VIEWS, isPerfKey } from "../perf/tabs";
+import { PerfMenu } from "../perf/PerfMenu";
 
-const views: Record<ViewKey, React.LazyExoticComponent<() => ReactNode>> = {
+const views: Record<Exclude<ViewKey, `p-${string}`>, React.LazyExoticComponent<() => ReactNode>> = {
   rankings: lazy(() => import("./views/Rankings")),
   simulator: lazy(() => import("./views/Simulator")),
   ats: lazy(() => import("./views/Ats")),
@@ -21,7 +25,7 @@ const views: Record<ViewKey, React.LazyExoticComponent<() => ReactNode>> = {
 };
 
 /** Which shared filters each view uses. */
-const FILTERS: Record<ViewKey, { div?: boolean; all?: boolean; week?: boolean; conf?: boolean; q?: boolean }> = {
+const FILTERS: Record<Exclude<ViewKey, `p-${string}`>, { div?: boolean; all?: boolean; week?: boolean; conf?: boolean; q?: boolean }> = {
   rankings: { div: true, all: true, week: true, conf: true, q: true },
   simulator: {},
   ats: {},
@@ -36,10 +40,13 @@ const FILTERS: Record<ViewKey, { div?: boolean; all?: boolean; week?: boolean; c
   explorer: {},
 };
 
+const BASE_VIEWS = VIEWS.filter((v) => !isPerfKey(v.key));
+
 export function SpPlusApp() {
   const { model, snapshot, loadError, retry } = useData();
   const [route, nav] = useRoute();
-  const f = FILTERS[route.view];
+  const perf = isPerfKey(route.view);
+  const f = perf ? {} : FILTERS[route.view as Exclude<ViewKey, `p-${string}`>];
 
   const confs = useMemo(() => {
     if (!model) return [];
@@ -49,7 +56,7 @@ export function SpPlusApp() {
   }, [model, route.div, route.view]);
 
 
-  const View = views[route.view];
+  const View = perf ? PERF_VIEWS[route.view as keyof typeof PERF_VIEWS] : views[route.view as Exclude<ViewKey, `p-${string}`>];
   const week = route.week ?? model?.latest ?? 0;
   const compareTeams = model ? route.compare.map((id) => model.byId.get(id)).filter(Boolean) : [];
 
@@ -61,18 +68,21 @@ export function SpPlusApp() {
             <span className="brand">CFB SP+ <small>SP+ ratings, simulator and against-the-spread tracker</small></span>
             <span className="grow" />
           </div>
+          <div className="tabrow">
           <nav className="tabs" role="tablist" aria-label="Views" onKeyDown={(e) => {
-            const i = VIEWS.findIndex((v) => v.key === route.view);
+            const i = BASE_VIEWS.findIndex((v) => v.key === route.view);
             const d = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
-            if (!d) return;
-            const next = VIEWS[(i + d + VIEWS.length) % VIEWS.length];
+            if (!d || i < 0) return;
+            const next = BASE_VIEWS[(i + d + BASE_VIEWS.length) % BASE_VIEWS.length];
             nav({ view: next.key });
             requestAnimationFrame(() => document.getElementById(`tab-${next.key}`)?.focus());
           }}>
-            {VIEWS.map((v) => (
-              <button key={v.key} id={`tab-${v.key}`} role="tab" type="button" className="tab" aria-selected={route.view === v.key} tabIndex={route.view === v.key ? 0 : -1} onClick={() => nav({ view: v.key })}>{v.label}</button>
+            {BASE_VIEWS.map((v, i) => (
+              <button key={v.key} id={`tab-${v.key}`} role="tab" type="button" className="tab" aria-selected={route.view === v.key} tabIndex={route.view === v.key || (perf && i === 0) ? 0 : -1} onClick={() => nav({ view: v.key })}>{v.label}</button>
             ))}
           </nav>
+          <PerfMenu view={route.view} onPick={(key) => nav({ view: key })} />
+          </div>
         </div>
       </header>
 
@@ -133,7 +143,7 @@ export function SpPlusApp() {
         {!model && !loadError && <div className="empty" role="status">Loading…</div>}
         {model && (
           <Suspense fallback={<div className="empty" role="status">Loading view…</div>}>
-            <View />
+            {perf ? <PerfProvider league="cfb" useAdapter={useCfbAdapter}><View /></PerfProvider> : <View />}
           </Suspense>
         )}
       </main>

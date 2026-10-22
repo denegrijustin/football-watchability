@@ -43,7 +43,7 @@ test.describe("the CFB SP+ tab", () => {
     await expect(page.getByRole("button", { name: "CFB SP+" })).toHaveAttribute("aria-pressed", "true");
     await expect(page.locator(".spp .tbl tbody tr:not(.detail)")).toHaveCount(138);
     for (const name of ["Rankings", "Simulator", "ATS tracker", "Movement", "Team", "Matchups", "Compare", "Outliers", "Conferences", "Results", "SP+ vs lines", "Data"]) {
-      await expect(page.locator(".spp").getByRole("tab", { name })).toBeVisible();
+      await expect(page.locator(".spp").getByRole("tab", { name, exact: true })).toBeVisible();
     }
     await expect(page.locator(".spp .foot")).toContainText("2026 SP+");
   });

@@ -6,6 +6,7 @@ import { Derived, CompareToggle, Notes, TeamLink } from "../components/common";
 import { SortTable, type Col } from "../components/SortTable";
 import { Spark } from "../charts/Spark";
 import { confColor } from "../charts/kit";
+import { ConfLogo, hasConfLogo } from "../../ConfMark";
 import { DIV_LABEL, type DivKey, type Team, type TeamWeek, type TopRow } from "../data/types";
 
 type R = { id: string; team: Team; tw: TeamWeek | null; top: TopRow | null; confRank: ReturnType<typeof conferenceRanks> extends Map<string, infer V> ? V | undefined : never };
@@ -68,7 +69,7 @@ export default function Rankings() {
     { key: "rk", label: "Nat. rank", title: all ? "Rank on the 772-team list (source)" : `${div} rank in the sheet`, align: "r", get: (r) => rk(r, metricUse), render: (r) => <span className="num">{rk(r, metricUse) ?? "—"}</span> },
     ...(!all ? [{ key: "crk", label: "Conf. rank", title: "Rank within the conference, computed from the same rating", align: "r" as const, get: (r: R) => r.confRank?.[metricUse] ?? null, render: (r: R) => (r.confRank?.[metricUse] != null ? <span className="num">{r.confRank[metricUse]}<span className="muted">/{r.confRank.size}</span></span> : "—") }] : []),
     { key: "team", label: "Team", get: (r) => r.team.name, render: (r) => <TeamLink team={r.team} /> },
-    { key: "conf", hideSm: true, label: "Conf.", get: (r) => r.tw?.conf ?? r.top?.conf ?? null, render: (r) => { const c = r.tw?.conf ?? r.top?.conf ?? null; return <span>{c ? <><i style={{ display: "inline-block", width: 8, height: 8, borderRadius: 2, background: confColor(c), marginRight: 6 }} />{c}</> : "—"}</span>; } },
+    { key: "conf", hideSm: true, label: "Conf.", get: (r) => r.tw?.conf ?? r.top?.conf ?? null, render: (r) => { const c = r.tw?.conf ?? r.top?.conf ?? null; return <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>{c ? <>{hasConfLogo(c, r.team.division) ? <ConfLogo conf={c} division={r.team.division} size={18} /> : <i style={{ display: "inline-block", width: 8, height: 8, borderRadius: 2, background: confColor(c) }} />}{c}</> : "—"}</span>; } },
     ...(all ? [{ key: "div", hideSm: true, label: "Div.", get: (r: R) => r.top?.division ?? null, render: (r: R) => <>{r.top?.division ?? "—"} <Derived why="Matched by team name to the division tabs" /></> }] : []),
     { key: "rec", hideSm: true, label: "Rec.", get: (r) => (all ? r.top?.record?.text : r.tw?.record?.text) ?? null, render: (r) => { const rec = all ? r.top?.record : r.tw?.record; return rec ? <span className="num" title={rec.recovered ? `The sheet stores this as the date ${rec.sourceDate}; read back as ${rec.text}` : undefined}>{rec.text}{rec.recovered && <sup className="muted">*</sup>}</span> : <span className="muted">—</span>; } },
     { key: "val", label: mm.label, title: mm.long, first: mm.lowerBetter ? "asc" : "desc", get: (r) => val(r, metricUse), render: (r) => <RatingBar value={val(r, metricUse)} domain={domain} lowerBetter={mm.lowerBetter} text={fmt(val(r, metricUse))} /> },

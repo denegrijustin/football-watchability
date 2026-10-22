@@ -1,7 +1,8 @@
 import { useCallback, useSyncExternalStore } from "react";
 import type { DivKey } from "./data/types";
+import { PERF_TABS, type PerfKey } from "../perf/tabs";
 
-export type ViewKey = "rankings" | "simulator" | "ats" | "movement" | "team" | "matchups" | "compare" | "outliers" | "conferences" | "results" | "accuracy" | "explorer";
+export type ViewKey = PerfKey | "rankings" | "simulator" | "ats" | "movement" | "team" | "matchups" | "compare" | "outliers" | "conferences" | "results" | "accuracy" | "explorer";
 export const VIEWS: { key: ViewKey; label: string }[] = [
   { key: "rankings", label: "Rankings" },
   { key: "simulator", label: "Simulator" },
@@ -15,6 +16,7 @@ export const VIEWS: { key: ViewKey; label: string }[] = [
   { key: "results", label: "Results" },
   { key: "accuracy", label: "SP+ vs lines" },
   { key: "explorer", label: "Data" },
+  ...PERF_TABS.map((t) => ({ key: t.key as ViewKey, label: t.label })),
 ];
 
 export interface Route {

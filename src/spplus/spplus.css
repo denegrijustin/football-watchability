@@ -121,7 +121,7 @@ table.tbl { border-collapse: collapse; width: 100%; font-size: 0.8125rem; }
 .chart .axis line, .chart .axis path { stroke: var(--axis); }
 .chart .grid line { stroke: var(--grid); }
 .chart .lbl { fill: var(--muted); }
-.tip { position: absolute; z-index: 20; pointer-events: none; background: #0f0f0e; border: 1px solid var(--border-2); border-radius: 8px; padding: 8px 10px; font-size: 0.75rem; min-width: 150px; max-width: 260px; box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5); }
+.tip { position: absolute; z-index: 20; pointer-events: none; background: var(--surface); color: var(--ink); border: 1px solid var(--border-2); border-radius: 10px; padding: 8px 10px; font-size: 0.75rem; min-width: 150px; max-width: 260px; box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28); }
 .tip b { display: block; margin-bottom: 3px; font-size: 0.8125rem; }
 .tip .tr { display: flex; justify-content: space-between; gap: 12px; color: var(--ink-2); }
 .tip .tr span:last-child { color: var(--ink); font-variant-numeric: tabular-nums; }
@@ -351,3 +351,14 @@ ol.steps b { color: var(--ink); }
   .tbl:has(.rbar) td .tm { max-width: 100%; }
   .tbl:has(.rbar) td .tm .name { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 }
+
+/* Conference strength chart: a fixed axis beside columns that scroll sideways when there are many conferences. */
+.ccols-wrap { display: flex; align-items: flex-start; }
+.ccols-axis { flex: none; overflow: visible; }
+.ccols-scroll { flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: thin; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
+.ccols-scroll svg { width: auto; max-width: none; }
+.ccols .pt { cursor: pointer; }
+.ccols .pt:hover circle:not(.ring):not([fill="transparent"]) { stroke-width: 2.4; }
+.ccols .pt .ring { stroke: transparent; }
+.ccols .pt:focus-visible .ring { stroke: var(--focus); stroke-width: 2; }
+.ccols-axis-title { margin: 2px 0 0 40px; font-size: 0.75rem; color: var(--ink-2); }

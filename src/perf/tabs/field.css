@@ -1,0 +1,77 @@
+/* field position & turnovers tab */
+.fl-panel { padding: 14px; }
+.fl-panel h2 { font-size: 1rem; margin: 0 0 2px; }
+.fl-panel .sub { margin: 2px 0 8px; }
+.fl-cards { margin: 8px 0 12px; }
+.dv-card em.v-similar { color: var(--ink-2); }
+.fl-wrap { position: relative; }
+.fl-hist svg, .fl-turn svg { display: block; max-width: 100%; }
+
+/* histogram */
+.fl-band { fill: var(--grid); opacity: 0.35; }
+.fl-band.alt { opacity: 0.6; }
+.fl-band.on { fill: var(--s1); opacity: 0.22; }
+.fl-bt { fill: var(--ink-2); font-size: 9px; }
+.fl-grid { stroke: var(--grid); stroke-width: 1; }
+.fl-yt, .fl-xt { fill: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+.fl-axis { stroke: var(--axis); stroke-width: 1.5; }
+.fl-exp { stroke: var(--ink); stroke-width: 2; stroke-dasharray: 3 2; }
+.fl-bin, .fl-col { cursor: pointer; outline: none; }
+.fl-bin:focus-visible rect:first-child, .fl-col:focus-visible .fl-colbg { stroke: var(--focus); stroke-width: 2; }
+.fl-bin:hover rect:first-child { fill: rgba(127, 127, 127, 0.14); }
+.fl-expsw { width: 14px; height: 0 !important; border-top: 2px dashed var(--ink); border-radius: 0 !important; background: none !important; }
+.fl-hl { margin-top: 4px; }
+
+/* band rows */
+.fl-bands { display: flex; flex-direction: column; gap: 4px; margin-top: 10px; }
+.fl-bhead { display: grid; grid-template-columns: minmax(130px, 200px) minmax(0, 1fr) 130px; gap: 12px; padding: 0 10px; font-size: 0.75rem; color: var(--muted); }
+.fl-bhead .r { text-align: right; }
+.fl-brow { border-radius: 12px; }
+.fl-brow.on { background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--s1); }
+.fl-bbtn { width: 100%; display: grid; grid-template-columns: minmax(130px, 200px) minmax(0, 1fr) 130px; gap: 12px; align-items: center; text-align: left; background: none; border: 0; padding: 8px 10px; min-height: 52px; border-radius: 12px; color: var(--ink); }
+.fl-bbtn:hover { background: var(--surface-2); }
+.fl-blab b { display: block; font-size: 0.9375rem; }
+.fl-blab small, .fl-bshare small, .fl-bppd small { display: block; color: var(--muted); font-size: 0.75rem; }
+.fl-btrack { position: relative; display: block; height: 16px; border-radius: 8px; background: var(--grid); overflow: visible; margin-bottom: 3px; }
+.fl-bfill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 8px; transition: width 0.3s ease; }
+.fl-btick { position: absolute; top: -3px; bottom: -3px; width: 3px; margin-left: -1px; background: var(--ink); border-radius: 2px; }
+.fl-bppd { text-align: right; font-variant-numeric: tabular-nums; }
+.fl-bppd b { font-size: 1rem; }
+@media (prefers-reduced-motion: reduce) { .fl-bfill { transition: none; } }
+
+/* band detail */
+.fl-mixes { display: grid; gap: 6px; margin: 6px 0 10px; }
+.fl-mix { display: grid; grid-template-columns: 70px minmax(0, 1fr); gap: 8px; align-items: center; font-size: 0.8125rem; }
+.fl-mixbar { display: flex; height: 26px; border-radius: 7px; overflow: hidden; border: 1px solid var(--border-2); background: var(--grid); }
+.fl-mixseg { flex-basis: 0; min-width: 3px; font-size: 0.6875rem; font-weight: 700; display: flex; align-items: center; padding-left: 5px; overflow: hidden; white-space: nowrap; border-right: 2px solid var(--surface); text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55); }
+.fl-mixseg:last-child { border-right: 0; }
+
+/* turnover chart */
+.fl-colbg { fill: transparent; }
+.fl-colbg.on { fill: var(--s1); opacity: 0.14; }
+.fl-col:hover .fl-colbg { fill: rgba(127, 127, 127, 0.14); }
+.fl-n { fill: var(--ink); font-size: 11px; font-weight: 700; }
+.fl-m { fill: var(--ink-2); font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.fl-m.up { fill: var(--rs-td); }
+.fl-m.down { fill: var(--rs-turnover); }
+.fl-hatchsw { background: repeating-linear-gradient(45deg, var(--rs-turnover) 0 3px, rgba(0, 0, 0, 0.45) 3px 5px) !important; }
+.fl-tl { margin-top: 2px; }
+.fl-rowkey { margin: 4px 0 0; }
+.fl-sub { margin: 10px 0 4px; font-size: 0.8125rem; color: var(--ink-2); }
+
+/* after takeaways */
+.fl-def { margin: 6px 0; padding: 10px 12px; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--border); font-size: 0.8125rem; line-height: 1.45; color: var(--ink-2); }
+.fl-def b { color: var(--ink); }
+.fl-line { margin: 8px 0; font-size: 0.9375rem; line-height: 1.45; }
+.fl-det { margin-top: 6px; }
+.fl-det summary { cursor: pointer; min-height: 32px; display: flex; align-items: center; color: var(--ink-2); }
+
+@media (max-width: 640px) {
+  .fl-panel { padding: 12px 10px; }
+  .fl-bhead { display: none; }
+  .fl-bbtn { grid-template-columns: 1fr auto; grid-template-areas: "lab ppd" "share share"; row-gap: 6px; }
+  .fl-blab { grid-area: lab; }
+  .fl-bppd { grid-area: ppd; }
+  .fl-bshare { grid-area: share; }
+  .fl-mix { grid-template-columns: 52px minmax(0, 1fr); }
+}
