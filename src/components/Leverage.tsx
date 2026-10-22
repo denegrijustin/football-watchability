@@ -1,5 +1,6 @@
 import { logos } from "../data";
 import { dayOf, timeOf, tzAbbr, useTz } from "../tz";
+import { useWidth } from "../spplus/charts/kit";
 
 export type LevTeam = { id: string; name: string; abbr: string; logoId: string | null; conf: string | null; record: string; cur: number; ifWin?: number | null; ifLoss?: number | null; bye?: boolean };
 export type LevGame = { date: string | null; away: LevTeam; home: LevTeam; total: number };
@@ -7,8 +8,9 @@ export type Leverage = { week: number; rows: LevTeam[]; games: LevGame[] };
 
 const pc = (n: number) => (n >= 99.5 ? ">99%" : n < 0.5 ? "<1%" : `${Math.round(n)}%`);
 
-const W = 720, LEFT = 70, RIGHT = 70, ROW = 36, TOP = 14, R = 6, LOGO = 30, BAR = 9;
-const x = (p: number) => LEFT + (Math.max(0, Math.min(100, p)) / 100) * (W - LEFT - RIGHT);
+const TOP = 14;
+/** Sizes that suit the width the chart is given: the same picture on a phone, with tighter margins, smaller logos and type. */
+const sizes = (W: number) => (W < 520 ? { LEFT: 40, RIGHT: 40, ROW: 32, R: 5, LOGO: 26, BAR: 8, font: 11 } : { LEFT: 70, RIGHT: 70, ROW: 36, R: 6, LOGO: 30, BAR: 9, font: 12 });
 
 /** A smooth curve through the points (Catmull-Rom turned into cubic Béziers), as the tail of an SVG path. */
 function curve(pts: [number, number][], from = 0) {
@@ -25,6 +27,9 @@ function curve(pts: [number, number][], from = 0) {
  * that game matters. The soft ribbon behind joins the ends of every bar, so the whole race reads as one flowing shape; a team on a bye shows only where it stands.
  */
 export function LeverageChart({ rows, label }: { rows: LevTeam[]; label: string }) {
+  const [ref, measured] = useWidth<HTMLElement>();
+  const W = Math.max(measured || 720, 280), { LEFT, RIGHT, ROW, R, LOGO, BAR, font } = sizes(W);
+  const x = (p: number) => LEFT + (Math.max(0, Math.min(100, p)) / 100) * (W - LEFT - RIGHT);
   const h = TOP * 2 + rows.length * ROW;
   const ys = rows.map((_, i) => TOP + i * ROW + ROW / 2);
   const lo = rows.map((r, i): [number, number] => [x(r.ifLoss ?? r.cur), ys[i]]);
@@ -33,13 +38,13 @@ export function LeverageChart({ rows, label }: { rows: LevTeam[]; label: string 
   const ribbon = rows.length > 1 ? `M${lo[0][0]},${lo[0][1]}${curve(lo)} L${hi.at(-1)![0]},${hi.at(-1)![1]}${curve([...hi].reverse())} Z` : "";
   const spine = rows.length > 1 ? `M${mid[0][0]},${mid[0][1]}${curve(mid)}` : "";
   return (
-    <figure className="lev-chart">
+    <figure className="lev-chart" ref={ref as React.RefObject<HTMLElement>}>
       <div className="lev-key" aria-hidden="true">
         <span><i className="o" /> odds if they lose</span>
         <span><i className="logo">●</i> odds now</span>
         <span><i className="b" /> odds if they win</span>
       </div>
-      <svg viewBox={`0 0 ${W} ${h}`} role="img" aria-label={label} className="lev-svg">
+      <svg viewBox={`0 0 ${W} ${h}`} role="img" aria-label={label} className="lev-svg" style={{ ["--lev-font" as string]: `${font}px` }}>
         <defs>
           <linearGradient id="lev-bar" x1="0" x2="1" y1="0" y2="0">
             <stop offset="0" stopColor="var(--lev-o)" />
