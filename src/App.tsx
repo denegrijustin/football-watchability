@@ -14,6 +14,7 @@ import { defaultLeague } from "./league";
 
 // The map and its shapes load only when the tab is opened.
 const ImperialismMap = lazyView(() => import("./components/ImperialismMap").then((m) => ({ default: m.ImperialismMap })), "ImperialismMap");
+const PicksTab = lazyView(() => import("./components/PicksTab").then((m) => ({ default: m.PicksTab })), "PicksTab");
 const Outlook = lazyView(() => import("./components/Outlook").then((m) => ({ default: m.Outlook })), "Outlook");
 const InsanityBoard = lazyView(() => import("./components/InsanityBoard").then((m) => ({ default: m.InsanityBoard })), "InsanityBoard");
 const TvGrid = lazyView(() => import("./components/TvGrid").then((m) => ({ default: m.TvGrid })), "TvGrid");
@@ -237,6 +238,16 @@ export default function App() {
                 </span>
               </button>
               <button
+                data-tab="picks"
+                aria-label="Picks and parlays"
+                aria-pressed={view === "picks"}
+                onClick={() => go("picks")}
+                title="This week's against-the-spread picks, over/under picks and recommended parlays"
+              >
+                <TabIcon name="picks" />
+                <span className="tab-label">Picks</span>
+              </button>
+              <button
                 data-tab="upset"
                 aria-label="Upset Alert Meter"
                 aria-pressed={view === "upset"}
@@ -384,6 +395,8 @@ export default function App() {
               <Suspense fallback={<p className="ol-note" role="status">Loading…</p>}>
                 {view === "empire" ? (
                   <ImperialismMap defaultLeague={league} />
+                ) : view === "picks" ? (
+                  <PicksTab defaultLeague={league} />
                 ) : view === "outlook" ? (
                   <Outlook defaultLeague={league} />
                 ) : view === "spplus" ? (

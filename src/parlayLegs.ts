@@ -31,7 +31,7 @@ export function cfbLegs(model: Model, espn: Record<string, string>, games: Slate
       const e = expectation(par, A, B, p.neutral ? "neutral" : "b-home");
       const mu = p.atsPick === p.home ? -e.margin : e.margin;
       const pts = p.spreadPts as number, line = pts === 0 ? 0 : p.spreadTeam === p.atsPick ? pts : -pts;
-      out.push({ ...base, id: `${p.id}-s`, kind: "spread", team: p.atsPick, label: `${p.atsPick} ${lineText(line)}`, cover: 1 - normCdf((line - mu) / par.sigmaMargin), edge: r1(p.spreadDiff) });
+      out.push({ ...base, id: `${p.id}-s`, kind: "spread", team: p.atsPick, label: `${p.atsPick} ${lineText(line)}`, cover: 1 - normCdf((line - mu) / par.sigmaMargin), edge: r1(p.spreadDiff), line, pickIsHome: p.atsPick === p.home, liveIsHome: hit?.swapped ? p.atsPick !== p.home : p.atsPick === p.home, espnId: hit?.game.espnId ?? null });
     }
     if (p.ou != null && p.ouPick && p.ouDiff != null && p.ouDiff !== 0) {
       out.push({ ...base, id: `${p.id}-t`, kind: "total", label: `${p.ouPick} ${p.ou}`, cover: normCdf(Math.abs(p.ouDiff) / par.sigmaTotal), edge: r1(Math.abs(p.ouDiff)) });
@@ -52,7 +52,7 @@ export function nflLegs(data: NflData, games: SlateGame[], now = Date.now()): Le
     const e = (g.mm as number) - (g.spread as number);
     const line = p.pickIsHome ? (g.spread as number) : -(g.spread as number);
     const base = { league: "NFL" as const, gameId: g.id, game: `${g.away} at ${g.home}`, away: g.away, home: g.home, when };
-    out.push({ ...base, id: `${g.id}-s`, kind: "spread", team: name, label: `${name} ${lineText(line)}`, cover: normCdf((p.pickIsHome ? e : -e) / sigma), edge: r1(p.edge) });
+    out.push({ ...base, id: `${g.id}-s`, kind: "spread", team: name, label: `${name} ${lineText(line)}`, cover: normCdf((p.pickIsHome ? e : -e) / sigma), edge: r1(p.edge), line, pickIsHome: p.pickIsHome, espnId: g.espn ?? null });
   }
   // Totals: the ratings' own total against the posted one, for every game with both that has not started.
   for (const g of data.games) {

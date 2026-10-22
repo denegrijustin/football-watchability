@@ -2,6 +2,7 @@
 const PATHS: Record<string, string> = {
   board: "M4 5h16v6H4zM4 13h16v6H4z",
   upset: "M5 19l5-7 4 4 5-9M15 7h4v4",
+  picks: "M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.5 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z",
   insanity: "M13 3L5 14h6l-1 7 8-11h-6z",
   sim: "M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M6 18l2.5-2.5M15.5 8.5L18 6",
   more: "M5 12h.01M12 12h.01M19 12h.01",
