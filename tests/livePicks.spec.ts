@@ -4,6 +4,7 @@ import { findBoardGame, lineText, pickStanding, standingText } from "../src/live
 import { pickFor } from "../src/nfl/model";
 import type { NflData } from "../src/nfl/types";
 import { stubFinals } from "./helpers/finals";
+import { openSppTab } from "./helpers/spp";
 
 const nfl: NflData = JSON.parse(readFileSync("src/data/nfl.json", "utf8"));
 const slate = JSON.parse(readFileSync("src/data/slate.json", "utf8"));
@@ -41,7 +42,7 @@ async function openAts(page: Page) {
   await page.goto("/?league=NFL");
   await page.getByRole("button", { name: "NFL+" }).click();
   await expect(page.locator(".spp .tbl tbody tr").first()).toBeVisible({ timeout: 15_000 });
-  await page.locator(".spp").getByRole("tab", { name: "ATS tracker" }).click();
+  await openSppTab(page, "ATS tracker");
 }
 
 test("the NFL+ pick card names the pick and its line, and follows the score: covering, then not covering", async ({ page }) => {
