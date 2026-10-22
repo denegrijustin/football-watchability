@@ -6,6 +6,9 @@ import { dateLabel, fmt, fmtPct, fmtSigned } from "../data/derive";
 import { Derived, Mark, Notes, TeamLink, useTeamLookup } from "../components/common";
 import { LivePicks, type LivePickItem } from "../components/LivePicks";
 import { STRENGTH_LABEL, findBoardGame, lineText, strengthOf } from "../../livePicks";
+import { useLines } from "../../lines";
+import { freshCfbModel } from "../data/freshLines";
+import { LinesBar } from "../../components/LinesBar";
 import { slate } from "../../data";
 import { SortTable, type Col } from "../components/SortTable";
 import { AtsChart } from "../charts/AtsChart";
@@ -38,9 +41,11 @@ export default function Ats() {
   ] as [string, AtsGame[]][], [games]);
 
   // Picks still to be played: the current slate's lines and pick, with the model's chance to cover.
+  const { lines } = useLines();
+  const fresh = useMemo(() => freshCfbModel(model, lines, espn), [model, lines, espn]);
   const pending = useMemo(() => {
     const done = new Set(all.map((g) => g.id));
-    return model.projections.filter((p) => p.week === model.latest && p.atsPick && p.spreadPts != null && !done.has(p.id) && (incl || (model.byId.has(`FBS:${p.away}`) && model.byId.has(`FBS:${p.home}`)))).map((p) => {
+    return fresh.projections.filter((p) => p.week === model.latest && p.atsPick && p.spreadPts != null && !done.has(p.id) && (incl || (model.byId.has(`FBS:${p.away}`) && model.byId.has(`FBS:${p.home}`)))).map((p) => {
       const A = ratingsFor(model, p.away, p.week), B = ratingsFor(model, p.home, p.week);
       let cover: number | null = null;
       if (A && B) {
@@ -53,7 +58,7 @@ export default function Ats() {
       }
       return { p, cover };
     }).sort((a, b) => (b.p.spreadDiff ?? 0) - (a.p.spreadDiff ?? 0));
-  }, [model, all, incl]);
+  }, [model, fresh, all, incl]);
 
   // The pending picks as cards that follow the score: the pick and its line, and whether it is covering right now.
   const liveItems = useMemo<LivePickItem[]>(() => pending.map(({ p, cover }) => {
@@ -91,7 +96,7 @@ export default function Ats() {
 
   return (
     <div className="stack">
-      <LivePicks track={season.n ? `Track record this season: ${recordText(season)} (${fmtPct(season.pct, 1)}) against the ${fmtPct(BREAK_EVEN, 1)} needed to break even at −110. An edge ranks the picks; it does not guarantee a cover.` : undefined} items={liveItems} title={`Week ${model.latest} picks`} note="The side SP+ likes against the spread, with its line. A game on the field shows whether the pick is covering, not covering or on the number right now, and turns into the final grade at the horn." />
+      <LivePicks extra={<LinesBar />} track={season.n ? `Track record this season: ${recordText(season)} (${fmtPct(season.pct, 1)}) against the ${fmtPct(BREAK_EVEN, 1)} needed to break even at −110. An edge ranks the picks; it does not guarantee a cover.` : undefined} items={liveItems} title={`Week ${model.latest} picks`} note="The side SP+ likes against the spread, with its line. A game on the field shows whether the pick is covering, not covering or on the number right now, and turns into the final grade at the horn." />
       <div className="panel">
         <div className="phead">
           <div>

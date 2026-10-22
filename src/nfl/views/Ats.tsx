@@ -10,6 +10,8 @@ import { BREAK_EVEN, byEdge, recordText, tally, weeklyTracker } from "../../sppl
 import { dateLabel, fmt, fmtPct, fmtSigned, timeLabel } from "../../spplus/data/derive";
 import { normCdf } from "../../spplus/sim/rng";
 import { STRENGTH_LABEL, strengthOf } from "../../livePicks";
+import { freshNfl, useLines } from "../../lines";
+import { LinesBar } from "../../components/LinesBar";
 
 const BUCKETS = [{ lo: 0, hi: 1.5, label: "Under 1.5" }, { lo: 1.5, hi: 3, label: "1.5 to 3" }, { lo: 3, hi: 5, label: "3 to 5" }, { lo: 5, hi: Infinity, label: "5 or more" }];
 
@@ -30,7 +32,8 @@ export default function Ats() {
   const ci = wilson(season.w, season.w + season.l);
   const edges = useMemo(() => byEdge(games, BUCKETS), [games]);
   const side = useMemo(() => [["Home teams", games.filter((g) => g.pickIsHome)], ["Road teams", games.filter((g) => !g.pickIsHome)]] as [string, NflAtsGame[]][], [games]);
-  const pending = useMemo(() => pendingPicks(data), [data]);
+  const { lines } = useLines();
+  const pending = useMemo(() => pendingPicks(freshNfl(data, lines)), [data, lines]);
   // The pending picks as cards that follow the score. The pick must beat the line by its margin: the spread for a home pick, minus it for a road pick.
   const liveItems: LivePickItem[] = pending.map(({ g, p }) => ({
     id: g.id, by: "Ratings", pickName: data.teams[p.pick]?.name ?? p.pick, pickMark: <NflMark abbr={p.pick} size={28} />,
@@ -58,7 +61,7 @@ export default function Ats() {
 
   return (
     <div className="stack">
-      <LivePicks track={season.n ? `Track record this season: ${recordText(season)} (${fmtPct(season.pct, 1)}) against the ${fmtPct(BREAK_EVEN, 1)} needed to break even at −110. An edge ranks the picks; it does not guarantee a cover.` : undefined} items={liveItems} title="This week's picks" note="The side the ratings like against the closing spread, with its line. A game on the field shows whether the pick is covering, not covering or on the number right now, and turns into the final grade at the horn." />
+      <LivePicks extra={<LinesBar />} track={season.n ? `Track record this season: ${recordText(season)} (${fmtPct(season.pct, 1)}) against the ${fmtPct(BREAK_EVEN, 1)} needed to break even at −110. An edge ranks the picks; it does not guarantee a cover.` : undefined} items={liveItems} title="This week's picks" note="The side the ratings like against the closing spread, with its line. A game on the field shows whether the pick is covering, not covering or on the number right now, and turns into the final grade at the horn." />
       <div className="panel">
         <div className="phead"><div><h2>Ratings picks against the spread</h2><p className="sub" style={{ margin: 0 }}>Each game's pick is the side the team ratings like better than the closing spread. Graded from nflverse's lines and results <Derived why="The ratings' margin compared with the closing spread, graded against the final margin" /> · scores from ESPN fill in the moment a game ends</p></div></div>
         <div className="atshead">
