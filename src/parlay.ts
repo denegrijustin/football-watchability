@@ -24,6 +24,11 @@ export interface Leg {
   cover: number;
   /** How many points the ratings disagree with the line by. */
   edge: number;
+  /** For a spread leg, what a pick card needs: the margin the pick has to win by, whether it is the home side, and the board game to follow live. */
+  line?: number;
+  pickIsHome?: boolean;
+  liveIsHome?: boolean;
+  espnId?: string | null;
 }
 
 /** The profit on a winning leg at the standard −110 price, per 1 staked. */
