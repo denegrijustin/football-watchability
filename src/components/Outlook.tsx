@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { logos, type League } from "../data";
 import { fetchData } from "../data/load";
+import { ChipImg } from "../logoTone";
 import { LeverageChart, LeverageGames, type Leverage } from "./Leverage";
 
 type Team = { id: string; name: string; abbr: string; logoId: string | null };
@@ -70,7 +71,7 @@ const dayText = (iso: string) => new Date(`${iso}T12:00:00Z`).toLocaleDateString
 
 function Logo({ t }: { t: Team }) {
   const src = t.logoId ? logos[t.logoId] : undefined;
-  return src ? <img className="ol-logo" src={src} alt="" width="28" height="28" loading="lazy" decoding="async" /> : <span className="ol-chip" aria-hidden="true">{t.abbr.slice(0, 3)}</span>;
+  return src ? <ChipImg className="ol-logo" src={src} size={24} /> : <span className="ol-chip" aria-hidden="true">{t.abbr.slice(0, 3)}</span>;
 }
 
 function SeedRow({ s, odds, tag }: { s: Seed; odds: [string, number | null | undefined][]; tag: string }) {

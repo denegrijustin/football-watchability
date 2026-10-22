@@ -1,4 +1,5 @@
 import { useMemo, type ReactNode } from "react";
+import { ChipImg } from "../../logoTone";
 
 export interface BoardTeam {
   id: string; name: string;
@@ -12,6 +13,8 @@ export interface BoardTeam {
   /** The text under the logo, and the line in the tooltip. */
   rankText: string; tip: string;
   logo: ReactNode;
+  /** The logo file, when there is one: it is painted on a chip that contrasts with it. */
+  logoSrc?: string;
 }
 
 type Row = "well" | "even" | "out";
@@ -64,7 +67,7 @@ export function PlayResultsBoard({ teams, winHi, winLo, playLabel, playRule, onP
                   {list.map((t) => (
                     <li key={t.id} className={t.playRank <= markTop ? "top" : t.playRank > n - markBottom ? "bot" : ""}>
                       <button type="button" className={selected === t.id ? "sel" : ""} title={t.tip} aria-label={t.tip} onClick={() => onPick(t.id)}>
-                        {t.logo}
+                        {t.logoSrc ? <ChipImg src={t.logoSrc} size={26} /> : t.logo}
                         {showRank && <span>{t.rankText}</span>}
                       </button>
                     </li>
