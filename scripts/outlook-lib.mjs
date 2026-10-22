@@ -190,6 +190,45 @@ const nflSlim = (t) => ({
   pTitle: t.pTitle,
 });
 
+// ---------- Playoff leverage ----------
+/**
+ * Counts, over the simulated seasons, how often each team makes the playoffs after winning and after losing its game in the next
+ * week to be played (the lowest week left in the schedule). A team's leverage is the gap between the two. `won[g]` says whether
+ * game g's home side won (1) or lost (0) in this season; `made[i]` says whether team i made the field. Call begin() before the
+ * field is built and end() after it.
+ */
+function leverageTracker(teams, left, h, a, n) {
+  const week = Math.min(...left.map((g) => Number(g.week)).filter(Number.isFinite));
+  const idx = [];
+  left.forEach((g, k) => { if (Number(g.week) === week && h[k] >= 0 && a[k] >= 0) idx.push(k); });
+  const won = new Uint8Array(left.length);
+  const made = new Uint8Array(n);
+  const games = new Array(n).fill(-1);
+  const sideHome = new Uint8Array(n);
+  for (const k of idx) { games[h[k]] = k; sideHome[h[k]] = 1; games[a[k]] = k; }
+  const winN = new Float64Array(n), loseN = new Float64Array(n), winMade = new Float64Array(n), loseMade = new Float64Array(n);
+  const pc1 = (x) => Math.round(x * 1000) / 10;
+  return {
+    won, made, week,
+    begin() { made.fill(0); },
+    end() {
+      for (const k of idx) {
+        for (const [i, didWin] of [[h[k], won[k] === 1], [a[k], won[k] === 0]]) {
+          if (didWin) { winN[i]++; winMade[i] += made[i]; } else { loseN[i]++; loseMade[i] += made[i]; }
+        }
+      }
+    },
+    result(sched, playedWeek) {
+      const byId = new Map();
+      teams.forEach((t, i) => {
+        if (games[i] >= 0) byId.set(t.id, { game: games[i], ifWin: winN[i] >= 50 ? pc1(winMade[i] / winN[i]) : null, ifLoss: loseN[i] >= 50 ? pc1(loseMade[i] / loseN[i]) : null });
+        else if (!playedWeek.has(t.id)) byId.set(t.id, { bye: true });
+      });
+      return { week, games: idx.map((k) => ({ k, id: sched[k].id ?? null, date: sched[k].date ?? null, home: sched[k].home, away: sched[k].away })), byId };
+    },
+  };
+}
+
 // ---------- NFL seed simulation ----------
 const erf = (x) => {
   const t = 1 / (1 + 0.3275911 * Math.abs(x));
@@ -217,7 +256,7 @@ export const hashSeed = (str) => [...String(str)].reduce((h, c) => (Math.imul(h,
  * coin flips, so a tie for a seed is split evenly rather than resolved by head-to-head or conference record.
  * Returns null when the schedule does not account for the whole 272-game season.
  */
-export function simulateNfl(teams, games, { sims = 20000, seed = 1, hfa = 2, sd = 13.5 } = {}) {
+export function simulateNfl(teams, games, { sims = 20000, seed = 1, hfa = 2, sd = 13.5, playedWeek = new Set() } = {}) {
   const byId = new Map(teams.map((t, i) => [t.id, i]));
   const played = teams.reduce((n, t) => n + t.wins + t.losses + t.ties, 0) / 2;
   const left = games.filter((g) => byId.has(g.home) && byId.has(g.away));
@@ -240,12 +279,18 @@ export function simulateNfl(teams, games, { sims = 20000, seed = 1, hfa = 2, sd 
   const rand = rng(seed);
   const w = new Float64Array(n);
   const noise = new Float64Array(n);
+  const lev = leverageTracker(teams, left, h, a, n);
   for (let s = 0; s < sims; s++) {
     for (let i = 0; i < n; i++) {
       w[i] = base[i];
       noise[i] = rand() * 0.01; // coin-flip tiebreak, smaller than any difference in wins
     }
-    for (let g = 0; g < h.length; g++) w[rand() < p[g] ? h[g] : a[g]] += 1;
+    for (let g = 0; g < h.length; g++) {
+      const homeWon = rand() < p[g];
+      w[homeWon ? h[g] : a[g]] += 1;
+      lev.won[g] = homeWon ? 1 : 0;
+    }
+    lev.begin();
     for (let i = 0; i < n; i++) winsSum[i] += w[i];
     const score = (i) => w[i] + noise[i];
     for (const { mine, divs } of groups) {
@@ -253,12 +298,17 @@ export function simulateNfl(teams, games, { sims = 20000, seed = 1, hfa = 2, sd 
       for (const i of winners) divHits[i]++;
       winners.sort((x, y) => score(y) - score(x));
       const rest = mine.filter((i) => !winners.includes(i)).sort((x, y) => score(y) - score(x));
-      [...winners, ...rest.slice(0, 7 - winners.length)].forEach((i, k) => seedHits[i][k]++);
+      [...winners, ...rest.slice(0, 7 - winners.length)].forEach((i, k) => {
+        seedHits[i][k]++;
+        lev.made[i] = 1;
+      });
     }
+    lev.end();
   }
   const pc = (x) => Math.round((x / sims) * 1000) / 10;
   return {
     sims,
+    leverage: lev.result(left, playedWeek),
     byId: new Map(
       teams.map((t, i) => {
         const pSeed = seedHits[i].map(pc);
@@ -290,7 +340,7 @@ export const LOSS_PENALTY = 6;
  * for the selection committee, which will not match it exactly. A game a team plays against a team outside the
  * FPI list (an FCS opponent) is won with probability 0.95. Returns null when there is no schedule to play out.
  */
-export function simulateCfb(teams, games, confRecords, { sims = 10000, seed = 1, hfa = 2.5, sd = 17, rules = FORMAT } = {}) {
+export function simulateCfb(teams, games, confRecords, { sims = 10000, seed = 1, hfa = 2.5, sd = 17, rules = FORMAT, playedWeek = new Set() } = {}) {
   const byId = new Map(teams.map((t, i) => [t.id, i]));
   const left = games.filter((g) => byId.has(g.home) || byId.has(g.away));
   if (left.length < 20) return null;
@@ -315,6 +365,7 @@ export function simulateCfb(teams, games, confRecords, { sims = 10000, seed = 1,
   const rand = rng(seed);
   const w = new Float64Array(n), l = new Float64Array(n), cw = new Float64Array(n), cl = new Float64Array(n), noise = new Float64Array(n), score = new Float64Array(n);
   const order = Array.from({ length: n }, (_, i) => i);
+  const lev = leverageTracker(teams, left, h, a, n);
   for (let s = 0; s < sims; s++) {
     for (let i = 0; i < n; i++) {
       w[i] = baseW[i]; l[i] = baseL[i]; cw[i] = baseCW[i]; cl[i] = baseCL[i];
@@ -322,6 +373,7 @@ export function simulateCfb(teams, games, confRecords, { sims = 10000, seed = 1,
     }
     for (let g = 0; g < h.length; g++) {
       const homeWon = rand() < p[g];
+      lev.won[g] = homeWon ? 1 : 0;
       const win = homeWon ? h[g] : a[g];
       const lose = homeWon ? a[g] : h[g];
       if (win >= 0) w[win]++;
@@ -340,11 +392,14 @@ export function simulateCfb(teams, games, confRecords, { sims = 10000, seed = 1,
       if (field.length >= rules.teams) break;
       if (!inAuto.has(i)) field.push(i);
     }
-    field.sort((x, y) => score[y] - score[x]).forEach((i, k) => seedHits[i][k]++);
+    lev.begin();
+    field.sort((x, y) => score[y] - score[x]).forEach((i, k) => { seedHits[i][k]++; lev.made[i] = 1; });
+    lev.end();
   }
   const pc = (x) => Math.round((x / sims) * 1000) / 10;
   return {
     sims,
+    leverage: lev.result(left, playedWeek),
     byId: new Map(
       teams.map((t, i) => {
         const pSeed = seedHits[i].map(pc);

@@ -8144,3 +8144,43 @@ select,
   font-size: 0.75rem;
   opacity: 0.8;
 }
+
+/* Playoff leverage */
+.lev-chart { margin: 0; max-width: 760px; -webkit-overflow-scrolling: touch; }
+.lev-key { display: flex; flex-wrap: wrap; gap: 6px 18px; color: var(--text-2); font-size: 0.8rem; margin-bottom: 6px; }
+.lev-key i { display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+.lev-key i.o, .lev-dot.o, .lev-mini i.o { fill: var(--surface); stroke: var(--orange); background: var(--orange); }
+.lev-key i.b, .lev-dot.b, .lev-mini i.b { fill: var(--surface); stroke: #6fb4ee; background: #6fb4ee; }
+.lev-key i.logo { background: none; width: auto; height: auto; color: var(--muted); font-style: normal; }
+.lev-svg { width: 100%; height: auto; display: block; }
+.lev-grid { stroke: var(--line); stroke-dasharray: 2 4; }
+.lev-bar { stroke: var(--line-strong); stroke-width: 7; stroke-linecap: round; }
+.lev-dot { stroke-width: 2.5; }
+.lev-n { font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.lev-n.o { fill: var(--orange); }
+.lev-n.b { fill: #6fb4ee; }
+.lev-bye { font-size: 12px; fill: var(--text-2); }
+.lev-chip { fill: var(--surface-3); }
+.lev-abbr { font-size: 9px; font-weight: 700; fill: var(--text-2); }
+.lev-games { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 560px), 1fr)); gap: 8px; }
+.lev-games li { display: grid; grid-template-columns: 5.2rem minmax(0, 1fr) 1rem minmax(0, 1fr) 3.8rem; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 8px 8px 12px; }
+.lev-when { font-size: 0.78rem; color: var(--text-2); display: grid; line-height: 1.25; }
+.lev-when b { color: var(--text); }
+.lev-side { display: grid; justify-items: center; gap: 2px; min-width: 0; text-align: center; }
+.lev-side strong { font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+.lev-at { color: var(--muted); text-align: center; }
+.lev-mini { display: flex; align-items: center; gap: 5px; font-size: 0.72rem; font-variant-numeric: tabular-nums; }
+.lev-mini b.o { color: var(--orange); }
+.lev-mini b.b { color: #6fb4ee; }
+.lev-mini .track { position: relative; width: 56px; height: 8px; background: var(--surface-3); border-radius: 4px; }
+.lev-mini .track em { position: absolute; top: 3px; height: 2px; background: var(--line-strong); }
+.lev-mini .track i { position: absolute; top: 0; width: 8px; height: 8px; border-radius: 50%; transform: translateX(-4px); }
+.lev-total { align-self: stretch; display: grid; place-items: center; border-radius: 8px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text); font-size: 0.88rem; }
+@media (max-width: 560px) {
+  .lev-games li { grid-template-columns: minmax(0, 1fr) 1rem minmax(0, 1fr) 3.4rem; }
+  .lev-when { grid-column: 1 / -1; display: flex; gap: 6px; align-items: baseline; }
+  .lev-mini .track { width: 40px; }
+}
+.lev-h { margin: 10px 0 0; }
+.lev-chart { overflow-x: auto; }
+.lev-svg { min-width: 640px; }
