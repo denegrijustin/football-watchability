@@ -4,7 +4,7 @@ import { useRoute } from "../store";
 import { conferenceRanks, fmt, metricMeta, METRICS, ord, resolveWeek, rkKey, rowsFor, type Metric } from "../data/derive";
 import { Derived, Mark, Notes, TeamLink } from "../components/common";
 import { SortTable, type Col } from "../components/SortTable";
-import { StripPlot, type StripGroup } from "../charts/Strip";
+import { ConfColumns, type StripGroup } from "../charts/ConfColumns";
 import { confColor } from "../charts/kit";
 import { ConfLogo } from "../../ConfMark";
 import { DIV_LABEL, type DivKey } from "../data/types";
@@ -79,12 +79,12 @@ export default function Conferences() {
     <div className="stack">
       <div className="panel">
         <div className="phead">
-          <div><h2>{mm.label} by conference</h2><p className="sub" style={{ margin: 0 }}>{DIV_LABEL[div]} · week {week} · every team is a dot · rows ordered by conference mean <Derived why="Mean and median computed from the team values" /></p></div>
+          <div><h2>{mm.label} by conference</h2><p className="sub" style={{ margin: 0 }}>{DIV_LABEL[div]} · week {week} · every team is its logo · columns ordered by conference average <Derived why="Mean and median computed from the team values" /></p></div>
           <div className="seg" role="group" aria-label="Rating">
             {METRICS.filter((m) => m.key !== "st" || div === "FBS").map((m) => <button key={m.key} type="button" aria-pressed={m.key === useMetric} onClick={() => nav({ p: { metric: m.key === "sp" ? null : m.key } }, { replace: true })}>{m.label}</button>)}
           </div>
         </div>
-        <StripPlot division={div} groups={groups} selected={route.team || null} onSelect={(id) => { nav({ team: id }, { replace: true }); setPopup(id); }} axisTitle={`${mm.long}${mm.lowerBetter ? " · axis reversed, right is better" : ""}`} lowerBetter={mm.lowerBetter} natMean={natMean} ariaLabel={`${mm.label} by conference`} />
+        <ConfColumns fmtValue={(v) => fmt(v)} division={div} groups={groups} selected={route.team || null} onSelect={(id) => { nav({ team: id }, { replace: true }); setPopup(id); }} axisTitle={`${mm.long}${mm.lowerBetter ? " · axis reversed, right is better" : ""}`} lowerBetter={mm.lowerBetter} natMean={natMean} ariaLabel={`${mm.label} by conference`} />
         {sel && selTw && <p className="note-box" style={{ marginTop: 8 }}>Selected: <TeamLink team={sel} size={18} /> · {selTw.conf} · {mm.label} {fmt(selTw[useMetric])}</p>}
         <Notes items={notes} />
       </div>
