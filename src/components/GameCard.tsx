@@ -1,4 +1,5 @@
 import { MomentumFlow } from "./MomentumFlow";
+import { lineTextFor, useFreshLine } from "../lines";
 import { CompactGame } from "./CompactGame";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { deltaValue, logos, parseMeta, tierLabel, type Game } from "../data";
@@ -12,11 +13,13 @@ import {
   type Ranks,
 } from "../data";
 import { PregameWinProb, type WinProbData } from "./PregameWinProb";
+import { CardLine } from "./CardLine";
+import { MatchupBars } from "./MatchupBars";
 import { ProjectedScore, type Projection } from "./ProjectedScore";
 import { GameStatus, TeamScore, useFlow, useLive } from "../live";
 import { InsanityMeter } from "./InsanityMeter";
 import { useOpenGame } from "./GameCenterContext";
-import { EdgeLine, type Advanced } from "./AdvancedStats";
+import { type Advanced } from "./AdvancedStats";
 import { InjuryWatch } from "./InjuryReport";
 import { Booth, type CrewMember } from "./Booth";
 import { dayOf, timeOf, tzAbbr } from "../tz";
@@ -70,7 +73,11 @@ export function GameCard({
   }, [expanded, defaultExpanded]);
   const net = (game as { network?: string | null }).network;
   const netLogo = networkLogo(net);
-  const meta = parseMeta(game.meta);
+  // The saved line is from the last rebuild; when the current one is in hand (see lines.ts) the card shows that.
+  const freshLine = useFreshLine(game.espnId);
+  const savedMeta = parseMeta(game.meta);
+  const freshText = freshLine && freshLine.state === "pre" ? lineTextFor(freshLine, game.teams as { name: string; abbr?: string }[], game.league) : null;
+  const meta = freshText ? { ...savedMeta, line: freshText } : savedMeta;
   const date = (game as { date?: string }).date ?? "";
   const delta = deltaValue(game.delta);
   const impact = impactLevel(game.weather.impact);
@@ -126,7 +133,7 @@ export function GameCard({
           setExpanded(true);
       }}
     >
-      {!expanded && <CompactGame titleId={`${game.id}-title`} matchup={game.matchup} date={date} broadcast={game.broadcast} network={game.network} espnId={game.espnId} teams={game.teams} league={game.league} score={game.score} tier={game.tier} venue={meta.venue} driveChart={live?.state === "in" && game.espnId && !atHalf ? (<LiveDrive espnId={game.espnId} league={game.league} badge={badge} weather={game.weather} teams={(game.teams as { espnId?: string | null; abbr?: string; name: string; color?: string | null; logoId?: string; ranks?: { confName?: string } }[]).map((t) => ({ ...t, conf: t.ranks?.confName }))} />) : undefined} top={<>{upsetBanner}{bandTop}</>} badge={<GameBadgeRow badge={badge} />} weather={game.weather} status={<GameStatus live={live} />} scores={[<TeamScore live={live} side="away" />, <TeamScore live={live} side="home" />]} onExpand={() => setExpanded(true)} momentum={<MomentumFlow wp={flow ?? []} away={awayAbbr} home={homeAbbr} compact status={live ? { state: live.state, period: flow?.at(-1)?.[1] ?? 1, clock: flow?.at(-1)?.[2]?.clock ?? "15:00" } : undefined} pendingLabel={live?.state === "in" ? "Awaiting play data" : live?.state === "post" ? "Play data unavailable" : "Starts at kickoff"} />} />}
+      {!expanded && <CompactGame titleId={`${game.id}-title`} matchup={game.matchup} date={date} broadcast={game.broadcast} network={game.network} espnId={game.espnId} teams={game.teams} league={game.league} score={game.score} tier={game.tier} venue={meta.venue} driveChart={live?.state === "in" && game.espnId && !atHalf ? (<LiveDrive espnId={game.espnId} league={game.league} badge={badge} weather={game.weather} teams={(game.teams as { espnId?: string | null; abbr?: string; name: string; color?: string | null; logoId?: string; ranks?: { confName?: string } }[]).map((t) => ({ ...t, conf: t.ranks?.confName }))} />) : undefined} top={<>{upsetBanner}{bandTop}</>} badge={<GameBadgeRow badge={badge} />} weather={game.weather} status={<GameStatus live={live} />} scores={[<TeamScore live={live} side="away" />, <TeamScore live={live} side="home" />]} lineStrip={<CardLine line={meta.line} wp={"winProb" in game ? (game.winProb as WinProbData) : null} projected={"projected" in game ? (game.projected as Projection) : null} away={awayAbbr} home={homeAbbr} showBar={!live || live.state === "pre"} />} onExpand={() => setExpanded(true)} momentum={live && live.state !== "pre" ? <MomentumFlow wp={flow ?? []} away={awayAbbr} home={homeAbbr} compact status={live ? { state: live.state, period: flow?.at(-1)?.[1] ?? 1, clock: flow?.at(-1)?.[2]?.clock ?? "15:00" } : undefined} pendingLabel={live?.state === "in" ? "Awaiting play data" : live?.state === "post" ? "Play data unavailable" : "Starts at kickoff"} /> : undefined} />}
       {expanded && (
         <>
       {upsetBanner}
@@ -250,73 +257,60 @@ export function GameCard({
         </div>
       </div>
 
-      <ul className="facts" aria-label="Game info">
-        <li>
-          <span className="fact-icon" aria-hidden="true">
-            📍
-          </span>
-          {meta.venue}
+      <ul className="facts cd-info" aria-label="Game info">
+        <li className="cd-tile">
+          <span className="cd-k"><span className="fact-icon" aria-hidden="true">📍</span> Venue</span>
+          <span className="cd-v">{meta.venue}</span>
         </li>
         {meta.line && (
-          <li>
-            <span className="fact-icon" aria-hidden="true">
-              ⚖️
-            </span>
-            {meta.line}
+          <li className="cd-tile">
+            <span className="cd-k"><span className="fact-icon" aria-hidden="true">⚖️</span> Line</span>
+            <span className="cd-v">{meta.line.replace(/\s*•\s*/g, " · ")}</span>
           </li>
         )}
-        <Booth crew={(game as { announcers?: CrewMember[] }).announcers} />
-        <li className={`weather impact-${impact}`}>
-          <span className="fact-icon" aria-hidden="true">
-            {game.weather.icon}
-          </span>
-          <span>
+        <li className={`cd-tile weather impact-${impact}`}>
+          <span className="cd-k"><span className="fact-icon" aria-hidden="true">{game.weather.icon}</span> Weather</span>
+          <span className="cd-v">
             {game.weather.title}
             <span className="weather-detail"> · {game.weather.detail}</span>
+            {impact !== "low" && impact !== "none" && <span className={`impact-pill ${impact}`}>{impact} weather impact</span>}
           </span>
-          {impact !== "low" && impact !== "none" && (
-            <span className={`impact-pill ${impact}`}>
-              {impact} weather impact
-            </span>
-          )}
         </li>
+        <Booth crew={(game as { announcers?: CrewMember[] }).announcers} />
       </ul>
         </>
       )}
       {expanded && (
         <div className="card-more" id={`${game.id}-more`}>
-
-
-          <p className="take">{game.narrative}</p>
-          {"projected" in game && (
-            <ProjectedScore
-              p={game.projected as Projection}
-              away={awayAbbr}
-              home={homeAbbr}
-            />
-          )}
-          {"winProb" in game && (
-            <PregameWinProb
-              wp={game.winProb as WinProbData}
-              away={(away as { abbr?: string }).abbr ?? away.name}
-              home={(home as { abbr?: string }).abbr ?? home.name}
-            />
-          )}
-          <EdgeLine
-            away={{
-              abbr: awayAbbr,
-              adv: (away as { advanced?: Advanced }).advanced ?? null,
-            }}
-            home={{
-              abbr: homeAbbr,
-              adv: (home as { advanced?: Advanced }).advanced ?? null,
-            }}
-          />
+          <section className="cd-sec" aria-labelledby={`${game.id}-preview`}>
+            <h4 className="cd-h" id={`${game.id}-preview`}>Preview</h4>
+            <p className="take">{game.narrative}</p>
+            {"projected" in game && (
+              <ProjectedScore
+                p={game.projected as Projection}
+                away={awayAbbr}
+                home={homeAbbr}
+              />
+            )}
+            {"winProb" in game && (
+              <PregameWinProb
+                wp={game.winProb as WinProbData}
+                away={(away as { abbr?: string }).abbr ?? away.name}
+                home={(home as { abbr?: string }).abbr ?? home.name}
+              />
+            )}
+          </section>
+          {(() => {
+            const adv = { away: { abbr: awayAbbr, adv: (away as { advanced?: Advanced }).advanced ?? null }, home: { abbr: homeAbbr, adv: (home as { advanced?: Advanced }).advanced ?? null } };
+            if (!adv.away.adv?.eff && !adv.home.adv?.eff && !adv.away.adv?.qbr && !adv.home.adv?.qbr) return null;
+            return (
+              <section className="cd-sec" aria-labelledby={`${game.id}-matchup`}>
+                <h4 className="cd-h" id={`${game.id}-matchup`}>Matchup</h4>
+                <MatchupBars away={adv.away} home={adv.home} />
+              </section>
+            );
+          })()}
           <InjuryWatch game={game} />
-
-
-
-
         </div>
       )}
       {expanded && toggle}
