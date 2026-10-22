@@ -27,3 +27,11 @@ export async function expectSppTabs(page: Page, names: string[]) {
   }
   if (phone) await page.keyboard.press("Escape");
 }
+
+/** The named view is the open one: its tab is selected on a computer; on a phone the Views button names it. */
+export async function expectSppTabSelected(page: Page, name: string, exact = false) {
+  const btn = page.getByTestId("view-menu-btn");
+  await page.locator(".spp .tabrow").first().waitFor();
+  if (await btn.isVisible()) await expect(btn).toContainText(name);
+  else await expect(page.locator(".spp").getByRole("tab", { name, exact })).toHaveAttribute("aria-selected", "true");
+}

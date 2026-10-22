@@ -9,7 +9,7 @@ import { forEachRow } from "../scripts/nflverse/csv.mjs";
 import { ols } from "../scripts/nflverse/calibrate.mjs";
 import { solve } from "../scripts/nflverse/ratings.mjs";
 import { stubFinals } from "./helpers/finals";
-import { expectSppTabs, openSppTab } from "./helpers/spp";
+import { expectSppTabs, openSppTab, expectSppTabSelected } from "./helpers/spp";
 
 test.beforeEach(async ({ page }) => { await stubFinals(page); });
 
@@ -120,7 +120,7 @@ test.describe("the NFL+ tab", () => {
     await expect(side).toContainText("Closing spread / total");
     await expect(side).toContainText("Setting");
     await side.getByRole("button", { name: "Simulate this game" }).click();
-    await expect(page.locator(".spp").getByRole("tab", { name: "Simulator" })).toHaveAttribute("aria-selected", "true");
+    await expectSppTabSelected(page, "Simulator");
     await expect(page.locator(".spp .simpts")).toHaveCount(2);
   });
 
@@ -158,7 +158,7 @@ test.describe("NFL Game Center", () => {
     await block.getByRole("button", { name: /Open in NFL+/ }).click();
     await expect(dialog).toBeHidden();
     await expect(page.getByRole("button", { name: "NFL+" })).toHaveAttribute("aria-pressed", "true");
-    await expect(page.locator(".spp").getByRole("tab", { name: "Simulator" })).toHaveAttribute("aria-selected", "true");
+    await expectSppTabSelected(page, "Simulator");
     await expect(page.locator(".spp").getByLabel("Away team")).toHaveValue(upcoming.away);
     await expect(page.locator(".spp").getByLabel("Home team")).toHaveValue(upcoming.home);
   });

@@ -6,7 +6,7 @@ import { projectGame, sheetName, weekFor, type SpLite } from "../src/spplus/lite
 import { buildModel } from "../src/spplus/data/model";
 import { atsGames, recordText, tally } from "../src/spplus/data/ats";
 import { stubFinals } from "./helpers/finals";
-import { expectSppTabs, openSppTab } from "./helpers/spp";
+import { expectSppTabs, openSppTab, expectSppTabSelected } from "./helpers/spp";
 
 test.beforeEach(async ({ page }) => { await stubFinals(page); });
 const snapshot = JSON.parse(readFileSync("src/data/spplus.json", "utf8"));
@@ -79,7 +79,7 @@ test.describe("the CFB SP+ tab", () => {
     await expect(page.locator(".spp").getByRole("heading", { name: "SP+ picks against the spread" })).toBeVisible();
     await page.getByRole("button", { name: "Games" }).click();
     await page.getByRole("button", { name: "CFB SP+" }).click();
-    await expect(page.locator(".spp").getByRole("tab", { name: "ATS tracker" })).toHaveAttribute("aria-selected", "true");
+    await expectSppTabSelected(page, "ATS tracker");
   });
 });
 
@@ -137,7 +137,7 @@ test.describe("Game Center", () => {
     await expect(page.getByRole("button", { name: "CFB SP+" })).toHaveAttribute("aria-pressed", "true");
     await expect(page.locator(".spp").getByLabel("Team A")).toHaveValue("Ohio State");
     await expect(page.locator(".spp").getByLabel("Team B")).toHaveValue("Indiana");
-    await expect(page.locator(".spp").getByRole("tab", { name: "Simulator" })).toHaveAttribute("aria-selected", "true");
+    await expectSppTabSelected(page, "Simulator");
   });
 
   test("no SP+ block when a team is outside the FBS ratings, or for the NFL", async ({ page }) => {
