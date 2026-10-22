@@ -78,3 +78,15 @@ export function LogoMark({ src, cx, cy, size, chipOpacity = 0.92, imageClass, ch
     </g>
   );
 }
+
+/** A logo in ordinary page layout (not an SVG field) on a round chip that contrasts with it, so a white logo never sits on a white page. */
+export function ChipImg({ src, size, alt = "", className }: { src: string; size: number; alt?: string; className?: string }) {
+  useMeasured(src);
+  const chip = useChip(src);
+  const pad = Math.round(size * 0.14);
+  return (
+    <span className={`chipimg${className ? ` ${className}` : ""}`} data-chip={chip === CHIP_DARK ? "dark" : "light"} style={{ background: chip, width: size + pad * 2, height: size + pad * 2, padding: pad }}>
+      <img src={src} alt={alt} width={size} height={size} loading="lazy" decoding="async" referrerPolicy="no-referrer" />
+    </span>
+  );
+}

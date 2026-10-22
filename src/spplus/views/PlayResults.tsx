@@ -27,7 +27,7 @@ export default function PlayResults() {
         id: x.r.team.id, name: x.r.team.name, play: x.r.tw.sp!, playRank: i + 1, winPct: pct, rec: `${w}-${l}${t ? `-${t}` : ""}`,
         rankText: x.r.tw.spRk != null ? ord(x.r.tw.spRk) : ord(i + 1),
         tip: `${x.r.team.name} · ${w}-${l}${t ? `-${t}` : ""} · SP+ ${fmt(x.r.tw.sp)} (${ord(x.r.tw.spRk ?? i + 1)})`,
-        logo: <Mark team={x.r.team} size={32} />,
+        logo: <Mark team={x.r.team} size={32} />, logoSrc: x.r.team.logo?.local ?? x.r.team.logo?.remote,
       };
     });
   }, [rows]);

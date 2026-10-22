@@ -3,6 +3,8 @@ import { useNfl } from "../useNfl";
 import { navigateNfl, useNflRoute } from "../store";
 import { teamRows } from "../model";
 import { NflMark, Notes } from "../common";
+import { logos } from "../../data";
+import { logoSlug } from "../model";
 import { PlayResultsBoard, type BoardTeam } from "../../spplus/charts/PlayResultsBoard";
 import { fmt } from "../../spplus/data/derive";
 
@@ -21,7 +23,7 @@ export default function PlayResults() {
     return {
       id: r.abbr, name: r.name, play: r.r[0], playRank: i + 1, winPct: (r.rec.w + r.rec.t / 2) / g, rec,
       rankText: ord(r.rank.sp), tip: `${r.name} · ${rec} · rating ${fmt(r.r[0])} (${ord(r.rank.sp)})`,
-      logo: <NflMark abbr={r.abbr} size={32} />,
+      logo: <NflMark abbr={r.abbr} size={32} />, logoSrc: logos[logoSlug(r.name)],
     };
   }), [rows]);
 

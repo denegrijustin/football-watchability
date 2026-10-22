@@ -1,6 +1,7 @@
 import { logos } from "../data";
 import { dayOf, timeOf, tzAbbr, useTz } from "../tz";
 import { useWidth } from "../spplus/charts/kit";
+import { ChipImg, LogoMark } from "../logoTone";
 
 export type LevTeam = { id: string; name: string; abbr: string; logoId: string | null; conf: string | null; record: string; cur: number; ifWin?: number | null; ifLoss?: number | null; bye?: boolean };
 export type LevGame = { date: string | null; away: LevTeam; home: LevTeam; total: number };
@@ -85,8 +86,14 @@ export function LeverageChart({ rows, label }: { rows: LevTeam[]; label: string 
                   <text x={x(hh) + R + 7} y={y + 4} className="lev-n b">{pc(hh)}</text>
                 </>
               )}
-              <circle cx={x(r.cur)} cy={y} r={LOGO / 2 + 2} className="lev-disc" filter="url(#lev-shadow)" />
-              {src ? <image href={src} x={x(r.cur) - LOGO / 2 + 2} y={y - LOGO / 2 + 2} width={LOGO - 4} height={LOGO - 4} preserveAspectRatio="xMidYMid meet" /> : <text x={x(r.cur)} y={y + 3.5} textAnchor="middle" className="lev-abbr">{r.abbr.slice(0, 3)}</text>}
+              {src ? (
+                <g filter="url(#lev-shadow)" className="lev-logo"><LogoMark src={src} cx={x(r.cur)} cy={y} size={(LOGO - 4) * 0.9} chipOpacity={1} chipClass="lev-chipring" /></g>
+              ) : (
+                <g className="lev-logo">
+                  <circle cx={x(r.cur)} cy={y} r={LOGO / 2} className="lev-disc" />
+                  <text x={x(r.cur)} y={y + 3.5} textAnchor="middle" className="lev-abbr">{r.abbr.slice(0, 3)}</text>
+                </g>
+              )}
             </g>
           );
         })}
@@ -100,7 +107,7 @@ function Mini({ t }: { t: LevTeam }) {
   const lo = t.ifLoss ?? t.cur, hi = t.ifWin ?? t.cur;
   return (
     <div className="lev-side">
-      {src ? <img src={src} alt="" width="34" height="34" loading="lazy" decoding="async" /> : <span className="ol-chip" aria-hidden="true">{t.abbr.slice(0, 3)}</span>}
+      {src ? <ChipImg src={src} size={30} /> : <span className="ol-chip" aria-hidden="true">{t.abbr.slice(0, 3)}</span>}
       <strong>{t.name}</strong>
       <span className="lev-mini" title={`${pc(lo)} with a loss, ${pc(hi)} with a win`}>
         <b className="o">{pc(lo)}</b>
