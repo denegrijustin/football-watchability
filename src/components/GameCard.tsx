@@ -1,4 +1,5 @@
 import { MomentumFlow } from "./MomentumFlow";
+import { lineTextFor, useFreshLine } from "../lines";
 import { CompactGame } from "./CompactGame";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { deltaValue, logos, parseMeta, tierLabel, type Game } from "../data";
@@ -70,7 +71,11 @@ export function GameCard({
   }, [expanded, defaultExpanded]);
   const net = (game as { network?: string | null }).network;
   const netLogo = networkLogo(net);
-  const meta = parseMeta(game.meta);
+  // The saved line is from the last rebuild; when the current one is in hand (see lines.ts) the card shows that.
+  const freshLine = useFreshLine(game.espnId);
+  const savedMeta = parseMeta(game.meta);
+  const freshText = freshLine && freshLine.state === "pre" ? lineTextFor(freshLine, game.teams as { name: string; abbr?: string }[], game.league) : null;
+  const meta = freshText ? { ...savedMeta, line: freshText } : savedMeta;
   const date = (game as { date?: string }).date ?? "";
   const delta = deltaValue(game.delta);
   const impact = impactLevel(game.weather.impact);

@@ -10,6 +10,7 @@ import { useClosingUpsets } from "../brewing";
 import type { StatusCounts } from "./Filters";
 import { GameCard } from "./GameCard";
 import { ResultCard } from "./ResultCard";
+import { LinesBar } from "./LinesBar";
 
 type Game = ReturnType<typeof filterGames>[number];
 const refOf = (r: Result) => ({ id: r.espnId, league: r.league, teams: r.teams });
@@ -171,6 +172,7 @@ export function GameBoard({
             <span className="count">{upcoming.length}</span>
             <span className="section-note">{SECTION_HELP.upcoming}</span>
           </div>
+          <LinesBar compact />
           <KickoffSlots games={upcoming} />
         </section>
       )}

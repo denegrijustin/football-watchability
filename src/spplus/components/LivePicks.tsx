@@ -33,7 +33,7 @@ export interface LivePickItem {
  * The picks still to be graded, as cards: the pick and its line in big type, and for a game on the field a status that follows the score. It says
  * whether the pick is covering, not covering (and by how much it is short) or exactly on the number, and turns into the final grade at the horn.
  */
-export function LivePicks({ items, title, note, track }: { items: LivePickItem[]; title: string; note: string; track?: string }) {
+export function LivePicks({ items, title, note, track, extra }: { items: LivePickItem[]; title: string; note: string; track?: string; extra?: ReactNode }) {
   const live = useLiveMap();
   const [all, setAll] = useState(false);
   const [by, setBy] = useState<"strength" | "time">("strength");
@@ -45,7 +45,7 @@ export function LivePicks({ items, title, note, track }: { items: LivePickItem[]
   return (
     <div className="panel">
       <div className="phead">
-        <div><h2>{title}</h2><p className="sub">{note}</p>{track && <p className="lp-track">{track}</p>}</div>
+        <div><h2>{title}</h2><p className="sub">{note}</p>{track && <p className="lp-track">{track}</p>}{extra}</div>
         <div className="seg" role="group" aria-label="Order the picks">
           <button type="button" aria-pressed={by === "strength"} onClick={() => setBy("strength")}>Strongest first</button>
           <button type="button" aria-pressed={by === "time"} onClick={() => setBy("time")}>By kickoff</button>

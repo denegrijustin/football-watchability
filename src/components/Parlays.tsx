@@ -11,6 +11,9 @@ import { cfbLegs, nflLegs } from "../parlayLegs";
 import { STRENGTH_LABEL, strengthOf } from "../livePicks";
 import { BREAK_EVEN, american, byGame, recommend, type Leg, type Parlay } from "../parlay";
 import { ChipImg } from "../logoTone";
+import { freshNfl, useLines } from "../lines";
+import { freshCfbModel } from "../spplus/data/freshLines";
+import { LinesBar } from "./LinesBar";
 
 const pct = (n: number, d = 0) => `${(n * 100).toFixed(d)}%`;
 const kick = (when: string) => {
@@ -69,6 +72,7 @@ export function Parlays({ league }: { league: "CFB" | "NFL" }) {
   const [kinds, setKinds] = useState<{ spread: boolean; total: boolean }>({ spread: true, total: true });
   const [min, setMin] = useState(0.55);
   const [week, setWeek] = useState(true);
+  const { lines } = useLines();
   useEffect(() => {
     let live = true;
     Promise.all([fetchData<Snapshot>("spplus"), fetchData<SpLite>("spplus-lite").catch(() => ({ espn: {} } as SpLite)), fetchData<NflData>("nfl")])
@@ -79,11 +83,11 @@ export function Parlays({ league }: { league: "CFB" | "NFL" }) {
   const pool = useMemo(() => {
     if (!data) return [];
     const games = slate.games as never as Parameters<typeof cfbLegs>[2];
-    const all = [...(scope === "all" || league === "CFB" ? cfbLegs(data.model, data.espn, games) : []), ...(scope === "all" || league === "NFL" ? nflLegs(data.nfl, games) : [])];
+    const all = [...(scope === "all" || league === "CFB" ? cfbLegs(freshCfbModel(data.model, lines, data.espn), data.espn, games) : []), ...(scope === "all" || league === "NFL" ? nflLegs(freshNfl(data.nfl, lines), games) : [])];
     const day = (l: Leg) => Date.parse(l.when.slice(0, 10));
     const first = Math.min(...all.map(day).filter(Number.isFinite));
     return all.filter((l) => kinds[l.kind] && (!week || !Number.isFinite(first) || day(l) <= first + 6 * 864e5));
-  }, [data, scope, league, kinds, week]);
+  }, [data, scope, league, kinds, week, lines]);
   const slips = useMemo(() => recommend(pool, { minCover: min }), [pool, min]);
   const games = useMemo(() => byGame(pool, 0.5), [pool]);
   const showLeague = scope === "all";
@@ -115,6 +119,7 @@ export function Parlays({ league }: { league: "CFB" | "NFL" }) {
           </select>
         </label>
       </div>
+      <LinesBar />
       <p className="ol-note pl-warn">
         <b>Read this first.</b> A parlay only pays if every leg hits, so one miss loses the slip. Each leg is priced at −110. The chances are the model's own, and its picks have not beaten the line so far this season, so treat them as a ranking of the picks rather than as a promise. Bet only what you can afford to lose, and check the line at your book before you place anything: lines move.
       </p>
