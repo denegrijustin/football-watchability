@@ -3,6 +3,7 @@ import { logos, type League } from "../data";
 import { fetchData } from "../data/load";
 import { ChipImg } from "../logoTone";
 import { LeverageChart, LeverageGames, type Leverage } from "./Leverage";
+import { Parlays } from "./Parlays";
 
 type Team = { id: string; name: string; abbr: string; logoId: string | null };
 type Seed = Team & {
@@ -273,7 +274,7 @@ function LeveragePart({ lev, sims, cycle, dow, league }: { lev?: Leverage | null
 export function Outlook({ defaultLeague }: { defaultLeague: League }) {
   const [data, setData] = useState<Data | null>(null);
   const [league, setLeague] = useState<League>(defaultLeague);
-  const [part, setPart] = useState<"playoff" | "leverage" | "ranking" | "bowls">("playoff");
+  const [part, setPart] = useState<"playoff" | "leverage" | "parlays" | "ranking" | "bowls">("playoff");
   const [shown, setShown] = useState(25);
   const [conf, setConf] = useState("all");
   useEffect(() => {
@@ -295,14 +296,16 @@ export function Outlook({ defaultLeague }: { defaultLeague: League }) {
         </div>
         {league === "NFL" && (
           <div className="segmented" role="group" aria-label="Outlook section">
-            <button aria-pressed={part !== "leverage"} onClick={() => setPart("playoff")}>Seeds</button>
+            <button aria-pressed={part !== "leverage" && part !== "parlays"} onClick={() => setPart("playoff")}>Seeds</button>
             <button aria-pressed={part === "leverage"} onClick={() => setPart("leverage")}>Leverage</button>
+            <button aria-pressed={part === "parlays"} onClick={() => setPart("parlays")}>Parlays</button>
           </div>
         )}
         {league === "CFB" && (
           <div className="segmented" role="group" aria-label="Outlook section">
             <button aria-pressed={part === "playoff"} onClick={() => setPart("playoff")}>Playoff</button>
             <button aria-pressed={part === "leverage"} onClick={() => setPart("leverage")}>Leverage</button>
+            <button aria-pressed={part === "parlays"} onClick={() => setPart("parlays")}>Parlays</button>
             <button aria-pressed={part === "ranking"} onClick={() => setPart("ranking")}>Rankings</button>
             <button aria-pressed={part === "bowls"} onClick={() => setPart("bowls")}>Bowls</button>
           </div>
@@ -313,6 +316,8 @@ export function Outlook({ defaultLeague }: { defaultLeague: League }) {
       ) : league === "NFL" ? (
         !nfl ? (
           <p className="ol-note">The NFL outlook has not been built yet.</p>
+        ) : part === "parlays" ? (
+          <Parlays league="NFL" />
         ) : part === "leverage" ? (
           <LeveragePart lev={nfl.leverage} sims={nfl.sim?.sims} cycle={nfl.cycle} dow="Tuesday" league="NFL" />
         ) : (
@@ -359,6 +364,8 @@ export function Outlook({ defaultLeague }: { defaultLeague: League }) {
         )
       ) : !cfb ? (
         <p className="ol-note">The college outlook has not been built yet.</p>
+      ) : part === "parlays" ? (
+        <Parlays league="CFB" />
       ) : part === "leverage" ? (
         <LeveragePart lev={cfb.leverage} sims={cfb.sim?.sims} cycle={cfb.cycle} dow="Sunday" league="College" />
       ) : part === "playoff" ? (
