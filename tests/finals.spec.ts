@@ -10,6 +10,7 @@ import type { NflData } from "../src/nfl/types";
 import { finalFromEvent, mergeFinals, type Final } from "../src/finals";
 import { parseFinal, mergeFinals as mergeLib } from "../scripts/finals-lib.mjs";
 import { stubFinals } from "./helpers/finals";
+import { openSppTab } from "./helpers/spp";
 
 const snapshot = JSON.parse(readFileSync("src/data/spplus.json", "utf8"));
 const lite = buildLite(snapshot, JSON.parse(readFileSync("src/data/team-ids.json", "utf8")));
@@ -175,7 +176,7 @@ test.describe("the trackers update in the open tab when a game ends", () => {
     await page.goto("/?league=CFB");
     await page.getByRole("button", { name: "CFB SP+" }).click();
     await expect(page.locator(".spp .tbl tbody tr").first()).toBeVisible({ timeout: 15_000 });
-    await page.locator(".spp").getByRole("tab", { name: "ATS tracker" }).click();
+    await openSppTab(page, "ATS tracker");
     await expect(page.locator(".spp .atshead")).toContainText(recordText(tally(atsGames(buildModel(snap)).filter((g) => g.group === "fbs"))));
     ended = true;
     // The open tab checks ESPN every two minutes and again whenever it is shown; show it now.
@@ -204,7 +205,7 @@ test("NFL+: a final that arrives after the page loaded moves the ATS record", as
   await page.goto("/?league=NFL");
   await page.getByRole("button", { name: "NFL+" }).click();
   await expect(page.locator(".spp .tbl tbody tr").first()).toBeVisible({ timeout: 15_000 });
-  await page.locator(".spp").getByRole("tab", { name: "ATS tracker" }).click();
+  await openSppTab(page, "ATS tracker");
   await expect(page.locator(".spp .atshead")).toContainText(recordText(without));
   ended = true;
   await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));

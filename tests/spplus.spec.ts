@@ -6,6 +6,7 @@ import { projectGame, sheetName, weekFor, type SpLite } from "../src/spplus/lite
 import { buildModel } from "../src/spplus/data/model";
 import { atsGames, recordText, tally } from "../src/spplus/data/ats";
 import { stubFinals } from "./helpers/finals";
+import { expectSppTabs, openSppTab } from "./helpers/spp";
 
 test.beforeEach(async ({ page }) => { await stubFinals(page); });
 const snapshot = JSON.parse(readFileSync("src/data/spplus.json", "utf8"));
@@ -63,7 +64,7 @@ test.describe("the CFB SP+ tab", () => {
 
   test("the simulator opens on a scheduled game, and teams can be swapped", async ({ page }) => {
     await openTab(page);
-    await page.locator(".spp").getByRole("tab", { name: "Simulator" }).click();
+    await openSppTab(page, "Simulator");
     const pts = page.locator(".spp .simpts");
     await expect(pts).toHaveCount(2);
     for (const t of await pts.allInnerTexts()) expect(Number(t)).toBeGreaterThan(10);
@@ -74,7 +75,7 @@ test.describe("the CFB SP+ tab", () => {
 
   test("the tool keeps its place when you leave the tab and come back", async ({ page }) => {
     await openTab(page);
-    await page.locator(".spp").getByRole("tab", { name: "ATS tracker" }).click();
+    await openSppTab(page, "ATS tracker");
     await expect(page.locator(".spp").getByRole("heading", { name: "SP+ picks against the spread" })).toBeVisible();
     await page.getByRole("button", { name: "Games" }).click();
     await page.getByRole("button", { name: "CFB SP+" }).click();
@@ -88,7 +89,7 @@ test.describe("ATS tracker", () => {
 
   test("season and weekly records come from grading every pick against its line", async ({ page }) => {
     await openTab(page);
-    await page.locator(".spp").getByRole("tab", { name: "ATS tracker" }).click();
+    await openSppTab(page, "ATS tracker");
     const head = page.locator(".spp .atshead");
     await expect(head).toContainText(recordText(season));
     await expect(head).toContainText(`${(season.pct! * 100).toFixed(1)}%`);
@@ -104,7 +105,7 @@ test.describe("ATS tracker", () => {
 
   test("including FBS-vs-FCS games changes the totals; picks can be expanded to their sheet row", async ({ page }) => {
     await openTab(page);
-    await page.locator(".spp").getByRole("tab", { name: "ATS tracker" }).click();
+    await openSppTab(page, "ATS tracker");
     const wide = tally(atsGames(model));
     await page.locator(".spp").getByRole("button", { name: "Include FBS vs. FCS" }).click();
     await expect(page.locator(".spp .atshead")).toContainText(recordText(wide));
@@ -215,7 +216,7 @@ test.describe("simulator: picking a game", () => {
   const label = (c: string) => (c === "Indies" ? "Independents" : c);
   const goSim = async (page: Page) => {
     await openTab(page);
-    await page.locator(".spp").getByRole("tab", { name: "Simulator" }).click();
+    await openSppTab(page, "Simulator");
     await expect(page.locator(".spp .simpts")).toHaveCount(2);
     return page.locator('.spp [aria-label="Pick a scheduled game"]');
   };

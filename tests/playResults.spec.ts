@@ -5,6 +5,7 @@ import { buildModel } from "../src/spplus/data/model";
 import { parseRecord } from "../src/spplus/data/cells";
 import type { NflData } from "../src/nfl/types";
 import { teamRows } from "../src/nfl/model";
+import { openSppTab } from "./helpers/spp";
 
 test.beforeEach(async ({ page }) => { await stubFinals(page); });
 
@@ -17,7 +18,7 @@ test("CFB SP+ Play vs Results puts every team that has played in one of nine cel
   await page.goto("/?league=CFB");
   await page.getByRole("button", { name: "CFB SP+" }).click();
   await expect(page.locator(".spp .tbl tbody tr").first()).toBeVisible({ timeout: 15_000 });
-  await page.locator(".spp").getByRole("tab", { name: "Play vs Results", exact: true }).click();
+  await openSppTab(page, "Play vs Results", true);
   const board = page.locator(".spp .prb");
   await expect(board).toBeVisible();
   for (const r of ROWS) await expect(board.locator(".prb-rowh b", { hasText: r })).toBeVisible();
@@ -32,7 +33,7 @@ test("NFL+ Play vs Results sorts all 32 teams into the grid", async ({ page }) =
   await page.goto("/?league=NFL");
   await page.getByRole("button", { name: "NFL+" }).click();
   await expect(page.locator(".spp .tbl tbody tr").first()).toBeVisible({ timeout: 15_000 });
-  await page.locator(".spp").getByRole("tab", { name: "Play vs Results", exact: true }).click();
+  await openSppTab(page, "Play vs Results", true);
   const board = page.locator(".spp .prb");
   await expect(board).toBeVisible();
   const week = nfl.ratingsThroughWeek;

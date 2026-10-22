@@ -253,7 +253,7 @@ test("the SP+ conference summary and the NFL+ ratings carry each conference's lo
   const logos = () => page.evaluate(() => { const h = [...document.querySelectorAll("*")].find((e) => e.shadowRoot?.querySelector(".tabs")); return [...(h?.shadowRoot?.querySelectorAll("[data-conf-logo]") ?? [])].map((e) => e.getAttribute("data-conf-logo")); });
   await page.goto("/?league=CFB");
   await page.getByRole("button", { name: "CFB SP+" }).click();
-  await page.getByRole("tab", { name: "Conferences" }).click();
+  await openSppTab(page, "Conferences");
   await expect.poll(async () => (await logos()).length, { timeout: 15_000 }).toBeGreaterThanOrEqual(9);
   expect(await logos()).toEqual(expect.arrayContaining(["SEC", "Big Ten", "American", "Mountain West", "Mid-American"])); // sheet names map to the registry's
   await page.getByRole("button", { name: "NFL+" }).click();
@@ -266,7 +266,7 @@ test("SP+ conference chart: every team is its logo, rows carry the conference lo
   await page.route(/espncdn\.com\/i\/teamlogos/, (r) => r.fulfill({ contentType: "image/png", body: png }));
   await page.goto("/?league=CFB");
   await page.getByRole("button", { name: "CFB SP+" }).click();
-  await page.getByRole("tab", { name: "Conferences" }).click();
+  await openSppTab(page, "Conferences");
   const shadow = (fn: (root: ShadowRoot) => unknown) => page.evaluate(`(${fn.toString()})([...document.querySelectorAll("*")].find((e) => e.shadowRoot?.querySelector(".tabs")).shadowRoot)`);
   await expect.poll(() => shadow((r) => r.querySelectorAll("g.pt image").length), { timeout: 15_000 }).toBeGreaterThan(100);
   await expect.poll(() => shadow((r) => r.querySelectorAll("svg [data-conf-logo]").length), { timeout: 15_000 }).toBeGreaterThanOrEqual(9);
@@ -283,6 +283,7 @@ test("SP+ conference chart: every team is its logo, rows carry the conference lo
 });
 
 import { correctResults } from "../src/spplus/data/finals";
+import { openSppTab } from "./helpers/spp";
 
 test("a sheet score entered for the wrong side is replaced by ESPN's final (Oklahoma 27, Texas 24)", () => {
   const row = (team: string, opp: string, pts: number, oppPts: number) => ({ id: team, row: 1, date: "2026-10-10", team, opp, win: pts > oppPts ? 1 : 0, pts, oppPts, margin: pts - oppPts, pgwe: 0.5, adjMgn: 3 });
@@ -305,7 +306,7 @@ test("a sheet score entered for the wrong side is replaced by ESPN's final (Okla
 test("NFL+ has a Conf & Div view: both conferences and all eight divisions ranked, with each division's teams in order", async ({ page }) => {
   await page.goto("/?league=NFL");
   await page.getByRole("button", { name: "NFL+" }).click();
-  await page.getByRole("tab", { name: "Conf & Div" }).click();
+  await openSppTab(page, "Conf & Div");
   const sh = <T,>(fn: (r: ShadowRoot) => T) => page.evaluate(`(${fn.toString()})([...document.querySelectorAll("*")].find((e) => e.shadowRoot?.querySelector(".tabs")).shadowRoot)`) as Promise<T>;
   await expect.poll(() => sh((r) => r.querySelectorAll(".div-card").length)).toBe(8);
   expect(await sh((r) => [...r.querySelectorAll(".panel")].slice(0, 2).map((p) => p.querySelectorAll("tbody tr").length))).toEqual([2, 8]);
