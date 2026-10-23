@@ -1,4 +1,5 @@
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
+import { motionOff } from "./motion";
 import { lazyView } from "./lazyView";
 import { useUpdateCheck } from "./useUpdateCheck";
 import { LiveFreshness } from "./live";
@@ -14,6 +15,8 @@ import { defaultLeague } from "./league";
 
 // The map and its shapes load only when the tab is opened.
 const ImperialismMap = lazyView(() => import("./components/ImperialismMap").then((m) => ({ default: m.ImperialismMap })), "ImperialismMap");
+import { RefreshUi } from "./components/RefreshUi";
+import { ViewSkeleton } from "./components/Skeleton";
 const PicksTab = lazyView(() => import("./components/PicksTab").then((m) => ({ default: m.PicksTab })), "PicksTab");
 const Outlook = lazyView(() => import("./components/Outlook").then((m) => ({ default: m.Outlook })), "Outlook");
 const InsanityBoard = lazyView(() => import("./components/InsanityBoard").then((m) => ({ default: m.InsanityBoard })), "InsanityBoard");
@@ -99,6 +102,18 @@ export default function App() {
     }
     setFilters((f) => ({ ...f, day: "all" }));
   };
+  // The tab highlight slides from the old tab to the new one: only the new tab's underline is animated, from where the old one was (transform only).
+  const lastTab = useRef<DOMRect | null>(null);
+  useEffect(() => {
+    const btn = document.querySelector<HTMLElement>(`.view-switch [data-tab="${view}"]`);
+    if (!btn) return;
+    const now = btn.getBoundingClientRect(), was = lastTab.current;
+    lastTab.current = now;
+    if (!was || !now.width || !was.width || motionOff() || !btn.animate) return;
+    const dx = was.left + was.width / 2 - (now.left + now.width / 2), sx = was.width / now.width;
+    if (Math.abs(dx) < 2) return;
+    try { btn.animate([{ transform: `translateX(${dx}px) scaleX(${sx})` }, { transform: "none" }], { duration: 280, easing: "cubic-bezier(.2,.8,.2,1)", pseudoElement: "::after" }); } catch { /* old browser: no slide */ }
+  }, [view]);
   // Phones: the secondary sections sit in a sheet over the tab bar. Choosing one (or anything else) closes it.
   const [moreOpen, setMoreOpen] = useState(false);
   const go = (v: View) => {
@@ -130,6 +145,7 @@ export default function App() {
       <a className="skip-link" href="#games">
         Skip to games
       </a>
+      <RefreshUi />
       {outdated && (
         <div className="update-bar" role="status">
           A new version of the board is ready.
@@ -390,9 +406,10 @@ export default function App() {
               </details>
             </div>
           </div>
+          <div key={view} className="view-in">
           {view !== "board" ? (
             <ErrorBoundary resetKey={view}>
-              <Suspense fallback={<p className="ol-note" role="status">Loading…</p>}>
+              <Suspense fallback={<ViewSkeleton />}>
                 {view === "empire" ? (
                   <ImperialismMap defaultLeague={league} />
                 ) : view === "picks" ? (
@@ -440,6 +457,7 @@ export default function App() {
           />
             </>
           )}
+          </div>
         </section>
         <footer>
           <p>{slate.broadcastNote.replace(/^📺\s*/, "")}</p>

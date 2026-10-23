@@ -36,6 +36,7 @@ export async function refreshLines(force = false, leagues: ("nfl" | "cfb")[] = [
       for (const g of d.games) lines.set(g.id, { id: g.id, league: d.league === "nfl" ? "NFL" : "CFB", date: g.date, state: g.state, homeId: g.home.id, awayId: g.away.id, homeAbbr: g.home.abbr, awayAbbr: g.away.abbr, homeName: g.home.name, awayName: g.away.name, spread: g.spread, total: g.total, provider: g.provider });
     }
     set({ lines, at: Number.isFinite(at) ? at : Date.now(), busy: false, error: false });
+    if (force) window.dispatchEvent(new CustomEvent("fbwatch:refreshed", { detail: "lines" }));
   } catch {
     set({ busy: false, error: true });
   }

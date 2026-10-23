@@ -10,6 +10,7 @@ import { cfbHistory, nflHistory, PROOF_LABEL } from "../calibration";
 import { freshCfbModel } from "../spplus/data/freshLines";
 import { LinesBar } from "./LinesBar";
 import { usePickData } from "../pickData";
+import { Skeleton } from "./Skeleton";
 
 const pct = (n: number, d = 0) => `${(n * 100).toFixed(d)}%`;
 const kick = (when: string) => {
@@ -83,7 +84,7 @@ export function Parlays({ league }: { league: "CFB" | "NFL" }) {
   const label = league === "CFB" ? "College" : "NFL";
 
   if (err) return <p className="ol-note">The picks could not be loaded. Reload to try again.</p>;
-  if (!data) return <p className="ol-note" role="status">Loading the picks…</p>;
+  if (!data) return <Skeleton rows={4} />;
   return (
     <>
       <div className="pl-controls">
