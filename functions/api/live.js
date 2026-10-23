@@ -1,6 +1,6 @@
 // Cloudflare Pages Function: /api/live?league=nfl|cfb&date=YYYYMMDD
 // The same trimmed scoreboard as /api/scores, pushed: an event stream that sends the scores the moment they change (checked every few seconds
-// against a copy no older than that), so a touchdown reaches the page without it having to ask. Closes after STREAM_MS; the browser reconnects.
+// against a copy no older than that). Each request sends one snapshot; EventSource reconnects after four seconds.
 import { onRequestGet as scores } from "./scores.js";
 import { eventStream } from "../../src/serverFeeds.js";
 

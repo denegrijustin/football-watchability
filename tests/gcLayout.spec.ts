@@ -28,13 +28,13 @@ test("the small card is laid out like the NHL's: one top row with the channel an
   await expect(card.locator(".rank-line, .booth")).toHaveCount(0);
 });
 
-test("before kickoff the win-probability chart on the small card is a thin strip, not an empty plot", async ({ page }) => {
+test("before kickoff the small card shows the line, the projected score and a win-probability bar instead of an empty momentum plot", async ({ page }) => {
   await page.goto("/?league=NFL");
-  const flow = page.locator(".game-card.compact .momentum-flow").first();
-  await expect(flow).toHaveClass(/slim/);
-  await expect(flow).toContainText("Momentum");
-  expect((await flow.boundingBox())!.height).toBeLessThan(70);
-  await expect(flow.locator(".flow-time-marks, .flow-explain")).toHaveCount(0);
+  const card = page.locator(".game-card.compact").first();
+  await expect(card.locator(".cl")).toBeVisible();
+  await expect(card.locator(".cl-chip").first()).toContainText(/O\/U|PK|\+|-/);
+  await expect(card.locator(".cl-bar")).toHaveAttribute("aria-label", /Win probability: .* favored/);
+  await expect(card.locator(".momentum-flow")).toHaveCount(0);
 });
 
 test("the Game Center is a scoreboard with tabs; only the open tab is drawn, and the arrow keys move between them", async ({ page }) => {

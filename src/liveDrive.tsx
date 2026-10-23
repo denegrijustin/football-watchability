@@ -1,10 +1,11 @@
+import { decodeGame } from './gameFeed';
 import { useEffect, useRef, useState } from "react";
 import { logos, teamColor } from "./data";
 import { rename } from "./data/load";
 import { FootballIcon, liveFromSummary, useReportLive } from "./live";
 import { LogoMark } from "./logoTone";
 import { helmetFor } from "./helmets";
-import { WeatherLayer, weatherCaption } from "./WeatherFx";
+import { WeatherLayer, weatherCaption } from "./WeatherEffects";
 import { ConfMark } from "./ConfMark";
 import { EndZones, EZ_H, EZ_W } from "./sim/EndZones";
 import { endzoneFor } from "./sim/endzone";
@@ -36,8 +37,8 @@ async function fetchSummary(league: string, id: string): Promise<Summary | null>
   if (hit && Date.now() - hit.at < POLL_MS - 1000) return hit.data;
   let data: Summary | null = null;
   try {
-    const r = await fetch(`/api/game?league=${PATHS[league]}&event=${id}`, { cache: "no-store" });
-    if (r.ok && (r.headers.get("content-type") ?? "").includes("json")) data = rename(await r.json());
+    const r = await fetch(`/api/game?league=${PATHS[league]}&event=${id}&format=raw`, { cache: "no-store" });
+    if (r.ok && (r.headers.get("content-type") ?? "").includes("json")) data = rename(await decodeGame(await r.json(), PATHS[league]));
   } catch {
     /* offline: keep what we had */
   }

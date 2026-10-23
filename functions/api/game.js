@@ -1,3 +1,4 @@
+import { espnProxy } from '../_lib/espnProxy.js';
 // Cloudflare Pages Function: /api/game?league=nfl|cfb&event=ID
 // A trimmed ESPN game summary for the Game Center overlay (score, situation,
 // win probability, drives, plays, team and player stats), cached at the edge
@@ -14,6 +15,8 @@ export async function onRequestGet({ request }) {
   const event = url.searchParams.get("event");
   if (!PATHS[league] || !/^\d{6,12}$/.test(event ?? ""))
     return new Response(JSON.stringify({ error: "league=nfl|cfb and event=ID required" }), { status: 400 });
+
+  if (url.searchParams.get("format") === "raw") return espnProxy(league, `summary?event=${event}`, 4);
 
   const cache = caches.default;
   const key = new Request(`https://fbwatch-cache/game4/${league}/${event}`);

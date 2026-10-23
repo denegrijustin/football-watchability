@@ -165,3 +165,13 @@
 .tip b { display: flex; align-items: center; gap: 6px; }
 .tip .tip-logo { display: inline-grid; place-items: center; width: 20px; height: 20px; flex: none; }
 .pbn-sub { display: flex; align-items: center; gap: 6px; }
+
+/* On a phone the views are a pop-up menu like Team performance, not a strip to swipe. */
+.vmenu { display: none; }
+@media (max-width: 520px) {
+  .tabrow .tabs { display: none; }
+  .tabrow .vmenu { display: flex; flex: 1 1 auto; min-width: 0; margin-left: 0; padding: 0 0 0 var(--gutter); border-left: 0; background: none; }
+  .tabrow .vmenu .pmenu-btn { max-width: none; min-width: 0; }
+  .tabrow .pmenu:not(.vmenu) { border-left: 1px solid var(--border-2); }
+  .vm-item { min-height: 52px; }
+}

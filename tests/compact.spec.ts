@@ -11,10 +11,10 @@ test("@phone on a phone the controls take few rows and the first game starts hig
   // Filters are one scrolling row, not three wrapped ones.
   const dock = await page.locator(".filter-dock").boundingBox();
   expect(dock!.height).toBeLessThan(72);
-  // The sections live in a tab bar fixed to the bottom of the screen, four tabs and More.
+  // The sections live in a tab bar fixed to the bottom of the screen, five tabs and More.
   const bar = await page.locator(".view-switch").boundingBox();
   expect(Math.round(bar!.y + bar!.height)).toBeGreaterThan(844 - 4);
-  await expect(page.locator(".view-switch button:visible")).toHaveCount(5);
+  await expect(page.locator(".view-switch button:visible")).toHaveCount(6);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(391);
   // Every filter is still reachable, in the Filters sheet.
   await page.getByRole("button", { name: /^Filters/ }).click();

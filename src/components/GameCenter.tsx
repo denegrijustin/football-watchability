@@ -1,3 +1,4 @@
+import { decodeGame } from '../gameFeed';
 import { provisionalActual } from "../provisionalScore";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { ART_COUNT, attributePlays, impact, summarizeEvents, type ImpactEvent, type PlayLog, type PlayerRow } from "../playImpact";
@@ -16,8 +17,7 @@ import { InsanityMeter } from "./InsanityMeter";
 import { Headshot } from "./Headshot";
 import { GameDetails } from "./GameDetails";
 import { FootballIcon, liveFromSummary, useLive, useReportLive } from "../live";
-import { openStream } from "../liveStream";
-import { LastPlay, latestShape } from "../LastPlay";
+import { LastPlay, latestShape } from "../LastPlayView";
 import type { WeatherLike } from "../weatherFx";
 import { HalftimeBand } from "../halftime";
 import { HalftimeAct } from "../nflHalftime";
@@ -57,8 +57,8 @@ export type LiveGame = {
 const PATHS: Record<string, string> = { nfl: "nfl", cfb: "college-football" };
 async function fetchGame(league: string, id: string): Promise<LiveGame | null> {
   try {
-    const r = await fetch(`/api/game?league=${league}&event=${id}`, { cache: "no-store" });
-    if (r.ok && (r.headers.get("content-type") ?? "").includes("json")) return rename(await r.json());
+    const r = await fetch(`/api/game?league=${league}&event=${id}&format=raw`, { cache: "no-store" });
+    if (r.ok && (r.headers.get("content-type") ?? "").includes("json")) return rename(await decodeGame(await r.json(), league));
   } catch {
     /* fall through */
   }
@@ -80,8 +80,13 @@ function useLiveGame(league: string | null, id: string | null, started: boolean)
     if (!id || !league || !started) return;
     let stop = false;
     let timer: ReturnType<typeof setTimeout>;
+    let busy = false;
+    let finished = false;
     const tick = async () => {
+      if (stop || busy || document.hidden || finished) return;
+      busy = true;
       const g = await fetchGame(league, id);
+      busy = false;
       if (stop) return;
       if (g) {
         setGame(g);
@@ -89,23 +94,17 @@ function useLiveGame(league: string | null, id: string | null, started: boolean)
         const l = liveFromSummary(g as never, id);
         if (l) report(l);
       }
-      // Every 15 seconds while live; a finished game needs one load.
-      if (!g || g.status.state === "in") timer = setTimeout(tick, g ? 15_000 : 60_000);
+      if (g?.status.state === "post") { finished = true; }
+      // One compressed, cached snapshot every four seconds while live; finals stop and pregame checks continue through kickoff.
+      if (!finished) timer = setTimeout(tick, !g ? 60_000 : g.status.state === "in" ? 4_000 : 15_000);
     };
     tick();
-    // The open Game Center also gets the summary pushed the moment it changes (the polling above stays as the fallback).
-    const stream = openStream<LiveGame>(`/api/live-game?league=${league}&event=${id}`, "game", (g) => {
-      if (stop) return;
-      const next = rename(g) as LiveGame;
-      setGame(next);
-      setUpdated(new Date());
-      const l = liveFromSummary(next as never, id);
-      if (l) report(l);
-    });
+    const visible = () => { clearTimeout(timer); if (!document.hidden) void tick(); };
+    document.addEventListener("visibilitychange", visible);
     return () => {
       stop = true;
       clearTimeout(timer);
-      stream.close();
+      document.removeEventListener("visibilitychange", visible);
     };
   }, [league, id, started]);
   return { game, updated };
@@ -326,7 +325,7 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
           {game && (game.teams[0].linescores.length > 0) && <Linescore game={game} />}
           {updated && state === "in" && (
             <p className="gc-updated" role="status">
-              Updating every 15 seconds · last {updated.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", second: "2-digit" })}
+              Updating every 4 seconds · last {updated.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", second: "2-digit" })}
             </p>
           )}
 

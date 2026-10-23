@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import { logos, type League } from "../data";
 import { fetchData } from "../data/load";
+import { ChipImg } from "../logoTone";
+import { LeverageChart, LeverageGames, type Leverage } from "./Leverage";
+import { Parlays } from "./Parlays";
 
 type Team = { id: string; name: string; abbr: string; logoId: string | null };
 type Seed = Team & {
@@ -54,12 +57,13 @@ type Data = {
   cfb?: Stamp & {
     sources: string[];
     sim: { sims: number; games: number } | null;
+    leverage?: Leverage | null;
     grid: CfbGridRow[] | null;
     composite: Ranked[];
     playoff: { field: Seed[]; out: Out[]; rules: { teams: number; autoBids: number; byes: number } };
     bowls: { eligible: number; conferences: { name: string; teams: number; eligible: (Out & { pBowl: number })[]; bubble: (Out & { pBowl: number })[] }[] };
   };
-  nfl?: Stamp & { sim: { sims: number; games: number } | null; conferences: Record<string, { field: Seed[]; out: Out[]; grid: GridRow[] | null }> };
+  nfl?: Stamp & { sim: { sims: number; games: number } | null; leverage?: Leverage | null; conferences: Record<string, { field: Seed[]; out: Out[]; grid: GridRow[] | null }> };
 };
 
 const pct = (n?: number | null) => (n == null ? "–" : n >= 99.5 ? ">99%" : n < 0.5 ? "<1%" : `${Math.round(n)}%`);
@@ -68,7 +72,7 @@ const dayText = (iso: string) => new Date(`${iso}T12:00:00Z`).toLocaleDateString
 
 function Logo({ t }: { t: Team }) {
   const src = t.logoId ? logos[t.logoId] : undefined;
-  return src ? <img className="ol-logo" src={src} alt="" width="28" height="28" loading="lazy" decoding="async" /> : <span className="ol-chip" aria-hidden="true">{t.abbr.slice(0, 3)}</span>;
+  return src ? <ChipImg className="ol-logo" src={src} size={24} /> : <span className="ol-chip" aria-hidden="true">{t.abbr.slice(0, 3)}</span>;
 }
 
 function SeedRow({ s, odds, tag }: { s: Seed; odds: [string, number | null | undefined][]; tag: string }) {
@@ -244,10 +248,33 @@ function RankingTable({ cfb, conf, setConf, shown, setShown }: { cfb: NonNullabl
   );
 }
 
+/** Playoff leverage: how much the next game moves each team's playoff odds (the same simulations as the seed grid, split by that game's result). */
+function LeveragePart({ lev, sims, cycle, dow, league }: { lev?: Leverage | null; sims?: number; cycle: string; dow: string; league: "NFL" | "College" }) {
+  if (!lev) return <p className="ol-note">Playoff leverage appears once the schedule has been fetched and the simulation has run.</p>;
+  return (
+    <>
+      <h3 className="lev-h">{league === "NFL" ? "NFL" : "College football"} playoff leverage · going into week {lev.week}</h3>
+      <p className="ol-note">
+        Each logo sits at the team's playoff chance now. The orange end is its chance if it loses its next game, the blue end if it wins; the longer the bar, the more the game matters. Teams on a bye show only where they stand.
+        {league === "NFL" ? " " : " Teams with no realistic shot are left out. "}
+        From {sims?.toLocaleString() ?? "many"} simulations of the rest of the season, as of the {dow} {dayText(cycle)} refresh (updates every {dow}). A team that already played this week is left out.
+      </p>
+      <LeverageChart rows={lev.rows} label={`${league} playoff chances now, after a loss and after a win`} />
+      {lev.games.length > 0 && (
+        <>
+          <h3 className="lev-h">Leverage by game</h3>
+          <p className="ol-note">Both teams' swings added together (a game where one result moves two playoff races is worth the most). Darker means bigger.</p>
+          <LeverageGames games={lev.games} />
+        </>
+      )}
+    </>
+  );
+}
+
 export function Outlook({ defaultLeague }: { defaultLeague: League }) {
   const [data, setData] = useState<Data | null>(null);
   const [league, setLeague] = useState<League>(defaultLeague);
-  const [part, setPart] = useState<"playoff" | "ranking" | "bowls">("playoff");
+  const [part, setPart] = useState<"playoff" | "leverage" | "parlays" | "ranking" | "bowls">("playoff");
   const [shown, setShown] = useState(25);
   const [conf, setConf] = useState("all");
   useEffect(() => {
@@ -267,9 +294,18 @@ export function Outlook({ defaultLeague }: { defaultLeague: League }) {
           <button aria-pressed={league === "CFB"} onClick={() => setLeague("CFB")}>College</button>
           <button aria-pressed={league === "NFL"} onClick={() => setLeague("NFL")}>NFL</button>
         </div>
+        {league === "NFL" && (
+          <div className="segmented" role="group" aria-label="Outlook section">
+            <button aria-pressed={part !== "leverage" && part !== "parlays"} onClick={() => setPart("playoff")}>Seeds</button>
+            <button aria-pressed={part === "leverage"} onClick={() => setPart("leverage")}>Leverage</button>
+            <button aria-pressed={part === "parlays"} onClick={() => setPart("parlays")}>Parlays</button>
+          </div>
+        )}
         {league === "CFB" && (
           <div className="segmented" role="group" aria-label="Outlook section">
             <button aria-pressed={part === "playoff"} onClick={() => setPart("playoff")}>Playoff</button>
+            <button aria-pressed={part === "leverage"} onClick={() => setPart("leverage")}>Leverage</button>
+            <button aria-pressed={part === "parlays"} onClick={() => setPart("parlays")}>Parlays</button>
             <button aria-pressed={part === "ranking"} onClick={() => setPart("ranking")}>Rankings</button>
             <button aria-pressed={part === "bowls"} onClick={() => setPart("bowls")}>Bowls</button>
           </div>
@@ -280,6 +316,10 @@ export function Outlook({ defaultLeague }: { defaultLeague: League }) {
       ) : league === "NFL" ? (
         !nfl ? (
           <p className="ol-note">The NFL outlook has not been built yet.</p>
+        ) : part === "parlays" ? (
+          <Parlays league="NFL" />
+        ) : part === "leverage" ? (
+          <LeveragePart lev={nfl.leverage} sims={nfl.sim?.sims} cycle={nfl.cycle} dow="Tuesday" league="NFL" />
         ) : (
           <>
             <p className="ol-note">
@@ -324,6 +364,10 @@ export function Outlook({ defaultLeague }: { defaultLeague: League }) {
         )
       ) : !cfb ? (
         <p className="ol-note">The college outlook has not been built yet.</p>
+      ) : part === "parlays" ? (
+        <Parlays league="CFB" />
+      ) : part === "leverage" ? (
+        <LeveragePart lev={cfb.leverage} sims={cfb.sim?.sims} cycle={cfb.cycle} dow="Sunday" league="College" />
       ) : part === "playoff" ? (
         <>
           <p className="ol-note">

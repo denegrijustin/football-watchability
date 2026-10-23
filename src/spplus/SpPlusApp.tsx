@@ -8,6 +8,7 @@ import { PerfProvider } from "../perf/data";
 import { useCfbAdapter } from "../perf/adapters";
 import { PERF_VIEWS, isPerfKey } from "../perf/tabs";
 import { PerfMenu } from "../perf/PerfMenu";
+import { ViewMenu } from "../perf/ViewMenu";
 
 const views: Record<Exclude<ViewKey, `p-${string}`>, React.LazyExoticComponent<() => ReactNode>> = {
   rankings: lazy(() => import("./views/Rankings")),
@@ -19,6 +20,7 @@ const views: Record<Exclude<ViewKey, `p-${string}`>, React.LazyExoticComponent<(
   compare: lazy(() => import("./views/Compare")),
   outliers: lazy(() => import("./views/Outliers")),
   conferences: lazy(() => import("./views/Conferences")),
+  playresults: lazy(() => import("./views/PlayResults")),
   results: lazy(() => import("./views/Results")),
   accuracy: lazy(() => import("./views/Accuracy")),
   explorer: lazy(() => import("./views/Explorer")),
@@ -35,6 +37,7 @@ const FILTERS: Record<Exclude<ViewKey, `p-${string}`>, { div?: boolean; all?: bo
   compare: { week: true },
   outliers: { div: true, week: true, conf: true, q: true },
   conferences: { div: true, week: true },
+  playresults: { div: true, week: true, conf: true },
   results: { conf: true, q: true },
   accuracy: {},
   explorer: {},
@@ -69,6 +72,7 @@ export function SpPlusApp() {
             <span className="grow" />
           </div>
           <div className="tabrow">
+          <ViewMenu views={BASE_VIEWS} view={route.view} onPick={(key) => nav({ view: key as ViewKey })} />
           <nav className="tabs" role="tablist" aria-label="Views" onKeyDown={(e) => {
             const i = BASE_VIEWS.findIndex((v) => v.key === route.view);
             const d = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;

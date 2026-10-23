@@ -9,6 +9,7 @@ import { forEachRow } from "../scripts/nflverse/csv.mjs";
 import { ols } from "../scripts/nflverse/calibrate.mjs";
 import { solve } from "../scripts/nflverse/ratings.mjs";
 import { stubFinals } from "./helpers/finals";
+import { expectSppTabs, openSppTab, expectSppTabSelected } from "./helpers/spp";
 
 test.beforeEach(async ({ page }) => { await stubFinals(page); });
 
@@ -42,7 +43,7 @@ test.describe("the NFL+ tab", () => {
     await openTab(page);
     await expect(page.getByRole("button", { name: "NFL+" })).toHaveAttribute("aria-pressed", "true");
     await expect(page.locator(".spp .tbl tbody tr:not(.detail)")).toHaveCount(32);
-    for (const name of ["Ratings", "Simulator", "ATS tracker", "Matchups", "Movement", "Team"]) await expect(page.locator(".spp").getByRole("tab", { name, exact: true })).toBeVisible();
+    await expectSppTabs(page, ["Ratings", "Simulator", "ATS tracker", "Matchups", "Movement", "Team"]);
     await expect(page.locator(".spp .foot")).toContainText("nflverse");
     expect(await page.getByTestId("nfl-host").evaluate((el) => !!el.shadowRoot)).toBe(true);
     const [sw, iw] = await page.evaluate(() => [document.documentElement.scrollWidth, innerWidth]);
@@ -68,7 +69,7 @@ test.describe("the NFL+ tab", () => {
 
   test("the simulator opens on a scheduled game with expected points, and the basis can be switched", async ({ page }) => {
     await openTab(page);
-    await page.locator(".spp").getByRole("tab", { name: "Simulator" }).click();
+    await openSppTab(page, "Simulator");
     const pts = page.locator(".spp .simpts");
     await expect(pts).toHaveCount(2);
     for (const t of await pts.allInnerTexts()) expect(Number(t)).toBeGreaterThan(8);
@@ -86,7 +87,7 @@ test.describe("the NFL+ tab", () => {
 
   test("a spread and total give cover and over probabilities", async ({ page }) => {
     await openTab(page);
-    await page.locator(".spp").getByRole("tab", { name: "Simulator" }).click();
+    await openSppTab(page, "Simulator");
     await page.locator(".spp").getByRole("button", { name: "Use the closing line" }).click();
     const lines = page.locator(".spp .panel", { hasText: "Against a line" });
     await expect(lines).toContainText("covers");
@@ -97,7 +98,7 @@ test.describe("the NFL+ tab", () => {
 
   test("the ATS tracker grades each ratings pick against the closing spread", async ({ page }) => {
     await openTab(page);
-    await page.locator(".spp").getByRole("tab", { name: "ATS tracker" }).click();
+    await openSppTab(page, "ATS tracker");
     const season = tally(atsGames(nfl));
     const head = page.locator(".spp .atshead");
     await expect(head).toContainText(recordText(season));
@@ -113,23 +114,23 @@ test.describe("the NFL+ tab", () => {
 
   test("matchups: ratings against the line, a game's setting, and a link into the simulator", async ({ page }) => {
     await openTab(page);
-    await page.locator(".spp").getByRole("tab", { name: "Matchups" }).click();
+    await openSppTab(page, "Matchups");
     await page.locator('.spp svg[aria-label="Ratings margin and closing spread for each game"] g.pt').first().click();
     const side = page.locator(".spp .sticky-side");
     await expect(side).toContainText("Closing spread / total");
     await expect(side).toContainText("Setting");
     await side.getByRole("button", { name: "Simulate this game" }).click();
-    await expect(page.locator(".spp").getByRole("tab", { name: "Simulator" })).toHaveAttribute("aria-selected", "true");
+    await expectSppTabSelected(page, "Simulator");
     await expect(page.locator(".spp .simpts")).toHaveCount(2);
   });
 
   test("movement and team views render for any team", async ({ page }) => {
     await openTab(page);
-    await page.locator(".spp").getByRole("tab", { name: "Movement" }).click();
+    await openSppTab(page, "Movement");
     const bump = page.locator('.spp svg[aria-label="Bump chart of rating rank by week"]');
     await expect(bump).toBeVisible();
     await expect(bump.locator("path")).toHaveCount(12);
-    await page.locator(".spp").getByRole("tab", { name: "Team", exact: true }).click();
+    await openSppTab(page, "Team", true);
     await page.locator('.spp select[aria-label="Team"]').selectOption("KC");
     await expect(page.locator(".spp h2", { hasText: "Kansas City Chiefs" })).toBeVisible();
     await expect(page.locator('.spp svg[aria-label^="Kansas City Chiefs league percentile"] g.pt')).toHaveCount(4 * nfl.ratingsThroughWeek);
@@ -157,7 +158,7 @@ test.describe("NFL Game Center", () => {
     await block.getByRole("button", { name: /Open in NFL+/ }).click();
     await expect(dialog).toBeHidden();
     await expect(page.getByRole("button", { name: "NFL+" })).toHaveAttribute("aria-pressed", "true");
-    await expect(page.locator(".spp").getByRole("tab", { name: "Simulator" })).toHaveAttribute("aria-selected", "true");
+    await expectSppTabSelected(page, "Simulator");
     await expect(page.locator(".spp").getByLabel("Away team")).toHaveValue(upcoming.away);
     await expect(page.locator(".spp").getByLabel("Home team")).toHaveValue(upcoming.home);
   });
@@ -277,7 +278,7 @@ test.describe("NFL simulator: picking a game", () => {
   const openWeek = regular.find((g) => g.aS == null)!.week;
   const goSim = async (page: Page) => {
     await openTab(page);
-    await page.locator(".spp").getByRole("tab", { name: "Simulator" }).click();
+    await openSppTab(page, "Simulator");
     await expect(page.locator(".spp .simpts")).toHaveCount(2);
     return page.locator('.spp [aria-label="Pick a scheduled game"]');
   };

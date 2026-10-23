@@ -6,6 +6,7 @@ import { PerfProvider } from "../perf/data";
 import { useNflAdapter } from "../perf/adapters";
 import { PERF_VIEWS, isPerfKey } from "../perf/tabs";
 import { PerfMenu } from "../perf/PerfMenu";
+import { ViewMenu } from "../perf/ViewMenu";
 
 const views: Record<Exclude<NflView, `p-${string}`>, React.LazyExoticComponent<() => ReactNode>> = {
   rankings: lazy(() => import("./views/Ratings")),
@@ -14,6 +15,7 @@ const views: Record<Exclude<NflView, `p-${string}`>, React.LazyExoticComponent<(
   matchups: lazy(() => import("./views/Matchups")),
   movement: lazy(() => import("./views/Movement")),
   standings: lazy(() => import("./views/Standings")),
+  playresults: lazy(() => import("./views/PlayResults")),
   team: lazy(() => import("./views/TeamPage")),
 };
 
@@ -26,7 +28,7 @@ export function NflApp() {
   const View = perf ? PERF_VIEWS[route.view as keyof typeof PERF_VIEWS] : views[route.view as Exclude<NflView, `p-${string}`>];
   const week = route.week ?? data?.ratingsThroughWeek ?? 1;
   const groups = data ? ["", "AFC", "NFC", ...[...new Set(Object.values(data.teams).map((t) => t.div))].sort()] : [];
-  const filters = route.view === "rankings" || route.view === "movement";
+  const filters = route.view === "rankings" || route.view === "movement" || route.view === "playresults";
   void ratingsAt;
   return (
     <div className="app spp">
@@ -34,6 +36,7 @@ export function NflApp() {
         <div className="bar-in">
           <div className="bar-top"><span className="brand">NFL+ <small>EPA-based team ratings, simulator and against-the-spread tracker</small></span><span className="grow" /></div>
           <div className="tabrow">
+          <ViewMenu views={BASE_VIEWS} view={route.view} onPick={(key) => nav({ view: key as NflView })} />
           <nav className="tabs" role="tablist" aria-label="NFL views" onKeyDown={(e) => {
             const i = BASE_VIEWS.findIndex((v) => v.key === route.view);
             const d = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;

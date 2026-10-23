@@ -4,7 +4,7 @@ import { bundle, src } from "./ssr";
 async function markup(): Promise<string> {
   const render = await bundle("wx", `import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { WeatherFx } from "${src("WeatherFx")}";
+import { WeatherFx } from "${src("WeatherEffects")}";
 export const render = (fx: never) => renderToStaticMarkup(createElement("svg", null, createElement(WeatherFx, { fx, seed: 42 }), createElement(WeatherFx, { fx, seed: 42 })));
 `);
   return render(storm as never);

@@ -9,6 +9,9 @@ import { AtsChart } from "../../spplus/charts/AtsChart";
 import { BREAK_EVEN, byEdge, recordText, tally, weeklyTracker } from "../../spplus/data/ats";
 import { dateLabel, fmt, fmtPct, fmtSigned, timeLabel } from "../../spplus/data/derive";
 import { normCdf } from "../../spplus/sim/rng";
+import { STRENGTH_LABEL, strengthOf } from "../../livePicks";
+import { freshNfl, useLines } from "../../lines";
+import { LinesBar } from "../../components/LinesBar";
 
 const BUCKETS = [{ lo: 0, hi: 1.5, label: "Under 1.5" }, { lo: 1.5, hi: 3, label: "1.5 to 3" }, { lo: 3, hi: 5, label: "3 to 5" }, { lo: 5, hi: Infinity, label: "5 or more" }];
 
@@ -29,12 +32,13 @@ export default function Ats() {
   const ci = wilson(season.w, season.w + season.l);
   const edges = useMemo(() => byEdge(games, BUCKETS), [games]);
   const side = useMemo(() => [["Home teams", games.filter((g) => g.pickIsHome)], ["Road teams", games.filter((g) => !g.pickIsHome)]] as [string, NflAtsGame[]][], [games]);
-  const pending = useMemo(() => pendingPicks(data), [data]);
+  const { lines } = useLines();
+  const pending = useMemo(() => pendingPicks(freshNfl(data, lines)), [data, lines]);
   // The pending picks as cards that follow the score. The pick must beat the line by its margin: the spread for a home pick, minus it for a road pick.
   const liveItems: LivePickItem[] = pending.map(({ g, p }) => ({
     id: g.id, by: "Ratings", pickName: data.teams[p.pick]?.name ?? p.pick, pickMark: <NflMark abbr={p.pick} size={28} />,
     line: p.pickIsHome ? (g.spread as number) : -(g.spread as number), pickIsHome: p.pickIsHome, awayName: g.away, homeName: g.home,
-    when: `${dateLabel(g.date)} ${timeLabel(g.time)}`, gap: fmt(p.edge), cover: normCdf((p.pickIsHome ? (g.mm as number) - (g.spread as number) : -((g.mm as number) - (g.spread as number))) / data.params.model.sigma), espnId: g.espn ?? null,
+    when: `${dateLabel(g.date)} ${timeLabel(g.time)}`, gap: fmt(p.edge), gapNum: p.edge, at: `${g.date} ${g.time ?? ""}`, cover: normCdf((p.pickIsHome ? (g.mm as number) - (g.spread as number) : -((g.mm as number) - (g.spread as number))) / data.params.model.sigma), espnId: g.espn ?? null,
   }));
   const bt = data.backtest.calibration.ats;
   const sigma = data.params.model.sigma;
@@ -49,18 +53,15 @@ export default function Ats() {
   const cols: Col<NflAtsGame>[] = [
     { key: "date", label: "Date", get: (g) => g.date, render: (g) => dateLabel(g.date) },
     { key: "wk", label: "Wk", align: "r", get: (g) => g.week },
-    { key: "game", label: "Game", get: (g) => g.game },
-    { key: "pick", label: "Ratings pick", get: (g) => g.pick, render: (g) => <><NflTeamLink abbr={g.pick} size={18} label={g.pick} /> <b className="pickline">{g.line.slice(g.pick.length + 1)}</b></> },
-    { key: "line", label: "Line (pick's side)", get: (g) => g.line },
-    { key: "edge", label: "Gap to line", align: "r", first: "desc", get: (g) => g.edge, render: (g) => fmt(g.edge) },
-    { key: "final", label: "Final", get: (g) => g.final },
-    { key: "cover", label: "Covered by", align: "r", first: "desc", get: (g) => g.coverBy, render: (g) => fmtSigned(g.coverBy) },
-    { key: "res", label: "Result", get: (g) => g.result, render: (g) => <span className={`delta ${g.result === "win" ? "up" : g.result === "loss" ? "down" : "flat"}`}>{g.result === "win" ? "✓ Covered" : g.result === "loss" ? "✗ Missed" : "Push"}</span> },
+    { key: "game", label: "Game", get: (g) => g.game, render: (g) => <>{g.game}<small className="muted block">Final: {g.final}</small></> },
+    { key: "pick", label: "Pick", get: (g) => g.pick, render: (g) => <><NflTeamLink abbr={g.pick} size={18} label={g.pick} /> <b className="pickline" title="The line the pick had to beat">{g.line.slice(g.pick.length + 1)}</b></> },
+    { key: "edge", label: "Edge (pts)", align: "r", first: "desc", get: (g) => g.edge, render: (g) => fmt(g.edge) },
+    { key: "res", label: "Result", first: "desc", get: (g) => g.coverBy, render: (g) => <span className={`delta ${g.result === "win" ? "up" : g.result === "loss" ? "down" : "flat"}`} title="Final margin for the pick's side minus the line">{g.result === "win" ? `✓ Covered by ${fmt(Math.abs(g.coverBy))}` : g.result === "loss" ? `✗ Missed by ${fmt(Math.abs(g.coverBy))}` : "= Push"}</span> },
   ];
 
   return (
     <div className="stack">
-      <LivePicks items={liveItems} title="This week's picks" note="The side the ratings like against the closing spread, with its line. A game on the field shows whether the pick is covering, not covering or on the number right now, and turns into the final grade at the horn." />
+      <LivePicks extra={<LinesBar />} track={season.n ? `Track record this season: ${recordText(season)} (${fmtPct(season.pct, 1)}) against the ${fmtPct(BREAK_EVEN, 1)} needed to break even at −110. An edge ranks the picks; it does not guarantee a cover.` : undefined} items={liveItems} title="This week's picks" note="The side the ratings like against the closing spread, with its line. A game on the field shows whether the pick is covering, not covering or on the number right now, and turns into the final grade at the horn." />
       <div className="panel">
         <div className="phead"><div><h2>Ratings picks against the spread</h2><p className="sub" style={{ margin: 0 }}>Each game's pick is the side the team ratings like better than the closing spread. Graded from nflverse's lines and results <Derived why="The ratings' margin compared with the closing spread, graded against the final margin" /> · scores from ESPN fill in the moment a game ends</p></div></div>
         <div className="atshead">
@@ -99,17 +100,17 @@ export default function Ats() {
       {pending.length > 0 && (
         <div className="panel">
           <h2>Picks not yet graded</h2>
-          <p className="sub">Games with a posted line. Each moves into the tracker when its final is in. “Cover chance” is the probability the pick covers if the ratings were exactly right, using the ratings' typical miss ({fmt(sigma)} points).</p>
+          <p className="sub">Games with a posted line, strongest first. Each moves into the tracker when its final is in. “Cover chance” is the probability the pick covers if the ratings were exactly right, using the ratings' typical miss ({fmt(sigma)} points).</p>
           <div className="tbl-wrap"><table className="tbl">
-            <thead><tr><th>Date</th><th>Game</th><th>Ratings pick</th><th>Line</th><th className="r">Gap to line</th><th className="r">Cover chance</th></tr></thead>
-            <tbody>{pending.map(({ g, p }) => { const e = (g.mm as number) - (g.spread as number); const cover = normCdf((p.pickIsHome ? e : -e) / sigma); return <tr key={g.id}><td>{dateLabel(g.date)} <span className="muted">{timeLabel(g.time)}</span></td><td><NflMark abbr={g.away} size={16} /> {g.away} @ {g.home}</td><td>{p.pick}</td><td>{p.line}</td><td className="r num">{fmt(p.edge)}</td><td className="r num">{fmtPct(cover, 0)}</td></tr>; })}</tbody>
+            <thead><tr><th>Date</th><th>Game</th><th>Pick</th><th className="r">Edge (pts)</th><th className="r">Cover chance</th><th>Strength</th></tr></thead>
+            <tbody>{[...pending].map(({ g, p }) => { const e = (g.mm as number) - (g.spread as number); return { g, p, cover: normCdf((p.pickIsHome ? e : -e) / sigma) }; }).sort((a, b) => b.cover - a.cover).map(({ g, p, cover }) => { const st = strengthOf(cover); return <tr key={g.id}><td>{dateLabel(g.date)} <span className="muted">{timeLabel(g.time)}</span></td><td><NflMark abbr={g.away} size={16} /> {g.away} @ {g.home}</td><td><NflTeamLink abbr={p.pick} size={18} label={p.pick} /> <b className="pickline">{p.line.slice(p.pick.length + 1)}</b></td><td className="r num">{fmt(p.edge)}</td><td className="r num">{fmtPct(cover, 0)}</td><td>{st ? <span className={`lp-tier ${st}`}>{STRENGTH_LABEL[st]}</span> : "—"}</td></tr>; })}</tbody>
           </table></div>
         </div>
       )}
 
       <div className="panel">
         <h2>Every graded pick</h2>
-        <p className="sub">{games.length} picks · sort any column · expand a row for the detail</p>
+        <p className="sub">{games.length} picks · “Edge” is how far the pick was from the line · “Result” is how much it covered or missed by · sort any column · expand a row for the detail</p>
         <SortTable label="Graded picks" cols={cols} rows={games} rowKey={(g) => g.id} max={limit}
           sort={{ key: route.p.sort || "date", dir: (route.p.dir as "asc" | "desc") || "desc", set: (key, dir) => nav({ p: { sort: key, dir } }) }}
           expand={(g) => <dl className="kv"><div><dt>Game id (nflverse)</dt><dd>{g.id}</dd></div><div><dt>Line</dt><dd>{g.line}</dd></div><div><dt>Pick's side</dt><dd>{g.pickIsHome ? "Home" : "Road"}</dd></div><div><dt>Final margin for the pick</dt><dd>{fmtSigned(g.margin, 0)}</dd></div><div><dt>Covered by <Derived why="Final margin minus the line, from the pick's side" /></dt><dd>{fmtSigned(g.coverBy)}</dd></div></dl>} />
