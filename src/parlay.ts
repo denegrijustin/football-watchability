@@ -20,8 +20,12 @@ export interface Leg {
   label: string;
   /** The pick's own side, for a logo (spread legs only). */
   team?: string;
-  /** The model's chance the leg hits, 0 to 1. */
+  /** The chance the leg hits, 0 to 1: what picks with this edge have really done (calibration.ts), not the model's own number. */
   cover: number;
+  /** The model's own bell-curve chance, for comparison. */
+  raw?: number;
+  /** What the history behind `cover` says: hit rate, games, the edge bucket and whether it clears break-even. */
+  hist?: { pct: number | null; n: number; bucket: string; proof: "proven" | "promising" | "unproven" };
   /** How many points the ratings disagree with the line by. */
   edge: number;
   /** For a spread leg, what a pick card needs: the margin the pick has to win by, whether it is the home side, and the board game to follow live. */
@@ -65,7 +69,7 @@ export interface Parlay { id: string; title: string; legs: Leg[]; stats: Evaluat
 export function recommend(pool: Leg[], { sizes = [2, 3, 4], minCover = 0.55 }: { sizes?: number[]; minCover?: number } = {}): Parlay[] {
   const bestPerGame = new Map<string, Leg>();
   for (const l of pool) if (l.cover >= minCover && (bestPerGame.get(l.gameId)?.cover ?? 0) < l.cover) bestPerGame.set(l.gameId, l);
-  const ranked = [...bestPerGame.values()].sort((a, b) => b.cover - a.cover || a.when.localeCompare(b.when));
+  const ranked = [...bestPerGame.values()].sort((a, b) => b.cover - a.cover || (b.raw ?? 0) - (a.raw ?? 0) || a.when.localeCompare(b.when));
   const out: Parlay[] = [];
   for (const n of sizes) {
     for (const [k, title] of [[0, "Top picks"], [1, "Next best"]] as const) {
@@ -87,7 +91,7 @@ export function byGame(pool: Leg[], minCover = 0.5): GameLegs[] {
     m.set(l.gameId, g);
   }
   return [...m.values()].map((g) => {
-    g.legs.sort((a, b) => b.cover - a.cover);
+    g.legs.sort((a, b) => b.cover - a.cover || (b.raw ?? 0) - (a.raw ?? 0));
     const two = g.legs.filter((l) => l.cover >= minCover).slice(0, 2);
     return { ...g, same: two.length === 2 ? { id: `${g.gameId}-sgp`, title: "Same-game slip", legs: two, stats: evaluate(two) } : null };
   }).sort((a, b) => (b.legs[0]?.cover ?? 0) - (a.legs[0]?.cover ?? 0));
