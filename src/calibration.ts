@@ -57,10 +57,21 @@ export function recordOf(b: Bucket): Record_ {
 }
 export const historyFor = (h: History, edge: number): Record_ => recordOf(h.buckets.find((x) => edge >= x.lo && edge < x.hi) ?? h.buckets.at(-1)!);
 
-/** What picks like this one have really done, pulled toward 50% until there is a lot of history: (wins + half the prior) / (games + prior). */
+const shrunk = (b: Bucket) => (b.w + 0.5 * PRIOR_GAMES) / (b.w + b.l + PRIOR_GAMES);
+const mid = (b: Bucket) => (b.hi === Infinity ? b.lo + 2 : (b.lo + b.hi) / 2);
+
+/**
+ * What picks like this one have really done, pulled toward 50% until there is a lot of history: (wins + half the prior) / (games + prior).
+ * Each bucket's rate is anchored at the middle of its range and the chance slides between neighbouring anchors, so two picks in the same bucket
+ * with different edges do not get the same number (and a stronger edge never ranks below a weaker one by accident of where the bucket edges fall).
+ */
 export function calibratedCover(h: History, edge: number): number {
-  const r = historyFor(h, edge);
-  return (r.w + 0.5 * PRIOR_GAMES) / (r.w + r.l + PRIOR_GAMES);
+  const b = h.buckets, m = b.map(mid);
+  if (edge <= m[0]) return shrunk(b[0]);
+  for (let i = 1; i < b.length; i++) {
+    if (edge <= m[i]) { const t = (edge - m[i - 1]) / (m[i] - m[i - 1]); return shrunk(b[i - 1]) + t * (shrunk(b[i]) - shrunk(b[i - 1])); }
+  }
+  return shrunk(b[b.length - 1]);
 }
 
 export function overall(h: History): Record_ {

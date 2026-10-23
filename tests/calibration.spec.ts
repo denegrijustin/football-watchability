@@ -32,3 +32,10 @@ test("the real histories: NFL has hundreds of graded picks and has not beaten th
   const c = overall(cfbHistory(buildModel(JSON.parse(readFileSync("src/data/spplus.json", "utf8")))));
   expect(c.n).toBeGreaterThan(100);
 });
+
+test("two picks with different edges in the same bucket do not get the same chance", () => {
+  const hist = h([[0, 2, 40, 40, 0], [2, 4, 60, 40, 0], [4, 7, 30, 20, 0], [7, Infinity, 20, 10, 0]]);
+  expect(calibratedCover(hist, 3)).toBeCloseTo((60 + 100) / (100 + 200), 6); // the middle of its bucket: exactly the bucket's rate
+  expect(calibratedCover(hist, 2.4)).not.toBeCloseTo(calibratedCover(hist, 3.6), 4);
+  expect(calibratedCover(hist, 3.6)).toBeGreaterThan(calibratedCover(hist, 2.4)); // between two anchors, so it slides between them
+});
