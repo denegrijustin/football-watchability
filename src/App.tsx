@@ -239,13 +239,13 @@ export default function App() {
               </button>
               <button
                 data-tab="picks"
-                aria-label="Picks and parlays"
+                aria-label="ATS picks and parlays"
                 aria-pressed={view === "picks"}
                 onClick={() => go("picks")}
                 title="This week's against-the-spread picks, over/under picks and recommended parlays"
               >
                 <TabIcon name="picks" />
-                <span className="tab-label">Picks</span>
+                <span className="tab-label"><span className="tl-wide">ATS &amp; Parlays</span><span className="tl-short">Picks</span></span>
               </button>
               <button
                 data-tab="upset"
@@ -418,8 +418,12 @@ export default function App() {
             <>
           <div className="board-heading">
             <h2>{heading}</h2>
-            <span role="status">
-              {board.counts.live} in progress · {board.counts.final} completed · {board.counts.upcoming} upcoming
+            <span role="status" className="status-chips">
+              {([["live", board.counts.live, "in progress"], ["final", board.counts.final, "completed"], ["upcoming", board.counts.upcoming, "upcoming"]] as const).map(([k, n, label]) => (
+                <button key={k} type="button" className={`status-chip${filters.status === k ? " on" : ""}`} aria-pressed={filters.status === k} onClick={() => update({ status: filters.status === k ? "all" : k })}>
+                  <b>{n}</b> {label}
+                </button>
+              ))}
             </span>
             {filtered && (
               <button className="reset" onClick={() => setFilters({ ...initial, league })}>

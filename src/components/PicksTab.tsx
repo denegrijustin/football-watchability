@@ -6,10 +6,14 @@ import { LivePicks, type LivePickItem } from "../spplus/components/LivePicks";
 import { cfbLegs, nflLegs } from "../parlayLegs";
 import { freshNfl, useLines } from "../lines";
 import { freshCfbModel } from "../spplus/data/freshLines";
-import { STRENGTH_LABEL, strengthOf } from "../livePicks";
+import { cfbHistory, nflHistory } from "../calibration";
+import { PickAccuracy } from "./PickAccuracy";
 import { usePickData } from "../pickData";
 import { LinesBar } from "./LinesBar";
 import { Parlays } from "./Parlays";
+import { ParlayRecord } from "./ParlayRecord";
+import { AtsRecord } from "./AtsRecord";
+import { cfbPicks, nflPicks } from "../pickRecord";
 import type { Leg } from "../parlay";
 import type { League, View } from "../data";
 
@@ -25,22 +29,24 @@ const kick = (when: string) => {
  */
 export function PicksTab({ defaultLeague }: { defaultLeague: League }) {
   const [lg, setLg] = useState<"CFB" | "NFL">(defaultLeague === "CFB" ? "CFB" : "NFL");
-  const [part, setPart] = useState<"picks" | "parlays">("picks");
+  const [part, setPart] = useState<"picks" | "record" | "parlays">("picks");
   const { data, error } = usePickData();
   const { lines } = useLines();
 
+  const hist = useMemo(() => (data ? (lg === "CFB" ? cfbHistory(data.model) : nflHistory(data.nfl)) : null), [data, lg]);
+  const graded = useMemo(() => (data ? (lg === "CFB" ? cfbPicks(data.model) : nflPicks(data.nfl)) : []), [data, lg]);
   const legs = useMemo<Leg[]>(() => {
-    if (!data) return [];
+    if (!data || !hist) return [];
     const games = slate.games as never as Parameters<typeof cfbLegs>[2];
-    return lg === "CFB" ? cfbLegs(freshCfbModel(data.model, lines, data.espn), data.espn, games) : nflLegs(freshNfl(data.nfl, lines), games);
-  }, [data, lg, lines]);
+    return lg === "CFB" ? cfbLegs(freshCfbModel(data.model, lines, data.espn), data.espn, games, Date.now(), hist) : nflLegs(freshNfl(data.nfl, lines), games, Date.now(), hist);
+  }, [data, lg, lines, hist]);
 
   const items = useMemo<LivePickItem[]>(() => legs.filter((l) => l.kind === "spread" && l.line != null).map((l) => {
     const src = lg === "NFL" ? logos[logoSlug(l.team ?? "")] : data?.model.byId.get(`FBS:${l.team}`)?.logo?.local ?? data?.model.byId.get(`FBS:${l.team}`)?.logo?.remote;
     return {
       id: l.id, by: lg === "CFB" ? "SP+" : "Ratings", pickName: l.team ?? l.label, pickMark: src ? <ChipImg src={src} size={24} /> : <span aria-hidden="true">●</span>,
       line: l.line as number, pickIsHome: !!l.pickIsHome, liveIsHome: l.liveIsHome, awayName: l.away, homeName: l.home, when: kick(l.when),
-      gap: l.edge.toFixed(1), gapNum: l.edge, at: l.when, cover: l.cover, espnId: l.espnId ?? null,
+      gap: l.edge.toFixed(1), gapNum: l.edge, at: l.when, cover: l.cover, raw: l.raw ?? null, hist: l.hist ? { pct: l.hist.pct, n: l.hist.n, bucket: l.hist.bucket, proof: l.hist.proof } : undefined, espnId: l.espnId ?? null,
     };
   }), [legs, lg, data]);
   const totals = useMemo(() => legs.filter((l) => l.kind === "total").sort((a, b) => b.cover - a.cover), [legs]);
@@ -53,16 +59,19 @@ export function PicksTab({ defaultLeague }: { defaultLeague: League }) {
           <button aria-pressed={lg === "NFL"} onClick={() => setLg("NFL")}>NFL</button>
         </div>
         <div className="segmented" role="group" aria-label="Picks section">
-          <button aria-pressed={part === "picks"} onClick={() => setPart("picks")}>Spread &amp; totals</button>
+          <button aria-pressed={part === "picks"} onClick={() => setPart("picks")}>This week</button>
+          <button aria-pressed={part === "record"} onClick={() => setPart("record")}>ATS record</button>
           <button aria-pressed={part === "parlays"} onClick={() => setPart("parlays")}>Parlays</button>
         </div>
-        <button type="button" className="btn small ghost picks-link" onClick={() => openView(lg === "CFB" ? "spplus" : "nfl")}>Full {lg === "CFB" ? "SP+" : "NFL+"} ATS tracker →</button>
+        <button type="button" className="btn small ghost picks-link" title="Open the full team-by-team tracker" onClick={() => openView(lg === "CFB" ? "spplus" : "nfl")}>Full {lg === "CFB" ? "SP+" : "NFL+"} ATS tracker →</button>
       </div>
       {error ? <p className="ol-note">The picks could not be loaded. Reload to try again.</p>
         : !data ? <p className="ol-note" role="status">Loading the picks…</p>
-        : part === "parlays" ? <Parlays league={lg} />
+        : part === "record" ? <AtsRecord picks={graded} label={lg === "CFB" ? "College SP+" : "NFL ratings"} />
+        : part === "parlays" ? <><Parlays league={lg} /><ParlayRecord picks={graded} label={lg === "CFB" ? "College SP+" : "NFL ratings"} /></>
         : (
           <>
+            {hist && data && <PickAccuracy hist={hist} sigma={lg === "CFB" ? 15.5 : data.nfl.params.model.sigma} label={lg === "CFB" ? "College SP+" : "NFL ratings"} />}
             {items.length ? (
               <LivePicks items={items} title={`${lg === "CFB" ? "College" : "NFL"} picks against the spread`} note="The side the data likes against the spread, strongest first. A game on the field shows whether the pick is covering right now." extra={<LinesBar />} />
             ) : <p className="ol-note">No spread picks to show right now: every game this week has either started or has no line yet.</p>}
@@ -71,8 +80,8 @@ export function PicksTab({ defaultLeague }: { defaultLeague: League }) {
                 <h3 className="lev-h">Over / under picks</h3>
                 <p className="ol-note">The ratings' own total against the posted one. The bigger the gap, the stronger the lean.</p>
                 <ul className="picks-tl">
-                  {totals.map((t) => { const st = strengthOf(t.cover); return (
-                    <li key={t.id}><span className="pt-ico" aria-hidden="true">{t.label.startsWith("Over") ? "▲" : "▼"}</span><span className="pt-main"><b>{t.label}</b><small>{t.game} · {kick(t.when)}</small></span><span className="pt-edge">+{t.edge.toFixed(1)} pts</span><span className="pt-cover"><b>{Math.round(t.cover * 100)}%</b>{st && <small className={`lp-tier ${st}`}>{STRENGTH_LABEL[st]}</small>}</span></li>
+                  {totals.map((t) => { return (
+                    <li key={t.id}><span className="pt-ico" aria-hidden="true">{t.label.startsWith("Over") ? "▲" : "▼"}</span><span className="pt-main"><b>{t.label}</b><small>{t.game} · {kick(t.when)}</small></span><span className="pt-edge">+{t.edge.toFixed(1)} pts</span><span className="pt-cover"><b>{Math.round((t.raw ?? t.cover) * 100)}%</b><small className="lp-tier slight" title="The model's own number. Totals have no track record here yet, so treat them as a coin flip.">Model only</small></span></li>
                   ); })}
                 </ul>
               </div>

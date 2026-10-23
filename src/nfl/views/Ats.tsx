@@ -9,8 +9,8 @@ import { AtsChart } from "../../spplus/charts/AtsChart";
 import { BREAK_EVEN, byEdge, recordText, tally, weeklyTracker } from "../../spplus/data/ats";
 import { dateLabel, fmt, fmtPct, fmtSigned, timeLabel } from "../../spplus/data/derive";
 import { normCdf } from "../../spplus/sim/rng";
-import { STRENGTH_LABEL, strengthOf } from "../../livePicks";
 import { freshNfl, useLines } from "../../lines";
+import { PROOF_LABEL, calibratedCover, historyFor, nflHistory } from "../../calibration";
 import { LinesBar } from "../../components/LinesBar";
 
 const BUCKETS = [{ lo: 0, hi: 1.5, label: "Under 1.5" }, { lo: 1.5, hi: 3, label: "1.5 to 3" }, { lo: 3, hi: 5, label: "3 to 5" }, { lo: 5, hi: Infinity, label: "5 or more" }];
@@ -32,14 +32,21 @@ export default function Ats() {
   const ci = wilson(season.w, season.w + season.l);
   const edges = useMemo(() => byEdge(games, BUCKETS), [games]);
   const side = useMemo(() => [["Home teams", games.filter((g) => g.pickIsHome)], ["Road teams", games.filter((g) => !g.pickIsHome)]] as [string, NflAtsGame[]][], [games]);
+  const hist = useMemo(() => nflHistory(data), [data]);
   const { lines } = useLines();
   const pending = useMemo(() => pendingPicks(freshNfl(data, lines)), [data, lines]);
   // The pending picks as cards that follow the score. The pick must beat the line by its margin: the spread for a home pick, minus it for a road pick.
-  const liveItems: LivePickItem[] = pending.map(({ g, p }) => ({
-    id: g.id, by: "Ratings", pickName: data.teams[p.pick]?.name ?? p.pick, pickMark: <NflMark abbr={p.pick} size={28} />,
-    line: p.pickIsHome ? (g.spread as number) : -(g.spread as number), pickIsHome: p.pickIsHome, awayName: g.away, homeName: g.home,
-    when: `${dateLabel(g.date)} ${timeLabel(g.time)}`, gap: fmt(p.edge), gapNum: p.edge, at: `${g.date} ${g.time ?? ""}`, cover: normCdf((p.pickIsHome ? (g.mm as number) - (g.spread as number) : -((g.mm as number) - (g.spread as number))) / data.params.model.sigma), espnId: g.espn ?? null,
-  }));
+  const liveItems: LivePickItem[] = pending.map(({ g, p }) => {
+    const raw = normCdf((p.pickIsHome ? (g.mm as number) - (g.spread as number) : -((g.mm as number) - (g.spread as number))) / data.params.model.sigma);
+    const hr = historyFor(hist, p.edge);
+    return {
+      id: g.id, by: "Ratings", pickName: data.teams[p.pick]?.name ?? p.pick, pickMark: <NflMark abbr={p.pick} size={28} />,
+      line: p.pickIsHome ? (g.spread as number) : -(g.spread as number), pickIsHome: p.pickIsHome, awayName: g.away, homeName: g.home,
+      when: `${dateLabel(g.date)} ${timeLabel(g.time)}`, gap: fmt(p.edge), gapNum: p.edge, at: `${g.date} ${g.time ?? ""}`,
+      cover: calibratedCover(hist, p.edge), raw, hist: { pct: hr.pct, n: hr.n, bucket: hr.bucket, proof: hr.proof }, espnId: g.espn ?? null,
+    };
+  });
+
   const bt = data.backtest.calibration.ats;
   const sigma = data.params.model.sigma;
 
@@ -102,8 +109,8 @@ export default function Ats() {
           <h2>Picks not yet graded</h2>
           <p className="sub">Games with a posted line, strongest first. Each moves into the tracker when its final is in. “Cover chance” is the probability the pick covers if the ratings were exactly right, using the ratings' typical miss ({fmt(sigma)} points).</p>
           <div className="tbl-wrap"><table className="tbl">
-            <thead><tr><th>Date</th><th>Game</th><th>Pick</th><th className="r">Edge (pts)</th><th className="r">Cover chance</th><th>Strength</th></tr></thead>
-            <tbody>{[...pending].map(({ g, p }) => { const e = (g.mm as number) - (g.spread as number); return { g, p, cover: normCdf((p.pickIsHome ? e : -e) / sigma) }; }).sort((a, b) => b.cover - a.cover).map(({ g, p, cover }) => { const st = strengthOf(cover); return <tr key={g.id}><td>{dateLabel(g.date)} <span className="muted">{timeLabel(g.time)}</span></td><td><NflMark abbr={g.away} size={16} /> {g.away} @ {g.home}</td><td><NflTeamLink abbr={p.pick} size={18} label={p.pick} /> <b className="pickline">{p.line.slice(p.pick.length + 1)}</b></td><td className="r num">{fmt(p.edge)}</td><td className="r num">{fmtPct(cover, 0)}</td><td>{st ? <span className={`lp-tier ${st}`}>{STRENGTH_LABEL[st]}</span> : "—"}</td></tr>; })}</tbody>
+            <thead><tr><th>Date</th><th>Game</th><th>Pick</th><th className="r">Edge (pts)</th><th className="r">Model says</th><th className="r">History says</th><th>Track record</th></tr></thead>
+            <tbody>{[...pending].map(({ g, p }) => { const e = (g.mm as number) - (g.spread as number); return { g, p, cover: normCdf((p.pickIsHome ? e : -e) / sigma) }; }).sort((a, b) => b.cover - a.cover).map(({ g, p, cover }) => { const hr = historyFor(hist, p.edge); return <tr key={g.id}><td>{dateLabel(g.date)} <span className="muted">{timeLabel(g.time)}</span></td><td><NflMark abbr={g.away} size={16} /> {g.away} @ {g.home}</td><td><NflTeamLink abbr={p.pick} size={18} label={p.pick} /> <b className="pickline">{p.line.slice(p.pick.length + 1)}</b></td><td className="r num">{fmt(p.edge)}</td><td className="r num">{fmtPct(cover, 0)}</td><td className="r num">{hr.pct == null ? "—" : `${fmtPct(hr.pct, 0)} (${hr.n})`}</td><td><span className={`lp-tier ${({ proven: "strong", promising: "lean", unproven: "slight" } as const)[hr.proof]}`}>{PROOF_LABEL[hr.proof]}</span></td></tr>; })}</tbody>
           </table></div>
         </div>
       )}

@@ -111,7 +111,7 @@ table.tbl { border-collapse: collapse; width: 100%; font-size: 0.8125rem; }
 .rbar { position: relative; height: 16px; min-width: 120px; background: var(--grid); border-radius: 3px; }
 .rbar i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--s1); border-radius: 0 4px 4px 0; opacity: 0.9; }
 .rbar i.neg { background: var(--s8); }
-.rbar b { position: absolute; left: 6px; top: 0; line-height: 16px; font-size: 0.75rem; font-weight: 600; color: var(--ink); text-shadow: 0 0 3px #000; }
+.rbar b { position: absolute; left: 3px; top: 1px; line-height: 14px; padding: 0 4px; border-radius: 3px; font-size: 0.75rem; font-weight: 600; color: var(--ink); background: var(--grid); font-variant-numeric: tabular-nums; }
 .delta.up { color: #4cc27a; } .delta.down { color: #f08a8a; } .delta.flat { color: var(--muted); }
 
 /* Charts */
@@ -439,3 +439,21 @@ ol.steps b { color: var(--ink); }
 .lb-spin { display: inline-block; animation: lb-rot 0.9s linear infinite; }
 @keyframes lb-rot { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .lb-spin { animation: none; } }
+.lp-hist { margin: 2px 0 0; font-size: 0.75rem; color: var(--ink-2); }
+.lp-hist b { color: var(--ink); }
+
+.lp-cover { display: grid; grid-template-columns: 1fr; gap: 6px; }
+.lp-chance { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.lp-chance strong { font-size: 1.35rem; }
+.lp-chance em { font-style: normal; font-weight: 700; font-size: 0.75rem; color: var(--gold, #edd092); }
+.lp-scale { position: relative; height: 26px; margin: 0 6px; border-bottom: 3px solid rgb(255 255 255 / 14%); }
+.lp-scale .t { position: absolute; top: 0; bottom: -3px; width: 0; border-left: 1px dashed rgb(255 255 255 / 45%); }
+.lp-scale .t.even { border-left-color: var(--gold, #edd092); }
+.lp-scale .t u { position: absolute; top: 0; text-decoration: none; font-style: normal; font-size: 0.625rem; white-space: nowrap; color: var(--muted); }
+.lp-scale .t.flip u { right: 4px; } .lp-scale .t.even u { left: 4px; color: var(--gold, #edd092); }
+.lp-scale .dot { position: absolute; bottom: -7px; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; background: #3fb27f; border: 2px solid var(--surface, #121b23); box-sizing: border-box; }
+.lp-explain { margin: 0; font-size: 0.75rem; color: var(--text-2, var(--ink-2)); }
+@media (max-width: 560px) {
+  .filters .field { min-width: 0; max-width: 100%; }
+  .filters select.ctl { width: 100%; max-width: 100%; min-width: 0; }
+}
