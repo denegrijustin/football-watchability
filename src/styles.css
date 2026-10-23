@@ -8462,3 +8462,31 @@ select,
 .lp-scale .t.flip u { right: 4px; } .lp-scale .t.even u { left: 4px; color: var(--gold, #edd092); }
 .lp-scale .dot { position: absolute; bottom: -7px; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; background: #3fb27f; border: 2px solid var(--surface, #121b23); box-sizing: border-box; }
 .lp-explain { margin: 0; font-size: 0.75rem; color: var(--text-2, var(--ink-2)); }
+
+/* Phone fit: nothing in these views needs a sideways swipe. */
+.picks-wrap, .pa { min-width: 0; max-width: 100%; }
+@media (max-width: 560px) {
+  .pa { padding: 10px; }
+  .pa-table { font-size: 0.75rem; }
+  .pa-table th, .pa-table td { padding: 6px 3px; white-space: normal; }
+  .pa-table thead th { font-size: 0.625rem; letter-spacing: 0; }
+  .pa-table .lp-tier { white-space: normal; font-size: 0.625rem; padding: 2px 5px; }
+  /* The seed grids become one card per team: the name, then each seed's chance as a small labelled cell. */
+  .ol-gridwrap { overflow: visible; border: 0; background: none; }
+  .ol-grid, .ol-grid tbody { display: block; min-width: 0; }
+  .ol-grid thead { display: none; }
+  .ol-grid tbody tr { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; padding: 8px; margin-bottom: 8px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+  .ol-grid tbody th { grid-column: 1 / -1; position: static; min-width: 0; border: 0; padding: 0 0 4px; text-align: left; }
+  .ol-grid td { display: grid; gap: 1px; padding: 4px 2px; border: 0; border-radius: 6px; font-size: 0.8125rem; }
+  .ol-grid td::before { content: attr(data-l); font-size: 0.625rem; color: var(--muted); }
+  .ol-grid .edge { border-right: 0; }
+}
+.um { grid-template-columns: minmax(0, 1fr); }
+.um > * { min-width: 0; }
+@media (max-width: 560px) {
+  .segmented { max-width: 100%; flex-wrap: wrap; }
+}
+@media (max-width: 560px) {
+  .pa-table th:nth-child(4), .pa-table td:nth-child(4) { display: none; }
+  .um-controls, .um-legend, .segmented.done-sort { flex-wrap: wrap; overflow-x: visible; }
+}
