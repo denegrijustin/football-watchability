@@ -37,11 +37,11 @@ test("a pick says what has to happen, what the ratings expect and how strong it 
 });
 
 for (const [lg, name] of [["NFL", "NFL"], ["CFB", "College"]] as const) {
-  test(`the Outlook tab's Parlays view builds slips of two to four legs and lists the games (${name})`, async ({ page }) => {
+  test(`the Parlays tab builds slips of two to four legs and lists the games (${name})`, async ({ page }) => {
     await stubFinals(page);
     await page.goto(`/?league=${lg}`);
-    await page.getByRole("button", { name: /^Outlook/ }).click();
-    await page.getByRole("group", { name: "Outlook section" }).getByRole("button", { name: "Parlays" }).click();
+    await page.locator('.view-switch [data-tab="picks"]').click();
+    await page.getByRole("group", { name: "Picks section" }).getByRole("button", { name: "Parlays" }).click();
     await expect(page.locator(".pl-slip").first()).toBeVisible({ timeout: 20_000 });
     await expect(page.locator(".pl-warn")).toContainText("every leg hits");
     for (const n of [2, 3, 4]) await expect(page.locator(".pl-slip h4", { hasText: `${n}-leg · Top picks` })).toBeVisible();

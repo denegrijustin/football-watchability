@@ -12,7 +12,7 @@ import { usePickData } from "../pickData";
 import { LinesBar } from "./LinesBar";
 import { Parlays } from "./Parlays";
 import { ParlayRecord } from "./ParlayRecord";
-import { PickResults } from "./PickResults";
+import { AtsRecord } from "./AtsRecord";
 import { cfbPicks, nflPicks } from "../pickRecord";
 import type { Leg } from "../parlay";
 import type { League, View } from "../data";
@@ -29,7 +29,7 @@ const kick = (when: string) => {
  */
 export function PicksTab({ defaultLeague }: { defaultLeague: League }) {
   const [lg, setLg] = useState<"CFB" | "NFL">(defaultLeague === "CFB" ? "CFB" : "NFL");
-  const [part, setPart] = useState<"picks" | "parlays">("picks");
+  const [part, setPart] = useState<"picks" | "record" | "parlays">("picks");
   const { data, error } = usePickData();
   const { lines } = useLines();
 
@@ -59,18 +59,19 @@ export function PicksTab({ defaultLeague }: { defaultLeague: League }) {
           <button aria-pressed={lg === "NFL"} onClick={() => setLg("NFL")}>NFL</button>
         </div>
         <div className="segmented" role="group" aria-label="Picks section">
-          <button aria-pressed={part === "picks"} onClick={() => setPart("picks")}>Spread &amp; totals</button>
+          <button aria-pressed={part === "picks"} onClick={() => setPart("picks")}>This week</button>
+          <button aria-pressed={part === "record"} onClick={() => setPart("record")}>ATS record</button>
           <button aria-pressed={part === "parlays"} onClick={() => setPart("parlays")}>Parlays</button>
         </div>
-        <button type="button" className="btn small ghost picks-link" onClick={() => openView(lg === "CFB" ? "spplus" : "nfl")}>Full {lg === "CFB" ? "SP+" : "NFL+"} ATS tracker →</button>
+        <button type="button" className="btn small ghost picks-link" title="Open the full team-by-team tracker" onClick={() => openView(lg === "CFB" ? "spplus" : "nfl")}>Full {lg === "CFB" ? "SP+" : "NFL+"} ATS tracker →</button>
       </div>
       {error ? <p className="ol-note">The picks could not be loaded. Reload to try again.</p>
         : !data ? <p className="ol-note" role="status">Loading the picks…</p>
+        : part === "record" ? <AtsRecord picks={graded} label={lg === "CFB" ? "College SP+" : "NFL ratings"} />
         : part === "parlays" ? <><Parlays league={lg} /><ParlayRecord picks={graded} label={lg === "CFB" ? "College SP+" : "NFL ratings"} /></>
         : (
           <>
             {hist && data && <PickAccuracy hist={hist} sigma={lg === "CFB" ? 15.5 : data.nfl.params.model.sigma} label={lg === "CFB" ? "College SP+" : "NFL ratings"} />}
-            <PickResults picks={graded} label={lg === "CFB" ? "College SP+" : "NFL ratings"} />
             {items.length ? (
               <LivePicks items={items} title={`${lg === "CFB" ? "College" : "NFL"} picks against the spread`} note="The side the data likes against the spread, strongest first. A game on the field shows whether the pick is covering right now." extra={<LinesBar />} />
             ) : <p className="ol-note">No spread picks to show right now: every game this week has either started or has no line yet.</p>}

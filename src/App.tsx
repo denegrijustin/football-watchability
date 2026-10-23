@@ -239,13 +239,13 @@ export default function App() {
               </button>
               <button
                 data-tab="picks"
-                aria-label="Picks and parlays"
+                aria-label="ATS picks and parlays"
                 aria-pressed={view === "picks"}
                 onClick={() => go("picks")}
                 title="This week's against-the-spread picks, over/under picks and recommended parlays"
               >
                 <TabIcon name="picks" />
-                <span className="tab-label">Picks</span>
+                <span className="tab-label"><span className="tl-wide">ATS &amp; Parlays</span><span className="tl-short">Picks</span></span>
               </button>
               <button
                 data-tab="upset"

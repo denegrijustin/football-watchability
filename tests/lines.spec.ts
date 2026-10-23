@@ -50,8 +50,8 @@ test("the Parlays view loads the current lines once, says when they are from, an
   let calls = 0;
   await page.route("**/api/odds**", (r) => { calls++; return r.fulfill({ json: { at: Date.now() - 4 * 60_000, league: new URL(r.request().url()).searchParams.get("league"), week: 7, games: [] } }); });
   await page.goto("/?league=NFL");
-  await page.getByRole("button", { name: /^Outlook/ }).click();
-  await page.getByRole("group", { name: "Outlook section" }).getByRole("button", { name: "Parlays" }).click();
+  await page.locator('.view-switch [data-tab="picks"]').click();
+  await page.getByRole("group", { name: "Picks section" }).getByRole("button", { name: "Parlays" }).click();
   await expect(page.locator(".lb")).toContainText("Lines from", { timeout: 20_000 });
   await expect(page.locator(".lb")).toContainText("4 min ago");
   expect(calls).toBe(2); // one call per league
@@ -62,8 +62,8 @@ test("when ESPN cannot be reached the page says so and keeps the saved lines", a
   await stubFinals(page);
   await page.route("**/api/odds**", (r) => r.fulfill({ status: 502, json: { error: "ESPN 503" } }));
   await page.goto("/?league=NFL");
-  await page.getByRole("button", { name: /^Outlook/ }).click();
-  await page.getByRole("group", { name: "Outlook section" }).getByRole("button", { name: "Parlays" }).click();
+  await page.locator('.view-switch [data-tab="picks"]').click();
+  await page.getByRole("group", { name: "Picks section" }).getByRole("button", { name: "Parlays" }).click();
   await expect(page.locator(".lb")).toContainText("could not reach ESPN", { timeout: 20_000 });
   await expect(page.locator(".pl-slip").first()).toBeVisible();
 });
