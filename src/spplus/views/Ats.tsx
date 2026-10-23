@@ -5,8 +5,9 @@ import { atsGames, byEdge, BREAK_EVEN, recordText, tally, weeklyTracker, type At
 import { dateLabel, fmt, fmtPct, fmtSigned } from "../data/derive";
 import { Derived, Mark, Notes, TeamLink, useTeamLookup } from "../components/common";
 import { LivePicks, type LivePickItem } from "../components/LivePicks";
-import { STRENGTH_LABEL, findBoardGame, lineText, strengthOf } from "../../livePicks";
+import { findBoardGame, lineText } from "../../livePicks";
 import { useLines } from "../../lines";
+import { PROOF_LABEL, calibratedCover, cfbHistory, historyFor } from "../../calibration";
 import { freshCfbModel } from "../data/freshLines";
 import { LinesBar } from "../../components/LinesBar";
 import { slate } from "../../data";
@@ -41,6 +42,7 @@ export default function Ats() {
   ] as [string, AtsGame[]][], [games]);
 
   // Picks still to be played: the current slate's lines and pick, with the model's chance to cover.
+  const hist = useMemo(() => cfbHistory(model), [model]);
   const { lines } = useLines();
   const fresh = useMemo(() => freshCfbModel(model, lines, espn), [model, lines, espn]);
   const pending = useMemo(() => {
@@ -70,9 +72,9 @@ export default function Ats() {
     return {
       id: p.id, by: "SP+", pickName: p.atsPick as string, pickMark: <Mark team={lookup(p.atsPick as string)} size={28} />, line, pickIsHome, liveIsHome: hit?.swapped ? !pickIsHome : pickIsHome,
       awayName: p.away, homeName: p.home, when: `${dateLabel(p.date)}${t?.date ? ` · ${new Date(t.date).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}` : ""}`,
-      gap: p.spreadDiff == null ? null : fmt(p.spreadDiff), gapNum: p.spreadDiff, at: `${p.date ?? ""} ${t?.date ?? ""}`, cover, espnId: t?.espnId ?? null,
+      gap: p.spreadDiff == null ? null : fmt(p.spreadDiff), gapNum: p.spreadDiff, at: `${p.date ?? ""} ${t?.date ?? ""}`, cover: p.spreadDiff == null ? cover : calibratedCover(hist, p.spreadDiff), raw: cover, hist: p.spreadDiff == null ? undefined : (({ pct, n, bucket, proof }) => ({ pct, n, bucket, proof }))(historyFor(hist, p.spreadDiff)), espnId: t?.espnId ?? null,
     };
-  }), [pending, espn, lookup]);
+  }), [pending, espn, lookup, hist]);
 
   const best = [...weeks].filter((w) => w.rec.w + w.rec.l >= 10).sort((a, b) => (b.rec.pct ?? 0) - (a.rec.pct ?? 0))[0];
   const worst = [...weeks].filter((w) => w.rec.w + w.rec.l >= 10).sort((a, b) => (a.rec.pct ?? 1) - (b.rec.pct ?? 1))[0];
@@ -158,8 +160,8 @@ export default function Ats() {
           <h2>Week {model.latest} picks, not yet graded</h2>
           <p className="sub">Each moves into the tracker when its final reaches the sheet. “Cover chance” is the simulator's probability that the pick covers; strongest first.</p>
           <div className="tbl-wrap"><table className="tbl">
-            <thead><tr><th>Date</th><th>Game</th><th>Pick</th><th className="r">Edge (pts)</th><th className="r">Cover chance</th><th>Strength</th></tr></thead>
-            <tbody>{[...pending].sort((a, b) => (b.cover ?? 0) - (a.cover ?? 0)).map(({ p, cover }) => { const pts = p.spreadPts as number, line = pts === 0 ? 0 : p.spreadTeam === p.atsPick ? pts : -pts, st = strengthOf(cover); return <tr key={p.id}><td>{dateLabel(p.date)}</td><td>{p.game}</td><td><TeamLink team={lookup(p.atsPick)} size={18} /> <b className="pickline">{lineText(line)}</b></td><td className="r num">{fmt(p.spreadDiff)}</td><td className="r num">{cover == null ? "—" : fmtPct(cover, 0)}</td><td>{st ? <span className={`lp-tier ${st}`}>{STRENGTH_LABEL[st]}</span> : "—"}</td></tr>; })}</tbody>
+            <thead><tr><th>Date</th><th>Game</th><th>Pick</th><th className="r">Edge (pts)</th><th className="r">Model says</th><th className="r">History says</th><th>Track record</th></tr></thead>
+            <tbody>{[...pending].sort((a, b) => (b.cover ?? 0) - (a.cover ?? 0)).map(({ p, cover }) => { const pts = p.spreadPts as number, line = pts === 0 ? 0 : p.spreadTeam === p.atsPick ? pts : -pts, hr = p.spreadDiff == null ? null : historyFor(hist, p.spreadDiff); return <tr key={p.id}><td>{dateLabel(p.date)}</td><td>{p.game}</td><td><TeamLink team={lookup(p.atsPick)} size={18} /> <b className="pickline">{lineText(line)}</b></td><td className="r num">{fmt(p.spreadDiff)}</td><td className="r num">{cover == null ? "—" : fmtPct(cover, 0)}</td><td className="r num">{hr?.pct == null ? "—" : `${fmtPct(hr.pct, 0)} (${hr.n})`}</td><td>{hr ? <span className={`lp-tier ${({ proven: "strong", promising: "lean", unproven: "slight" } as const)[hr.proof]}`}>{PROOF_LABEL[hr.proof]}</span> : "—"}</td></tr>; })}</tbody>
           </table></div>
         </div>
       )}
