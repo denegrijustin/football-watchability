@@ -5806,10 +5806,10 @@ select,
 }
 @media (max-width: 760px) {
   /* the section headings below carry the counts, so the line above them goes (Reset filters stays when it applies) */
-  .board-heading [role="status"] {
+  .board-heading [role="status"]:not(.status-chips) {
     display: none;
   }
-  .board-heading:not(:has(.reset)) {
+  .board-heading:not(:has(.reset, .status-chips)) {
     display: none;
   }
   .kickoff-slot {
@@ -5866,14 +5866,14 @@ select,
   box-shadow: 0 18px 50px rgb(0 0 0 / 55%);
 }
 /* The counts line and the long sort note repeat what the menus and section headings already say */
-.board-heading [role="status"] {
+.board-heading [role="status"]:not(.status-chips) {
   display: none;
 }
 .board-heading h2,
 .board-heading .sort-label {
   display: none;
 }
-.board-heading:not(:has(.reset)) {
+.board-heading:not(:has(.reset, .status-chips)) {
   display: none;
 }
 .view-row {
@@ -8377,3 +8377,13 @@ select,
 @media (max-width: 380px) {
   .view-row .view-switch > button { font-size: 0.6875rem; padding-left: 0; padding-right: 0; }
 }
+
+.status-chips{display:inline-flex;gap:6px;flex-wrap:wrap}
+.status-chip{font:inherit;font-size:.85rem;padding:4px 10px;border-radius:999px;border:1px solid var(--line,#ffffff33);background:transparent;color:inherit;cursor:pointer}
+.status-chip b{font-variant-numeric:tabular-nums}
+.status-chip.on{background:var(--lime);color:#000;border-color:var(--lime)}
+.board-heading .status-chips{display:inline-flex;align-items:center}
+@media (max-width:760px){.board-heading .status-chips{width:100%}.status-chip{flex:1;padding:8px 6px;font-size:.8rem;min-height:44px}}
+.board-heading:has(.status-chips){margin:2px 0 0}
+.board-heading .status-chips{background:none;padding:0}
+.status-chip{padding:2px 10px;line-height:1.3}

@@ -44,5 +44,5 @@ test("on a desktop the first game starts in the upper third of the screen", asyn
   await page.goto("/?league=CFB");
   const card = page.locator(".game-card").first();
   await expect(card).toBeVisible();
-  expect(await card.evaluate((e) => Math.round(e.getBoundingClientRect().top))).toBeLessThan(300);
+  expect(await card.evaluate((e) => Math.round(e.getBoundingClientRect().top))).toBeLessThan(360);
 });
