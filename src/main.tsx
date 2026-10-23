@@ -4,7 +4,10 @@ import App from "./App";
 import { LiveScores } from "./live";
 import { GameCenterProvider, preloadGameCenter } from "./components/GameCenterContext";
 import "./styles.css";
+import "./motion.css";
 import { guardLogos } from "./logoGuard";
+import { initMotion } from "./motion";
+initMotion();
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <LiveScores>

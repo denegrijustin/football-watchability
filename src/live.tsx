@@ -3,6 +3,7 @@ import { results, slate } from "./data";
 import type { WpPoint } from "./insanity";
 import { liveStatusParts } from "./liveStatus";
 import { openStream, type Stream } from "./liveStream";
+import { useChanged } from "./motion";
 
 /** Live score for one game, from /api/scores (a Cloudflare Pages Function over ESPN). */
 export type LiveScore = {
@@ -250,7 +251,7 @@ export function LiveScores({ children }: { children: ReactNode }) {
         void tick();
       }
     };
-    refreshRef.current = () => { clearTimeout(timer); void tick(); };
+    refreshRef.current = () => { clearTimeout(timer); void tick().then(() => window.dispatchEvent(new CustomEvent("fbwatch:refreshed", { detail: "scores" }))); };
     window.addEventListener("focus", wake);
     window.addEventListener("online", wake);
     window.addEventListener("pageshow", wake);
@@ -343,16 +344,17 @@ export function FootballIcon({ title }: { title: string }) {
   );
 }
 
-/** A team's score, shown beside its name and logo once the game has started. */
+/** A team's score, shown beside its name and logo once the game has started. It flashes and ticks over when the team scores. */
 export function TeamScore({ live, side }: { live?: LiveScore; side: "away" | "home" }) {
+  const mine = live ? live[side] : 0;
+  const scored = useChanged(live?.state === "in" ? mine : undefined, 1300);
   if (!live || live.state === "pre") return null;
-  const mine = live[side];
   const theirs = live[side === "away" ? "home" : "away"];
   const cls = live.state === "post" ? (mine > theirs ? " won" : mine < theirs ? " lost" : "") : mine > theirs ? " lead" : "";
   return (
-    <span className={`team-score${cls}`} aria-label={`${side === "away" ? "Away" : "Home"} score`}>
+    <span className={`team-score${cls}${scored ? " scored" : ""}`} aria-label={`${side === "away" ? "Away" : "Home"} score`}>
       {live.state === "in" && live.ball === side && <FootballIcon title="Has the ball" />}
-      {mine}
+      <span className="ts-num" key={mine}>{mine}</span>
     </span>
   );
 }

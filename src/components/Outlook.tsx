@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { logos, type League } from "../data";
 import { fetchData } from "../data/load";
 import { ChipImg } from "../logoTone";
+import { Skeleton } from "./Skeleton";
 import { LeverageChart, LeverageGames, type Leverage } from "./Leverage";
 
 type Team = { id: string; name: string; abbr: string; logoId: string | null };
@@ -309,7 +310,7 @@ export function Outlook({ defaultLeague }: { defaultLeague: League }) {
         )}
       </div>
       {!data ? (
-        <p className="ol-note" role="status">Loading…</p>
+        <Skeleton rows={5} kind="row" />
       ) : league === "NFL" ? (
         !nfl ? (
           <p className="ol-note">The NFL outlook has not been built yet.</p>

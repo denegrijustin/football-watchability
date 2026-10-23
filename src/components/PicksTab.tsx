@@ -11,6 +11,7 @@ import { PickAccuracy } from "./PickAccuracy";
 import { usePickData } from "../pickData";
 import { LinesBar } from "./LinesBar";
 import { Parlays } from "./Parlays";
+import { Skeleton } from "./Skeleton";
 import { ParlayRecord } from "./ParlayRecord";
 import { AtsRecord } from "./AtsRecord";
 import { cfbPicks, nflPicks } from "../pickRecord";
@@ -66,7 +67,7 @@ export function PicksTab({ defaultLeague }: { defaultLeague: League }) {
         <button type="button" className="btn small ghost picks-link" title="Open the full team-by-team tracker" onClick={() => openView(lg === "CFB" ? "spplus" : "nfl")}>Full {lg === "CFB" ? "SP+" : "NFL+"} ATS tracker →</button>
       </div>
       {error ? <p className="ol-note">The picks could not be loaded. Reload to try again.</p>
-        : !data ? <p className="ol-note" role="status">Loading the picks…</p>
+        : !data ? <Skeleton rows={4} />
         : part === "record" ? <AtsRecord picks={graded} label={lg === "CFB" ? "College SP+" : "NFL ratings"} />
         : part === "parlays" ? <><Parlays league={lg} /><ParlayRecord picks={graded} label={lg === "CFB" ? "College SP+" : "NFL ratings"} /></>
         : (
