@@ -8399,3 +8399,48 @@ select,
 .pa-table th, .pa-table td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
 .pa-table th.r, .pa-table td.r { text-align: right; }
 .pa-table thead th { color: var(--muted); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; }
+/* Parlay record and graded picks */
+.pr { margin-top: 22px; display: grid; gap: 10px; }
+.pr-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin: 0; }
+.pr-tiles div { background: var(--surface-2); border-radius: 10px; padding: 8px 10px; }
+.pr-tiles dt { font-size: 0.6875rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.pr-tiles dd { margin: 0; font-size: 1.35rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.pr-tiles dd.pos { color: var(--green); } .pr-tiles dd.neg { color: var(--red); }
+.pr-chart { position: relative; width: 100%; }
+.pr-chart svg { display: block; overflow: visible; }
+.pr-chart text { fill: var(--text-2); font-size: 11px; }
+.pr-chart .dim { fill: var(--muted); font-size: 10px; }
+.pr-grid { stroke: var(--line); }
+.pr-be { stroke: var(--gold); stroke-dasharray: 2 3; }
+.pr-be-t { fill: var(--gold) !important; font-size: 10px !important; }
+.pr-bar.hit { fill: #4f9bf0; fill-opacity: 0.85; } .pr-bar.miss { fill: #e66767; fill-opacity: 0.85; }
+.pr-val { fill: var(--text) !important; font-weight: 600; }
+.pr-line { fill: none; stroke: var(--text); stroke-width: 2; stroke-linejoin: round; }
+.pr-dot { fill: var(--bg); stroke: var(--text); stroke-width: 2; }
+.pr-col:focus-visible { outline: none; } .pr-col:focus-visible rect:first-child { stroke: var(--lime); }
+.pr-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 0.75rem; color: var(--text-2); margin: 6px 0; }
+.pr-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.pr-legend i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+.pr-legend i.hit { background: #4f9bf0; } .pr-legend i.miss { background: #e66767; } .pr-legend i.dot { border: 2px solid var(--text); border-radius: 6px; background: var(--bg); }
+.pr-sel { margin: 4px 0 0; font-size: 0.8125rem; color: var(--text-2); }
+.pr-bullets { margin: 0; padding-left: 18px; font-size: 0.875rem; color: var(--text-2); display: grid; gap: 4px; }
+.pr-weeks { display: grid; gap: 8px; }
+.pr-weeks > details, .pr-results { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; }
+.pr-weeks summary, .pr-results summary { cursor: pointer; display: flex; justify-content: space-between; gap: 8px; font-size: 0.9rem; }
+.pr-results { margin: 10px 0; }
+.pr-rhead { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 8px 0; font-size: 0.875rem; }
+.pr-slips { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 10px; margin-top: 8px; }
+.pr-slip { border: 1px solid var(--line); border-radius: 12px; padding: 10px; display: grid; gap: 8px; align-content: start; background: var(--surface-2); }
+.pr-slip.win { border-color: var(--green); } .pr-slip.loss { border-color: rgba(245, 159, 158, 0.5); }
+.pr-slip header { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.pr-slip h5 { margin: 0; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--lime); }
+.pr-res { font-size: 0.75rem; font-weight: 700; } .pr-res.win { color: var(--green); } .pr-res.loss { color: var(--red); }
+.pr-note { margin: 0; font-size: 0.8125rem; color: var(--text-2); }
+.pr-picks { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.pr-pick { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; gap: 8px; align-items: start; padding: 8px; border-radius: 10px; background: rgba(255, 255, 255, 0.04); }
+.pr-badge { width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 0.8rem; background: var(--surface-3); }
+.pr-pick.win .pr-badge { background: var(--green); color: #06210f; } .pr-pick.loss .pr-badge { background: var(--red); color: #2a0808; }
+.pr-body { display: grid; gap: 2px; min-width: 0; } .pr-body small { color: var(--muted); font-size: 0.75rem; }
+.pr-why { font-size: 0.8125rem; color: var(--text-2); }
+.pr-pick.win .pr-why strong { color: var(--green); } .pr-pick.loss .pr-why strong { color: var(--red); }
+.pr-edge { font-size: 0.75rem; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
