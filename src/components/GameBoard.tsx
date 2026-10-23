@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { filterGames, filterResults, results, type FilterState, type Result } from "../data";
 import { gameStatus, useLiveMap, useNow } from "../live";
 import { timeOf, tzAbbr, useTz } from "../tz";
@@ -11,6 +11,9 @@ import type { StatusCounts } from "./Filters";
 import { GameCard } from "./GameCard";
 import { ResultCard } from "./ResultCard";
 import { LinesBar } from "./LinesBar";
+import { WatchNow } from "./WatchNow";
+import { useFlip } from "../motion";
+import { liveHeat } from "../watchNow";
 
 type Game = ReturnType<typeof filterGames>[number];
 const refOf = (r: Result) => ({ id: r.espnId, league: r.league, teams: r.teams });
@@ -67,8 +70,17 @@ const SECTION_HELP = {
   upcoming: "Still to play, kickoff slots in time order, best watchability first in each slot.",
 };
 
-function KickoffSlots({ games }: { games: Game[] }) {
+/** A grid of cards whose members slide to their new places when the order or the set changes (see useFlip). */
+function FlipGrid({ children, games, className = "game-grid", ...rest }: { children: ReactNode; games: Game[]; className?: string; "aria-label"?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useFlip(ref, games.map((g) => g.id).join("|"));
+  return <div ref={ref} className={className} {...rest}>{children}</div>;
+}
+
+function KickoffSlots({ games, hot = false }: { games: Game[]; hot?: boolean }) {
   const tz = useTz();
+  const map = useLiveMap();
+  const heat = (g: Game) => (hot ? liveHeat(g.score, map[g.espnId]) : g.score);
   const slots = new Map<string, Game[]>();
   for (const game of [...games].sort((a, b) => a.date.localeCompare(b.date))) {
     const kickoff = new Date(game.date);
@@ -76,13 +88,13 @@ function KickoffSlots({ games }: { games: Game[] }) {
     const date = kickoff.toISOString();
     const group = slots.get(date) ?? [];
     group.push(game);
-    group.sort((a, b) => b.score - a.score || a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
+    group.sort((a, b) => heat(b) - heat(a) || a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
     slots.set(date, group);
   }
   return <>{[...slots].map(([date, games]) => (
     <section className="kickoff-slot" key={date} data-kickoff={date} aria-label={`Kickoff ${date}`}>
       <h4>{new Date(date).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric", timeZone: tz })} · {timeOf(date, tz, true)}–{timeOf(new Date(new Date(date).getTime() + 3600000).toISOString(), tz, true)} {tzAbbr(tz)}</h4>
-      <div className="game-grid">{games.map(game => <GameCard key={game.id} game={game} />)}</div>
+      <FlipGrid games={games}>{games.map(game => <GameCard key={game.id} game={game} />)}</FlipGrid>
     </section>
   ))}</>;
 }
@@ -139,6 +151,7 @@ export function GameBoard({
 
   return (
     <>
+      {(status === "all" || status === "live") && <WatchNow games={[...closing, ...live, ...upcoming]} />}
       {showClosing && (
         <section className="board-section live closing" aria-label="Upset brewing">
           <div className="section-head">
@@ -148,7 +161,7 @@ export function GameBoard({
             <span className="count">{closing.length}</span>
             <span className="section-note">An upset is brewing in the 4th quarter or overtime; the game closest to final is first.</span>
           </div>
-          <div className="game-grid">{closing.map((game) => <GameCard key={game.id} game={game} />)}</div>
+          <FlipGrid games={closing}>{closing.map((game) => <GameCard key={game.id} game={game} />)}</FlipGrid>
         </section>
       )}
 
@@ -161,7 +174,7 @@ export function GameBoard({
             <span className="count">{live.length}</span>
             <span className="section-note">{SECTION_HELP.live}</span>
           </div>
-          <KickoffSlots games={live} />
+          <KickoffSlots games={live} hot />
         </section>
       )}
 

@@ -5,13 +5,14 @@ import { NetChip } from "./NetChip";
 import { useOpenGame } from "./GameCenterContext";
 import { SquareActivity } from "lucide-react";
 import { PlusRank } from "./PlusRank";
+import { ScoreRing } from "./ScoreRing";
 
 type Team = { name: string; logoId: string; record: string; ranks?: unknown; abbr?: string; espnId?: string | null };
-export function CompactGame({ titleId, matchup, date, broadcast, network, espnId, teams, league, score, tier, venue, driveChart, top, badge, weather, status, scores, momentum, lineStrip, onExpand }: {
+export function CompactGame({ titleId, matchup, date, broadcast, network, espnId, teams, league, score, tier, venue, driveChart, top, badge, weather, status, scores, momentum, lineStrip, why, rise, onExpand }: {
   titleId: string; matchup: string; date: string; broadcast: string; network?: string | null; espnId?: string | null;
   teams: Team[]; league: string; score: number; tier: string; venue: string;
   driveChart?: ReactNode; top?: ReactNode; badge?: ReactNode; weather?: { icon: string; title: string; detail: string; impact: string };
-  status?: ReactNode; scores?: ReactNode[]; momentum?: ReactNode; lineStrip?: ReactNode; onExpand: () => void;
+  status?: ReactNode; scores?: ReactNode[]; momentum?: ReactNode; lineStrip?: ReactNode; why?: ReactNode; rise?: number; onExpand: () => void;
 }) {
   const openGame = useOpenGame();
   const logo = networkLogo(network);
@@ -36,7 +37,7 @@ export function CompactGame({ titleId, matchup, date, broadcast, network, espnId
           <p>{recordLine(team.record, league as League).split(" · ")[0]}</p>
         </div>{scores?.[i]}
       </div>)}</div>
-      <div className="score cc-rate" aria-label={`Watchability ${score} out of 100, ${tierLabel(tier)}`}><strong>{score}</strong><span className="score-tier">{tierLabel(tier)}</span></div>
+      <div className="score cc-rate" aria-label={`Watchability ${score} out of 100, ${tierLabel(tier)}`}><ScoreRing score={score} label={`Watchability ${score} out of 100, ${tierLabel(tier)}`}>{why}</ScoreRing><span className="score-tier">{tierLabel(tier)}</span>{rise ? <em className="rise-tag" title="This game got more worth watching as it played">▲ up {rise}</em> : null}</div>
     </div>
     {driveChart}
     {/* the venue on one quiet line, and the weather only when it will matter; the betting line, booth and full forecast are in Details */}
