@@ -26,6 +26,13 @@ export type Strength = "strong" | "lean" | "slight";
 export const strengthOf = (cover: number | null | undefined): Strength | null => (cover == null ? null : cover >= 0.6 ? "strong" : cover >= 0.55 ? "lean" : "slight");
 export const STRENGTH_LABEL: Record<Strength, string> = { strong: "Big edge", lean: "Edge", slight: "Slight edge" };
 
+/** The chance a pick covers, in words: where it sits between a coin flip (50%) and the 52.4% that breaks even at −110. */
+export function chanceVerdict(cover: number): { label: string; text: string } {
+  const n = Math.round(cover * 100);
+  const label = cover < 0.5 ? "Below a coin flip" : cover < 0.524 ? "About a coin flip" : cover < 0.55 ? "Thin edge" : cover < 0.6 ? "Modest edge" : "Strong edge";
+  return { label, text: `${n}% means about ${n} of every 100 picks like this cover. 50% is a coin flip and 52.4% just breaks even at −110, so ${cover < 0.524 ? "this one is not yet better than guessing" : cover < 0.55 ? "this is a small edge, not a lock" : cover < 0.6 ? "this is a real but modest edge" : "this is a clear lean"}.` };
+}
+
 /** What has to happen for the pick to cover, in plain words. `line` is the margin the pick has to win by (negative for an underdog getting points). */
 export function coverRule(name: string, line: number): string {
   if (line === 0) return `Covers if ${name} wins (a tie is a push).`;
