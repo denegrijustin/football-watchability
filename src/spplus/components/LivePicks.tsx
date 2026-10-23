@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { useLiveMap } from "../../live";
 import { PROOF_LABEL, type Proof } from "../../calibration";
-import { STRENGTH_LABEL, coverRule, lineText, pickStanding, ratingsMargin, standingText, strengthOf } from "../../livePicks";
+import { STRENGTH_LABEL, chanceVerdict, coverRule, lineText, pickStanding, ratingsMargin, standingText, strengthOf } from "../../livePicks";
 
 /** Cards shown before the "show more" button: the games on the field and the next kickoffs. */
 const SHOWN = 8;
@@ -60,7 +60,7 @@ export function LivePicks({ items, title, note, track, extra }: { items: LivePic
         <ul>
           <li><b>The pick</b> is the team the data says to take against the spread, with the line it has to beat. <b>−3</b> means it must win by more than 3; <b>+3.5</b> means it can lose by 3 or less and still cover.</li>
           <li><b>Ratings expect</b> is how the ratings see that game for the pick's side. <b>Edge</b> is how many points better that is than the line: the bigger, the more the data disagrees with the market.</li>
-          <li><b>Chance (history)</b> is what picks with this size of edge have really done, pulled toward a coin flip until there is a lot of history; the model's own, more confident number is shown under it. <b>Proven</b> means the record clears the 52.4% that beats the usual −110 price with room to spare, <b>Promising</b> means it is above break-even but could be luck, and <b>Unproven</b> means it is not.</li>
+          <li><b>Chance it covers</b> is what picks with this size of edge have really done, pulled toward a coin flip until there is a lot of history; the model's own, more confident number is shown under it. <b>Proven</b> means the record clears the 52.4% that beats the usual −110 price with room to spare, <b>Promising</b> means it is above break-even but could be luck, and <b>Unproven</b> means it is not.</li>
           <li>Once a game starts the card follows the score: <b>✓ Covering</b>, <b>✗ Not covering</b> (and how much it needs) or <b>= On the number</b>. It turns into the final grade at the horn.</li>
         </ul>
       </details>
@@ -81,15 +81,22 @@ export function LivePicks({ items, title, note, track, extra }: { items: LivePic
                   <div><dt>Edge</dt><dd>+{it.gap} pts</dd></div>
                 </dl>
               )}
-              {it.cover != null && (
-                <div className="lp-cover" role="img" aria-label={`Cover chance ${Math.round(it.cover * 100)} percent`}>
-                  <span>{it.hist ? "Chance (history)" : "Cover chance"}</span>
-                  <span className="lp-bar"><i style={{ width: `${Math.round(it.cover * 100)}%` }} /><b aria-hidden="true" /></span>
-                  <strong>{Math.round(it.cover * 100)}%</strong>
-                </div>
-              )}
+              {it.cover != null && (() => {
+                const v = chanceVerdict(it.cover), at = (x: number) => `${Math.max(0, Math.min(100, ((x - 0.4) / 0.3) * 100))}%`;
+                return (
+                  <div className="lp-cover" role="img" aria-label={`${it.hist ? "Chance (history)" : "Cover chance"} ${Math.round(it.cover * 100)} percent: ${v.label}`}>
+                    <div className="lp-chance"><span>{it.hist ? "Chance it covers (history)" : "Chance it covers"}</span><strong>{Math.round(it.cover * 100)}%</strong><em>{v.label}</em></div>
+                    <div className="lp-scale" aria-hidden="true">
+                      <i className="t flip" style={{ left: at(0.5) }}><u>50% flip</u></i>
+                      <i className="t even" style={{ left: at(0.524) }}><u>52.4% even</u></i>
+                      <i className="dot" style={{ left: at(it.cover) }} />
+                    </div>
+                    <p className="lp-explain">{v.text}</p>
+                  </div>
+                );
+              })()}
               {it.hist && (
-                <p className="lp-hist">Model says <b>{it.raw != null ? `${Math.round(it.raw * 100)}%` : "–"}</b>. Picks with a {it.hist.bucket}-point edge have covered <b>{it.hist.pct == null ? "–" : `${Math.round(it.hist.pct * 100)}%`}</b> over {it.hist.n} games; 52.4% breaks even.</p>
+                <p className="lp-hist">The model alone says <b>{it.raw != null ? `${Math.round(it.raw * 100)}%` : "–"}</b>, but that is overconfident: picks with a {it.hist.bucket}-point edge have really covered <b>{it.hist.pct == null ? "–" : `${Math.round(it.hist.pct * 100)}%`}</b> over {it.hist.n} games. That is too few games to trust fully, so the chance above is pulled toward 50%.</p>
               )}
               <p className="lp-rule">{coverRule(it.pickName, it.line)}</p>
               {l && s.phase !== "pre" ? (
