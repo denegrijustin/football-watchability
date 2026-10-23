@@ -145,14 +145,14 @@ function SeedGrid({
                   </span>
                 </span>
               </th>
-              <td>{r.expW.toFixed(1)}</td>
+              <td data-l="Exp W">{r.expW.toFixed(1)}</td>
               {r.pSeed.map((v, i) => (
-                <td key={i} className={`cell${i < byes ? ` bye${i === byes - 1 ? " edge" : ""}` : ""}`} style={heat(v)}>
+                <td key={i} data-l={`#${i + 1}`} className={`cell${i < byes ? ` bye${i === byes - 1 ? " edge" : ""}` : ""}`} style={heat(v)}>
                   {cell(v)}
                 </td>
               ))}
               {r.cols.map((v, i) => (
-                <td key={i} className={i === 0 ? "tot" : undefined}>{pct(v)}</td>
+                <td key={i} data-l={extra[i]} className={i === 0 ? "tot" : undefined}>{pct(v)}</td>
               ))}
             </tr>
           ))}
