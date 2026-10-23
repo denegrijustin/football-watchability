@@ -1,4 +1,5 @@
 import { CompactGame } from "./CompactGame";
+import { MomentumFlow } from "./MomentumFlow";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { attendanceView } from "../attendance";
 import { useVenues } from "../venues";
@@ -66,7 +67,7 @@ export function ResultCard({ result: r, defaultExpanded = false }: { result: Res
         if (!expanded && !(e.target as HTMLElement).closest("a,button,summary")) setExpanded(true);
       }}
     >
-      {!expanded && <CompactGame titleId={`r-${r.espnId}`} matchup={`${r.matchup}, final ${away.score}–${home.score}`} date={r.date} broadcast={r.broadcast} network={r.network} espnId={r.espnId} teams={r.teams} league={r.league} score={r.actual.score} tier={r.actual.tier} venue={r.venue} status={<span className="game-status post">Final {extra}</span>} scores={[away, home].map((t, i) => <span className={`team-score${winner === i ? " won" : " lost"}`}>{t.score}</span>)} onExpand={() => setExpanded(true)} />}
+      {!expanded && <CompactGame titleId={`r-${r.espnId}`} matchup={`${r.matchup}, final ${away.score}–${home.score}`} date={r.date} broadcast={r.broadcast} network={r.network} espnId={r.espnId} teams={r.teams} league={r.league} score={r.actual.score} tier={r.actual.tier} venue={r.venue} status={<span className="game-status post">Final {extra}</span>} scores={[away, home].map((t, i) => <span className={`team-score${winner === i ? " won" : " lost"}`}>{t.score}</span>)} momentum={<MomentumFlow wp={r.wp ?? []} away={short(r, 0)} home={short(r, 1)} compact status={{ state: "post", period: r.wp?.at(-1)?.[1] ?? 4, clock: "0:00" }} pendingLabel="Play data unavailable" />} onExpand={() => setExpanded(true)} />}
       {expanded && (
         <>
       <header className="card-top">
@@ -250,6 +251,7 @@ export function ResultCard({ result: r, defaultExpanded = false }: { result: Res
           ))}
         </ul>
       )}
+      <MomentumFlow wp={r.wp ?? []} away={short(r, 0)} home={short(r, 1)} status={{ state: "post", period: r.wp?.at(-1)?.[1] ?? 4, clock: "0:00" }} pendingLabel="Play data unavailable" />
       <InsanityMeter
         wp={r.wp}
         final

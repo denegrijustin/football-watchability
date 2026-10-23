@@ -658,7 +658,13 @@ test("board shows live first and collapses completed games below, with working s
   await expect(page.locator(".board-section.upcoming .game-card")).toHaveCount(games.length - 2);
   // The heading line carries the same counts, and the Status menu offers each status.
   const counts = page.locator(".board-heading [role=status]");
-  await expect(counts).toContainText(`1 in progress · ${archived + 1} completed · ${games.length - 2} upcoming`);
+  await expect(counts).toContainText(`1 in progress${archived + 1} completed${games.length - 2} upcoming`);
+  // Each count is a button that jumps straight to that status.
+  await counts.getByRole("button", { name: /completed/ }).click();
+  await expect(page.locator(".board-section.final .result-card").first()).toBeVisible();
+  await expect(counts.getByRole("button", { name: /completed/ })).toHaveAttribute("aria-pressed", "true");
+  await counts.getByRole("button", { name: /completed/ }).click();
+  await expect(counts.getByRole("button", { name: /completed/ })).toHaveAttribute("aria-pressed", "false");
   const status = (name: string) => pick(page, "Status", name);
   await expect(page.getByLabel("Status", { exact: true }).locator("option")).toHaveText(["All status", "In progress", "Completed", "Upcoming"]);
   // Completed games start collapsed below upcoming and live games.
@@ -799,7 +805,7 @@ test("live and completed cards show the status above the teams and the score bes
   await expect(done.locator(".cc-team .team-score")).toHaveCount(2);
   await expect(done.locator(".cc-team .team-score.won")).toHaveCount(1);
   await expect(done.locator(".cc-rate strong")).toBeVisible();
-  expect((await done.boundingBox())!.height).toBeLessThan(460);
+  expect((await done.boundingBox())!.height).toBeLessThan(540);
   // Expanded: FINAL above the teams, score beside each name, no separate T column.
   await expand(done);
   await expect(done.locator(".game-status.post")).toContainText("Final");
@@ -1034,7 +1040,7 @@ test("@smoke game cards show a full compact overview and concise first expansion
   await completed(page);
   const done = page.locator(".result-card").first();
   await expect(done).toHaveClass(/compact/);
-  expect((await done.boundingBox())!.height).toBeLessThan(460);
+  expect((await done.boundingBox())!.height).toBeLessThan(540);
   await expect(done.locator(".cc-team img")).toHaveCount(2);
   await expect(done.locator(".cc-team .team-score")).toHaveCount(2);
   await expect(done.locator(".cc-rate strong")).toBeVisible();
