@@ -23,6 +23,7 @@ for (const [lg, label] of [["NFL", "NFL"], ["CFB", "College"]] as const) {
   test(`the ${label} Picks tab shows how graded picks won or missed and charts the parlay record`, async ({ page }) => {
     await page.goto(`/?league=${lg}`);
     await page.locator('.view-switch [data-tab="picks"]').click();
+    await page.getByRole("group", { name: "Picks section" }).getByRole("button", { name: "ATS record" }).click();
     await expect(page.locator(".pr-results .pr-pick").first()).toBeVisible({ timeout: 20_000 });
     await expect(page.locator(".pr-results .pr-why").first()).toContainText(/Covered by|Missed by|Push/);
     await page.getByRole("group", { name: "Picks section" }).getByRole("button", { name: "Parlays" }).click();
@@ -32,3 +33,16 @@ for (const [lg, label] of [["NFL", "NFL"], ["CFB", "College"]] as const) {
     await expect(page.locator(".pr-slip .pr-why").first()).toBeVisible();
   });
 }
+
+test("the ATS & Parlays tab has its own ATS record with a weekly chart, and the Outlook tab no longer carries parlays", async ({ page }) => {
+  await stubFinals(page);
+  await page.goto("/?league=CFB");
+  await expect(page.locator('.view-switch [data-tab="picks"]')).toContainText("ATS & Parlays");
+  await page.locator('.view-switch [data-tab="picks"]').click();
+  await page.getByRole("group", { name: "Picks section" }).getByRole("button", { name: "ATS record" }).click();
+  await expect(page.getByRole("group", { name: /Share of picks that covered/ })).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator(".pr-tiles")).toContainText("Break-even");
+  await expect(page.locator(".pr-results .pr-why").first()).toContainText(/Covered by|Missed by|Push/);
+  await page.getByRole("button", { name: /^Outlook/ }).click();
+  await expect(page.getByRole("group", { name: "Outlook section" }).getByRole("button", { name: "Parlays" })).toHaveCount(0);
+});

@@ -23,10 +23,11 @@ export function PickResultRow({ p, showWeek = false }: { p: GradedPick; showWeek
   );
 }
 
-function Chart({ weeks, size }: { weeks: SlipWeek[]; size: number }) {
+export function Chart({ weeks, size }: { weeks: SlipWeek[]; size: number }) {
   const [ref, width] = useWidth<HTMLDivElement>();
   const [open, setOpen] = useState<number | null>(null);
   const be = slipBreakEven(size);
+  const noun = size === 1 ? "picks" : "slips";
   const w = Math.max(width, 300), h = 260, m = { l: 40, r: 12, t: 22, b: 46 };
   const y = (v: number) => h - m.b - v * (h - m.t - m.b);
   const slot = (w - m.l - m.r) / Math.max(weeks.length, 1), bw = Math.min(44, slot * 0.58);
@@ -35,9 +36,9 @@ function Chart({ weeks, size }: { weeks: SlipWeek[]; size: number }) {
   const sel = open == null ? null : weeks[open];
   return (
     <div className="pr-chart" ref={ref}>
-      <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} role="group" aria-label={`Share of ${size}-leg slips that hit each week, with the season to date`}>
+      <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} role="group" aria-label={size === 1 ? "Share of picks that covered each week, with the season to date" : `Share of ${size}-leg slips that hit each week, with the season to date`}>
         {[0, 0.25, 0.5, 0.75, 1].map((t) => <g key={t}><line x1={m.l} x2={w - m.r} y1={y(t)} y2={y(t)} className="pr-grid" /><text x={m.l - 6} y={y(t) + 4} textAnchor="end" className="pr-ax">{Math.round(t * 100)}%</text></g>)}
-        <text x={2} y={11} className="pr-ax">Share of slips that hit</text>
+        <text x={2} y={11} className="pr-ax">{size === 1 ? "Share of picks that covered" : "Share of slips that hit"}</text>
         <line x1={m.l} x2={w - m.r} y1={y(be)} y2={y(be)} className="pr-be" />
         <text x={w - m.r} y={y(be) - 4} textAnchor="end" className="pr-be-t">break-even {pct(be, 1)}</text>
         {weeks.map((wk, i) => {
@@ -56,7 +57,7 @@ function Chart({ weeks, size }: { weeks: SlipWeek[]; size: number }) {
         {weeks.map((wk, i) => wk.cumulative.pct == null ? null : <circle key={i} cx={cx(i)} cy={y(wk.cumulative.pct)} r={4} className="pr-dot" />)}
       </svg>
       <div className="pr-legend"><span><i className="hit" />Week at or above break-even</span><span><i className="miss" />Week below it</span><span><i className="dot" />Season to date</span></div>
-      {sel && <p className="pr-sel" role="status"><b>Wk {sel.week}:</b> {rec(sel.rec.w, sel.rec.l, sel.rec.v)} on {sel.slips.length} slips ({pct(sel.rec.pct)}) · season {rec(sel.cumulative.w, sel.cumulative.l, sel.cumulative.v)} ({pct(sel.cumulative.pct)}) · {money(sel.rec.profit)} per $1 slip that week</p>}
+      {sel && <p className="pr-sel" role="status"><b>Wk {sel.week}:</b> {rec(sel.rec.w, sel.rec.l, sel.rec.v)} on {sel.slips.length} {noun} ({pct(sel.rec.pct)}) · season {rec(sel.cumulative.w, sel.cumulative.l, sel.cumulative.v)} ({pct(sel.cumulative.pct)}) · {money(sel.rec.profit)} ({size === 1 ? "$1 on every pick" : "$1 on every slip"}) that week</p>}
     </div>
   );
 }
