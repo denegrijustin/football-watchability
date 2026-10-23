@@ -6,6 +6,7 @@ import { findBoardGame, lineText } from "./livePicks";
 import { pendingPicks } from "./nfl/model";
 import type { NflData } from "./nfl/types";
 import type { Leg } from "./parlay";
+import { calibratedCover, historyFor, type History } from "./calibration";
 
 type SlateGame = { espnId: string; league: string; date?: string; teams: { name: string; espnId?: string | null }[] };
 
@@ -15,7 +16,15 @@ const started = (kickoffIso: string | undefined, dateOnly: string | null | undef
 
 const r1 = (n: number) => Math.round(n * 10) / 10;
 
-export function cfbLegs(model: Model, espn: Record<string, string>, games: SlateGame[], now = Date.now()): Leg[] {
+/** A spread leg with its chance set from history; a total has no track record to learn from, so it stays at a coin flip. */
+const spreadChance = (hist: History | undefined, edge: number, raw: number) => {
+  if (!hist) return { cover: raw, raw, hist: undefined };
+  const r = historyFor(hist, edge);
+  return { cover: calibratedCover(hist, edge), raw, hist: { pct: r.pct, n: r.n, bucket: r.bucket, proof: r.proof } };
+};
+const totalChance = (raw: number) => ({ cover: 0.5, raw, hist: undefined });
+
+export function cfbLegs(model: Model, espn: Record<string, string>, games: SlateGame[], now = Date.now(), hist?: History): Leg[] {
   const done = new Set(atsGames(model).map((g) => g.id));
   const out: Leg[] = [];
   for (const p of model.projections) {
@@ -31,16 +40,16 @@ export function cfbLegs(model: Model, espn: Record<string, string>, games: Slate
       const e = expectation(par, A, B, p.neutral ? "neutral" : "b-home");
       const mu = p.atsPick === p.home ? -e.margin : e.margin;
       const pts = p.spreadPts as number, line = pts === 0 ? 0 : p.spreadTeam === p.atsPick ? pts : -pts;
-      out.push({ ...base, id: `${p.id}-s`, kind: "spread", team: p.atsPick, label: `${p.atsPick} ${lineText(line)}`, cover: 1 - normCdf((line - mu) / par.sigmaMargin), edge: r1(p.spreadDiff), line, pickIsHome: p.atsPick === p.home, liveIsHome: hit?.swapped ? p.atsPick !== p.home : p.atsPick === p.home, espnId: hit?.game.espnId ?? null });
+      out.push({ ...base, id: `${p.id}-s`, kind: "spread", team: p.atsPick, label: `${p.atsPick} ${lineText(line)}`, ...spreadChance(hist, p.spreadDiff, 1 - normCdf((line - mu) / par.sigmaMargin)), edge: r1(p.spreadDiff), line, pickIsHome: p.atsPick === p.home, liveIsHome: hit?.swapped ? p.atsPick !== p.home : p.atsPick === p.home, espnId: hit?.game.espnId ?? null });
     }
     if (p.ou != null && p.ouPick && p.ouDiff != null && p.ouDiff !== 0) {
-      out.push({ ...base, id: `${p.id}-t`, kind: "total", label: `${p.ouPick} ${p.ou}`, cover: normCdf(Math.abs(p.ouDiff) / par.sigmaTotal), edge: r1(Math.abs(p.ouDiff)) });
+      out.push({ ...base, id: `${p.id}-t`, kind: "total", label: `${p.ouPick} ${p.ou}`, ...totalChance(normCdf(Math.abs(p.ouDiff) / par.sigmaTotal)), edge: r1(Math.abs(p.ouDiff)) });
     }
   }
   return out;
 }
 
-export function nflLegs(data: NflData, games: SlateGame[], now = Date.now()): Leg[] {
+export function nflLegs(data: NflData, games: SlateGame[], now = Date.now(), hist?: History): Leg[] {
   const out: Leg[] = [];
   const sigma = data.params.model.sigma, sigmaT = data.params.total.sigma;
   const byEspn = new Map(games.filter((g) => g.league === "NFL").map((g) => [g.espnId, g]));
@@ -52,7 +61,7 @@ export function nflLegs(data: NflData, games: SlateGame[], now = Date.now()): Le
     const e = (g.mm as number) - (g.spread as number);
     const line = p.pickIsHome ? (g.spread as number) : -(g.spread as number);
     const base = { league: "NFL" as const, gameId: g.id, game: `${g.away} at ${g.home}`, away: g.away, home: g.home, when };
-    out.push({ ...base, id: `${g.id}-s`, kind: "spread", team: name, label: `${name} ${lineText(line)}`, cover: normCdf((p.pickIsHome ? e : -e) / sigma), edge: r1(p.edge), line, pickIsHome: p.pickIsHome, espnId: g.espn ?? null });
+    out.push({ ...base, id: `${g.id}-s`, kind: "spread", team: name, label: `${name} ${lineText(line)}`, ...spreadChance(hist, p.edge, normCdf((p.pickIsHome ? e : -e) / sigma)), edge: r1(p.edge), line, pickIsHome: p.pickIsHome, espnId: g.espn ?? null });
   }
   // Totals: the ratings' own total against the posted one, for every game with both that has not started.
   for (const g of data.games) {
@@ -61,7 +70,7 @@ export function nflLegs(data: NflData, games: SlateGame[], now = Date.now()): Le
     if (started(kick, g.date, now)) continue;
     const diff = g.mt - g.total;
     if (Math.abs(diff) < 0.05) continue;
-    out.push({ league: "NFL", gameId: g.id, game: `${g.away} at ${g.home}`, away: g.away, home: g.home, when: kick ?? `${g.date} ${g.time ?? ""}`, id: `${g.id}-t`, kind: "total", label: `${diff > 0 ? "Over" : "Under"} ${g.total}`, cover: normCdf(Math.abs(diff) / sigmaT), edge: r1(Math.abs(diff)) });
+    out.push({ league: "NFL", gameId: g.id, game: `${g.away} at ${g.home}`, away: g.away, home: g.home, when: kick ?? `${g.date} ${g.time ?? ""}`, id: `${g.id}-t`, kind: "total", label: `${diff > 0 ? "Over" : "Under"} ${g.total}`, ...totalChance(normCdf(Math.abs(diff) / sigmaT)), edge: r1(Math.abs(diff)) });
   }
   return out;
 }
