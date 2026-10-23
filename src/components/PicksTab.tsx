@@ -11,6 +11,9 @@ import { PickAccuracy } from "./PickAccuracy";
 import { usePickData } from "../pickData";
 import { LinesBar } from "./LinesBar";
 import { Parlays } from "./Parlays";
+import { ParlayRecord } from "./ParlayRecord";
+import { PickResults } from "./PickResults";
+import { cfbPicks, nflPicks } from "../pickRecord";
 import type { Leg } from "../parlay";
 import type { League, View } from "../data";
 
@@ -31,6 +34,7 @@ export function PicksTab({ defaultLeague }: { defaultLeague: League }) {
   const { lines } = useLines();
 
   const hist = useMemo(() => (data ? (lg === "CFB" ? cfbHistory(data.model) : nflHistory(data.nfl)) : null), [data, lg]);
+  const graded = useMemo(() => (data ? (lg === "CFB" ? cfbPicks(data.model) : nflPicks(data.nfl)) : []), [data, lg]);
   const legs = useMemo<Leg[]>(() => {
     if (!data || !hist) return [];
     const games = slate.games as never as Parameters<typeof cfbLegs>[2];
@@ -62,10 +66,11 @@ export function PicksTab({ defaultLeague }: { defaultLeague: League }) {
       </div>
       {error ? <p className="ol-note">The picks could not be loaded. Reload to try again.</p>
         : !data ? <p className="ol-note" role="status">Loading the picks…</p>
-        : part === "parlays" ? <Parlays league={lg} />
+        : part === "parlays" ? <><Parlays league={lg} /><ParlayRecord picks={graded} label={lg === "CFB" ? "College SP+" : "NFL ratings"} /></>
         : (
           <>
             {hist && data && <PickAccuracy hist={hist} sigma={lg === "CFB" ? 15.5 : data.nfl.params.model.sigma} label={lg === "CFB" ? "College SP+" : "NFL ratings"} />}
+            <PickResults picks={graded} label={lg === "CFB" ? "College SP+" : "NFL ratings"} />
             {items.length ? (
               <LivePicks items={items} title={`${lg === "CFB" ? "College" : "NFL"} picks against the spread`} note="The side the data likes against the spread, strongest first. A game on the field shows whether the pick is covering right now." extra={<LinesBar />} />
             ) : <p className="ol-note">No spread picks to show right now: every game this week has either started or has no line yet.</p>}
