@@ -9,7 +9,7 @@ import type { CSSProperties } from "react";
 import { logos, teamColor } from "../data";
 import { Headshot } from "./Headshot";
 import { InjuryReport, hasInjuryData, injurySummary } from "./InjuryReport";
-import { InjuryImpact } from "./GameInjuries";
+import { GameInjuries, useHasInjuryReport } from "./GameInjuries";
 
 type KeyPlayer = {
   name: string;
@@ -61,6 +61,7 @@ function KeyPlayers({ game, players }: { game: Game; players: KeyPlayer[] }) {
   );
 }
 export function GameDetails({ game, defaultOpen = true, matchup = (game as Game & { matchupComparison?: MatchupData }).matchupComparison ?? matchupForGame(game) }: { game: Game; defaultOpen?: boolean; matchup?: MatchupData }) {
+  const newReport = useHasInjuryReport(game.teams as never, game.league) && !(game as { availability?: { pending?: boolean } | null }).availability?.pending;
   return (
     <div className="game-details">
       {matchup && <MatchupComparison data={matchup} />}
@@ -95,8 +96,7 @@ export function GameDetails({ game, defaultOpen = true, matchup = (game as Game 
           </details>
         );
       })()}
-      <InjuryImpact teams={game.teams as never} league={game.league} />
-      {hasInjuryData(game) && (
+      {(hasInjuryData(game) || newReport) && (
         <details open={defaultOpen}>
           <summary>
             <div className="inj-title">
@@ -104,7 +104,7 @@ export function GameDetails({ game, defaultOpen = true, matchup = (game as Game 
             </div>
             <span aria-hidden="true">+</span>
           </summary>
-          <InjuryReport game={game} />
+          {newReport ? <GameInjuries teams={game.teams as never} league={game.league} mode="bare" /> : <InjuryReport game={game} />}
         </details>
       )}
       <details open={defaultOpen}>

@@ -93,7 +93,7 @@ test.describe("the NFL+ tab", () => {
     await expect(lines).toContainText("covers");
     await expect(lines).toContainText("Over");
     const pcts = (await lines.locator("td.num").allInnerTexts()).slice(0, 2).map((t) => parseFloat(t));
-    expect(pcts[0] + pcts[1]).toBeGreaterThan(97);
+    expect(pcts[0] + pcts[1]).toBeGreaterThan(93); // the rest is the chance of a push on the number (a key number like 3 holds about 6%)
   });
 
   test("the ATS tracker grades each ratings pick against the closing spread", async ({ page }) => {
@@ -164,9 +164,10 @@ test.describe("NFL Game Center", () => {
   });
 
   test("a game that is not in the nflverse file, or a failed load, leaves the Game Center as it was", async ({ page }) => {
-    await withNflGame(page, upcoming, "999999999");
+    const x = await withNflGame(page, upcoming, "999999999");
     await page.goto("/?league=NFL");
-    await page.getByRole("button", { name: /Open Game Center for/ }).first().click();
+    // The game the helper rewrote (it carries an id that is not in the nflverse file); it is not always the first card on the board, and the real game of the same name is on it too.
+    await page.locator(`.game-card[data-game-id="${x.id}"]`).getByRole("button", { name: /Open Game Center for/ }).first().click();
     await expect(page.getByRole("dialog").getByRole("heading", { name: "Projection" })).toBeVisible();
     await expect(page.getByTestId("gc-nfl")).toHaveCount(0);
     await expect(page.getByTestId("gc-nfl-setting")).toHaveCount(0);

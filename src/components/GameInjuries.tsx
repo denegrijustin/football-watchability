@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { logos } from "../data";
-import { injuriesForTeam, useInjuryReport, type Player } from "../injuries";
+import { backShort, impactShort, injuriesForTeam, injuryLine, useInjuryReport, type Player } from "../injuries";
 import { ChipImg } from "../logoTone";
 import { Headshot } from "./Headshot";
 import { InjuryFigure } from "./InjuryFigure";
@@ -31,26 +32,16 @@ export function InjuryStrip({ teams, league }: { teams: T[]; league: string }) {
   );
 }
 
+const SHOWN = 4;
 function Row({ p }: { p: Player }) {
-  const im = p.impact;
+  const im = impactShort(p.impact), sev = p.severity.replace(/[^a-z]/gi, "").toLowerCase();
   return (
-    <li>
-      <details className="gi-row">
-        <summary>
-          <Headshot src={p.headshot} name={p.name} size={36} className="gi-head" />
-          <span className="gi-name"><strong>{p.name}</strong> <em>{p.pos}{p.jersey ? ` #${p.jersey}` : ""}</em><span className="gi-inj">{injuryText(p.injury)}</span></span>
-          <span className="gi-right"><span className={`gi-status ${cls(p.status)}`}>{short(p.status)}</span><span className={`gi-tier tier-${im.tier.toLowerCase()}`}>{im.tier}{im.score != null ? ` ${im.score}` : ""}</span></span>
-        </summary>
-        <div className="gi-more">
-          <InjuryFigure type={p.injury.type} location={p.injury.location} side={p.injury.side} detail={p.injury.detail} size={52} />
-          <div className="gi-text">
-            <p><span className={`gi-sev ${p.severity.replace(/[^a-z]/gi, "").toLowerCase()}`}>{p.severity}</span> <b>{p.ret.label}</b> <small>{p.ret.source === "ESPN" ? "ESPN date" : p.ret.source === "reported" ? "reported" : "estimate"}</small></p>
-            <span className="gi-meter"><i className={`tier-${im.tier.toLowerCase()}`} style={{ transform: `scaleX(${(im.score ?? 0) / 100})` }} /></span>
-            <p>{im.reason} <small>Based on: {im.basis}.</small></p>
-            {im.split && <p><small>Team with him: {im.split.with.pf} scored, {im.split.with.pa} allowed ({im.split.with.n} g). Without: {im.split.without.pf} scored, {im.split.without.pa} allowed ({im.split.without.n} g).</small></p>}
-          </div>
-        </div>
-      </details>
+    <li className={`gi-card sev-${sev}`} title={`${p.impact.reason} Based on: ${p.impact.basis}.`}>
+      <Headshot src={p.headshot} name={p.name} size={40} className="gi-head" />
+      <span className="gi-name"><b>{p.name}</b> <em>{p.pos}</em> <span className={`gi-sev ${sev}`}>{p.severity}</span></span>
+      <span className="gi-line">{injuryLine(p.injury)} · {backShort(p.ret)}</span>
+      <span className={`gi-impact tier-${p.impact.tier.toLowerCase()}`}>{im.label}{im.top ? ` · ${im.top}` : ""}</span>
+      <span className="gi-fig"><InjuryFigure type={p.injury.type} location={p.injury.location} side={p.injury.side} detail={p.injury.detail} size={28} /></span>
     </li>
   );
 }
@@ -58,24 +49,28 @@ function Row({ p }: { p: Player }) {
 type Mode = "section" | "fold" | "bare";
 
 function Lists({ teams, league, d }: { teams: T[]; league: string; d: NonNullable<ReturnType<typeof useInjuryReport>> }) {
-  const lists = teams.map((t) => ({ t, list: injuriesForTeam(d, league, t.logoId) }));
   return (
     <>
-      {lists.map(({ t, list }) => (
-        <div key={t.logoId} className="gi-team">
-          <h5>{logos[t.logoId] && <ChipImg src={logos[t.logoId]} size={18} />} {t.name} <small>{list.length ? `${list.length} listed` : "none listed"}</small></h5>
-          {list.length > 0 && <ul>{list.slice(0, 6).map((p) => <Row key={p.id} p={p} />)}</ul>}
-          {list.length > 6 && <p className="gi-more-note">+{list.length - 6} more</p>}
-        </div>
-      ))}
-      <button type="button" className="btn small ghost" onClick={openReport}>Full injury report →</button>
+      {teams.map((t) => <Side key={t.logoId} t={t} list={injuriesForTeam(d, league, t.logoId)} />)}
+      <button type="button" className="btn small ghost" onClick={openReport}>All injuries →</button>
     </>
+  );
+}
+function Side({ t, list }: { t: T; list: Player[] }) {
+  const [all, setAll] = useState(false);
+  const high = list.filter((p) => p.impact.tier === "High").length;
+  return (
+    <div className="gi-team">
+      <h5>{logos[t.logoId] && <ChipImg src={logos[t.logoId]} size={18} />} {t.name} <small>{list.length ? `${list.length} out${high ? ` · ${high} high-impact` : ""}` : "none listed"}</small></h5>
+      {list.length > 0 && <ul>{(all ? list : list.slice(0, SHOWN)).map((p) => <Row key={p.id} p={p} />)}</ul>}
+      {list.length > SHOWN && <button type="button" className="gi-more-btn" onClick={() => setAll(!all)}>{all ? "Show fewer" : `Show all ${list.length}`}</button>}
+    </div>
   );
 }
 
 /**
- * Each team's injured players, biggest impact first, each opening to a figure of the injured area, severity, return and why it matters.
- * "fold" is the card's closed-by-default option, "bare" is the content alone (for the Game Center's own expandable section).
+ * Each team's injured players, biggest impact first, in a few words and an animated figure of the injured area. "fold" is the card's closed-by-default
+ * option, "bare" is the content alone (for the Game Center's expandable section).
  */
 export function GameInjuries({ teams, league, mode = "section" }: { teams: T[]; league: string; mode?: Mode }) {
   const d = useInjuryReport();
@@ -86,29 +81,21 @@ export function GameInjuries({ teams, league, mode = "section" }: { teams: T[]; 
   if (mode === "fold") {
     return (
       <details className="cd-sec gi gi-fold">
-        <summary><span className="cd-h">Injuries</span> <small>{count} listed · tap for who, what and how much it matters</small></summary>
+        <summary><span className="cd-h">Injuries</span> <small>{count} out</small></summary>
         <Lists teams={teams} league={league} d={d} />
       </details>
     );
   }
   return (
     <section className="cd-sec gi" aria-label="Injuries">
-      <h4 className="cd-h">Injuries <small>impact of each absence, from prior games</small></h4>
+      <h4 className="cd-h">Injuries</h4>
       <Lists teams={teams} league={league} d={d} />
     </section>
   );
 }
 
-/** The Game Center's expandable injury option: closed until opened, with the injury count on its heading. */
-export function InjuryImpact({ teams, league }: { teams: T[]; league: string }) {
+/** Whether the report has anyone to show for this game (the Game Center falls back to the conference report when it does not). */
+export function useHasInjuryReport(teams: T[], league: string) {
   const d = useInjuryReport();
-  if (!d) return null;
-  const count = teams.reduce((n, t) => n + injuriesForTeam(d, league, t.logoId).length, 0);
-  if (!count) return null;
-  return (
-    <details>
-      <summary>Injuries by impact <small className="inj-sum">{count} listed · photo, injury area, return and effect on the team</small><span aria-hidden="true">+</span></summary>
-      <div className="detail-content"><GameInjuries teams={teams} league={league} mode="bare" /></div>
-    </details>
-  );
+  return !!d && teams.some((t) => injuriesForTeam(d, league, t.logoId).length);
 }

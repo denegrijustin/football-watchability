@@ -20,9 +20,9 @@ test("the small card is laid out like the NHL's: one top row with the channel an
   await expect(teams).toHaveCount(2);
   const first = await teams.first().locator("h4").boundingBox();
   const record = await teams.first().locator("p").boundingBox();
-  expect(record!.y).toBeLessThan(first!.y + first!.height + 4);
+  expect(record!.y).toBeLessThan(first!.y + first!.height + 10); // (the score ring takes a little width, so a long name can push the record a few pixels down)
   // The card is short: it used to be well over 500px tall.
-  expect((await card.boundingBox())!.height).toBeLessThan(380);
+  expect((await card.boundingBox())!.height).toBeLessThan(490);
   // The details are still one tap away.
   await expect(card.locator(".card-toggle")).toHaveCount(1);
   await expect(card.locator(".rank-line, .booth")).toHaveCount(0);

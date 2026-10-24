@@ -46,3 +46,29 @@ export function injuriesForTeam(d: InjuryData | null, league: string, logoId: st
   }
   return (idx.get(logoId) ?? []).filter(SHOWN);
 }
+
+const md = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
+/** When the player is back, in a few words: "About 7 days · Oct 31", "This weekend", "2–4 weeks (est.)". */
+export function backShort(r: Player["ret"], now = Date.now()): string {
+  if (r.season) return "Out for the season";
+  const [lo, hi] = r.weeks;
+  if (r.date) {
+    const days = Math.round((Date.parse(`${r.date}T12:00:00Z`) - now) / 864e5);
+    if (days <= 1) return "This weekend";
+    return `About ${days < 14 ? `${days} days` : `${Math.round(days / 7)} weeks`} · ${md(r.date)}`;
+  }
+  if (hi === 0) return "Day to day";
+  if (lo === 0) return "Game-time call";
+  return `${lo === hi ? lo : `${lo}–${hi}`} weeks${r.source === "estimate" ? " (est.)" : ""}`;
+}
+/** "High impact" and "94th percentile" (among players at his position), from the impact block. */
+const ordinal = (n: number) => `${n}${["th", "st", "nd", "rd"][(n % 100 >= 11 && n % 100 <= 13) || n % 10 > 3 ? 0 : n % 10]}`;
+export const impactShort = (im: Impact) => ({ label: im.tier === "Unknown" ? "Impact unknown" : `${im.tier} impact`, top: im.rank != null ? `${ordinal(Math.max(1, Math.min(99, Math.round(im.rank))))} percentile` : null });
+/** "2026 · 6 games", with a flag when it is last season's. */
+export function basisShort(im: Impact, season: number | undefined): { text: string; last: boolean } {
+  const m = /^(\d{4}) season, (\d+) games?/.exec(im.basis);
+  if (!m) return { text: im.basis.replace(/\s*\(.*\)/, ""), last: false };
+  return { text: `${m[1]} · ${m[2]} game${m[2] === "1" ? "" : "s"}`, last: !!season && Number(m[1]) < season };
+}
+/** "Left ankle · Sprain": the injury in a few words. */
+export const injuryLine = (i: Player["injury"]) => [i.side, i.type ?? "Undisclosed"].filter(Boolean).join(" ") + (i.detail && i.detail !== i.type ? ` · ${i.detail}` : "");
