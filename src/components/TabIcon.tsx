@@ -12,6 +12,7 @@ const PATHS: Record<string, string> = {
   empire: "M4 20V8l4-3 4 3 4-3 4 3v12zM9 20v-5h6v5",
   spplus: "M4 19V9M10 19V5M16 19v-7M21 19H3",
   nfl: "M12 3l8 3v6c0 4.5-3.2 7.7-8 9-4.8-1.3-8-4.5-8-9V6z",
+  injuries: "M9 4h6v5h5v6h-5v5H9v-5H4V9h5z",
   export: "M12 4v11M8 11l4 4 4-4M5 20h14",
   calendar: "M5 6h14v14H5zM5 10h14M9 4v4M15 4v4",
 };
