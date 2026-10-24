@@ -1,3 +1,4 @@
+import { useDiscFill } from "./logoDisc";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { logos, teamColor } from "./data";
 import { ConfMark } from "./ConfMark";
@@ -36,6 +37,16 @@ const frames = (kf: Key[], px: (x: number, y: number) => [number, number], ball:
  * text, so a short pass to the left looks different from a deep one to the right and a run up the middle from a run around the end.
  * Drawn facing the way the offense is driving, like the field above it.
  */
+function PlayerDisc({ logo, ring }: { logo?: string; ring: string }) {
+  const fill = useDiscFill(logo);
+  return (
+    <>
+      <circle r="9.5" cy="2" fill={fill} className="lp-player-disc" style={{ stroke: ring }} />
+      {logo && <image href={logo} x="-7" y="-5" width="14" height="14" preserveAspectRatio="xMidYMid meet" />}
+    </>
+  );
+}
+
 export function LastPlay({ plays, teams, live, situation, nfl }: { plays: FeedPlay[] | undefined; teams: LastPlayTeam[]; live?: boolean; situation?: string; nfl?: boolean }) {
   const found = latestShape(plays);
   const id = found ? `${found.play.id ?? ""}|${found.play.team}|${found.play.text}` : "";
@@ -184,8 +195,7 @@ export function LastPlay({ plays, teams, live, situation, nfl }: { plays: FeedPl
           <g key={i} ref={(el) => { actors.current[i] = el; }} className={`lp-p ${a.off ? "off" : "def"}${a.hot ? " hot" : ""}`} data-side={a.off ? "off" : "def"} style={{ transform: `translate(${px(a.kf[0][1], a.kf[0][2]).join("px, ")}px)` }}>
             <g transform="scale(1.45)">
             <ellipse rx="10" ry="7" cy="3" fill={a.off ? offColor : defColor} className="lp-shoulders" />
-            <circle r="9.5" cy="2" fill="#f4f6f8" className="lp-player-disc" style={{ stroke: a.off ? offColor : defColor }} />
-            {(a.off ? off : def).logoId && logos[(a.off ? off : def).logoId!] && <image href={logos[(a.off ? off : def).logoId!]} x="-7" y="-5" width="14" height="14" preserveAspectRatio="xMidYMid meet" />}
+            <PlayerDisc logo={(a.off ? off : def).logoId ? logos[(a.off ? off : def).logoId!] : undefined} ring={a.off ? offColor : defColor} />
             </g>
             {a.label && <text y={-22} className="lp-name" textAnchor="middle">{a.label}</text>}
           </g>
