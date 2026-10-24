@@ -101,12 +101,16 @@ test.describe("injuries on the game card", () => {
     const id = await page.locator(".game-card:has(.gi-strip)").first().getAttribute("data-game-id");
     const card = page.locator(`.game-card[data-game-id="${id}"]`);
     await card.locator(".card-toggle").first().click();
-    const sec = card.locator(".gi");
+    const sec = card.locator(".gi-fold");
     await expect(sec).toBeVisible();
+    await expect(sec.locator(".gi-team").first()).toBeHidden(); // an option you open, not the whole expanded card
+    await sec.locator("summary").first().click();
     await expect(sec.locator(".gi-team")).toHaveCount(2);
+    await expect(sec.locator(".gi-head, .headshot-fallback").first()).toBeVisible(); // the player's picture
     await sec.locator(".gi-row summary").first().click();
     await expect(sec.locator(".gi-more").first()).toContainText("Based on:");
     await expect(sec.locator(".gi-sev").first()).toBeVisible();
+    await expect(sec.locator(".ifig svg").first()).toBeVisible(); // the figure of the injured area
     await sec.getByRole("button", { name: /Full injury report/ }).click();
     await expect(page.locator(".ij").first()).toBeVisible({ timeout: 15_000 });
   });
@@ -115,4 +119,37 @@ test.describe("injuries on the game card", () => {
     await page.goto("/?league=CFB");
     await expect(page.locator(".game-card .gi-strip, .game-card .gi").first()).toBeAttached({ timeout: 15_000 });
   });
+});
+
+test("the Game Center has an Injuries by impact option, closed until opened", async ({ page }) => {
+  await stubFinals(page);
+  await page.goto("/?league=NFL");
+  const id = await page.locator(".game-card:has(.gi-strip)").first().getAttribute("data-game-id");
+  const card = page.locator(`.game-card[data-game-id="${id}"]`);
+  await card.getByRole("button", { name: /Game Center/ }).first().click();
+  const gc = page.getByRole("dialog");
+  await gc.getByRole("tab", { name: /Matchup|Forecast|Season stats/ }).click();
+  const opt = gc.locator("details", { has: page.locator("summary", { hasText: "Injuries by impact" }) });
+  await expect(opt).toBeVisible();
+  await expect(opt.locator(".gi-team").first()).toBeHidden();
+  await opt.locator("summary").first().click();
+  await expect(opt.locator(".gi-team")).toHaveCount(2);
+  await expect(opt.locator(".gi-head, .headshot-fallback").first()).toBeVisible();
+  await opt.locator(".gi-row summary").first().click();
+  await expect(opt.locator(".ifig svg").first()).toBeVisible();
+});
+
+test("the injury figure lights the right spot, on the right side", async () => {
+  const { bodyRegion } = await import("../src/bodyMap");
+  const knee = bodyRegion("Knee", "Leg", null, "Left");
+  expect(knee.key).toBe("knee");
+  expect(knee.hits).toHaveLength(1);
+  expect(knee.hits[0].x).toBeGreaterThan(50); // a player's left side is the right of the picture
+  expect(bodyRegion("Knee", "Leg", null, "Right").hits[0].x).toBeLessThan(50);
+  expect(bodyRegion("Knee", "Leg", null, null).hits).toHaveLength(2); // side not given: both, softly
+  expect(bodyRegion("Concussion", "Head").effect).toBe("ripple");
+  expect(bodyRegion("Hamstring").key).toBe("thigh");
+  expect(bodyRegion("Illness").key).toBeNull();
+  expect(bodyRegion("Undisclosed").label).toBe("Area not disclosed");
+  expect(bodyRegion("Undisclosed", "Leg").key).toBe("calf"); // no type, so the broad location is the best guess
 });
