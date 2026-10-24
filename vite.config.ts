@@ -9,7 +9,7 @@ import { buildPlusRanks, buildWeeklyRanks } from "./src/plusRanksBuild";
 
 // The board's data files are fetched at run time (/data/<name>.json) instead of being compiled into the
 // JavaScript, so a refresh changes only these small, revalidated files and the scripts stay cached.
-const DATA = ["slate", "results", "matchup-stats", "broadcast-checks", "season", "imperialism", "outlook", "spplus", "nfl", "finals", "team-players", "perf-nfl", "perf-cfb", "perf-nfl-prev", "perf-cfb-prev", "perf-status"];
+const DATA = ["slate", "results", "matchup-stats", "broadcast-checks", "season", "imperialism", "outlook", "spplus", "nfl", "finals", "team-players", "perf-nfl", "perf-cfb", "perf-nfl-prev", "perf-cfb-prev", "perf-status", "injuries"];
 const dataFile = (name: string) => new URL(`./src/data/${name}.json`, import.meta.url);
 const minified = (name: string) => JSON.stringify(JSON.parse(readFileSync(dataFile(name), "utf8")));
 

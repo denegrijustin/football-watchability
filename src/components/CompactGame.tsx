@@ -8,11 +8,11 @@ import { PlusRank } from "./PlusRank";
 import { ScoreRing } from "./ScoreRing";
 
 type Team = { name: string; logoId: string; record: string; ranks?: unknown; abbr?: string; espnId?: string | null };
-export function CompactGame({ titleId, matchup, date, broadcast, network, espnId, teams, league, score, tier, venue, driveChart, top, badge, weather, status, scores, momentum, lineStrip, why, rise, onExpand }: {
+export function CompactGame({ titleId, matchup, date, broadcast, network, espnId, teams, league, score, tier, venue, driveChart, top, badge, weather, status, scores, momentum, lineStrip, why, rise, injuries, onExpand }: {
   titleId: string; matchup: string; date: string; broadcast: string; network?: string | null; espnId?: string | null;
   teams: Team[]; league: string; score: number; tier: string; venue: string;
   driveChart?: ReactNode; top?: ReactNode; badge?: ReactNode; weather?: { icon: string; title: string; detail: string; impact: string };
-  status?: ReactNode; scores?: ReactNode[]; momentum?: ReactNode; lineStrip?: ReactNode; why?: ReactNode; rise?: number; onExpand: () => void;
+  status?: ReactNode; scores?: ReactNode[]; momentum?: ReactNode; lineStrip?: ReactNode; why?: ReactNode; rise?: number; injuries?: ReactNode; onExpand: () => void;
 }) {
   const openGame = useOpenGame();
   const logo = networkLogo(network);
@@ -46,6 +46,7 @@ export function CompactGame({ titleId, matchup, date, broadcast, network, espnId
         {weather && impact && impact !== "none" && impact !== "low" && <span className="weather cc-weather"> · {weather.icon} {weather.title} <span className={`impact-pill ${impact}`}>{impact} weather impact</span></span>}
       </li>
     </ul>
+    {injuries}
     {lineStrip}
     {momentum}
     <div className="cc-actions"><button className="card-toggle cc-chevron" type="button" aria-label="Show game details" aria-expanded={false} onClick={onExpand}>Details <span aria-hidden="true">▾</span></button></div>

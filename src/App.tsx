@@ -5,7 +5,7 @@ import { useUpdateCheck } from "./useUpdateCheck";
 import { LiveFreshness } from "./live";
 import { TabIcon } from "./components/TabIcon";
 
-const MORE_VIEWS: View[] = ["grid", "outlook", "empire", "spplus", "nfl"];
+const MORE_VIEWS: View[] = ["injuries", "grid", "outlook", "empire", "spplus", "nfl"];
 import { dayName, results, slate, tiers, type FilterState, type League, type View } from "./data";
 import { Filters } from "./components/Filters";
 import { GameBoard, useBoard } from "./components/GameBoard";
@@ -23,6 +23,7 @@ const InsanityBoard = lazyView(() => import("./components/InsanityBoard").then((
 const TvGrid = lazyView(() => import("./components/TvGrid").then((m) => ({ default: m.TvGrid })), "TvGrid");
 const SpPlusTab = lazyView(() => import("./spplus/SpPlusTab"), "SpPlusTab");
 const NflTab = lazyView(() => import("./nfl/NflTab"), "NflTab");
+const InjuriesTab = lazyView(() => import("./components/InjuriesTab").then((m) => ({ default: m.InjuriesTab })), "InjuriesTab");
 const UpsetMeter = lazyView(() => import("./components/UpsetMeter").then((m) => ({ default: m.UpsetMeter })), "UpsetMeter");
 const SimTab = lazyView(() => import("./sim/SimTab"), "SimTab");
 import { setTz, tzLabel, useTz, ZONES } from "./tz";
@@ -311,6 +312,19 @@ export default function App() {
               </button>
               <div className="more-sheet" id="more-sheet">
                 <button
+                  data-tab="injuries"
+                  aria-label="Injury report"
+                  aria-pressed={view === "injuries"}
+                  onClick={() => go("injuries")}
+                  title="Injury report: the injury, how serious, when each player is likely back, and how much his absence matters"
+                >
+                  <TabIcon name="injuries" />
+                  <span className="tab-label">
+                    <span className="t-long">Injuries</span>
+                    <span className="t-short">Injuries</span>
+                  </span>
+                </button>
+                <button
                   data-tab="grid"
                   aria-label="TV grid"
                   aria-pressed={view === "grid"}
@@ -414,6 +428,8 @@ export default function App() {
                   <ImperialismMap defaultLeague={league} />
                 ) : view === "picks" ? (
                   <PicksTab defaultLeague={league} />
+                ) : view === "injuries" ? (
+                  <InjuriesTab defaultLeague={league} />
                 ) : view === "outlook" ? (
                   <Outlook defaultLeague={league} />
                 ) : view === "spplus" ? (

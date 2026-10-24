@@ -9,6 +9,7 @@ import type { CSSProperties } from "react";
 import { logos, teamColor } from "../data";
 import { Headshot } from "./Headshot";
 import { InjuryReport, hasInjuryData, injurySummary } from "./InjuryReport";
+import { InjuryImpact } from "./GameInjuries";
 
 type KeyPlayer = {
   name: string;
@@ -94,6 +95,7 @@ export function GameDetails({ game, defaultOpen = true, matchup = (game as Game 
           </details>
         );
       })()}
+      <InjuryImpact teams={game.teams as never} league={game.league} />
       {hasInjuryData(game) && (
         <details open={defaultOpen}>
           <summary>
