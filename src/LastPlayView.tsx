@@ -5,7 +5,6 @@ import { EndZones } from "./sim/EndZones";
 import { endzoneFor } from "./sim/endzone";
 import { MIDFIELD_ART } from "./sim/midfield";
 import { driveHistory, driveStats } from "./driveHistory";
-import { helmetFor } from "./helmets";
 import { choreograph, parsePlay, playDetail, type Choreo, type Key, type PlayShape } from "./lastPlay";
 
 export type LastPlayTeam = { id?: string; abbr?: string; name: string; color?: string | null; logoId?: string; conf?: string | null };
@@ -90,8 +89,6 @@ export function LastPlay({ plays, teams, live, situation, nfl }: { plays: FeedPl
   const off = teams[offIdx], def = teams[1 - offIdx];
   const offColor = teamColor(off.color ?? null) ?? "#c1403d";
   const defColor = teamColor(def.color ?? null) ?? "#2f7de1";
-  const offHelmet = helmetFor(off.logoId, offColor);
-  const defHelmet = helmetFor(def.logoId, defColor);
   const home = teams[1];
   const nflGame = !!nfl || home.conf === "AFC" || home.conf === "NFC";
   const homeShort = nflGame ? home.name.split(" ").pop() ?? home.name : home.name;
@@ -187,10 +184,8 @@ export function LastPlay({ plays, teams, live, situation, nfl }: { plays: FeedPl
           <g key={i} ref={(el) => { actors.current[i] = el; }} className={`lp-p ${a.off ? "off" : "def"}${a.hot ? " hot" : ""}`} data-side={a.off ? "off" : "def"} style={{ transform: `translate(${px(a.kf[0][1], a.kf[0][2]).join("px, ")}px)` }}>
             <g transform="scale(1.45)">
             <ellipse rx="10" ry="7" cy="3" fill={a.off ? offColor : defColor} className="lp-shoulders" />
-            <g transform={`rotate(${(a.off ? s : -s) > 0 ? -90 : 90})`}>
-              <path d="M-6 3V-2C-6 -9 6 -9 6 -2V3L3 5H-3Z" fill={(a.off ? offHelmet : defHelmet).shell} className="lp-player-shell" />
-              <path d="M-4 3V6H4V3M-3 4H3" className="lp-player-mask" style={{ stroke: (a.off ? offHelmet : defHelmet).mask }} />
-            </g>
+            <circle r="9.5" cy="2" fill="#f4f6f8" className="lp-player-disc" style={{ stroke: a.off ? offColor : defColor }} />
+            {(a.off ? off : def).logoId && logos[(a.off ? off : def).logoId!] && <image href={logos[(a.off ? off : def).logoId!]} x="-7" y="-5" width="14" height="14" preserveAspectRatio="xMidYMid meet" />}
             </g>
             {a.label && <text y={-22} className="lp-name" textAnchor="middle">{a.label}</text>}
           </g>
