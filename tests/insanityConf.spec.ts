@@ -98,7 +98,7 @@ test("the main board has a conference filter for the NFL (AFC, NFC) as well as c
   await expect(cards.first()).toBeVisible();
   const both = await cards.count();
   await conf.selectOption("afc");
-  await expect(page.getByRole("status").or(page.locator(".game-card").first())).toBeVisible();
+  await expect(page.locator(".game-card").first().or(page.locator(".empty-state"))).toBeVisible();
   const afc = await cards.count();
   await conf.selectOption("nfc");
   const nfc = await cards.count();

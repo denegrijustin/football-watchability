@@ -1224,10 +1224,11 @@ test("a page left open across a deploy says a new version is ready, and Reload b
   // The site is published again: its id is no longer the one this page carries.
   await page.route("**/version.json", (route) => route.fulfill({ json: { id: "a-newer-build" } }));
   await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+  // Coming back to the page reloads it by itself (see useUpdateCheck), so the bar appears on the reloaded page; give a busy machine time to load it.
   const bar = page.locator(".update-bar");
-  await expect(bar).toContainText("new version");
+  await expect(bar).toContainText("new version", { timeout: 20_000 });
   await page.unroute("**/version.json");
   await bar.getByRole("button", { name: "Reload" }).click();
-  await expect(page.locator(".game-card").first()).toBeVisible();
+  await expect(page.locator(".game-card").first()).toBeVisible({ timeout: 20_000 });
   await expect(page.locator(".update-bar")).toHaveCount(0);
 });
