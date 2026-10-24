@@ -8,6 +8,7 @@
 // Headlines come from src/data/headlines.json (keyed by game id) when
 // present; otherwise one is generated. Updates each game's `narrative` (one-line headline), `watch`, `skip` and
 // `narrativeChips` in src/data/slate.json. Rerun after replacing the slate.
+import { rivalryLine, seriesOf } from "./rivalry.mjs";
 import { readFileSync, writeFileSync } from "node:fs";
 
 const path = new URL("../src/data/slate.json", import.meta.url);
@@ -235,6 +236,18 @@ function signals(f) {
     text && list.push({ weight, text, head, chip });
   const isNFL = g.league === "NFL";
   const rl = isNFL ? "FPI rankings" : "AP poll";
+
+  // Rivalry: the name, how the series stands and since when, and the trophy they play for (scripts/rivalry.mjs)
+  if (g.rivalry) {
+    const sr = seriesOf(g.history, g.teams.map((t) => t.name));
+    add(
+      W,
+      g.rivalry.name ? 9 : 4.5,
+      rivalryLine(g.rivalry, sr),
+      g.rivalry.name ? `${g.rivalry.name}: ${away.nick} vs. ${home.nick}` : `Longtime rivals ${away.nick} and ${home.nick} meet`,
+      g.rivalry.trophy ? "Trophy game" : "Rivalry",
+    );
+  }
 
   // Ranked vs ranked
   if (!isNFL && away.rNow && home.rNow) {

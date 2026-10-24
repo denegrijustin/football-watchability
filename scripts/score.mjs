@@ -11,9 +11,12 @@
 //   Competitiveness   19                 Drama           17
 //   Stakes            15                 Late tension    11
 //   Marquee matchup    6                 Stakes & quality 10
+//   Rivalry            4 (extra)
 //   TV window          3                 Surprise         7
 //                                        Fireworks        4
 //   FCS opponent     −12 per FCS team (both)
+
+import { RIVALRY_MAX, rivalryNote, rivalryPoints } from "./rivalry.mjs";
 
 export const BASE = 35;
 const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
@@ -37,7 +40,7 @@ const total = (parts) => Math.round(clamp(BASE + parts.reduce((s, p) => s + p.pt
  * Forecast score.
  * f: { league, sA, sH, rankA, rankH (FPI ranks), pHome, spreadText, swingA, swingH,
  *      apA, apH, national, streamOnly, primetime, net, timeText, fcsA, fcsH,
- *      nameA, nameH, divisional }
+ *      nameA, nameH, divisional, rivalry (see rivalry.mjs), series }
  */
 export function forecastScore(f) {
   const quality = 0.75 * ((f.sA + f.sH) / 2) + 0.25 * Math.max(f.sA, f.sH);
@@ -47,7 +50,7 @@ export function forecastScore(f) {
   const fav = f.pHome >= 0.5 ? [f.nameH, f.pHome] : [f.nameA, 1 - f.pHome];
 
   let marquee = 0,
-    marqueeNote = "No ranked teams or rivalry edge";
+    marqueeNote = "No ranked teams";
   if (f.league === "CFB") {
     if (f.apA && f.apH) {
       marquee = Math.min(f.apA, f.apH) <= 10 ? 1 : 0.8;
@@ -106,6 +109,8 @@ export function forecastScore(f) {
       note: `${f.net || "TBA"}${f.primetime && f.national ? ", prime time" : ""}${f.streamOnly ? " (streaming only)" : ""}`,
     },
   ];
+  // A rivalry (named, or a long series inside one conference or division) adds up to four points on top; a game with none has no such part.
+  if (f.rivalry) parts.push({ id: "rivalry", label: "Rivalry", max: RIVALRY_MAX, pts: rivalryPoints(f.rivalry), note: rivalryNote(f.rivalry, f.series) });
   const fcs = (f.fcsA ? 1 : 0) + (f.fcsH ? 1 : 0);
   if (fcs)
     parts.push({ id: "fcs", label: "FCS opponent", max: 0, pts: -FCS_PENALTY * fcs, note: "FBS vs FCS games are rarely competitive" });
