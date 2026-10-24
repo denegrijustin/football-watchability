@@ -38,6 +38,8 @@ async function open(page: import("@playwright/test").Page, state: { toGo: number
   await page.route("**/api/flow**", (route) => route.fulfill({ json: { wp: [] } }));
   await page.route("**/api/game**", (route) => route.fulfill({ json: summary(state.toGo, state.text) }));
   await page.goto("/?league=NFL");
+  // The Watch-now strip sits above the games, so on a phone the live card starts at the bottom of the screen; the field loads once it is on screen.
+  await expect(async () => { await page.locator(".board-section.live .game-card").first().evaluate((el) => el.scrollIntoView({ block: "center" })); }).toPass({ timeout: 10_000 });
 }
 
 test("a live card shows the drive animation second, directly under the score block", async ({ page }) => {
