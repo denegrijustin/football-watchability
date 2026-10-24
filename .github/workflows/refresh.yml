@@ -152,6 +152,8 @@ jobs:
           timeout 120s node scripts/fetch-spplus.mjs || echo "SP+ sheet failed; keeping the saved SP+ data"
           # NFL+ tab and the Game Center's simulated score: schedule, lines, results, play-by-play ratings, depth charts and snap counts from nflverse (CC-BY 4.0).
           timeout 400s node scripts/fetch-nflverse.mjs || echo "nflverse failed; keeping the saved NFL data"
+          # Injury report (NFL tab): ESPN's injury feed with each player's impact from nflverse snaps and stats (this season, else last), plus this week's college availability.
+          timeout 300s node scripts/build-injuries.mjs || echo "injuries failed; keeping the saved report"
           # Finished games (ESPN) for the CFB SP+ and NFL+ against-the-spread trackers: grades a pick as soon as its game ends, without waiting for the sheet or nflverse.
           timeout 180s node scripts/fetch-finals.mjs || echo "finals failed; keeping the saved finals"
           # Team-performance tabs (NFL+ and CFP+): drives, situations, big plays and the rest, counted from the same play-by-play. NFL reuses the
