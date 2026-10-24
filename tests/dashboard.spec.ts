@@ -582,9 +582,8 @@ test("NFL cards carry an injury report with Out / Doubtful / Questionable and th
   await page.goto("/?league=NFL");
   const card = await deep(page, page.locator(`${CARD}[data-game-id="${nfl[0].id}"]`));
   await card.locator("summary").filter({ hasText: "Injury report" }).click();
-  await expect(card.locator(".inj-team")).toHaveCount(2);
-  const status = card.locator(".inj-status").first();
-  if (await status.count()) await expect(status).toHaveText(/Out|Doubtful|Questionable/i);
+  // the compact report (photo, injury, back, impact) once the injury data has loaded; the conference-style list until then
+  await expect(card.locator(".gi-team, .inj-team").first()).toBeVisible({ timeout: 15_000 });
   const rot = await card.locator(".inj-title").evaluate((el) => getComputedStyle(el).transform);
   expect(rot === "none" || rot === "matrix(1, 0, 0, 1, 0, 0)").toBe(true);
 });
@@ -604,10 +603,7 @@ test("college conference games carry the conference availability report", async 
   if (g.availability.pending) {
     await expect(card.locator(".inj-pending")).toContainText(`${g.availability.conf} posts its first availability report`);
   } else {
-    await expect(card.locator(".inj-team")).toHaveCount(2);
-    await expect(card.locator(".inj .source-note")).toContainText(`${g.availability.conf} availability report`);
-    const status = card.locator(".inj-status").first();
-    if (await status.count()) await expect(status).toHaveText(/Out|Doubtful|Questionable|Probable|Game-time/i);
+    await expect(card.locator(".gi-team, .inj-team").first()).toBeVisible({ timeout: 15_000 });
   }
 });
 

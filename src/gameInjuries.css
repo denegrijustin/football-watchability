@@ -34,12 +34,25 @@
 .ifig { margin: 0; display: grid; justify-items: center; gap: 2px; } .ifig figcaption { font-size: 0.6875rem; color: var(--muted); text-align: center; line-height: 1.1; }
 .ifig svg { display: block; overflow: visible; }
 .ifig-body * { fill: var(--surface-3); stroke: var(--line-strong); stroke-width: 1.2; }
-.ifig-glow { fill: var(--red); opacity: 0.5; transform-box: fill-box; transform-origin: center; animation: ifig-pulse 1.1s ease-in-out 3; }
+.ifig-glow { fill: var(--red); opacity: 0.5; transform-box: fill-box; transform-origin: center; }
+.ifig.play .ifig-glow { animation: ifig-pulse 1.1s ease-in-out 3; }
 .ifig-core { fill: var(--red); }
 .ifig-hit.soft .ifig-glow { opacity: 0.3; } .ifig-hit.soft .ifig-core { opacity: 0.55; }
-.ifig-ring { fill: none; stroke: var(--red); stroke-width: 1.6; opacity: 0; transform-box: fill-box; transform-origin: center; animation: ifig-ring 1.5s ease-out 3; }
-.ifig-ring.r2 { animation-delay: 0.5s; }
+.ifig-ring { fill: none; stroke: var(--red); stroke-width: 1.6; opacity: 0; transform-box: fill-box; transform-origin: center; }
+.ifig.play .ifig-ring { animation: ifig-ring 1.5s ease-out 3; }
+.ifig.play .ifig-ring.r2 { animation-delay: 0.5s; }
 @keyframes ifig-pulse { 50% { transform: scale(1.4); opacity: 0.85; } }
 @keyframes ifig-ring { 0% { transform: scale(0.8); opacity: 0.8; } 100% { transform: scale(2.2); opacity: 0; } }
 html[data-motion="off"] :is(.ifig-glow, .ifig-ring) { animation: none !important; }
 html[data-hidden] .ifig *, html[data-hidden] .ifig { animation-play-state: paused !important; }
+
+/* compact rows: a photo, who and how bad, the injury and when he is back, the impact, a small animated figure */
+.gi-team ul { gap: 6px; }
+.gi-card { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; grid-template-areas: "head name fig" "head line fig" "head impact fig"; gap: 1px 10px; align-items: center; padding: 8px 10px; border-radius: 12px; background: rgb(255 255 255 / 4%); border-left: 3px solid var(--line-strong); }
+.gi-card.sev-seasonending { border-left-color: var(--red); } .gi-card.sev-longterm { border-left-color: var(--orange); } .gi-card.sev-shortterm { border-left-color: var(--gold); } .gi-card.sev-gametime { border-left-color: var(--green); }
+.gi-card .gi-head { grid-area: head; } .gi-card .gi-name { grid-area: name; display: block; min-width: 0; overflow-wrap: anywhere; }
+.gi-card .gi-line { grid-area: line; font-size: 0.75rem; color: var(--text-2); } .gi-card .gi-impact { grid-area: impact; font-size: 0.75rem; font-weight: 700; }
+.gi-card .gi-fig { grid-area: fig; } .gi-card .ifig figcaption { display: none; }
+.gi-card .gi-sev { margin-left: 4px; }
+.gi-more-btn { background: none; border: 0; color: var(--lime); font: inherit; font-size: 0.8125rem; padding: 6px 0; cursor: pointer; }
+.gi-sev, .jc-sev { white-space: nowrap; }
