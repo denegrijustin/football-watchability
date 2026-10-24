@@ -1,14 +1,18 @@
+import { useRef } from "react";
 import { bodyRegion } from "../bodyMap";
+import { useOnScreen } from "../motion";
 
 /**
  * A small front-facing figure with the injured area lit and pulsing (three times, then it stays lit, so it is not a loop to run down the battery).
  * A head injury sends out rings. When the side is not given, both sides are lit more softly. Illness and undisclosed injuries show the plain figure.
  */
 export function InjuryFigure({ type, location, side, detail, size = 64 }: { type: string | null; location?: string | null; side?: string | null; detail?: string | null; size?: number }) {
+  const ref = useRef<HTMLElement>(null);
+  const seen = useOnScreen(ref, true);
   const reg = bodyRegion(type, location, detail, side);
   const soft = reg.paired && !reg.sideKnown;
   return (
-    <figure className="ifig" style={{ width: size }}>
+    <figure ref={ref} className={`ifig${seen ? " play" : ""}`} style={{ width: size }}>
       <svg viewBox="0 0 100 230" width={size} height={size * 2.3} role="img" aria-label={`Injury area: ${reg.label}${reg.paired && reg.sideKnown ? `, ${side?.toLowerCase()} side` : ""}`}>
         <g className="ifig-body">
           <circle cx="50" cy="20" r="13" />

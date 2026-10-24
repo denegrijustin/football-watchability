@@ -1,11 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { fetchData } from "../data/load";
-import { logos, type League } from "../data";
-import { logoSlug } from "../nfl/model";
-import { ChipImg } from "../logoTone";
-import { Headshot } from "./Headshot";
+import type { League } from "../data";
 import { Skeleton } from "./Skeleton";
-import { InjuryFigure } from "./InjuryFigure";
+import { InjuryCard } from "./InjuryCard";
 import "../injuries.css";
 import "../gameInjuries.css";
 import type { InjuryData, Player } from "../injuries";
@@ -14,50 +11,8 @@ type Data = InjuryData;
 
 const SEV_RANK = { "Season-ending": 3, "Long-term": 2, "Short-term": 1, "Game-time": 0 } as const;
 const TIER_RANK = { High: 3, Medium: 2, Low: 1, Minimal: 0, Unknown: -1 } as const;
-const SRC_NOTE = { ESPN: "ESPN's projected return", reported: "from the team or ESPN note", estimate: "an estimate: typical for this injury" } as const;
-const short = (s: string) => ({ "Injured Reserve": "IR", "Out for season": "Out (season)" })[s] ?? s;
-const statusCls = (s: string) => (/^out/i.test(s) || /injured/i.test(s) ? "out" : /doubtful/i.test(s) ? "doubtful" : /question/i.test(s) ? "questionable" : "other");
 const GROUPS = ["QB", "RB", "WR", "TE", "OL", "DL", "LB", "DB", "ST"];
 const GROUP_NAME: Record<string, string> = { QB: "Quarterbacks", RB: "Running backs", WR: "Receivers", TE: "Tight ends", OL: "Offensive line", DL: "Defensive line", LB: "Linebackers", DB: "Defensive backs", ST: "Kickers and punters" };
-const when = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" });
-const injuryText = (i: Player["injury"]) => [i.side, i.type ?? "Undisclosed"].filter(Boolean).join(" ") + (i.detail && i.detail !== i.type ? ` · ${i.detail}` : "");
-
-function Card({ p, nfl }: { p: Player; nfl: boolean }) {
-  const logo = nfl ? logos[logoSlug(p.teamName ?? "")] : p.logoId ? logos[p.logoId] : undefined;
-  const im = p.impact;
-  return (
-    <li className={`ij-card sev-${p.severity.replace(/[^a-z]/gi, "").toLowerCase()}`}>
-      <header>
-        <Headshot src={p.headshot} name={p.name} size={44} className="ij-head" />
-        <div className="ij-who">
-          <strong>{p.name}</strong>
-          <span>{p.pos ?? ""}{p.jersey ? ` #${p.jersey}` : ""} · {logo && <ChipImg src={logo} size={16} />} {p.team}</span>
-        </div>
-        <span className={`ij-status ${statusCls(p.status)}`}>{short(p.status)}</span>
-      </header>
-      <div className="ij-body">
-        <InjuryFigure type={p.injury.type} location={p.injury.location} side={p.injury.side} detail={p.injury.detail} size={46} />
-        <div>
-          <p className="ij-injury"><b>{injuryText(p.injury)}</b>{p.injury.location && p.injury.location !== p.injury.type ? <small> ({p.injury.location.toLowerCase()})</small> : null}</p>
-          <div className="ij-ret">
-            <span className={`ij-sev ${p.severity.replace(/[^a-z]/gi, "").toLowerCase()}`}>{p.severity}</span>
-            <span className="ij-back">{p.ret.label}</span>
-            <small title={SRC_NOTE[p.ret.source]}>{p.ret.source === "ESPN" ? "ESPN date" : p.ret.source === "reported" ? "reported" : "estimate"}</small>
-          </div>
-        </div>
-      </div>
-      <div className="ij-impact" role="group" aria-label={`Impact of the absence: ${im.tier}${im.score != null ? `, ${im.score} out of 100` : ""}`}>
-        <div className="ij-imp-head"><span>Impact of the absence</span><b className={`tier-${im.tier.toLowerCase()}`}>{im.tier}{im.score != null ? ` · ${im.score}` : ""}</b></div>
-        <span className="ij-meter"><i className={`tier-${im.tier.toLowerCase()}`} style={{ transform: `scaleX(${(im.score ?? 0) / 100})` }} /></span>
-        <p className="ij-why">{im.reason}</p>
-        <p className={`ij-basis${/^\d{4}/.test(im.basis) && im.basis.includes("no games this season") || im.basis.includes("only") ? " fallback" : ""}`}>Based on: {im.basis}</p>
-        {im.split && <p className="ij-split">Team with him: {im.split.with.pf} scored, {im.split.with.pa} allowed ({im.split.with.n} g). Without: {im.split.without.pf} scored, {im.split.without.pa} allowed ({im.split.without.n} g). <small>Small sample.</small></p>}
-      </div>
-      {p.next && <p className="ij-next">Next: {p.next.home ? "vs" : "at"} {p.next.opp ?? "TBD"} · {when(p.next.date)}</p>}
-      {p.note && <details className="ij-note"><summary>Latest note</summary><p>{p.note}</p></details>}
-    </li>
-  );
-}
 
 /** League-wide injury report: what the injury is, how serious, when the player is likely back, and how much his absence matters. */
 export function InjuriesTab({ defaultLeague }: { defaultLeague: League }) {
@@ -119,23 +74,21 @@ export function InjuriesTab({ defaultLeague }: { defaultLeague: League }) {
             <select aria-label="Severity" value={sev} onChange={(e) => setSev(e.target.value)}><option value="all">Any severity</option>{(["Season-ending", "Long-term", "Short-term", "Game-time"] as const).map((s) => <option key={s} value={s}>{s}</option>)}</select>
             <select aria-label="Impact" value={min} onChange={(e) => setMin(e.target.value)}><option value="all">Any impact</option><option value="medium">Medium or higher</option><option value="high">High only</option></select>
           </div>
-          <p className="ol-note ij-asof">{nfl ? "ESPN injury report" : "Conference availability reports for this week's games"}, as of {new Date(block.asOf).toLocaleString("en-US", { weekday: "short", hour: "numeric", minute: "2-digit" })}. Showing {Math.min(shown, list.length)} of {list.length}, {sort === "impact" ? "biggest impact first" : sort === "severity" ? "most serious first" : "back soonest first"}.</p>
+          <p className="ol-note ij-asof">{nfl ? "ESPN" : "Conference reports"} · updated {new Date(block.asOf).toLocaleString("en-US", { weekday: "short", hour: "numeric", minute: "2-digit" })} · {Math.min(shown, list.length)} of {list.length}, {sort === "impact" ? "biggest impact first" : sort === "severity" ? "most serious first" : "back soonest first"}</p>
           {list.length ? (
-            <ul className="ij-grid">{list.slice(0, shown).map((p) => <Card key={p.id} p={p} nfl={nfl} />)}</ul>
+            <ul className="ij-grid">{list.slice(0, shown).map((p) => <InjuryCard key={p.id} p={p} nfl={nfl} season={block.season} />)}</ul>
           ) : <p className="ol-note">No players match these filters.</p>}
           {list.length > shown && <button type="button" className="btn small" onClick={() => setShown(shown + 30)}>Show {Math.min(30, list.length - shown)} more</button>}
           <details className="ij-how">
             <summary>How to read this</summary>
             <ul>
-              <li><b>Injury and severity.</b> The injury is as ESPN lists it. Severity comes from the longest the player could miss: <i>Season-ending</i> (out for the year), <i>Long-term</i> (4 or more weeks, or IR), <i>Short-term</i> (about 1–3 weeks) and <i>Game-time</i> (could play this weekend).</li>
-              <li><b>Back when.</b> "ESPN date" is ESPN's own projected return. "Reported" comes from a timeline in the team or ESPN note. "Estimate" is what is typical for that kind of injury (and at least 4 games on IR), not a medical forecast. Dates move.</li>
-              <li><b>Impact of the absence</b> (0–100) is how much the team leaned on the player in the games he played: his share of snaps, and where his production per game ranks among players at his position (EPA for offense, tackles, sacks and takeaways for defense), weighted a little by position (a quarterback is harder to replace than a kicker). Linemen have no individual stats, so snaps alone decide theirs. <i>High</i> is 70 or more, <i>Medium</i> 45–69, <i>Low</i> 20–44.</li>
-              <li><b>This season, else last.</b> With 3 or more games this season, impact uses this season. With fewer (a player who has been hurt since the summer), it uses last season, and the card says so. A player with no games in either season is shown as Unknown.</li>
-              <li><b>With and without</b> shows the team's scoring in this season's games with and without the player, only when each side has at least two games. It is a small sample and also reflects opponents, so treat it as a hint.</li>
-              {!nfl && <li><b>College.</b> Conferences (SEC, ACC, Big Ten, Big 12) say who is available, not what the injury is, and only the team's rushing, receiving and passing leaders have stats, so impact is shown only for them.</li>}
+              <li><b>Impact</b>: how much the team used him in the games he played (snaps and production against his position). This season once he has 3 games, otherwise last season.</li>
+              <li><b>Back</b>: ESPN's date when it has one; "(est.)" is what is typical for that injury.</li>
+              <li><b>Severity</b>: game-time, short-term (about 1–3 weeks), long-term (4 or more) or season-ending.</li>
+              {!nfl && <li><b>College</b>: conferences list who is out, not the injury, and only team leaders have stats.</li>}
             </ul>
           </details>
-          <p className="source-note">{nfl ? "Injury reports and return dates: ESPN. Snaps and player stats: nflverse (CC-BY 4.0)." : "Availability: conference reports via ESPN and the board."} Updated with each refresh.</p>
+          <p className="source-note">{nfl ? "Source: ESPN; snaps and stats from nflverse (CC-BY 4.0)." : "Source: conference availability reports."}</p>
         </>
       )}
     </section>

@@ -70,23 +70,25 @@ test.describe("the Injuries tab", () => {
   test("it is on the menu and lists each injury, how serious it is, when the player is back and the impact of his absence", async ({ page }) => {
     await page.goto("/?league=NFL");
     await page.locator('.view-switch [data-tab="injuries"]').evaluate((b) => (b as HTMLElement).click());
-    const card = page.locator(".ij-card").first();
+    const card = page.locator(".jc").first();
     await expect(card).toBeVisible({ timeout: 15_000 });
-    await expect(card.locator(".ij-injury")).not.toBeEmpty();
-    await expect(card.locator(".ij-sev")).toBeVisible();
-    await expect(card.locator(".ij-back")).not.toBeEmpty();
-    await expect(card.locator(".ij-imp-head")).toContainText("Impact of the absence");
-    await expect(card.locator(".ij-basis")).toContainText("Based on:");
+    // a few words each: injury, status, back; an animated figure of the injured area; the impact with a bar
+    await expect(card.locator(".jc-facts dd")).toHaveCount(3);
+    await expect(card.locator(".jc-sev")).toBeVisible();
+    await expect(card.locator(".jc-facts div").nth(2)).toContainText("Back");
+    await expect(card.locator(".ifig svg")).toBeVisible();
+    await expect(card.locator(".jc-top b")).toContainText(/impact/i);
+    await expect(card.locator(".jc-head, .headshot-fallback").first()).toBeVisible();
     // filters and sort
     await page.getByLabel("Severity", { exact: true }).selectOption("Season-ending");
-    await expect(page.locator(".ij-sev:not(.seasonending)")).toHaveCount(0);
+    await expect(page.locator(".jc-sev:not(.seasonending)")).toHaveCount(0);
     await page.getByLabel("Severity", { exact: true }).selectOption("all");
     await page.getByLabel("Impact", { exact: true }).selectOption("high");
-    await expect(page.locator(".ij-imp-head .tier-medium, .ij-imp-head .tier-low")).toHaveCount(0);
+    await expect(page.locator(".jc-impact.tier-medium, .jc-impact.tier-low")).toHaveCount(0);
     await page.getByRole("group", { name: "Sort by" }).getByRole("button", { name: "Back soonest" }).click();
     await expect(page.locator(".ij-asof")).toContainText("back soonest first");
     await page.getByRole("group", { name: "League" }).getByRole("button", { name: "College" }).click();
-    await expect(page.locator(".ij-asof")).toContainText("Conference availability");
+    await expect(page.locator(".ij-asof")).toContainText("Conference reports");
   });
 });
 
@@ -107,11 +109,10 @@ test.describe("injuries on the game card", () => {
     await sec.locator("summary").first().click();
     await expect(sec.locator(".gi-team")).toHaveCount(2);
     await expect(sec.locator(".gi-head, .headshot-fallback").first()).toBeVisible(); // the player's picture
-    await sec.locator(".gi-row summary").first().click();
-    await expect(sec.locator(".gi-more").first()).toContainText("Based on:");
     await expect(sec.locator(".gi-sev").first()).toBeVisible();
+    await expect(sec.locator(".gi-line").first()).toContainText("·"); // the injury and when he is back, on one line
     await expect(sec.locator(".ifig svg").first()).toBeVisible(); // the figure of the injured area
-    await sec.getByRole("button", { name: /Full injury report/ }).click();
+    await sec.getByRole("button", { name: /All injuries/ }).click();
     await expect(page.locator(".ij").first()).toBeVisible({ timeout: 15_000 });
   });
 
@@ -121,7 +122,7 @@ test.describe("injuries on the game card", () => {
   });
 });
 
-test("the Game Center has an Injuries by impact option, closed until opened", async ({ page }) => {
+test("the Game Center's injury report is the same compact view, closed until opened", async ({ page }) => {
   await stubFinals(page);
   await page.goto("/?league=NFL");
   const id = await page.locator(".game-card:has(.gi-strip)").first().getAttribute("data-game-id");
@@ -129,13 +130,11 @@ test("the Game Center has an Injuries by impact option, closed until opened", as
   await card.getByRole("button", { name: /Game Center/ }).first().click();
   const gc = page.getByRole("dialog");
   await gc.getByRole("tab", { name: /Matchup|Forecast|Season stats/ }).click();
-  const opt = gc.locator("details", { has: page.locator("summary", { hasText: "Injuries by impact" }) });
+  const opt = gc.locator("details", { has: page.locator("summary", { hasText: "Injury report" }) });
   await expect(opt).toBeVisible();
-  await expect(opt.locator(".gi-team").first()).toBeHidden();
   await opt.locator("summary").first().click();
   await expect(opt.locator(".gi-team")).toHaveCount(2);
   await expect(opt.locator(".gi-head, .headshot-fallback").first()).toBeVisible();
-  await opt.locator(".gi-row summary").first().click();
   await expect(opt.locator(".ifig svg").first()).toBeVisible();
 });
 

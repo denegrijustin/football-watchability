@@ -1,0 +1,21 @@
+.jc { display: grid; gap: 10px; padding: 14px; border: 1px solid var(--line); border-left: 4px solid var(--line-strong); border-radius: 14px; background: linear-gradient(180deg, var(--surface), var(--surface-2)); min-width: 0; list-style: none; animation: card-in 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
+.jc.sev-seasonending { border-left-color: var(--red); } .jc.sev-longterm { border-left-color: var(--orange); } .jc.sev-shortterm { border-left-color: var(--gold); } .jc.sev-gametime { border-left-color: var(--green); }
+.jc-who { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; align-items: center; gap: 10px; }
+.jc-head { border-radius: 50%; object-fit: cover; background: var(--surface-3); }
+.jc-name { display: grid; min-width: 0; } .jc-name b { overflow-wrap: anywhere; }
+.jc-name span { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; font-size: 0.8125rem; color: var(--text-2); }
+.jc-sev { padding: 3px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 750; white-space: nowrap; background: var(--surface-3); }
+.jc-sev.seasonending { color: var(--red); } .jc-sev.longterm { color: var(--orange); } .jc-sev.shortterm { color: var(--gold); } .jc-sev.gametime { color: var(--green); }
+.jc-mid { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; }
+.jc-facts { display: grid; gap: 4px; margin: 0; }
+.jc-facts div { display: grid; grid-template-columns: 3.6rem 1fr; gap: 8px; font-size: 0.8125rem; }
+.jc-facts dt { color: var(--muted); } .jc-facts dd { margin: 0; font-weight: 650; overflow-wrap: anywhere; }
+.jc-impact { display: grid; gap: 5px; padding: 10px; border-radius: 10px; background: rgb(255 255 255 / 4%); }
+.jc-top { display: flex; justify-content: space-between; gap: 8px; font-size: 0.8125rem; } .jc-top span { color: var(--muted); }
+.jc-impact.tier-high .jc-top b { color: var(--red); } .jc-impact.tier-medium .jc-top b { color: var(--orange); } .jc-impact.tier-low .jc-top b { color: var(--gold); }
+.jc-bar { position: relative; height: 6px; border-radius: 3px; background: var(--surface-3); overflow: hidden; }
+.jc-bar i { position: absolute; inset: 0; transform-origin: left; background: var(--muted); animation: bar-grow-x 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
+.jc-impact.tier-high .jc-bar i { background: var(--red); } .jc-impact.tier-medium .jc-bar i { background: var(--orange); } .jc-impact.tier-low .jc-bar i { background: var(--gold); }
+@keyframes bar-grow-x { from { transform: scaleX(0); } }
+.jc-impact small { font-size: 0.75rem; color: var(--muted); } .jc-impact small em { font-style: normal; color: var(--gold); }
+html[data-motion="off"] :is(.jc, .jc-bar i) { animation: none !important; }
