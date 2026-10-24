@@ -190,8 +190,8 @@ test("the ball marker is the offense's team logo, and the field carries end-zone
   await open(page, { toGo: 65, text: "2nd & 7 at SEA 35" });
   const svg = page.locator(".board-section.live .game-card").first().locator("svg.drive-svg");
   await expect(svg.locator(".df-ball image.lf-ball-logo")).toHaveCount(1);
-  await expect(svg.locator(".df-ball .lf-helmet")).toHaveCount(1); // the offense's helmet marks the ball
-  await expect(svg.locator(".df-ball .lf-helmet")).toHaveAttribute("data-facing", /^(left|right)$/);
+  await expect(svg.locator(".df-ball .lf-mark")).toHaveCount(1); // the offense's logo marks the ball
+  await expect(svg.locator(".df-ball .lf-mark")).toHaveAttribute("data-facing", /^(left|right)$/);
   await expect(svg.locator("image.lf-mid")).toHaveCount(1); // the home logo at midfield
   await expect(svg.locator("[data-endzone]")).toHaveCount(2); // the home team's end zone design at both ends
   await expect(svg.locator("[data-endzones] text").first()).toBeAttached(); // lettered with the team's name
