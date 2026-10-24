@@ -22,6 +22,7 @@ import type { WeatherLike } from "../weatherFx";
 import { HalftimeBand } from "../halftime";
 import { HalftimeAct } from "../nflHalftime";
 import { GameBadgeRow } from "./GameBadge";
+import { RivalryBadge, type Rivalry } from "./RivalryBadge";
 import { gameBadge } from "../gameLogo";
 import { isHalftime } from "../halftimeLogic";
 import { MomentumFlow } from "./MomentumFlow";
@@ -280,6 +281,7 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
             <TeamHead t={away} score={scoreA} poss={!!game?.situation?.possession && game.situation.possession === game.teams[0]?.id} win={state === "post" && scoreA! > scoreH!} />
             <div className="gc-mid">
               <GameBadgeRow badge={badge} large />
+              <RivalryBadge rivalry={(up as { rivalry?: Rivalry } | undefined)?.rivalry} compact={false} />
               <span className={`gc-state ${state}`}>{state === "in" ? "Live" : state === "post" ? "Final" : "Upcoming"}</span>
               <strong className="gc-clock">
                 {state === "pre" ? `${dayOf(date)} ${timeOf(date, undefined, true)} ${tzAbbr()}` : game?.status.detail ?? fin?.final.detail ?? "Final"}

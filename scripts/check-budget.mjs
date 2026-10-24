@@ -16,7 +16,7 @@ for (const f of list("assets/", ".js")) {
   totalJs += size;
   limits.push([`assets/${f}`, size, 110 * KB]);
 }
-limits.push(["all JavaScript", totalJs, 460 * KB]); // 420 until the picks, parlays, playoff leverage, fresh-lines refresh and redesigned cards (all lazy chunks, about 40 KB gzipped between them; the first-load chunk is unchanged); 340 until the eight team-performance tabs (lazy chunks, about 60 KB gzipped); 300 until the last-play field, drive stats, halftime band and live streams (about 20 KB gzipped) arrived
+limits.push(["all JavaScript", totalJs, 480 * KB]); // 460 until the injury figures and rivalry trophies; 420 until the picks, parlays, playoff leverage, fresh-lines refresh and redesigned cards (all lazy chunks, about 40 KB gzipped between them; the first-load chunk is unchanged); 340 until the eight team-performance tabs (lazy chunks, about 60 KB gzipped); 300 until the last-play field, drive stats, halftime band and live streams (about 20 KB gzipped) arrived
 for (const f of list("assets/", ".css")) limits.push([`assets/${f}`, gz(new URL(`assets/${f}`, dist)), 36 * KB]); // 32 before the motion layer (watch-now, score ring, transitions, skeletons)
 const DATA_MAX = { slate: 220, results: 120, season: 100, imperialism: 150, "matchup-stats": 40, outlook: 40, "broadcast-checks": 20, spplus: 400, "spplus-lite": 40, "perf-nfl": 80, "perf-cfb": 420 }; // perf-*.json load only when a performance tab opens; spplus.json is the whole sheet; it loads only when the CFB SP+ tab opens
 for (const f of list("data/", ".json")) limits.push([`data/${f}`, gz(new URL(`data/${f}`, dist)), (DATA_MAX[f.replace(/\.json$/, "")] ?? 60) * KB]);
