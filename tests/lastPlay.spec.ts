@@ -2,7 +2,6 @@ import { expect, test } from "./fixtures";
 import { readFileSync } from "node:fs";
 import { choreograph, parsePlay, playDetail } from "../src/lastPlay";
 import { driveHistory, driveStats } from "../src/driveHistory";
-import { helmetFor, NFL_HELMETS } from "../src/helmets";
 
 const slate = JSON.parse(readFileSync("src/data/slate.json", "utf8"));
 const games = slate.games.filter((g: any) => g.league === "NFL");
@@ -47,18 +46,6 @@ test("different plays get different art: a deep left pass and a short right one 
   // an incomplete pass has no tackle mark, a field goal has posts
   expect(choreograph(P("A pass incomplete deep right to B", "Pass Incompletion", 0)).end).toBeNull();
   expect(choreograph(P("E 42 yard field goal GOOD", "Field Goal Good", 0)).posts).toBe(35);
-});
-
-test("every NFL team wears its own helmet, and a college team its own colour", () => {
-  const ids = new Set<string>(games.flatMap((g: any) => g.teams.map((t: any) => t.logoId)));
-  for (const id of ids) expect(NFL_HELMETS[id], id).toBeTruthy();
-  expect(helmetFor("buffalo-bills", "#00338d").shell).toBe("#f4f5f7"); // white with red stripe, not the blue of the jersey
-  expect(helmetFor("green-bay-packers", "#203731").shell).toBe("#ffb612");
-  expect(helmetFor("kansas-state", "#512888").facesRight).toBe(true); // the Wildcat looks where the helmet looks
-  expect(helmetFor("lsu", "#461d7c")).toMatchObject({ shell: "#fdd023", decal: { text: "LSU", color: "#461d7c" } }); // gold with purple letters
-  expect(helmetFor("texas", "#bf5700")).toMatchObject({ shell: "#f4f5f7", tint: "#bf5700" }); // white, with the Longhorn in burnt orange
-  expect(helmetFor("kansas-state", "#512888")).toMatchObject({ shell: "#b9bec4" }); // silver, not the purple of the jersey
-  expect(helmetFor("ohio-state", "#bb0000")).toEqual({ shell: "#bb0000", stripe: "#ffffff", mask: "#aab2ba" });
 });
 
 test("the Game Center shows the last play as play art drawn from the play", async ({ page }) => {

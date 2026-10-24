@@ -1,10 +1,10 @@
+import { useDiscFill } from "./logoDisc";
 import { decodeGame } from './gameFeed';
 import { useEffect, useRef, useState } from "react";
 import { logos, teamColor } from "./data";
 import { rename } from "./data/load";
 import { FootballIcon, liveFromSummary, useReportLive } from "./live";
 import { LogoMark } from "./logoTone";
-import { helmetFor } from "./helmets";
 import { WeatherLayer, weatherCaption } from "./WeatherEffects";
 import { ConfMark } from "./ConfMark";
 import { EndZones, EZ_H, EZ_W } from "./sim/EndZones";
@@ -160,6 +160,16 @@ export function playLabel(g: Seg) {
  * the plays of the drive in progress. Shown on live cards (compact, plays folded away) and in the Game Center.
  * Static for visitors who ask for reduced motion.
  */
+function MarkDisc({ logo, abbr, stroke }: { logo?: string; abbr: string; stroke: string }) {
+  const fill = useDiscFill(logo);
+  return (
+    <>
+      <circle r="3.6" className="lf-mark-disc" style={{ stroke, fill }} />
+      {logo ? <image href={logo} x="-2.5" y="-2.5" width="5" height="5" preserveAspectRatio="xMidYMid meet" className="lf-ball-logo" /> : <text y="0.9" textAnchor="middle" className="lf-mark-abbr">{abbr}</text>}
+    </>
+  );
+}
+
 export function FieldView({ data, teams, variant, rootRef, badge, weather }: { data: Summary | null; teams: FieldTeam[]; variant: "card" | "center"; rootRef?: React.Ref<HTMLDivElement>; badge?: GameBadge | null; weather?: WeatherLike | null }) {
   const [away, home] = teams;
   const ids = [away.espnId ?? "", home.espnId ?? ""];
@@ -194,7 +204,6 @@ export function FieldView({ data, teams, variant, rootRef, badge, weather }: { d
   const plays = data.curPlays ?? [];
   const wxText = weatherCaption(weather, data.status.period);
   const logo = teams[side].logoId ? logos[teams[side].logoId!] : undefined;
-  const helmet = helmetFor(teams[side].logoId, colors[side]);
   // The ball's tag sits on the side with room.
   const tagLeft = ball > 70;
 
@@ -311,17 +320,10 @@ export function FieldView({ data, teams, variant, rootRef, badge, weather }: { d
         <g className="df-ball" style={{ transform: `translateX(${X(ball)}px)` }}>
           <line x1="0" x2="0" y1="0" y2={H} className="df-los" />
           <circle cx="0" cy={ballY} r="4.6" className="df-pulse" stroke={colors[side]} />
-          {/* the offense's helmet, as the team wears it, facing the way it is driving, with the logo on the shell */}
-          <g transform={`translate(0 ${ballY}) scale(${dir} 1)`} className="lf-helmet" data-facing={dir > 0 ? "right" : "left"} data-shell={helmet.shell}>
-            <path d="M-3.8 1.9C-4.7 -2.4 -1.8 -4.1 0.8 -3.9C3 -3.7 4.1 -1.9 3.9 0.2L3.3 1.2L1.5 1.3L0.7 2.5L-1.4 3.1L-3 3Z" className="lf-helmet-shell" fill={helmet.shell} />
-            <path d="M-3.8 1.9C-4.7 -2.4 -1.8 -4.1 0.8 -3.9C3 -3.7 4.1 -1.9 3.9 0.2L3.3 1.2L1.5 1.3L0.7 2.5L-1.4 3.1L-3 3Z" className="lf-shell-shade" />
-            <path d="M2.4 -0.7L3.8 -0.3L3.3 1.2L1.7 1.3Z" className="lf-visor" />
-            <ellipse cx="-0.7" cy="1" rx="0.8" ry="0.95" className="lf-helmet-ear" />
-            <path d="M3.9 0.5L5.1 0.9L5.1 2.8L2.6 3.3L1.2 2.6M4 1.6L1.9 1.7M4.6 0.7V3" className="lf-helmet-mask" stroke={helmet.mask} />
+          {/* the offense's logo on a disc in its colour, so the marker reads as the team that has the ball */}
+          <g transform={`translate(0 ${ballY})`} className="lf-mark" data-facing={dir > 0 ? "right" : "left"}>
+            <MarkDisc logo={logo} abbr={abbr} stroke={colors[side]} />
           </g>
-          {helmet.decal && <text x={-0.2 * dir} y={ballY - 0.2} className="lf-decal" textAnchor="middle" fill={helmet.decal.color}>{helmet.decal.text}</text>}
-          {helmet.tint && <filter id={`lf-tint-${helmet.tint.slice(1)}`} colorInterpolationFilters="sRGB"><feFlood floodColor={helmet.tint} result="c" /><feComposite in="c" in2="SourceAlpha" operator="in" /></filter>}
-          {logo && !helmet.decal && <image transform={helmet.facesRight && dir < 0 ? `translate(${-0.4 * dir} 0) scale(-1 1)` : undefined} style={helmet.tint ? { filter: `url(#lf-tint-${helmet.tint.slice(1)}) drop-shadow(0 0 0.3px rgb(0 0 0 / 40%))` } : undefined} href={logos[teams[side].logoId!]} x={-0.2 * dir - 1.5} y={ballY - 2.2} width="2.8" height="2.8" preserveAspectRatio="xMidYMid meet" className="lf-ball-logo" />}
           <text x={tagLeft ? -4.5 : 4.5} y="3.6" className="lf-tagtext ball" textAnchor={tagLeft ? "end" : "start"}>{abbr} · {spotName(ballOwn, own, opp)}</text>
         </g>
       </svg>

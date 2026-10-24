@@ -19,6 +19,7 @@ import { resolveBroadcast } from "./broadcasts.mjs";
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { fromResult, mergeLedger, mvpOf } from "./season-ledger.mjs";
 import { forecastScore, actualScore, readout, tierFor, BASE, projectScore, scoreCheck } from "./score.mjs";
+import { rivalryFor, seriesOf } from "./rivalry.mjs";
 
 const root = new URL("..", import.meta.url);
 // RAW_DIR lets a past week (e.g. data-raw-test/) be built; shared files such
@@ -956,8 +957,15 @@ for (const [key, league] of [
       stH = standingFor(summary, ht.id, league);
     const recOf = (c) => c.records?.find((r) => r.type === "total")?.summary ?? "0-0";
     const favPct = pHome >= 0.5 ? pHome : 1 - pHome;
+    // The series and the rivalry first: a rivalry adds to the forecast score (scripts/rivalry.mjs).
+    const hist = historyFor(ev.id, league, at, ht, short(at, aName), short(ht, hName), league === "NFL" ? "lead" : "leads");
+    const series = seriesOf(hist, [short(at, aName), short(ht, hName)]);
+    const sameGroup = league === "NFL" ? !!stA?.group && stA.group === stH?.group : !!(tA._conf?.[0] && tA._conf[0] === tH._conf?.[0]);
+    const rivalry = rivalryFor({ league, ids: [tA.logoId, tH.logoId], sameGroup, series });
     const fc = forecastScore({
       league,
+      rivalry,
+      series,
       sA: strength(league, at.id),
       sH: strength(league, ht.id),
       rankA: FPI[league].get(at.id)?.rank,
@@ -998,7 +1006,6 @@ for (const [key, league] of [
           }
         : null;
 
-    const hist = historyFor(ev.id, league, at, ht, short(at, aName), short(ht, hName), league === "NFL" ? "lead" : "leads");
     const players = [...new Set([...tA._leaders.slice(0, 2), ...tH._leaders.slice(0, 2)])];
     hist.boxes.push({
       label: "Key players / units",
@@ -1016,6 +1023,7 @@ for (const [key, league] of [
       league,
       date: ev.date,
       conferences: [...new Set([tA._conf?.[0], tH._conf?.[0]].filter(Boolean))],
+      ...(rivalry ? { rivalry } : {}),
       score: fc.score,
       breakdown: fc,
       pHome,
@@ -1264,7 +1272,7 @@ const slate = {
     `Weather: Open-Meteo hourly forecast for each game window (about one reading per quarter), fetched ${weatherFetched.toISOString().slice(0, 16).replace("T", " ")} UTC. Impact ratings weigh wind, rain, storms, snow and heat or cold; forecasts sharpen as kickoff nears.`,
     `Playoff odds "now" are ESPN FPI. With-a-win / with-a-loss odds are estimates that keep FPI's number as the weighted average using ESPN's win probability. AP and NFL power-rank moves are rule-of-thumb estimates.`,
     `Series records are all-time: Winsipedia for college (vacated wins not counted), FiveThirtyEight's NFL game file through 2003 plus ESPN since, playoffs included.`,
-    `Watchability forecast: 35 base points plus team quality (FPI, 27), competitiveness (win probability, 19), playoff stakes (15), marquee matchup (6) and TV window (3); FCS opponents cost 12. Finished games get an actual score on the same scale from the finish (21), drama (17), late tension (11), stakes and quality (10), surprise (7) and scoring (4), using ESPN win probability and scoring plays.`,
+    `Watchability forecast: 35 base points plus team quality (FPI, 27), competitiveness (win probability, 19), playoff stakes (15), marquee matchup (6), TV window (3) and, for a rivalry, up to 4 more; FCS opponents cost 12. Finished games get an actual score on the same scale from the finish (21), drama (17), late tension (11), stakes and quality (10), surprise (7) and scoring (4), using ESPN win probability and scoring plays.`,
   ],
   games,
 };

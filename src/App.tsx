@@ -5,12 +5,13 @@ import { useUpdateCheck } from "./useUpdateCheck";
 import { LiveFreshness } from "./live";
 import { TabIcon } from "./components/TabIcon";
 
-const MORE_VIEWS: View[] = ["injuries", "grid", "outlook", "empire", "spplus", "nfl"];
+const MORE_VIEWS: View[] = ["standings", "injuries", "grid", "outlook", "empire", "spplus", "nfl"];
 import { dayName, results, slate, tiers, type FilterState, type League, type View } from "./data";
 import { Filters } from "./components/Filters";
 import { GameBoard, useBoard } from "./components/GameBoard";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ScoreTicker } from "./components/ScoreTicker";
+import { FinalScores, FinalScoresToggle, useFinalScoresOpen, useFinalTiles } from "./components/FinalScores";
 import { defaultLeague } from "./league";
 
 // The map and its shapes load only when the tab is opened.
@@ -24,6 +25,7 @@ const TvGrid = lazyView(() => import("./components/TvGrid").then((m) => ({ defau
 const SpPlusTab = lazyView(() => import("./spplus/SpPlusTab"), "SpPlusTab");
 const NflTab = lazyView(() => import("./nfl/NflTab"), "NflTab");
 const InjuriesTab = lazyView(() => import("./components/InjuriesTab").then((m) => ({ default: m.InjuriesTab })), "InjuriesTab");
+const StandingsTab = lazyView(() => import("./components/StandingsTab").then((m) => ({ default: m.StandingsTab })), "StandingsTab");
 const UpsetMeter = lazyView(() => import("./components/UpsetMeter").then((m) => ({ default: m.UpsetMeter })), "UpsetMeter");
 const SimTab = lazyView(() => import("./sim/SimTab"), "SimTab");
 import { setTz, tzLabel, useTz, ZONES } from "./tz";
@@ -94,6 +96,8 @@ export default function App() {
   }, [view, filters.league]);
   const { league } = filters;
   const board = useBoard(filters);
+  const finalTiles = useFinalTiles(board);
+  const [fsOpen, setFsOpen] = useFinalScoresOpen();
   const switchView = (v: View) => {
     setView(v);
     try {
@@ -312,6 +316,16 @@ export default function App() {
               </button>
               <div className="more-sheet" id="more-sheet">
                 <button
+                  data-tab="standings"
+                  aria-label="Standings"
+                  aria-pressed={view === "standings"}
+                  onClick={() => go("standings")}
+                  title="Standings: the NFL by division with playoff seeds, and every college conference by conference record"
+                >
+                  <TabIcon name="standings" />
+                  <span className="tab-label">Standings</span>
+                </button>
+                <button
                   data-tab="injuries"
                   aria-label="Injury report"
                   aria-pressed={view === "injuries"}
@@ -428,6 +442,8 @@ export default function App() {
                   <ImperialismMap defaultLeague={league} />
                 ) : view === "picks" ? (
                   <PicksTab defaultLeague={league} />
+                ) : view === "standings" ? (
+                  <StandingsTab defaultLeague={league} />
                 ) : view === "injuries" ? (
                   <InjuriesTab defaultLeague={league} />
                 ) : view === "outlook" ? (
@@ -457,6 +473,7 @@ export default function App() {
                   <b>{n}</b> {label}
                 </button>
               ))}
+              <FinalScoresToggle count={finalTiles.length} open={fsOpen} onToggle={() => setFsOpen(!fsOpen)} />
             </span>
             {filtered && (
               <button className="reset" onClick={() => setFilters({ ...initial, league })}>
@@ -465,6 +482,7 @@ export default function App() {
             )}
             <span className="sort-label">Kickoff time slots · best watchability first in each slot</span>
           </div>
+          <FinalScores tiles={finalTiles} open={fsOpen} />
           <GameBoard
             board={board}
             status={filters.status}

@@ -29,7 +29,7 @@ export function InjuryCard({ p, nfl, season }: { p: Player; nfl: boolean; season
           <div><dt>Status</dt><dd>{short(p.status)}</dd></div>
           <div><dt>Back</dt><dd>{backShort(p.ret)}</dd></div>
         </dl>
-        <InjuryFigure type={p.injury.type} location={p.injury.location} side={p.injury.side} detail={p.injury.detail} size={44} />
+        <InjuryFigure team={nfl ? logoSlug(p.teamName ?? "") : p.logoId} type={p.injury.type} location={p.injury.location} side={p.injury.side} detail={p.injury.detail} size={44} />
       </div>
       <div className={`jc-impact tier-${im.tier.toLowerCase()}`} title={`${im.reason} Based on: ${im.basis}.`}>
         <div className="jc-top"><b>{imp.label}</b>{imp.top && <span>{imp.top}</span>}</div>
