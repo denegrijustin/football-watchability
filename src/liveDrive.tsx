@@ -1,3 +1,4 @@
+import { useDiscFill } from "./logoDisc";
 import { decodeGame } from './gameFeed';
 import { useEffect, useRef, useState } from "react";
 import { logos, teamColor } from "./data";
@@ -159,6 +160,16 @@ export function playLabel(g: Seg) {
  * the plays of the drive in progress. Shown on live cards (compact, plays folded away) and in the Game Center.
  * Static for visitors who ask for reduced motion.
  */
+function MarkDisc({ logo, abbr, stroke }: { logo?: string; abbr: string; stroke: string }) {
+  const fill = useDiscFill(logo);
+  return (
+    <>
+      <circle r="3.6" className="lf-mark-disc" style={{ stroke, fill }} />
+      {logo ? <image href={logo} x="-2.5" y="-2.5" width="5" height="5" preserveAspectRatio="xMidYMid meet" className="lf-ball-logo" /> : <text y="0.9" textAnchor="middle" className="lf-mark-abbr">{abbr}</text>}
+    </>
+  );
+}
+
 export function FieldView({ data, teams, variant, rootRef, badge, weather }: { data: Summary | null; teams: FieldTeam[]; variant: "card" | "center"; rootRef?: React.Ref<HTMLDivElement>; badge?: GameBadge | null; weather?: WeatherLike | null }) {
   const [away, home] = teams;
   const ids = [away.espnId ?? "", home.espnId ?? ""];
@@ -311,8 +322,7 @@ export function FieldView({ data, teams, variant, rootRef, badge, weather }: { d
           <circle cx="0" cy={ballY} r="4.6" className="df-pulse" stroke={colors[side]} />
           {/* the offense's logo on a disc in its colour, so the marker reads as the team that has the ball */}
           <g transform={`translate(0 ${ballY})`} className="lf-mark" data-facing={dir > 0 ? "right" : "left"}>
-            <circle r="3.6" className="lf-mark-disc" style={{ stroke: colors[side] }} />
-            {logo ? <image href={logo} x="-2.5" y="-2.5" width="5" height="5" preserveAspectRatio="xMidYMid meet" className="lf-ball-logo" /> : <text y="0.9" textAnchor="middle" className="lf-mark-abbr">{abbr}</text>}
+            <MarkDisc logo={logo} abbr={abbr} stroke={colors[side]} />
           </g>
           <text x={tagLeft ? -4.5 : 4.5} y="3.6" className="lf-tagtext ball" textAnchor={tagLeft ? "end" : "start"}>{abbr} · {spotName(ballOwn, own, opp)}</text>
         </g>
