@@ -152,3 +152,11 @@ test("the injury figure lights the right spot, on the right side", async () => {
   expect(bodyRegion("Undisclosed").label).toBe("Area not disclosed");
   expect(bodyRegion("Undisclosed", "Leg").key).toBe("calf"); // no type, so the broad location is the best guess
 });
+
+test("every team with a uniform picture has the file, and a college team has one too", async () => {
+  const { INJURY_FIGURES } = await import("../src/injuryFigures");
+  const { existsSync } = await import("node:fs");
+  for (const id of INJURY_FIGURES) expect(existsSync(`public/injury/${id}.webp`), id).toBe(true);
+  expect(existsSync("public/injury/generic.webp")).toBe(true);
+  for (const id of ["houston-texans", "alabama", "ohio-state", "notre-dame"]) expect(INJURY_FIGURES.has(id), id).toBe(true);
+});
