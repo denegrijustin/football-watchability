@@ -37,6 +37,9 @@ SHEETS = {
   ],
 }
 
+# cuts that came out badly (a neighbour in the frame, a merged helmet): the team is taken from the next sheet instead
+BAD = {("12.webp", "charlotte"), ("12.webp", "michigan-state"), ("12.webp", "liberty"), ("12.webp", "minnesota"), ("11.webp", "james-madison")}
+
 def rowbands(a, n):
     b = [r for r in runs(a.any(1)) if r[1] - r[0] > 40]
     while len(b) < n:  # two rows run together: split the tallest where the fewest pixels are
@@ -49,7 +52,7 @@ def rowbands(a, n):
 def heads(a, y0, y1):
     """Centres of the heads in a row (the top of each figure), found on the top rows so logos and labels above or below do not matter."""
     top = a[y0:y0 + max(10, int((y1 - y0) * .13))].any(0)
-    return [(r[0] + r[1]) / 2 for r in runs(top) if r[1] - r[0] >= 5]
+    return [r for r in runs(top) if r[1] - r[0] >= 5]
 
 def figures(sheet, rows):
     im = Image.open(f"{imgs}/{sheet}").convert("RGBA")
@@ -62,9 +65,15 @@ def figures(sheet, rows):
         out.append((names.split(","), hc, (y0, y1)))
     return im, a, out
 
-def centres(hc, n):
-    if len(hc) == n: return hc
-    return list(np.linspace(hc[0], hc[-1], n))  # a head merged with its neighbour (or split): spread evenly instead
+def centres(hr, n):
+    hr = [list(r) for r in hr]
+    while len(hr) < n:  # two helmets that touch read as one run: split the widest
+        i = max(range(len(hr)), key=lambda k: hr[k][1] - hr[k][0]); a0, a1 = hr[i]; m = (a0 + a1) // 2
+        hr[i:i + 1] = [[a0, m], [m + 1, a1]]
+    while len(hr) > n:  # a helmet broken in two: join the closest pair
+        i = min(range(len(hr) - 1), key=lambda k: hr[k + 1][0] - hr[k][1])
+        hr[i:i + 2] = [[hr[i][0], hr[i + 1][1]]]
+    return [(r[0] + r[1]) / 2 for r in hr]
 
 def main():
     import json
@@ -79,7 +88,7 @@ def main():
             cs = centres(hc, len(names)); pitch = float(np.median(np.diff(cs)))
             for name, cx in zip(names, cs):
                 slug = name.lower().replace("&", "").replace(" ", "-"); key = ALIAS.get(slug, slug)
-                if key not in known or key in done:
+                if key not in known or key in done or (sheet, key) in BAD:
                     if key not in known: report.append(f"{sheet}: no logo id {key}")
                     continue
                 cell = im.crop((int(cx - pitch / 2), y0, int(cx + pitch / 2), y1 + 1))
