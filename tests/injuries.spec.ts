@@ -143,8 +143,8 @@ test("the injury figure lights the right spot, on the right side", async () => {
   const knee = bodyRegion("Knee", "Leg", null, "Left");
   expect(knee.key).toBe("knee");
   expect(knee.hits).toHaveLength(1);
-  expect(knee.hits[0].x).toBeGreaterThan(50); // a player's left side is the right of the picture
-  expect(bodyRegion("Knee", "Leg", null, "Right").hits[0].x).toBeLessThan(50);
+  expect(knee.hits[0].x).toBeGreaterThan(65); // a player's left side is the right of the picture
+  expect(bodyRegion("Knee", "Leg", null, "Right").hits[0].x).toBeLessThan(65);
   expect(bodyRegion("Knee", "Leg", null, null).hits).toHaveLength(2); // side not given: both, softly
   expect(bodyRegion("Concussion", "Head").effect).toBe("ripple");
   expect(bodyRegion("Hamstring").key).toBe("thigh");

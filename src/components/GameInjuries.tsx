@@ -33,7 +33,7 @@ export function InjuryStrip({ teams, league }: { teams: T[]; league: string }) {
 }
 
 const SHOWN = 4;
-function Row({ p }: { p: Player }) {
+function Row({ p, team }: { p: Player; team: string }) {
   const im = impactShort(p.impact), sev = p.severity.replace(/[^a-z]/gi, "").toLowerCase();
   return (
     <li className={`gi-card sev-${sev}`} title={`${p.impact.reason} Based on: ${p.impact.basis}.`}>
@@ -41,7 +41,7 @@ function Row({ p }: { p: Player }) {
       <span className="gi-name"><b>{p.name}</b> <em>{p.pos}</em> <span className={`gi-sev ${sev}`}>{p.severity}</span></span>
       <span className="gi-line">{injuryLine(p.injury)} · {backShort(p.ret)}</span>
       <span className={`gi-impact tier-${p.impact.tier.toLowerCase()}`}>{im.label}{im.top ? ` · ${im.top}` : ""}</span>
-      <span className="gi-fig"><InjuryFigure type={p.injury.type} location={p.injury.location} side={p.injury.side} detail={p.injury.detail} size={28} /></span>
+      <span className="gi-fig"><InjuryFigure team={team} type={p.injury.type} location={p.injury.location} side={p.injury.side} detail={p.injury.detail} size={28} /></span>
     </li>
   );
 }
@@ -62,7 +62,7 @@ function Side({ t, list }: { t: T; list: Player[] }) {
   return (
     <div className="gi-team">
       <h5>{logos[t.logoId] && <ChipImg src={logos[t.logoId]} size={18} />} {t.name} <small>{list.length ? `${list.length} out${high ? ` · ${high} high-impact` : ""}` : "none listed"}</small></h5>
-      {list.length > 0 && <ul>{(all ? list : list.slice(0, SHOWN)).map((p) => <Row key={p.id} p={p} />)}</ul>}
+      {list.length > 0 && <ul>{(all ? list : list.slice(0, SHOWN)).map((p) => <Row key={p.id} p={p} team={t.logoId} />)}</ul>}
       {list.length > SHOWN && <button type="button" className="gi-more-btn" onClick={() => setAll(!all)}>{all ? "Show fewer" : `Show all ${list.length}`}</button>}
     </div>
   );
