@@ -179,6 +179,7 @@ test("a college card asks the game feed for league=cfb, and shows the field", as
     });
   });
   await page.goto("/?league=CFB");
+  await expect(async () => { await page.locator(".board-section.live .game-card").first().evaluate((el) => el.scrollIntoView({ block: "center" })); }).toPass({ timeout: 10_000 });
   await expect(page.locator(".board-section.live .game-card").first().locator("svg.drive-svg")).toBeVisible();
   expect(asked.every((x) => x === "cfb")).toBe(true);
 });
