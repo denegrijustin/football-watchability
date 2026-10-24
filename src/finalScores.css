@@ -1,0 +1,13 @@
+/* Completed games as a compact scoreboard under the board heading: a toggle in the heading row (no height of its own) and a small scrolling grid when opened. */
+.fs { margin: 0 0 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding-top: 8px; }
+.fs-grid { list-style: none; margin: 0; padding: 0 8px 8px; display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 6px; max-height: 188px; overflow-y: auto; overscroll-behavior: contain; }
+.fs-tile { all: unset; box-sizing: border-box; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 0 6px; width: 100%; padding: 5px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2, transparent); cursor: pointer; font-size: 0.8125rem; font-variant-numeric: tabular-nums; }
+.fs-tile:hover { border-color: var(--line-strong); }
+.fs-tile:focus-visible { outline: 2px solid var(--accent, currentColor); outline-offset: 1px; }
+.fs-row { display: flex; align-items: center; gap: 6px; grid-column: 1; min-width: 0; justify-content: space-between; }
+.fs-row img { flex: none; }
+.fs-abbr { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fs-row.lost { color: var(--muted); }
+.fs-row.won b { font-weight: 800; }
+.fs-tag { grid-column: 2; grid-row: 1 / span 2; align-self: center; font-size: 0.6875rem; color: var(--muted); }
+@media (max-width: 520px) { .fs-grid { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); max-height: 170px; } }

@@ -11,6 +11,7 @@ import { Filters } from "./components/Filters";
 import { GameBoard, useBoard } from "./components/GameBoard";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ScoreTicker } from "./components/ScoreTicker";
+import { FinalScores, FinalScoresToggle, useFinalScoresOpen, useFinalTiles } from "./components/FinalScores";
 import { defaultLeague } from "./league";
 
 // The map and its shapes load only when the tab is opened.
@@ -95,6 +96,8 @@ export default function App() {
   }, [view, filters.league]);
   const { league } = filters;
   const board = useBoard(filters);
+  const finalTiles = useFinalTiles(board);
+  const [fsOpen, setFsOpen] = useFinalScoresOpen();
   const switchView = (v: View) => {
     setView(v);
     try {
@@ -470,6 +473,7 @@ export default function App() {
                   <b>{n}</b> {label}
                 </button>
               ))}
+              <FinalScoresToggle count={finalTiles.length} open={fsOpen} onToggle={() => setFsOpen(!fsOpen)} />
             </span>
             {filtered && (
               <button className="reset" onClick={() => setFilters({ ...initial, league })}>
@@ -478,6 +482,7 @@ export default function App() {
             )}
             <span className="sort-label">Kickoff time slots · best watchability first in each slot</span>
           </div>
+          <FinalScores tiles={finalTiles} open={fsOpen} />
           <GameBoard
             board={board}
             status={filters.status}
