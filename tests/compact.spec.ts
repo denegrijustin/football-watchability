@@ -13,7 +13,7 @@ test("@phone on a phone the controls take few rows and the first game starts hig
   const card = page.locator(".game-card").first();
   await expect(card).toBeVisible();
   const top = await card.evaluate((e) => Math.round(e.getBoundingClientRect().top));
-  expect(top, "the first card should begin within the top third of the screen").toBeLessThan(370);
+  expect(top, "the first card should begin within the top third of the screen").toBeLessThan(450); // 370 before the final-scores row (about 70px, open by default)
   // Filters are one scrolling row, not three wrapped ones.
   const dock = await page.locator(".filter-dock").boundingBox();
   expect(dock!.height).toBeLessThan(72);
@@ -51,5 +51,5 @@ test("on a desktop the first game starts in the upper third of the screen", asyn
   await page.goto("/?league=CFB");
   const card = page.locator(".game-card").first();
   await expect(card).toBeVisible();
-  expect(await card.evaluate((e) => Math.round(e.getBoundingClientRect().top))).toBeLessThan(400);
+  expect(await card.evaluate((e) => Math.round(e.getBoundingClientRect().top))).toBeLessThan(480); // 400 before the final-scores row
 });
