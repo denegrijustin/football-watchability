@@ -339,7 +339,7 @@ export function GameCard({
               </section>
             );
           })()}
-          {injuryData ? <GameInjuries teams={game.teams as never} league={game.league} /> : <InjuryWatch game={game} />}
+          {injuryData ? <GameInjuries teams={game.teams as never} league={game.league} mode="fold" /> : <InjuryWatch game={game} />}
         </div>
       )}
       {expanded && toggle}

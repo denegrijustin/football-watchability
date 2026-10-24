@@ -5,7 +5,9 @@ import { logoSlug } from "../nfl/model";
 import { ChipImg } from "../logoTone";
 import { Headshot } from "./Headshot";
 import { Skeleton } from "./Skeleton";
+import { InjuryFigure } from "./InjuryFigure";
 import "../injuries.css";
+import "../gameInjuries.css";
 import type { InjuryData, Player } from "../injuries";
 
 type Data = InjuryData;
@@ -33,11 +35,16 @@ function Card({ p, nfl }: { p: Player; nfl: boolean }) {
         </div>
         <span className={`ij-status ${statusCls(p.status)}`}>{short(p.status)}</span>
       </header>
-      <p className="ij-injury"><b>{injuryText(p.injury)}</b>{p.injury.location && p.injury.location !== p.injury.type ? <small> ({p.injury.location.toLowerCase()})</small> : null}</p>
-      <div className="ij-ret">
-        <span className={`ij-sev ${p.severity.replace(/[^a-z]/gi, "").toLowerCase()}`}>{p.severity}</span>
-        <span className="ij-back">{p.ret.label}</span>
-        <small title={SRC_NOTE[p.ret.source]}>{p.ret.source === "ESPN" ? "ESPN date" : p.ret.source === "reported" ? "reported" : "estimate"}</small>
+      <div className="ij-body">
+        <InjuryFigure type={p.injury.type} location={p.injury.location} side={p.injury.side} detail={p.injury.detail} size={46} />
+        <div>
+          <p className="ij-injury"><b>{injuryText(p.injury)}</b>{p.injury.location && p.injury.location !== p.injury.type ? <small> ({p.injury.location.toLowerCase()})</small> : null}</p>
+          <div className="ij-ret">
+            <span className={`ij-sev ${p.severity.replace(/[^a-z]/gi, "").toLowerCase()}`}>{p.severity}</span>
+            <span className="ij-back">{p.ret.label}</span>
+            <small title={SRC_NOTE[p.ret.source]}>{p.ret.source === "ESPN" ? "ESPN date" : p.ret.source === "reported" ? "reported" : "estimate"}</small>
+          </div>
+        </div>
       </div>
       <div className="ij-impact" role="group" aria-label={`Impact of the absence: ${im.tier}${im.score != null ? `, ${im.score} out of 100` : ""}`}>
         <div className="ij-imp-head"><span>Impact of the absence</span><b className={`tier-${im.tier.toLowerCase()}`}>{im.tier}{im.score != null ? ` · ${im.score}` : ""}</b></div>
