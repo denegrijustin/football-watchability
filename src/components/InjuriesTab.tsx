@@ -6,18 +6,9 @@ import { ChipImg } from "../logoTone";
 import { Headshot } from "./Headshot";
 import { Skeleton } from "./Skeleton";
 import "../injuries.css";
+import type { InjuryData, Player } from "../injuries";
 
-type Impact = { score: number | null; tier: "High" | "Medium" | "Low" | "Minimal" | "Unknown"; basis: string; reason: string; usage?: number; share?: number; rank?: number; split?: { with: { n: number; pf: number; pa: number }; without: { n: number; pf: number; pa: number } } };
-type Player = {
-  id: string; name: string; pos: string | null; group: string | null; team: string; teamName?: string; logoId?: string; jersey: string | null; headshot: string | null;
-  status: string; reported: string | null;
-  injury: { type: string | null; location: string | null; side: string | null; detail: string | null };
-  ret: { label: string; date: string | null; weeks: [number, number]; source: "ESPN" | "reported" | "estimate"; season: boolean };
-  severity: "Season-ending" | "Long-term" | "Short-term" | "Game-time";
-  impact: Impact; note: string | null; next: { opp: string | null; home: boolean; date: string; week: number | null } | null;
-};
-type League_ = { asOf: string; players: Player[]; season?: number; weeksLeft?: number };
-type Data = { updatedAt: string; nfl: League_ | null; cfb: League_ | null };
+type Data = InjuryData;
 
 const SEV_RANK = { "Season-ending": 3, "Long-term": 2, "Short-term": 1, "Game-time": 0 } as const;
 const TIER_RANK = { High: 3, Medium: 2, Low: 1, Minimal: 0, Unknown: -1 } as const;

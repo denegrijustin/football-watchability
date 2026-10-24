@@ -89,3 +89,30 @@ test.describe("the Injuries tab", () => {
     await expect(page.locator(".ij-asof")).toContainText("Conference availability");
   });
 });
+
+test.describe("injuries on the game card", () => {
+  test.beforeEach(async ({ page }) => { await stubFinals(page); });
+
+  test("a card shows its key injuries in one line, and the expanded card lists each team's injuries with the reason for the impact", async ({ page }) => {
+    await page.goto("/?league=NFL");
+    const strip = page.locator(".gi-strip").first();
+    await expect(strip).toBeVisible({ timeout: 15_000 });
+    await expect(strip.locator(".gi-chip").first()).toContainText(/impact|High|Medium/i);
+    const id = await page.locator(".game-card:has(.gi-strip)").first().getAttribute("data-game-id");
+    const card = page.locator(`.game-card[data-game-id="${id}"]`);
+    await card.locator(".card-toggle").first().click();
+    const sec = card.locator(".gi");
+    await expect(sec).toBeVisible();
+    await expect(sec.locator(".gi-team")).toHaveCount(2);
+    await sec.locator(".gi-row summary").first().click();
+    await expect(sec.locator(".gi-more").first()).toContainText("Based on:");
+    await expect(sec.locator(".gi-sev").first()).toBeVisible();
+    await sec.getByRole("button", { name: /Full injury report/ }).click();
+    await expect(page.locator(".ij").first()).toBeVisible({ timeout: 15_000 });
+  });
+
+  test("college cards carry the week's availability the same way", async ({ page }) => {
+    await page.goto("/?league=CFB");
+    await expect(page.locator(".game-card .gi-strip, .game-card .gi").first()).toBeAttached({ timeout: 15_000 });
+  });
+});
