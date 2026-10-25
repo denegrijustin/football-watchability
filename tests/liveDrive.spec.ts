@@ -1,4 +1,5 @@
 import { expect, test } from "./fixtures";
+import { hasCfbGame, NO_CFB } from "./helpers/slate";
 import { readFileSync } from "node:fs";
 import { buildPlusRanks } from "../src/plusRanksBuild";
 
@@ -29,6 +30,9 @@ function summary(toGo: number | null, text: string, spotText = "") {
   };
 }
 
+/** A live card's field is fetched while the card is on screen (an IntersectionObserver), and on a phone the card starts below the first screen; a tall viewport puts it in view without scrolling. */
+const tall = (page: import("@playwright/test").Page) => (test.info().project.name === "mobile" ? page.setViewportSize({ width: 390, height: 1800 }) : Promise.resolve());
+
 async function open(page: import("@playwright/test").Page, state: { toGo: number; text: string }, pick: "min" | "max" = "min") {
   const start = Math[pick](...games.map((g: any) => new Date(g.date).getTime()));
   await page.clock.install({ time: start + 90 * 60e3 });
@@ -37,6 +41,7 @@ async function open(page: import("@playwright/test").Page, state: { toGo: number
   );
   await page.route("**/api/flow**", (route) => route.fulfill({ json: { wp: [] } }));
   await page.route("**/api/game**", (route) => route.fulfill({ json: summary(state.toGo, state.text) }));
+  await tall(page);
   await page.goto("/?league=NFL");
   // The Watch-now strip sits above the games, so on a phone the live card starts at the bottom of the screen; the field loads once it is on screen.
   await expect(async () => { await page.locator(".board-section.live .game-card").first().evaluate((el) => el.scrollIntoView({ block: "center" })); }).toPass({ timeout: 10_000 });
@@ -68,6 +73,7 @@ test("the ball slides to the new spot when the next update arrives", async ({ pa
   );
   await page.route("**/api/flow**", (route) => route.fulfill({ json: { wp: [] } }));
   await page.route("**/api/game**", (route) => route.fulfill({ json: summary(state.toGo, state.text) }));
+  await tall(page);
   await page.goto("/?league=NFL");
   const ball = page.locator(".board-section.live .game-card").first().locator(".df-ball");
   await expect(ball).toBeAttached();
@@ -126,6 +132,7 @@ test("when ESPN gives no yards-to-end-zone figure, the ball is placed from its o
   // The away team has the ball at the HOME team's 35: 65 yards from its own goal line.
   const [, h] = games[0].teams;
   await page.route("**/api/game**", (route) => route.fulfill({ json: summary(null, `2nd & 7 at ${h.abbr} 35`) }));
+  await tall(page);
   await page.goto("/?league=NFL");
   const live = page.locator(".board-section.live .game-card").first();
   await expect(live.locator(".df-ball")).toBeAttached();
@@ -148,6 +155,7 @@ test("with no situation spot at all, the ball comes from the latest snap in the 
   const base = summary(null, "");
   // No situation block: the ball is 40 yards from the home team's goal line, measured for the HOME team (so 60 from the away team's).
   await page.route("**/api/game**", (route) => route.fulfill({ json: { ...base, situation: null, ball: { team: h.espnId, own: 40 } } }));
+  await tall(page);
   await page.goto("/?league=NFL");
   const live = page.locator(".board-section.live .game-card").first();
   await expect(live.locator(".df-ball")).toBeAttached();
@@ -156,6 +164,8 @@ test("with no situation spot at all, the ball comes from the latest snap in the 
 });
 
 test("a college card asks the game feed for league=cfb, and shows the field", async ({ page }) => {
+
+  test.skip(!hasCfbGame(), NO_CFB);
   const cfb = slate.games.filter((g: any) => g.league === "CFB");
   const start = Math.max(...cfb.map((g: any) => new Date(g.date).getTime()));
   await page.clock.install({ time: start + 90 * 60e3 });
@@ -180,6 +190,7 @@ test("a college card asks the game feed for league=cfb, and shows the field", as
       },
     });
   });
+  await tall(page);
   await page.goto("/?league=CFB");
   await expect(async () => { await page.locator(".board-section.live .game-card").first().evaluate((el) => el.scrollIntoView({ block: "center" })); }).toPass({ timeout: 10_000 });
   await expect(page.locator(".board-section.live .game-card").first().locator("svg.drive-svg")).toBeVisible();
@@ -226,6 +237,7 @@ test("a live game with rain and wind in its forecast shows them over the field, 
     g.weather = weather;
     await route.fulfill({ response: res, json: body });
   });
+  await tall(page);
   await page.goto("/?league=NFL");
   const live = page.locator(".board-section.live .game-card").first();
   await expect(live.locator("svg.drive-svg .wx-drop").first()).toBeAttached();
@@ -244,6 +256,7 @@ async function openWith(page: import("@playwright/test").Page, make: () => any) 
   );
   await page.route("**/api/flow**", (route) => route.fulfill({ json: { wp: [] } }));
   await page.route("**/api/game**", (route) => route.fulfill({ json: make() }));
+  await tall(page);
   await page.goto("/?league=NFL");
   return page.locator(".board-section.live .game-card").first();
 }
@@ -308,6 +321,7 @@ async function openScores(page: import("@playwright/test").Page, away: number, h
   );
   await page.route("**/api/flow**", (route) => route.fulfill({ json: { wp: [] } }));
   await page.route("**/api/game**", (route) => route.fulfill({ json: summary(65, "2nd & 7 at SEA 35") }));
+  await tall(page);
   await page.goto("/?league=NFL");
   return page.locator(`.game-card[data-game-id="${game.id}"]`);
 }

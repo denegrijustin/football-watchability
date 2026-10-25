@@ -1,4 +1,5 @@
 import { test, expect, type Page } from "./fixtures";
+import { hasCfbGame, NO_CFB } from "./helpers/slate";
 import { spawnSync } from "node:child_process";
 import { readFileSync, statSync } from "node:fs";
 import { buildLite } from "../src/spplus/liteBuild";
@@ -115,6 +116,7 @@ test.describe("ATS tracker", () => {
 
 test.describe("Game Center", () => {
   test("a college game shows the SP+ simulated score and can open the simulator on it", async ({ page }) => {
+    test.skip(!hasCfbGame(), NO_CFB);
     await withGame(page, OSU, IND);
     await page.goto("/?league=CFB");
     await page.getByRole("button", { name: "Open Game Center for Ohio State @ Indiana" }).first().click();
@@ -139,6 +141,8 @@ test.describe("Game Center", () => {
   });
 
   test("no SP+ block when a team is outside the FBS ratings, or for the NFL", async ({ page }) => {
+
+    test.skip(!hasCfbGame(), NO_CFB);
     await withGame(page, { name: "Charleston Southern", abbr: "CHSO", logoId: "charleston-southern" }, { name: "Clemson", abbr: "CLEM", logoId: "clemson", espnId: "228" });
     await page.goto("/?league=CFB");
     await page.getByRole("button", { name: "Open Game Center for Charleston Southern @ Clemson" }).first().click();
@@ -147,6 +151,8 @@ test.describe("Game Center", () => {
   });
 
   test("the lite file failing to load leaves the Game Center as it was", async ({ page }) => {
+
+    test.skip(!hasCfbGame(), NO_CFB);
     await withGame(page, OSU, IND);
     await page.route("**/data/spplus-lite.json", (r) => r.fulfill({ status: 500, body: "nope" }));
     await page.goto("/?league=CFB");
@@ -220,6 +226,8 @@ test.describe("simulator: picking a game", () => {
   };
 
   test("a game between two conferences is listed under both; a game is chosen by week, conference and game", async ({ page }) => {
+
+    test.skip(!hasCfbGame(), NO_CFB);
     const inter = fbsGames(latest).find((p) => !p.neutral && confAt(p.away) && confAt(p.home) && confAt(p.away) !== confAt(p.home) && confAt(p.away) !== "Indies" && confAt(p.home) !== "Indies")!;
     expect(inter, "an interconference game in the latest week").toBeTruthy();
     const pick = await goSim(page);

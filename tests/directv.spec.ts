@@ -1,4 +1,5 @@
 import { test, expect } from "./fixtures";
+import { hasCfbGame, NO_CFB } from "./helpers/slate";
 import { readFileSync } from "node:fs";
 import { DIRECTV, directvChannel, directvTitle } from "../src/directv";
 import { espnGameUrl, watchLink, directvLink, DIRECTV_GUIDE } from "../src/watchLinks";
@@ -62,6 +63,8 @@ test("watch links: ESPN games open in the ESPN app, cable networks open the DIRE
 });
 
 test("the logo and channel number are links that open elsewhere and leave the card alone", async ({ page }) => {
+
+  test.skip(!hasCfbGame(), NO_CFB);
   await page.goto("/?league=CFB");
   const card = page.locator(".game-card:not(.final)").filter({ has: page.locator("a.net-link[data-kind='espn']") }).first();
   const espnChip = card.locator("a.net-link[data-kind='espn']").first();
@@ -88,6 +91,8 @@ test.describe("on a phone", () => {
   test.use({ userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1", hasTouch: true });
 
   test("the ESPN logo and the DIRECTV channel number try their apps first, then fall back to the web page", async ({ page }) => {
+
+    test.skip(!hasCfbGame(), NO_CFB);
     await page.goto("/?league=CFB");
     const card = page.locator(".game-card:not(.final)").filter({ has: page.locator("a.net-link[data-kind='espn']") }).first();
     await page.evaluate(() => { (window as any).__nav = []; window.open = () => null; });
@@ -103,6 +108,8 @@ test.describe("on a phone", () => {
 });
 
 test("on a computer the links stay plain web links (no app attempt)", async ({ page }) => {
+
+  test.skip(!hasCfbGame(), NO_CFB);
   await page.goto("/?league=CFB");
   await page.evaluate(() => { window.open = () => null; document.addEventListener("click", (e) => { if ((e.target as Element).closest("a.net-link, a.ch-num")) e.preventDefault(); }, true); });
   await page.locator("a.net-link[data-kind='espn']").first().click();
@@ -111,6 +118,8 @@ test("on a computer the links stay plain web links (no app attempt)", async ({ p
 });
 
 test("no Paramount+ or Peacock listing: CBS and NBC games say so alone and the chip has no streaming link", async ({ page }) => {
+
+  test.skip(!hasCfbGame(), NO_CFB);
   const { watchLink } = await import("../src/watchLinks");
   expect(watchLink({ network: "cbs", broadcast: "CBS", league: "NFL", espnId: "1" })).toBeNull();
   expect(watchLink({ network: "cbssn", broadcast: "CBS Sports Network", league: "CFB", espnId: "1" })).toBeNull();

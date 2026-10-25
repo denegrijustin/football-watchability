@@ -1,4 +1,5 @@
 import { expect, test } from "./fixtures";
+import { hasCfbGame, NO_CFB } from "./helpers/slate";
 
 // The simulator is a lazy tab. It must open, run a game and its forecast, and never disturb the rest of the page.
 test("the Simulator tab runs a game: forecast, stage, play feed and a final score", async ({ page }) => {
@@ -25,7 +26,7 @@ test("@phone all the tabs stay on one row, visible and not overlapping, from 375
     await page.setViewportSize({ width: w, height: 800 });
     await page.goto("/?league=NFL");
     await expect(page.locator(".view-switch button").first()).toBeVisible();
-    // On a phone the sections are five tabs and More (the rest sit in its sheet); wider screens show all eleven.
+    // On a phone the sections are five tabs and More (the rest sit in its sheet); wider screens show all thirteen (the picks, standings, injuries and resumés tabs came after the first eleven).
     const phone = w <= 760;
     const r = await page.evaluate(() => {
       const bs = [...document.querySelectorAll(".view-switch button")].filter((x) => (x as HTMLElement).offsetParent !== null).map((x) => x.getBoundingClientRect());
@@ -33,7 +34,7 @@ test("@phone all the tabs stay on one row, visible and not overlapping, from 375
       for (let i = 0; i < bs.length; i++) for (let j = i + 1; j < bs.length; j++) if (bs[i].left < bs[j].right - 0.5 && bs[j].left < bs[i].right - 0.5 && bs[i].top < bs[j].bottom - 0.5 && bs[j].top < bs[i].bottom - 0.5) overlaps++;
       return { n: bs.length, overlaps, off: bs.filter((b) => b.right > innerWidth + 1 || b.left < -1).length, rows: new Set(bs.map((b) => Math.round(b.top))).size };
     });
-    expect(r, `tabs at ${w}px`).toEqual({ n: phone ? 6 : 11, overlaps: 0, off: 0, rows: 1 });
+    expect(r, `tabs at ${w}px`).toEqual({ n: phone ? 6 : 13, overlaps: 0, off: 0, rows: 1 });
   }
 });
 
@@ -233,6 +234,8 @@ test("the Upset Alert Meter can be filtered by conference, on one line with the 
 });
 
 test("on a phone the whole simulator stage fits the screen's width, with no sideways scroll", async ({ page }) => {
+
+  test.skip(!hasCfbGame(), NO_CFB);
   for (const w of [320, 360, 390]) {
     await page.setViewportSize({ width: w, height: 800 });
     await page.goto("/?league=CFB");
