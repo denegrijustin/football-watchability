@@ -37,7 +37,7 @@ test("a team on a final-score tile opens its profile, and the rest of the tile s
   await expect(page.locator("dialog.gc")).toHaveCount(0);
   await expect(page.locator('.view-switch [data-tab="nfl"][aria-pressed="true"], .view-switch [data-tab="spplus"][aria-pressed="true"]')).toHaveCount(1);
   await page.locator('.view-switch [data-tab="board"]').click();
-  await page.locator("section.fs .fs-tile .fs-open").first().click();
+  await page.locator("section.fs .fs-tile .fs-open").first().click({ position: { x: 3, y: 3 } });
   await expect(page.locator("dialog.gc")).toBeVisible();
 });
 
