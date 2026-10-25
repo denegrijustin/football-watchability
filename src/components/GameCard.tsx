@@ -1,3 +1,4 @@
+import { TeamOpen } from "../openTeam";
 import { MomentumFlow } from "./MomentumFlow";
 import { ScoreBreakdown } from "./ScoreBreakdown";
 import { WpBar } from "./WpBar";
@@ -243,17 +244,17 @@ export function GameCard({
           <GameStatus live={live} />
           {[away, home].map((team, i) => (
             <div className="team-heading" key={team.name}>
-              <img
+              <TeamOpen className="img" team={{ league: game.league, name: team.name, abbr: (team as { abbr?: string }).abbr }}><img
                 src={logos[team.logoId]}
                 alt=""
                 width="36"
                 height="36"
                 loading="lazy"
-              />
+              /></TeamOpen>
               <div>
                 <h4>
                   <PlusRank league={game.league} team={team} />
-                  {team.name}
+                  <TeamOpen team={{ league: game.league, name: team.name, abbr: (team as { abbr?: string }).abbr }}>{team.name}</TeamOpen>
                   {i === 1 && <span className="home-tag">Home</span>}
                 </h4>
                 <p>{recordLine(team.record, game.league)}</p>

@@ -16,7 +16,7 @@ for (const lg of ["CFB", "NFL"] as const) {
       expect(sw, `${what} is wider than the screen`).toBeLessThanOrEqual(cw);
     };
     await widest("board");
-    for (const v of ["picks", "standings", "injuries", "upset", "insanity", "sim", "grid", "outlook", "empire"]) {
+    for (const v of ["picks", "resumes", "standings", "injuries", "upset", "insanity", "sim", "grid", "outlook", "empire"]) {
       await page.evaluate((d) => window.dispatchEvent(new CustomEvent("fbwatch:open-view", { detail: d })), v);
       await page.waitForTimeout(1200);
       await widest(v);

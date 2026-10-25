@@ -1,3 +1,4 @@
+import { TeamOpen } from "../openTeam";
 import { broadcastExtra, logos, networkLogo, recordLine, tierLabel, type League } from "../data";
 import type { ReactNode } from "react";
 import { dayOf, timeOf, tzAbbr } from "../tz";
@@ -32,8 +33,8 @@ export function CompactGame({ titleId, matchup, date, broadcast, network, espnId
     <h3 className="sr-only" id={titleId}>{matchup}</h3>
     <div className="matchup">
       <div className="matchup-teams">{teams.map((team, i) => <div className="team-heading cc-team" key={team.name}>
-        <img src={logos[team.logoId]} alt="" width="36" height="36" loading="lazy" decoding="async" />
-        <div><h4><PlusRank league={league} team={team} />{team.name}{i === 1 && <span className="home-tag">Home</span>}</h4>
+        <TeamOpen className="img" team={{ league, name: team.name, abbr: (team as { abbr?: string }).abbr }}><img src={logos[team.logoId]} alt="" width="36" height="36" loading="lazy" decoding="async" /></TeamOpen>
+        <div><h4><PlusRank league={league} team={team} /><TeamOpen team={{ league, name: team.name, abbr: (team as { abbr?: string }).abbr }}>{team.name}</TeamOpen>{i === 1 && <span className="home-tag">Home</span>}</h4>
           <p>{recordLine(team.record, league as League).split(" · ")[0]}</p>
         </div>{scores?.[i]}
       </div>)}</div>

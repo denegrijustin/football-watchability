@@ -1,3 +1,4 @@
+import { TeamOpen } from "../openTeam";
 import { CompactGame } from "./CompactGame";
 import { MomentumFlow } from "./MomentumFlow";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
@@ -139,16 +140,16 @@ export function ResultCard({ result: r, defaultExpanded = false }: { result: Res
               <tr key={t.name} className={winner === i ? "won" : undefined}>
                 <th scope="row">
                   <span className="ls-team">
-                    <img
+                    <TeamOpen className="img" team={{ league: r.league, name: t.name, abbr: t.abbr }}><img
                       src={logos[t.logoId]}
                       alt=""
                       width="26"
                       height="26"
                       loading="lazy"
-                    />
+                    /></TeamOpen>
                     <span className="ls-name">
                       <PlusRank league={r.league} team={t} />
-                      {t.name}
+                      <TeamOpen team={{ league: r.league, name: t.name, abbr: t.abbr }}>{t.name}</TeamOpen>
                       <span className="ls-rec">{t.record}</span>
                       {rankLine(t.ranks) && (
                         <span

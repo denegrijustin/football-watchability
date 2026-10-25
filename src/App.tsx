@@ -5,7 +5,7 @@ import { useUpdateCheck } from "./useUpdateCheck";
 import { LiveFreshness } from "./live";
 import { TabIcon } from "./components/TabIcon";
 
-const MORE_VIEWS: View[] = ["standings", "injuries", "grid", "outlook", "empire", "spplus", "nfl"];
+const MORE_VIEWS: View[] = ["resumes", "standings", "injuries", "grid", "outlook", "empire", "spplus", "nfl"];
 import { dayName, results, slate, tiers, type FilterState, type League, type View } from "./data";
 import { Filters } from "./components/Filters";
 import { GameBoard, useBoard } from "./components/GameBoard";
@@ -25,6 +25,7 @@ const TvGrid = lazyView(() => import("./components/TvGrid").then((m) => ({ defau
 const SpPlusTab = lazyView(() => import("./spplus/SpPlusTab"), "SpPlusTab");
 const NflTab = lazyView(() => import("./nfl/NflTab"), "NflTab");
 const InjuriesTab = lazyView(() => import("./components/InjuriesTab").then((m) => ({ default: m.InjuriesTab })), "InjuriesTab");
+const ResumesTab = lazyView(() => import("./components/ResumesTab").then((m) => ({ default: m.ResumesTab })), "ResumesTab");
 const StandingsTab = lazyView(() => import("./components/StandingsTab").then((m) => ({ default: m.StandingsTab })), "StandingsTab");
 const UpsetMeter = lazyView(() => import("./components/UpsetMeter").then((m) => ({ default: m.UpsetMeter })), "UpsetMeter");
 const SimTab = lazyView(() => import("./sim/SimTab"), "SimTab");
@@ -316,6 +317,16 @@ export default function App() {
               </button>
               <div className="more-sheet" id="more-sheet">
                 <button
+                  data-tab="resumes"
+                  aria-label="Team resumés"
+                  aria-pressed={view === "resumes"}
+                  onClick={() => go("resumes")}
+                  title="Team resumés: every team's best wins, losses (bad ones flagged), strength of schedule, offense and defense ranks"
+                >
+                  <TabIcon name="resumes" />
+                  <span className="tab-label">Resumés</span>
+                </button>
+                <button
                   data-tab="standings"
                   aria-label="Standings"
                   aria-pressed={view === "standings"}
@@ -442,6 +453,8 @@ export default function App() {
                   <ImperialismMap defaultLeague={league} />
                 ) : view === "picks" ? (
                   <PicksTab defaultLeague={league} />
+                ) : view === "resumes" ? (
+                  <ResumesTab defaultLeague={league} />
                 ) : view === "standings" ? (
                   <StandingsTab defaultLeague={league} />
                 ) : view === "injuries" ? (

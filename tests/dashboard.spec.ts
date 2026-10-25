@@ -423,9 +423,10 @@ test("Game Center overlay opens from a card with projection, momentum, field til
   const first = page.locator(CARD).first();
   await expect(first.locator(".card-more")).toHaveCount(0);
   await expect(first.locator(".matchup")).toHaveCount(1); // just the strip until it is opened
-  await first.locator(".compact-overview .matchup").click();
+  // (a team's logo and name open its profile, so the card opens with its Details button and the Game Center with its own button)
+  await first.locator(".cc-chevron").click();
   await expect(first.locator(".card-more .take")).toBeVisible();
-  await first.locator(".matchup").click();
+  await first.getByRole("button", { name: /Game Center/ }).first().click();
   const gc = page.locator("dialog.gc");
   await expect(gc).toBeVisible();
   await expect(gc.locator(".gc-proj")).toContainText("Projected score");

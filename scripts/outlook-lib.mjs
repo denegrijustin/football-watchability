@@ -197,6 +197,27 @@ const nflSlim = (t) => ({
  * game g's home side won (1) or lost (0) in this season; `made[i]` says whether team i made the field. Call begin() before the
  * field is built and end() after it.
  */
+/**
+ * For the playoff tracker: how often each team makes the field when it loses 0, 1, 2 or 3-or-more of its remaining games, and when it does and does not
+ * win its conference (or, in the NFL, its division). A bucket seen in fewer than MIN_SIMS simulated seasons reads as null (not enough to say).
+ */
+const MIN_SIMS = 40;
+function conditionTracker(n) {
+  const cnt = Array.from({ length: n }, () => new Float64Array(4)), inn = Array.from({ length: n }, () => new Float64Array(4));
+  const ch = new Float64Array(n * 2), chIn = new Float64Array(n * 2);
+  return {
+    add(i, losses, made, champ) {
+      const k = Math.min(3, losses);
+      cnt[i][k]++; inn[i][k] += made;
+      ch[i * 2 + champ]++; chIn[i * 2 + champ] += made;
+    },
+    result(i) {
+      const q = (a, b) => (a >= MIN_SIMS ? Math.round((b / a) * 1000) / 10 : null);
+      return { pByLoss: [0, 1, 2, 3].map((k) => q(cnt[i][k], inn[i][k])), pIfWin: q(ch[i * 2 + 1], chIn[i * 2 + 1]), pIfNot: q(ch[i * 2], chIn[i * 2]) };
+    },
+  };
+}
+
 function leverageTracker(teams, left, h, a, n) {
   const week = Math.min(...left.map((g) => Number(g.week)).filter(Number.isFinite));
   const idx = [];
@@ -280,7 +301,12 @@ export function simulateNfl(teams, games, { sims = 20000, seed = 1, hfa = 2, sd 
   const w = new Float64Array(n);
   const noise = new Float64Array(n);
   const lev = leverageTracker(teams, left, h, a, n);
+  const cond = conditionTracker(n);
+  const isDiv = new Uint8Array(n);
+  const remaining = new Float64Array(n);
+  for (let g = 0; g < h.length; g++) { remaining[h[g]]++; remaining[a[g]]++; }
   for (let s = 0; s < sims; s++) {
+    isDiv.fill(0);
     for (let i = 0; i < n; i++) {
       w[i] = base[i];
       noise[i] = rand() * 0.01; // coin-flip tiebreak, smaller than any difference in wins
@@ -295,7 +321,7 @@ export function simulateNfl(teams, games, { sims = 20000, seed = 1, hfa = 2, sd 
     const score = (i) => w[i] + noise[i];
     for (const { mine, divs } of groups) {
       const winners = divs.map((d) => d.reduce((best, i) => (score(i) > score(best) ? i : best)));
-      for (const i of winners) divHits[i]++;
+      for (const i of winners) { divHits[i]++; isDiv[i] = 1; }
       winners.sort((x, y) => score(y) - score(x));
       const rest = mine.filter((i) => !winners.includes(i)).sort((x, y) => score(y) - score(x));
       [...winners, ...rest.slice(0, 7 - winners.length)].forEach((i, k) => {
@@ -303,6 +329,7 @@ export function simulateNfl(teams, games, { sims = 20000, seed = 1, hfa = 2, sd 
         lev.made[i] = 1;
       });
     }
+    for (let i = 0; i < n; i++) cond.add(i, remaining[i] - (w[i] - base[i]), lev.made[i], isDiv[i]);
     lev.end();
   }
   const pc = (x) => Math.round((x / sims) * 1000) / 10;
@@ -312,7 +339,7 @@ export function simulateNfl(teams, games, { sims = 20000, seed = 1, hfa = 2, sd 
     byId: new Map(
       teams.map((t, i) => {
         const pSeed = seedHits[i].map(pc);
-        return [t.id, { pSeed, pPlayoffs: pc(seedHits[i].reduce((x, y) => x + y, 0)), pDiv: pc(divHits[i]), expW: Math.round((winsSum[i] / sims) * 10) / 10 }];
+        return [t.id, { pSeed, pPlayoffs: pc(seedHits[i].reduce((x, y) => x + y, 0)), pDiv: pc(divHits[i]), ...cond.result(i), expW: Math.round((winsSum[i] / sims) * 10) / 10 }];
       }),
     ),
   };
@@ -366,6 +393,8 @@ export function simulateCfb(teams, games, confRecords, { sims = 10000, seed = 1,
   const w = new Float64Array(n), l = new Float64Array(n), cw = new Float64Array(n), cl = new Float64Array(n), noise = new Float64Array(n), score = new Float64Array(n);
   const order = Array.from({ length: n }, (_, i) => i);
   const lev = leverageTracker(teams, left, h, a, n);
+  const cond = conditionTracker(n);
+  const isChamp = new Uint8Array(n);
   for (let s = 0; s < sims; s++) {
     for (let i = 0; i < n; i++) {
       w[i] = baseW[i]; l[i] = baseL[i]; cw[i] = baseCW[i]; cl[i] = baseCL[i];
@@ -382,7 +411,8 @@ export function simulateCfb(teams, games, confRecords, { sims = 10000, seed = 1,
     }
     for (let i = 0; i < n; i++) { winsSum[i] += w[i]; score[i] = fpi[i] - LOSS_PENALTY * l[i] + noise[i]; }
     const champs = groups.map((m) => m.reduce((best, i) => (cw[i] - cl[i] + noise[i] > cw[best] - cl[best] + noise[best] ? i : best)));
-    for (const i of champs) champHits[i]++;
+    isChamp.fill(0);
+    for (const i of champs) { champHits[i]++; isChamp[i] = 1; }
     champs.sort((x, y) => score[y] - score[x]);
     const auto = champs.slice(0, rules.autoBids);
     const inAuto = new Set(auto);
@@ -394,6 +424,7 @@ export function simulateCfb(teams, games, confRecords, { sims = 10000, seed = 1,
     }
     lev.begin();
     field.sort((x, y) => score[y] - score[x]).forEach((i, k) => { seedHits[i][k]++; lev.made[i] = 1; });
+    for (let i = 0; i < n; i++) cond.add(i, l[i] - baseL[i], lev.made[i], isChamp[i]);
     lev.end();
   }
   const pc = (x) => Math.round((x / sims) * 1000) / 10;
@@ -403,7 +434,7 @@ export function simulateCfb(teams, games, confRecords, { sims = 10000, seed = 1,
     byId: new Map(
       teams.map((t, i) => {
         const pSeed = seedHits[i].map(pc);
-        return [t.id, { pSeed, pPlayoffs: pc(seedHits[i].reduce((x, y) => x + y, 0)), pBye: pc(seedHits[i].slice(0, rules.byes).reduce((x, y) => x + y, 0)), pConfTitle: pc(champHits[i]), expW: Math.round((winsSum[i] / sims) * 10) / 10 }];
+        return [t.id, { pSeed, pPlayoffs: pc(seedHits[i].reduce((x, y) => x + y, 0)), pBye: pc(seedHits[i].slice(0, rules.byes).reduce((x, y) => x + y, 0)), pConfTitle: pc(champHits[i]), ...cond.result(i), expW: Math.round((winsSum[i] / sims) * 10) / 10 }];
       }),
     ),
   };
@@ -426,4 +457,51 @@ export function cycleKey(now, dow) {
   const d = new Date(`${ymd}T12:00:00Z`);
   d.setUTCDate(d.getUTCDate() - back);
   return d.toISOString().slice(0, 10);
+}
+
+
+// ---------- the playoff tracker ----------
+/** The tiers, from safest to out. `note` is shown under the heading. */
+export const TRACKER_TIERS = [
+  { key: "clinched", label: "Clinched", note: "in the field" },
+  { key: "safe", label: "Safe", note: "can lose 2+ and still in; at-large" },
+  { key: "thin", label: "Thin margin", note: "can lose 1 more; at-large" },
+  { key: "table", label: "Run the table", note: "win out and in; at-large" },
+  { key: "must", label: "Must win conference", note: "still control destiny, auto-bid or bust" },
+  { key: "life", label: "Life support", note: "win + need help" },
+  { key: "g6", label: "Group of 6 race", note: "one spot, highest-ranked G6" },
+  { key: "out", label: "Eliminated", note: "out of the race" },
+];
+/**
+ * The NFL has ten or more games left at this point, so "can lose two more" says little; its tracker is by the odds of making the field instead.
+ * Each tier starts at `min` percent.
+ */
+export const NFL_TRACKER_TIERS = [
+  { key: "clinched", label: "Clinched", note: "in the field", min: 99.95 },
+  { key: "safe", label: "Safe", note: "85% or better", min: 85 },
+  { key: "favored", label: "Favored", note: "60–85%", min: 60 },
+  { key: "toss", label: "Toss-up", note: "35–60%", min: 35 },
+  { key: "under", label: "Underdog", note: "10–35%", min: 10 },
+  { key: "long", label: "Long shot", note: "1–10%", min: 1 },
+  { key: "out", label: "Eliminated", note: "under 1%", min: -1 },
+];
+export const nflTier = (p) => NFL_TRACKER_TIERS.find((t) => p >= t.min).key;
+const G6 = new Set(["American", "C-USA", "MAC", "Mountain West", "Sun Belt", "Pac-12"]);
+
+/**
+ * Sorts a team into a tier from the simulated seasons: the share of them in which it makes the field when it loses no more games ("win out"),
+ * one, or two or more (see conditionTracker), and what it needs from its conference or division title. A team's odds being at least
+ * HALF (50%) in a case is what "still in" means here. Rows carry { pPlayoffs, pByLoss, pIfWin, pIfNot, titleKey } and `g6` for a Group of 6 school.
+ */
+export function trackerTier(r, { g6 = false } = {}) {
+  const [q0, q1, q2] = r.pByLoss ?? [];
+  const half = (x) => x != null && x >= 50;
+  if (r.pPlayoffs >= 99.95) return "clinched";
+  if (g6 && r.pPlayoffs >= 1) return "g6";
+  if (half(q2)) return "safe";
+  if (half(q1)) return "thin";
+  if (half(q0)) return "table";
+  if (half(r.pIfWin) && (r.pIfNot ?? 0) < 5 && (r.pTitle ?? 0) > 0) return "must";
+  if (r.pPlayoffs >= 1 || (q0 ?? 0) >= 3) return "life";
+  return "out";
 }
