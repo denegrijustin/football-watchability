@@ -91,3 +91,23 @@ test(`@phone the ${league} seeds fit one phone screen without scrolling`, async 
   const bar = await page.locator(".view-switch").boundingBox();
   expect(box!.y + box!.height, "the seeds end above the tab bar").toBeLessThanOrEqual(bar!.y + 1);
 });
+
+for (const [league, parts] of [["College", ["Playoff", "Tracker", "Leverage", "Rankings", "Bowls"]], ["NFL", ["Seeds", "Tracker", "Leverage"]]] as const)
+test(`@phone the ${league} Outlook menu is one line and its instructions are two lines at most`, async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await page.locator(".view-switch .tab-more").click();
+  await page.locator('[data-tab="outlook"]').click();
+  const ctl = page.locator(".ol-controls");
+  await ctl.getByRole("button", { name: league }).click();
+  const tops = await ctl.locator('[aria-label="Outlook section"] button').evaluateAll((bs) => [...new Set(bs.map((b) => Math.round(b.getBoundingClientRect().top)))]);
+  expect(tops, "the section buttons share one line").toHaveLength(1);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+  for (const part of parts) {
+    await ctl.getByRole("button", { name: part, exact: true }).click();
+    for (const note of await page.locator(".ol-note.nt:not(.open)").all()) {
+      const lines = await note.evaluate((el) => Math.round(el.getBoundingClientRect().height / parseFloat(getComputedStyle(el).lineHeight)));
+      expect(lines, `${part}: an instruction note is at most two lines`).toBeLessThanOrEqual(2);
+    }
+  }
+});
