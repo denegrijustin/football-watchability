@@ -1231,6 +1231,6 @@ test("a page left open across a deploy says a new version is ready, and Reload b
 
 test("Games is the first tab on the left of the menu bar", async ({ page }) => {
   await page.goto("/");
-  const tabs = await page.locator(".view-switch button").evaluateAll((els) => els.filter((e) => e.getBoundingClientRect().width > 0).sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left).map((e) => (e as HTMLElement).dataset.tab));
+  const tabs = await page.locator(".view-switch button[data-tab]").evaluateAll((els) => els.filter((e) => e.getBoundingClientRect().width > 0).sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left).map((e) => (e as HTMLElement).dataset.tab));
   expect(tabs[0]).toBe("board");
 });
