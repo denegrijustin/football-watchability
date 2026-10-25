@@ -13,10 +13,12 @@ export interface Col<R> {
   hideSm?: boolean;
 }
 
-export function SortTable<R>({ cols, rows, rowKey, expand, selected, sort: ctl, label, onRowClick, max }: {
+export function SortTable<R>({ cols, rows, rowKey, expand, selected, sort: ctl, label, onRowClick, max, phoneLine }: {
   cols: Col<R>[]; rows: R[]; rowKey: (r: R) => string; expand?: (r: R) => ReactNode; selected?: string | null;
   sort?: { key: string; dir: "asc" | "desc"; set: (key: string, dir: "asc" | "desc") => void };
   label: string; onRowClick?: (r: R) => void; max?: number;
+  /** A line under each row, on a phone only, for what the hidden columns held. */
+  phoneLine?: (r: R) => ReactNode;
 }) {
   const [local, setLocal] = useState<{ key: string; dir: "asc" | "desc" }>({ key: cols[0].key, dir: cols[0].first ?? "asc" });
   const sort = ctl ?? { ...local, set: (key: string, dir: "asc" | "desc") => setLocal({ key, dir }) };
@@ -69,6 +71,7 @@ export function SortTable<R>({ cols, rows, rowKey, expand, selected, sort: ctl, 
                   )}
                   {cols.map((c) => <td key={c.key} className={`${c.align ?? ""} ${c.align ? "num" : ""}${c.hideSm ? " hide-sm" : ""}`}>{c.render ? c.render(r) : (c.get(r) ?? "—")}</td>)}
                 </tr>
+                {phoneLine && <tr className={`phone-line${selected === k ? " sel" : ""}`} onClick={onRowClick ? () => onRowClick(r) : undefined}><td colSpan={cols.filter((c) => !c.hideSm).length + (expand ? 1 : 0)}>{phoneLine(r)}</td></tr>}
                 {expand && isOpen && <tr className="detail"><td colSpan={cols.filter((c) => !(narrow && c.hideSm)).length + 1}>{expand(r)}</td></tr>}
               </Fragment>
             );
