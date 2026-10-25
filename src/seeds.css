@@ -29,3 +29,16 @@
   .ol-controls .segmented { padding: 2px; }
   .ol-controls .segmented button { min-height: 34px; padding: 0 10px; font-size: 0.8125rem; }
 }
+
+/* Instruction text is held to two lines, with More for the rest */
+.ol-notewrap { display: grid; justify-items: start; gap: 2px; margin: 0 0 8px; min-width: 0; }
+.ol-notewrap .ol-note { margin: 0; }
+.ol-note.nt:not(.open) { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
+.nt-more { background: none; border: 0; padding: 0 0 0 0; min-height: 24px; color: var(--lime, currentColor); font: inherit; font-size: 0.75rem; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+:root[data-theme="light"] .nt-more { color: #12703c; }
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) .nt-more { color: #12703c; } }
+
+/* The Outlook's section menu is one line across the page, no wrapping and no scrolling */
+.ol-controls .segmented[aria-label="Outlook section"] { flex: 1 1 100%; display: flex; flex-wrap: nowrap; min-width: 0; }
+.ol-controls .segmented[aria-label="Outlook section"] button { flex: 1 1 0; min-width: 0; padding: 0 2px; white-space: nowrap; font-size: 0.8125rem; text-align: center; }
+@media (max-width: 380px) { .ol-controls .segmented[aria-label="Outlook section"] button { font-size: 0.75rem; } }

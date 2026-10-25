@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { logos, type League } from "../data";
 import { fetchData } from "../data/load";
 import { ChipImg } from "../logoTone";
@@ -71,6 +71,28 @@ type Data = {
   };
   nfl?: Stamp & { sim: { sims: number; games: number } | null; leverage?: Leverage | null; conferences: Record<string, { field: Seed[]; out: Out[]; grid: GridRow[] | null; tracker?: Tracker | null }> };
 };
+
+/** An instruction line held to two lines; "More" opens the rest when there is more (measured, so a wide screen that fits it in two lines shows no button). */
+function Note({ children, className = "" }: { children: ReactNode; className?: string }) {
+  const ref = useRef<HTMLParagraphElement>(null);
+  const [open, setOpen] = useState(false);
+  const [clamped, setClamped] = useState(false);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el || open) return;
+    const check = () => setClamped(el.scrollHeight > el.clientHeight + 1);
+    check();
+    const ro = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(check);
+    ro?.observe(el);
+    return () => ro?.disconnect();
+  }, [children, open]);
+  return (
+    <div className={`ol-notewrap ${className}`.trim()}>
+      <p ref={ref} className={`ol-note nt${open ? " open" : ""}`}>{children}</p>
+      {(clamped || open) && <button type="button" className="nt-more" aria-expanded={open} onClick={() => setOpen(!open)}>{open ? "Less" : "More"}</button>}
+    </div>
+  );
+}
 
 const pct = (n?: number | null) => (n == null ? "–" : n >= 99.5 ? ">99%" : n < 0.5 ? "<1%" : `${Math.round(n)}%`);
 const POLL: Record<string, string> = { fpi: "ESPN FPI", ap: "AP", coaches: "Coaches", cfp: "CFP committee" };
@@ -182,10 +204,10 @@ function RankingTable({ cfb, conf, setConf, shown, setShown }: { cfb: NonNullabl
   const hasCfp = cfb.sources.includes("cfp");
   return (
     <>
-      <p className="ol-note">
+      <Note>
         Composite of {cfb.sources.map((k) => POLL[k] ?? k).join(", ")}: the average rank, with a team outside a poll's top 25 counted as 30
         {hasCfp ? " and the committee's rank counted double" : "; the committee's CFP ranking joins when it is first released"}. Rebuilt every Sunday morning.
-      </p>
+      </Note>
       <label className="ol-pick">
         <span>Conference</span>
         <select value={conf} onChange={(e) => { setConf(e.target.value); setShown(25); }} aria-label="Conference">
@@ -242,20 +264,20 @@ function RankingTable({ cfb, conf, setConf, shown, setShown }: { cfb: NonNullabl
 
 /** Playoff leverage: how much the next game moves each team's playoff odds (the same simulations as the seed grid, split by that game's result). */
 function LeveragePart({ lev, sims, cycle, dow, league }: { lev?: Leverage | null; sims?: number; cycle: string; dow: string; league: "NFL" | "College" }) {
-  if (!lev) return <p className="ol-note">Playoff leverage appears once the schedule has been fetched and the simulation has run.</p>;
+  if (!lev) return <Note>Playoff leverage appears once the schedule has been fetched and the simulation has run.</Note>;
   return (
     <>
       <h3 className="lev-h">{league === "NFL" ? "NFL" : "College football"} playoff leverage · going into week {lev.week}</h3>
-      <p className="ol-note">
+      <Note>
         Each logo sits at the team's playoff chance now. The orange end is its chance if it loses its next game, the blue end if it wins; the longer the bar, the more the game matters. Teams on a bye show only where they stand.
         {league === "NFL" ? " " : " Teams with no realistic shot are left out. "}
         From {sims?.toLocaleString() ?? "many"} simulations of the rest of the season, as of the {dow} {dayText(cycle)} refresh (updates every {dow}). A team that already played this week is left out.
-      </p>
+      </Note>
       <LeverageChart rows={lev.rows} label={`${league} playoff chances now, after a loss and after a win`} />
       {lev.games.length > 0 && (
         <>
           <h3 className="lev-h">Leverage by game</h3>
-          <p className="ol-note">Both teams' swings added together (a game where one result moves two playoff races is worth the most). Darker means bigger.</p>
+          <Note>Both teams' swings added together (a game where one result moves two playoff races is worth the most). Darker means bigger.</Note>
           <LeverageGames games={lev.games} />
         </>
       )}
@@ -280,7 +302,7 @@ const TIER_NOTE: Record<string, string> = {
 
 /** The playoff picture in tiers, from clinched to eliminated, built from the same simulated seasons as the seed grid. Each logo opens the team's profile. */
 function TrackerPart({ tracker, title, sims, nfl = false, league, compact = false, headExtra }: { tracker?: Tracker | null; title: string; sims?: number; nfl?: boolean; league: "CFB" | "NFL"; /** One row per tier, the note under its label: the NFL tracker fits on a phone screen. */ compact?: boolean; /** Shown in place of the title (the conference switch). */ headExtra?: React.ReactNode }) {
-  if (!tracker) return <p className="ol-note">The playoff tracker appears once the schedule has been fetched and the simulation has run.</p>;
+  if (!tracker) return <Note>The playoff tracker appears once the schedule has been fetched and the simulation has run.</Note>;
   const clinched = tracker.tiers.find((t) => t.key === "clinched")?.teams ?? [];
   return (
     <section className={`tk${compact ? " compact" : ""}`} aria-label={title}>
@@ -319,14 +341,14 @@ function TrackerPart({ tracker, title, sims, nfl = false, league, compact = fals
         <details className="tk-how">
           <summary>How to read this</summary>
           <ul>{tracker.tiers.map((t) => <li key={t.key}><b>{t.label}</b> · {t.note}</li>)}</ul>
-      <p className="ol-note">
+      <Note>
         From {sims?.toLocaleString() ?? "many"} simulated seasons ({nfl ? "each won by the better ESPN FPI team, ties split evenly" : "each game won by the better ESPN FPI team; the field is ordered by FPI minus 6 points per loss"}). {nfl ? "Each tier is a band of playoff odds." : "A tier is where a team's odds cross 50% when it loses 0, 1 or 2+ more games."} {Object.values(TIER_NOTE).length ? "Touch a logo for the team's profile." : ""}
-      </p>
+      </Note>
         </details>
       ) : (
-      <p className="ol-note tk-foot">
+      <Note className="tk-foot">
         From {sims?.toLocaleString() ?? "many"} simulated seasons ({nfl ? "each won by the better ESPN FPI team, ties split evenly" : "each game won by the better ESPN FPI team; the field is ordered by FPI minus 6 points per loss"}). {nfl ? "Each tier is a band of playoff odds." : "A tier is where a team's odds cross 50% when it loses 0, 1 or 2+ more games."} {Object.values(TIER_NOTE).length ? "Touch a logo for the team's profile." : ""}
-      </p>
+      </Note>
       )}
     </section>
   );
@@ -422,7 +444,7 @@ function NflSeeds({ nfl }: { nfl: NonNullable<Data["nfl"]> }) {
           <ol className="ol-list" aria-label={`${conf} playoff seeds`}>
             {c?.field.map((s) => <SeedRow key={s.id} s={{ ...s, conf: s.division }} tag={s.bid} odds={[["playoffs", s.pPlayoffs], ["division", s.pDiv], ["title", s.pTitle]]} />)}
           </ol>
-          <p className="ol-note">The seed grid appears once the schedule has been fetched; until then only ESPN's playoff odds are shown.</p>
+          <Note>The seed grid appears once the schedule has been fetched; until then only ESPN's playoff odds are shown.</Note>
         </>
       )}
       {c?.grid && c.grid.some((r) => r.pPlayoffs < 0.5) && (
@@ -536,7 +558,7 @@ export function Outlook({ defaultLeague }: { defaultLeague: League }) {
         <Skeleton rows={5} kind="row" />
       ) : league === "NFL" ? (
         !nfl ? (
-          <p className="ol-note">The NFL outlook has not been built yet.</p>
+          <Note>The NFL outlook has not been built yet.</Note>
         ) : part === "leverage" ? (
           <LeveragePart lev={nfl.leverage} sims={nfl.sim?.sims} cycle={nfl.cycle} dow="Tuesday" league="NFL" />
         ) : part === "tracker" ? (
@@ -545,7 +567,7 @@ export function Outlook({ defaultLeague }: { defaultLeague: League }) {
           <NflSeeds nfl={nfl} />
         )
       ) : !cfb ? (
-        <p className="ol-note">The college outlook has not been built yet.</p>
+        <Note>The college outlook has not been built yet.</Note>
       ) : part === "leverage" ? (
         <LeveragePart lev={cfb.leverage} sims={cfb.sim?.sims} cycle={cfb.cycle} dow="Sunday" league="College" />
       ) : part === "tracker" ? (
@@ -556,10 +578,10 @@ export function Outlook({ defaultLeague }: { defaultLeague: League }) {
         <RankingTable cfb={cfb} conf={conf} setConf={setConf} shown={shown} setShown={setShown} />
       ) : (
         <>
-          <p className="ol-note">
+          <Note>
             Bowl picture: {cfb.bowls.eligible} teams are projected to reach six wins (or already have). Projected bowl matchups need each bowl's conference tie-ins, which this
             page does not have yet, so it shows who is on track to be eligible. Rebuilt every Sunday morning.
-          </p>
+          </Note>
           <ul className="ol-bowls">
             {cfb.bowls.conferences.map((g) => (
               <li key={g.name}>
