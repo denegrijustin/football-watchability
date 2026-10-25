@@ -122,3 +122,13 @@ html[data-motion="off"] :is(.sr-fill, .wp-track i, .status-chip, .view-switch bu
   .wn-foot { font-size: 0.6875rem; }
   .wn-long { display: none; } .wn-short { display: inline; }
 }
+
+/* ---- live meters on a board card: three slim meters in one row ---- */
+.live-meters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 6px; }
+.lm { display: grid; gap: 2px; min-width: 0; font-size: 0.625rem; line-height: 1.1; }
+.lm-k { color: var(--muted); font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+.lm-track { position: relative; height: 4px; border-radius: 2px; background: var(--lime); overflow: hidden; }
+.lm-track i { position: absolute; inset: 0; background: #4f9bf0; transform-origin: left; transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.lm-track.mid { background: var(--line-strong, rgb(255 255 255 / 14%)); }
+.lm-track.mid i { left: 50%; right: 0; background: var(--lime); }
+.lm-v { color: var(--text-2); font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
