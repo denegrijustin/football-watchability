@@ -8476,3 +8476,9 @@ select,
 /* A card's content never sets the card's width: the single column is allowed to shrink, and the top line wraps (the season view adds a date range). */
 .ic-inner { grid-template-columns: minmax(0, 1fr); }
 .ic-top { flex-wrap: wrap; min-width: 0; }
+
+/* a team's logo or name that opens its profile: it looks like what it wraps, with a hover and focus cue */
+.team-open { all: unset; cursor: pointer; display: inline; color: inherit; }
+.team-open.img { display: inline-flex; line-height: 0; border-radius: 50%; }
+.team-open:hover:not(.img), .team-open:focus-visible:not(.img) { text-decoration: underline; text-underline-offset: 3px; }
+.team-open:focus-visible { outline: 2px solid var(--lime, currentColor); outline-offset: 2px; border-radius: 6px; }

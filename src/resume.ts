@@ -9,6 +9,8 @@ import { logoSlug, teamRows } from "./nfl/model";
 export const BAD_HOME = { CFB: 60, NFL: 22 };
 export const BAD_ROAD = { CFB: 75, NFL: 26 };
 
+/** What opens the team's profile: the NFL abbreviation, or the college team's SP+ id. */
+export interface Ref { league: "CFB" | "NFL"; name: string; abbr?: string; id?: string }
 export type Venue = "vs" | "at" | "N";
 export interface ResGame {
   opp: string;
@@ -25,6 +27,8 @@ export interface ResGame {
   /** The opponent's rating, to order the best wins. */
   oppRating: number;
   bad?: boolean;
+  /** Opens the opponent's profile. */
+  ref: Ref;
 }
 export interface Resume {
   key: string;
@@ -40,6 +44,7 @@ export interface Resume {
   off: number | null;
   def: number | null;
   of: number;
+  ref: Ref;
   wins: ResGame[];
   losses: ResGame[];
 }
@@ -99,14 +104,14 @@ export function cfbResumes(model: Model): Resume[] {
     if (!me || me.division !== "FBS") continue;
     const key = me.id;
     const rk = opp?.division === "FBS" ? opp.weeks[opp.latest]?.spRk ?? null : null;
-    const g: ResGame = { opp: r.opp, oppKey: r.opp, oppRk: rk, oppDiv: opp && opp.division !== "FBS" ? opp.division : opp ? null : "FCS", pts: r.pts, oppPts: r.oppPts, venue: venue.get(`${r.team}|${r.opp}`) ?? null, date: r.date, oppRating: rating(opp, week) };
+    const g: ResGame = { opp: r.opp, oppKey: r.opp, oppRk: rk, oppDiv: opp && opp.division !== "FBS" ? opp.division : opp ? null : "FCS", pts: r.pts, oppPts: r.oppPts, venue: venue.get(`${r.team}|${r.opp}`) ?? null, date: r.date, oppRating: rating(opp, week), ref: { league: "CFB", name: r.opp, id: opp?.id } };
     (games.get(key) ?? games.set(key, []).get(key)!).push(g);
     const c = rec.get(key) ?? rec.set(key, { w: 0, l: 0, t: 0 }).get(key)!;
     if (r.pts > r.oppPts) c.w++; else if (r.pts < r.oppPts) c.l++; else c.t++;
   }
   const list = fbs.map((t) => {
     const w = t.weeks[t.latest], c = rec.get(t.id) ?? { w: 0, l: 0, t: 0 };
-    return { key: t.id, name: t.name, logoKey: t.name, conf: w.conf, ...c, rank: w.spRk ?? 999, off: w.offRk, def: w.defRk, of: fbs.length };
+    return { key: t.id, name: t.name, logoKey: t.name, conf: w.conf, ...c, rank: w.spRk ?? 999, off: w.offRk, def: w.defRk, of: fbs.length, ref: { league: "CFB" as const, name: t.name, id: t.id } };
   });
   return finish(list, games, "CFB");
 }
@@ -124,10 +129,10 @@ export function nflResumes(d: NflData): Resume[] {
       const me = g[side], oppAbbr = side === "away" ? g.home : g.away;
       const o = byAbbr.get(oppAbbr);
       if (!byAbbr.has(me) || !o) continue;
-      const g2: ResGame = { opp: o.name, oppKey: logoSlug(o.name), oppRk: o.rank.sp, oppDiv: null, pts: side === "away" ? g.aS : g.hS, oppPts: side === "away" ? g.hS : g.aS, venue: g.neutral ? "N" : side === "home" ? "vs" : "at", date: g.date, oppRating: o.r[0] };
+      const g2: ResGame = { opp: o.name, oppKey: logoSlug(o.name), oppRk: o.rank.sp, oppDiv: null, pts: side === "away" ? g.aS : g.hS, oppPts: side === "away" ? g.hS : g.aS, venue: g.neutral ? "N" : side === "home" ? "vs" : "at", date: g.date, oppRating: o.r[0], ref: { league: "NFL", name: o.name, abbr: oppAbbr } };
       (games.get(me) ?? games.set(me, []).get(me)!).push(g2);
     }
   }
-  const list = rows.map((r) => ({ key: r.abbr, name: r.name, logoKey: logoSlug(r.name), conf: `${r.conf} ${r.div}`.trim(), w: r.rec.w, l: r.rec.l, t: r.rec.t, rank: r.rank.sp, off: r.rank.off, def: r.rank.def, of: rows.length }));
+  const list = rows.map((r) => ({ key: r.abbr, name: r.name, logoKey: logoSlug(r.name), conf: `${r.conf} ${r.div}`.trim(), w: r.rec.w, l: r.rec.l, t: r.rec.t, rank: r.rank.sp, off: r.rank.off, def: r.rank.def, of: rows.length, ref: { league: "NFL" as const, name: r.name, abbr: r.abbr } }));
   return finish(list, games, "NFL");
 }

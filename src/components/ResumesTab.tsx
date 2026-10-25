@@ -3,6 +3,7 @@ import { logos, type League } from "../data";
 import { usePickData } from "../pickData";
 import { ChipImg } from "../logoTone";
 import { cfbResumes, nflResumes, BAD_HOME, BAD_ROAD, type ResGame, type Resume } from "../resume";
+import { TeamOpen, type TeamRef } from "../openTeam";
 import { Skeleton } from "./Skeleton";
 import "../resume.css";
 
@@ -10,12 +11,12 @@ const dateText = (iso: string) => new Date(`${iso.slice(0, 10)}T12:00:00Z`).toLo
 /** A stat rank as a heat class: the top fifth is green, the bottom fifth red. */
 const heat = (rk: number | null, n: number) => (rk == null ? "" : rk <= n * 0.2 ? "hi" : rk > n * 0.8 ? "lo" : rk <= n * 0.5 ? "mid-hi" : "mid-lo");
 
-function Game({ g, win, logo }: { g: ResGame; win: boolean; logo: string | undefined }) {
+function Game({ g, win, logo, to }: { g: ResGame; win: boolean; logo: string | undefined; to: TeamRef }) {
   const where = g.venue === "at" ? "at" : g.venue === "N" ? "N" : "vs";
   const who = g.oppRk != null ? `#${g.oppRk}` : g.oppDiv ?? "";
   return (
     <li className={`rs-g ${win ? "win" : "loss"}${g.bad ? " bad" : ""}`} title={`${win ? "Won" : "Lost"} ${g.pts}–${g.oppPts} ${g.venue === "at" ? "at" : g.venue === "N" ? "(neutral) vs" : "vs"} ${g.opp}${g.oppRk != null ? ` (#${g.oppRk} by the ratings)` : g.oppDiv ? ` (${g.oppDiv})` : ""}, ${dateText(g.date)}${g.bad ? ". A bad loss: to a team outside the ratings' top group." : ""}`}>
-      {logo ? <ChipImg src={logo} size={22} /> : <span className="rs-nologo" aria-hidden="true">{g.opp.slice(0, 2)}</span>}
+      <TeamOpen className="img" team={to}>{logo ? <ChipImg src={logo} size={22} /> : <span className="rs-nologo" aria-hidden="true">{g.opp.slice(0, 2)}</span>}</TeamOpen>
       <span className="rs-score"><b>{g.pts}–{g.oppPts}</b><small>{where} {who}</small></span>
       {g.bad && <em className="rs-bad">BAD</em>}
     </li>
@@ -27,16 +28,16 @@ function Row({ r, logoOf }: { r: Resume; logoOf: (key: string, name: string) => 
     <li className="rs-row">
       <div className="rs-team">
         <span className="rs-rank">{r.rank}</span>
-        {logoOf(r.logoKey, r.name) && <ChipImg src={logoOf(r.logoKey, r.name)!} size={30} />}
-        <span className="rs-name"><b>{r.name}</b><small>{r.w}-{r.l}{r.t ? `-${r.t}` : ""}{r.conf ? ` · ${r.conf}` : ""}</small></span>
+        {logoOf(r.logoKey, r.name) && <TeamOpen className="img" team={r.ref}><ChipImg src={logoOf(r.logoKey, r.name)!} size={30} /></TeamOpen>}
+        <span className="rs-name"><b><TeamOpen team={r.ref}>{r.name}</TeamOpen></b><small>{r.w}-{r.l}{r.t ? `-${r.t}` : ""}{r.conf ? ` · ${r.conf}` : ""}</small></span>
       </div>
       <div className="rs-col wins" aria-label={`Best wins, ${r.name}`}>
         <h4>Best wins</h4>
-        {r.wins.length ? <ul>{r.wins.map((g, i) => <Game key={i} g={g} win logo={logoOf(g.oppKey, g.opp)} />)}</ul> : <p className="rs-none">No wins yet</p>}
+        {r.wins.length ? <ul>{r.wins.map((g, i) => <Game key={i} g={g} win logo={logoOf(g.oppKey, g.opp)} to={g.ref} />)}</ul> : <p className="rs-none">No wins yet</p>}
       </div>
       <div className="rs-col losses" aria-label={`Losses, ${r.name}`}>
         <h4>Losses</h4>
-        {r.losses.length ? <ul>{r.losses.map((g, i) => <Game key={i} g={g} win={false} logo={logoOf(g.oppKey, g.opp)} />)}</ul> : <p className="rs-none">Unbeaten</p>}
+        {r.losses.length ? <ul>{r.losses.map((g, i) => <Game key={i} g={g} win={false} logo={logoOf(g.oppKey, g.opp)} to={g.ref} />)}</ul> : <p className="rs-none">Unbeaten</p>}
       </div>
       <dl className="rs-stats">
         <div className={heat(r.sos, r.of)} title="Strength of schedule so far, among all teams. 1 is the toughest."><dt>SOS</dt><dd>{r.sos ?? "—"}</dd></div>

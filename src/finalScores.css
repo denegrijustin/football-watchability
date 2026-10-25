@@ -2,12 +2,12 @@
 .fs { margin: 0 0 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); padding-top: 8px; }
 .fs-grid { list-style: none; margin: 0; padding: 0 8px 8px; display: flex; gap: 6px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity; scrollbar-width: thin; }
 .fs-grid > li { flex: 0 0 156px; scroll-snap-align: start; }
-.fs-tile { all: unset; box-sizing: border-box; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 0 6px; width: 100%; padding: 5px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2, transparent); cursor: pointer; font-size: 0.8125rem; font-variant-numeric: tabular-nums; }
+.fs-tile { all: unset; position: relative; box-sizing: border-box; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 0 6px; width: 100%; padding: 5px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2, transparent); cursor: pointer; font-size: 0.8125rem; font-variant-numeric: tabular-nums; }
 .fs-tile:hover { border-color: var(--line-strong); }
 .fs-tile:focus-visible { outline: 2px solid var(--accent, currentColor); outline-offset: 1px; }
 .fs-row { display: flex; align-items: center; gap: 6px; grid-column: 1; min-width: 0; justify-content: space-between; }
 .fs-row img { flex: none; }
-.fs-abbr { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fs-abbr { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fs-row.lost { color: var(--muted); }
 .fs-row.won b { font-weight: 800; }
 .fs-tag { grid-column: 2; grid-row: 1 / span 2; align-self: center; font-size: 0.6875rem; color: var(--muted); }
@@ -23,3 +23,8 @@
 @media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) .fs-tile.upset .fs-tag { color: #8a5a00; } }
 /* open is the normal state, so the button should not look like an active filter */
 .status-chip.fs-toggle.on { background: transparent; color: inherit; border-color: var(--line-strong); }
+.fs-open { all: unset; position: absolute; inset: 0; border-radius: 8px; cursor: pointer; }
+.fs-open:focus-visible { outline: 2px solid var(--accent, currentColor); outline-offset: 1px; }
+.fs-row, .fs-tag { position: relative; pointer-events: none; }
+.fs-row .team-open { pointer-events: auto; }
+.fs-row b { margin-left: auto; }

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { fetchData } from "../data/load";
 import { logos, type League } from "../data";
 import { ChipImg } from "../logoTone";
+import { TeamOpen } from "../openTeam";
 import { Skeleton } from "./Skeleton";
 import "../standings.css";
 
@@ -15,9 +16,9 @@ const src = (l: Logo) => (l.id ? logos[l.id] : l.url ?? undefined);
 const diffText = (n: number) => (n > 0 ? `+${n}` : String(n));
 const pctText = (n: number) => (n >= 1 ? "1.000" : n.toFixed(3).replace(/^0/, ""));
 
-function Team({ r }: { r: Row }) {
-  const s = src(r.logo);
-  return <span className="sd-team">{s && <ChipImg src={s} size={22} />}<b>{r.short}</b>{r.division && <em>{r.division}</em>}</span>;
+function Team({ r, nfl }: { r: Row; nfl: boolean }) {
+  const s = src(r.logo), to = { league: nfl ? "NFL" : "CFB", name: nfl ? r.name : r.short, abbr: r.abbr };
+  return <span className="sd-team">{s && <TeamOpen className="img" team={to}><ChipImg src={s} size={22} /></TeamOpen>}<b><TeamOpen team={to}>{r.short}</TeamOpen></b>{r.division && <em>{r.division}</em>}</span>;
 }
 
 function Table({ rows, nfl, rank = true }: { rows: Row[]; nfl: boolean; rank?: boolean }) {
@@ -41,7 +42,7 @@ function Table({ rows, nfl, rank = true }: { rows: Row[]; nfl: boolean; rank?: b
         {rows.map((r, i) => (
           <tr key={r.id}>
             {rank && <td className="sd-rk">{i + 1}</td>}
-            <th scope="row"><Team r={r} />{nfl && r.seed && r.seed <= 7 ? <span className="sd-seed" title={`Playoff seed ${r.seed}`}>{r.seed}</span> : null}</th>
+            <th scope="row"><Team r={r} nfl={nfl} />{nfl && r.seed && r.seed <= 7 ? <span className="sd-seed" title={`Playoff seed ${r.seed}`}>{r.seed}</span> : null}</th>
             <td className="r sd-conf">{r.conf ?? "–"}</td>
             <td className="r">{r.overall}</td>
             {nfl && <td className="r hide-sm">{r.div ?? "–"}</td>}
@@ -67,7 +68,7 @@ function NflStandings({ data, conf }: { data: Nfl; conf: string }) {
         <section className="sd-block" aria-label={`${c.name} playoff picture`}>
           <h3>{c.name} playoff picture</h3>
           <ol className="sd-seeds">
-            {seeds.map((t) => <li key={t.id}><i>{t.seed}</i><Team r={t} /><span>{t.overall}</span></li>)}
+            {seeds.map((t) => <li key={t.id}><i>{t.seed}</i><Team r={t} nfl /><span>{t.overall}</span></li>)}
           </ol>
         </section>
       )}
@@ -90,7 +91,7 @@ function CfbStandings({ data, conf, onPick }: { data: Cfb; conf: string; onPick:
           <section className="sd-block" key={c.name} aria-label={c.name}>
             <h3><button type="button" onClick={() => onPick(c.name)}>{c.name} <span aria-hidden="true">→</span></button></h3>
             <ol className="sd-seeds">
-              {c.teams.slice(0, 3).map((t, i) => <li key={t.id}><i>{i + 1}</i><Team r={t} /><span>{t.conf ?? t.overall}</span></li>)}
+              {c.teams.slice(0, 3).map((t, i) => <li key={t.id}><i>{i + 1}</i><Team r={t} nfl={false} /><span>{t.conf ?? t.overall}</span></li>)}
             </ol>
           </section>
         ))}

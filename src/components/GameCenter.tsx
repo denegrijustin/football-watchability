@@ -1,3 +1,4 @@
+import { TeamOpen } from "../openTeam";
 import { decodeGame } from '../gameFeed';
 import { provisionalActual } from "../provisionalScore";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
@@ -278,7 +279,7 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
           })()}
           {/* Scoreboard */}
           <header className="gc-head" style={{ background: `linear-gradient(90deg, ${away.color ?? "#17222c"}, #111a22 42%, #111a22 58%, ${home.color ?? "#17222c"})` }}>
-            <TeamHead t={away} score={scoreA} poss={!!game?.situation?.possession && game.situation.possession === game.teams[0]?.id} win={state === "post" && scoreA! > scoreH!} />
+            <TeamHead t={away} league={league ?? ""} onClose={onClose} score={scoreA} poss={!!game?.situation?.possession && game.situation.possession === game.teams[0]?.id} win={state === "post" && scoreA! > scoreH!} />
             <div className="gc-mid">
               <GameBadgeRow badge={badge} large />
               <RivalryBadge rivalry={(up as { rivalry?: Rivalry } | undefined)?.rivalry} compact={false} />
@@ -322,7 +323,7 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
                 )
               )}
             </div>
-            <TeamHead t={home} score={scoreH} poss={!!game?.situation?.possession && game.situation.possession === game.teams[1]?.id} win={state === "post" && scoreH! > scoreA!} right />
+            <TeamHead t={home} league={league ?? ""} onClose={onClose} score={scoreH} poss={!!game?.situation?.possession && game.situation.possession === game.teams[1]?.id} win={state === "post" && scoreH! > scoreA!} right />
           </header>
           {game && (game.teams[0].linescores.length > 0) && <Linescore game={game} />}
           {updated && state === "in" && (
@@ -468,13 +469,13 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
   );
 }
 
-function TeamHead({ t, score, poss, win, right }: { t: TeamLike; score: number | null; poss?: boolean; win?: boolean; right?: boolean }) {
+function TeamHead({ t, league, onClose, score, poss, win, right }: { t: TeamLike; league: string; onClose: () => void; score: number | null; poss?: boolean; win?: boolean; right?: boolean }) {
   return (
     <div className={`gc-team ${right ? "right" : ""}`}>
-      <img src={logos[t.logoId]} alt="" width="64" height="64" />
+      <TeamOpen className="img" before={onClose} team={{ league, name: t.name, abbr: t.abbr }}><img src={logos[t.logoId]} alt="" width="64" height="64" /></TeamOpen>
       <div>
         <h2>
-          {t.name}
+          <TeamOpen before={onClose} team={{ league, name: t.name, abbr: t.abbr }}>{t.name}</TeamOpen>
           {poss && <FootballIcon title="Has the ball" />}
         </h2>
         <p>{t.record.split(" · ")[0]}</p>
