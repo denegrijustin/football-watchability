@@ -292,18 +292,18 @@ const TIER_NOTE: Record<string, string> = {
 };
 
 /** The playoff picture in tiers, from clinched to eliminated, built from the same simulated seasons as the seed grid. Each logo opens the team's profile. */
-function TrackerPart({ tracker, title, sims, nfl = false, league }: { tracker?: Tracker | null; title: string; sims?: number; nfl?: boolean; league: "CFB" | "NFL" }) {
+function TrackerPart({ tracker, title, sims, nfl = false, league, compact = false, headExtra }: { tracker?: Tracker | null; title: string; sims?: number; nfl?: boolean; league: "CFB" | "NFL"; /** One row per tier, the note under its label: the NFL tracker fits on a phone screen. */ compact?: boolean; /** Shown in place of the title (the conference switch). */ headExtra?: React.ReactNode }) {
   if (!tracker) return <p className="ol-note">The playoff tracker appears once the schedule has been fetched and the simulation has run.</p>;
   const clinched = tracker.tiers.find((t) => t.key === "clinched")?.teams ?? [];
   return (
-    <section className="tk" aria-label={title}>
+    <section className={`tk${compact ? " compact" : ""}`} aria-label={title}>
       <header className="tk-head">
-        <h3>{title}</h3>
+        {headExtra ?? <h3>{title}</h3>}
         <p><b>{tracker.spots}</b> spots · <b>{tracker.inRace}</b> teams in contention</p>
       </header>
       {tracker.tiers.map((tier) => (
         <section key={tier.key} className={`tk-tier ${tier.key}`} aria-label={tier.label}>
-          <div className="tk-top">
+          <div className="tk-top" title={TIER_NOTE[tier.key]}>
             <h4>{tier.label} <small>{tier.note}</small></h4>
             <span className="tk-count" aria-label={`${tier.teams.length} teams`}>{tier.key === "clinched" ? `${clinched.length}/${tracker.spots}` : tier.teams.length}</span>
           </div>
@@ -322,6 +322,28 @@ function TrackerPart({ tracker, title, sims, nfl = false, league }: { tracker?: 
         From {sims?.toLocaleString() ?? "many"} simulated seasons ({nfl ? "each won by the better ESPN FPI team, ties split evenly" : "each game won by the better ESPN FPI team; the field is ordered by FPI minus 6 points per loss"}). {nfl ? "Each tier is a band of playoff odds." : "A tier is where a team's odds cross 50% when it loses 0, 1 or 2+ more games."} {Object.values(TIER_NOTE).length ? "Touch a logo for the team's profile." : ""}
       </p>
     </section>
+  );
+}
+
+/** The NFL tracker, one conference at a time (switch between AFC and NFC), so every tier shows without scrolling on a phone. */
+function NflTracker({ nfl }: { nfl: NonNullable<Data["nfl"]> }) {
+  const confs = Object.keys(nfl.conferences);
+  const [conf, setConf] = useState(confs[0] ?? "AFC");
+  const c = nfl.conferences[conf];
+  return (
+    <TrackerPart
+      tracker={c?.tracker}
+      title={`${conf} playoff tracker`}
+      sims={nfl.sim?.sims}
+      nfl
+      league="NFL"
+      compact
+      headExtra={
+        <div className="segmented tk-conf" role="group" aria-label="Conference">
+          {confs.map((k) => <button key={k} type="button" aria-pressed={conf === k} onClick={() => setConf(k)}>{k}</button>)}
+        </div>
+      }
+    />
   );
 }
 
@@ -385,11 +407,7 @@ export function Outlook({ defaultLeague }: { defaultLeague: League }) {
         ) : part === "leverage" ? (
           <LeveragePart lev={nfl.leverage} sims={nfl.sim?.sims} cycle={nfl.cycle} dow="Tuesday" league="NFL" />
         ) : part === "tracker" ? (
-          <div className="ol-cols">
-            {Object.entries(nfl.conferences).map(([conf, c]) => (
-              <TrackerPart key={conf} tracker={c.tracker} title={`${conf} playoff tracker`} sims={nfl.sim?.sims} nfl league="NFL" />
-            ))}
-          </div>
+          <NflTracker nfl={nfl} />
         ) : (
           <>
             <p className="ol-note">

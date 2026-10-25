@@ -47,6 +47,31 @@ test("the Tracker tab shows the tiers with logos that open a team's profile", as
   await page.locator('[data-tab="outlook"]').click();
   await ctl.getByRole("button", { name: "NFL" }).click();
   await ctl.getByRole("button", { name: "Tracker", exact: true }).click();
-  await expect(page.locator("section.tk")).toHaveCount(2);
+  await expect(page.locator("section.tk")).toHaveCount(1); // one conference at a time
+  const conf = page.getByRole("group", { name: "Conference" });
+  await expect(conf.getByRole("button", { name: "AFC" })).toHaveAttribute("aria-pressed", "true");
+  await conf.getByRole("button", { name: "NFC" }).click();
+  await expect(conf.getByRole("button", { name: "NFC" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator("section.tk")).toHaveAttribute("aria-label", "NFC playoff tracker");
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+});
+
+test("@phone the NFL tracker shows every tier on one phone screen, without scrolling", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await page.locator(".view-switch .tab-more").click();
+  await page.locator('[data-tab="outlook"]').click();
+  const ctl = page.locator(".ol-controls");
+  await ctl.getByRole("button", { name: "NFL" }).click();
+  await ctl.getByRole("button", { name: "Tracker", exact: true }).click();
+  const tk = page.locator("section.tk");
+  await expect(tk).toBeVisible();
+  const tiers = tk.locator(".tk-tier");
+  expect(await tiers.count()).toBe(7);
+  await tk.scrollIntoViewIfNeeded();
+  const last = await tiers.last().boundingBox();
+  const bar = await page.locator(".view-switch").boundingBox(); // the tab bar at the bottom of the screen
+  expect(last!.y + last!.height, "the last tier ends above the tab bar").toBeLessThanOrEqual(bar!.y + 1);
+  const first = await tk.locator(".tk-head").boundingBox();
+  expect(first!.y, "the heading is on screen too").toBeGreaterThanOrEqual(0);
 });
