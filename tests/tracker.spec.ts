@@ -76,3 +76,18 @@ test(`@phone the ${league} tracker shows every tier on one phone screen, without
   const first = await tk.locator(".tk-head").boundingBox();
   expect(first!.y, "the heading is on screen too").toBeGreaterThanOrEqual(0);
 });
+
+for (const [league, check] of [["NFL", "section.sd2 .sd2-table"], ["College", "section.sd2 .sd2-field"]] as const)
+test(`@phone the ${league} seeds fit one phone screen without scrolling`, async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await page.locator(".view-switch .tab-more").click();
+  await page.locator('[data-tab="outlook"]').click();
+  await page.locator(".ol-controls").getByRole("button", { name: league }).click();
+  const body = page.locator(check);
+  await expect(body).toBeVisible();
+  await body.scrollIntoViewIfNeeded();
+  const box = await body.boundingBox();
+  const bar = await page.locator(".view-switch").boundingBox();
+  expect(box!.y + box!.height, "the seeds end above the tab bar").toBeLessThanOrEqual(bar!.y + 1);
+});

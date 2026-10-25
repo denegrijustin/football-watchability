@@ -210,9 +210,9 @@ test("@smoke the page opens on the right league and the Outlook tab shows the pr
   await page.getByRole("button", { name: /^Outlook/ }).click();
   await expect(page.getByRole("button", { name: "College", exact: true })).toHaveAttribute("aria-pressed", "true");
   // Projected playoff: twelve seeds with a bye on the first four.
-  await expect(page.locator('ol[aria-label="Projected playoff field"] > li')).toHaveCount(12);
-  await expect(page.locator('ol[aria-label="Projected playoff field"] > li.bye')).toHaveCount(4);
-  await expect(page.locator(".ol-note").first()).toContainText("Sunday");
+  await expect(page.locator("ol.sd2-field > li")).toHaveCount(12);
+  await expect(page.locator("ol.sd2-field > li.bye")).toHaveCount(4);
+  await expect(page.locator(".tk-how").last()).toContainText("Sunday");
   // Rankings: start at 25 and open up to the top 120.
   await page.getByRole("button", { name: "Rankings" }).click();
   await expect(page.locator(".ol-table tbody tr")).toHaveCount(25);
@@ -233,8 +233,8 @@ test("@smoke the page opens on the right league and the Outlook tab shows the pr
   await expect(page.locator(".ol-bowls > li").first()).toBeVisible();
   // NFL: seven seeds per conference.
   await page.getByRole("button", { name: "NFL", exact: true }).click();
-  await expect(page.locator(".ol h3")).toHaveText(["AFC", "NFC"]);
-  await expect(page.locator(".ol-note").first()).toContainText("Tuesday");
+  await expect(page.getByRole("group", { name: "Conference" }).getByRole("button")).toHaveText(["AFC", "NFC"]); // one conference at a time
+  await expect(page.locator(".tk-how").last()).toContainText("Tuesday");
   const width = await page.evaluate(() => document.documentElement.scrollWidth);
   expect(width).toBeLessThanOrEqual((page.viewportSize()?.width ?? 0) + 1);
   expect(errors).toEqual([]);
@@ -262,14 +262,16 @@ test("the NFL grid has a row per team, a column per seed, and the #1 seed column
   });
   await page.goto("/?league=NFL");
   await page.getByRole("button", { name: /^Outlook/ }).click();
-  await expect(page.locator(".ol-grid")).toHaveCount(2);
+  await expect(page.locator("section.sd2")).toHaveCount(1); // the AFC; the switch shows the NFC
   const afc = page.locator('[aria-label="AFC seed odds"] table');
   await expect(afc.locator("tbody tr")).toHaveCount(16);
-  await expect(afc.locator("thead th")).toHaveText(["Team", "Exp W", "#1", "#2", "#3", "#4", "#5", "#6", "#7", "Playoffs", "Division"]);
-  await expect(afc.locator("thead th.bye")).toHaveText("#1");
+  await expect(afc.locator("thead th")).toHaveText(["Team", "1", "2", "3", "4", "5", "6", "7", "Playoffs", "Div"]);
+  await expect(afc.locator("thead th.bye")).toHaveText("1");
   await expect(afc.locator("tbody tr").first().locator("td.cell.bye")).toHaveText("38");
   await expect(afc.locator("tbody tr").first().locator("td.tot")).toHaveText("91%");
-  await expect(page.locator(".ol-note").nth(1)).toContainText("20,000 times");
+  await expect(page.locator(".tk-how").last()).toContainText("20,000 times");
+  await page.getByRole("group", { name: "Conference" }).getByRole("button", { name: "NFC" }).click();
+  await expect(page.locator('[aria-label="NFC seed odds"] table tbody tr')).toHaveCount(16);
   // The grid scrolls inside its own box; the page never scrolls sideways.
   const width = await page.evaluate(() => document.documentElement.scrollWidth);
   expect(width).toBeLessThanOrEqual((page.viewportSize()?.width ?? 0) + 1);
@@ -504,14 +506,15 @@ test("the college grid reaches the page: a row per contender, twelve seed column
   });
   await page.goto("/?league=CFB");
   await page.getByRole("button", { name: /^Outlook/ }).click();
+  await page.locator("summary", { hasText: "Full seed odds" }).click(); // the full grid is folded away under the field
   const grid = page.locator('[aria-label="Playoff seed odds"] table');
   await expect(grid.locator("tbody tr")).toHaveCount(20);
   await expect(grid.locator("thead th")).toHaveText(["Team", "Exp W", ...Array.from({ length: 12 }, (_, i) => `#${i + 1}`), "Playoffs", "Bye", "Conf title"]);
   await expect(grid.locator("thead th.bye")).toHaveCount(4);
   await expect(grid.locator("thead th.edge")).toHaveText("#4");
   await expect(grid.locator("tbody tr").first().locator("td.tot")).toHaveText("95%");
-  await expect(page.locator(".ol-note").nth(1)).toContainText("10,000 times");
-  await expect(page.locator('ol[aria-label="Projected playoff field"] > li')).toHaveCount(12); // the composite-based field stays below
+  await expect(page.locator(".tk-how").last()).toContainText("10,000 times");
+  await expect(page.locator("ol.sd2-field > li")).toHaveCount(12); // the composite-based field is the main view
   const width = await page.evaluate(() => document.documentElement.scrollWidth);
   expect(width).toBeLessThanOrEqual((page.viewportSize()?.width ?? 0) + 1);
   expect(errors).toEqual([]);
