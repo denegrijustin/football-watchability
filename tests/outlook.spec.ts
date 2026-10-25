@@ -1,4 +1,5 @@
 import { test, expect } from "./fixtures";
+import { openOutlook } from "./helpers/outlook";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -207,7 +208,7 @@ test("@smoke the page opens on the right league and the Outlook tab shows the pr
   await page.clock.install({ time: new Date("2026-10-07T18:00:00Z") }); // Wednesday
   await page.goto("/");
   await expect(page.getByLabel("League", { exact: true }).first()).toHaveValue("CFB");
-  await page.getByRole("button", { name: /^Outlook/ }).click();
+  await openOutlook(page);
   await expect(page.getByRole("button", { name: "College", exact: true })).toHaveAttribute("aria-pressed", "true");
   // Projected playoff: twelve seeds with a bye on the first four.
   await expect(page.locator("ol.sd2-field > li")).toHaveCount(12);
@@ -261,7 +262,7 @@ test("the NFL grid has a row per team, a column per seed, and the #1 seed column
     await route.fulfill({ response: res, json: { ...(await res.json()), nfl } });
   });
   await page.goto("/?league=NFL");
-  await page.getByRole("button", { name: /^Outlook/ }).click();
+  await openOutlook(page);
   await expect(page.locator("section.sd2")).toHaveCount(1); // the AFC; the switch shows the NFC
   const afc = page.locator('[aria-label="AFC seed odds"] table');
   await expect(afc.locator("tbody tr")).toHaveCount(16);
@@ -505,7 +506,7 @@ test("the college grid reaches the page: a row per contender, twelve seed column
     await route.fulfill({ response: res, json: { ...saved, cfb: { ...saved.cfb, sim: { sims: 10000, games: 497 }, grid: rows } } });
   });
   await page.goto("/?league=CFB");
-  await page.getByRole("button", { name: /^Outlook/ }).click();
+  await openOutlook(page);
   await page.locator("summary", { hasText: "Full seed odds" }).click(); // the full grid is folded away under the field
   const grid = page.locator('[aria-label="Playoff seed odds"] table');
   await expect(grid.locator("tbody tr")).toHaveCount(20);

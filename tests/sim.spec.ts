@@ -34,7 +34,7 @@ test("@phone all the tabs stay on one row, visible and not overlapping, from 375
       for (let i = 0; i < bs.length; i++) for (let j = i + 1; j < bs.length; j++) if (bs[i].left < bs[j].right - 0.5 && bs[j].left < bs[i].right - 0.5 && bs[i].top < bs[j].bottom - 0.5 && bs[j].top < bs[i].bottom - 0.5) overlaps++;
       return { n: bs.length, overlaps, off: bs.filter((b) => b.right > innerWidth + 1 || b.left < -1).length, rows: new Set(bs.map((b) => Math.round(b.top))).size };
     });
-    expect(r, `tabs at ${w}px`).toEqual({ n: phone ? 6 : 14, overlaps: 0, off: 0, rows: 1 });
+    expect(r, `tabs at ${w}px`).toEqual({ n: phone ? 6 : 13, overlaps: 0, off: 0, rows: 1 });
   }
 });
 
