@@ -20,10 +20,40 @@ export function initMotion() {
   apply(); hidden();
   reduce?.addEventListener?.("change", apply);
   document.addEventListener("visibilitychange", hidden);
+  idleGovernor(root);
   nav.getBattery?.().then((b) => {
     const check = () => { lowBattery = !b.charging && b.level <= 0.2; apply(); };
     check(); b.addEventListener("levelchange", check); b.addEventListener("chargingchange", check);
   }).catch(() => {});
+}
+
+/**
+ * A phone left open on the board keeps its looping animations (live dots, the score ticker, the pulse on the ball) running all day, and each one keeps the
+ * screen redrawing. After IDLE_MS with no touch, scroll, key or pointer input every looping animation is paused (<html data-idle> is set so styles can know),
+ * and the first input after that plays them again. One-shot animations are left alone, and a sweep catches loops that start while idle.
+ */
+export const IDLE_MS = 25_000;
+function idleGovernor(root: HTMLElement) {
+  const paused = new Set<Animation>();
+  let timer: ReturnType<typeof setTimeout> | undefined, sweeper: ReturnType<typeof setInterval> | undefined;
+  const sweep = () => {
+    for (const a of document.getAnimations()) {
+      if (a.playState === "running" && a.effect?.getTiming().iterations === Infinity) { a.pause(); paused.add(a); }
+    }
+  };
+  const sleep = () => { root.setAttribute("data-idle", ""); sweep(); sweeper = setInterval(sweep, 4000); };
+  const wake = () => {
+    clearTimeout(timer);
+    if (root.hasAttribute("data-idle")) {
+      root.removeAttribute("data-idle");
+      clearInterval(sweeper);
+      for (const a of paused) { try { a.play(); } catch { /* the element is gone */ } }
+      paused.clear();
+    }
+    timer = setTimeout(sleep, IDLE_MS);
+  };
+  for (const ev of ["pointerdown", "pointermove", "touchstart", "touchmove", "scroll", "wheel", "keydown"]) window.addEventListener(ev, wake, { passive: true, capture: true });
+  wake();
 }
 
 /** A short buzz on phones that support it (a game going live). Skipped when motion is off or the tab is hidden. */
