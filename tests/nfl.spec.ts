@@ -127,9 +127,8 @@ test.describe("the NFL+ tab", () => {
   test("movement and team views render for any team", async ({ page }) => {
     await openTab(page);
     await openSppTab(page, "Movement");
-    const bump = page.locator('.spp svg[aria-label="Bump chart of rating rank by week"]');
-    await expect(bump).toBeVisible();
-    await expect(bump.locator("path")).toHaveCount(12);
+    await expect(page.locator(".spp .mv-table tbody tr").first()).toBeVisible(); // the movers table: risers and fallers, then every team
+    await expect(page.locator(".spp .mv-list")).toHaveCount(2);
     await openSppTab(page, "Team", true);
     await page.locator('.spp select[aria-label="Team"]').selectOption("KC");
     await expect(page.locator(".spp h2", { hasText: "Kansas City Chiefs" })).toBeVisible();
@@ -205,11 +204,11 @@ test.describe("NFL data and model", () => {
     expect(withLine.marginHome).toBe(g.spread);
     expect(withLine.total).toBe(g.total);
     expect(Math.abs(withLine.sim.meanMargin - -g.spread!)).toBeLessThan(0.6);
-    const noLine = projectNfl(nfl, g.away, g.home, g.week, { neutral: false, spread: null, total: null, n: 20000 })!;
+    const noLine = projectNfl(nfl, g.away, g.home, g.week, { neutral: !!g.neutral, spread: null, total: null, n: 20000 })!; // (a neutral-site game has no home edge)
     expect(noLine.basis).toBe("ratings");
     expect(noLine.marginHome).toBeCloseTo(g.mm!, 0);
     // Swapping home and away flips the favorite.
-    const flipped = projectNfl(nfl, g.home, g.away, g.week, { n: 20000 })!;
+    const flipped = projectNfl(nfl, g.home, g.away, g.week, { neutral: !!g.neutral, n: 20000 })!;
     expect(Math.sign(flipped.marginHome)).toBe(-Math.sign(noLine.marginHome) || Math.sign(flipped.marginHome));
     // Same inputs, same simulation.
     const again = projectGameRow(nfl, g, { n: 20000 })!;
@@ -311,9 +310,11 @@ test.describe("NFL simulator: picking a game", () => {
   test("any two teams: a pairing that is not scheduled is a custom matchup with a ratings week to choose", async ({ page }) => {
     const pairs = new Set(regular.map((g) => [g.away, g.home].sort().join("|")));
     const abbrs = Object.keys(nfl.teams);
-    let a = "", b = "";
-    outer: for (const x of abbrs) for (const y of abbrs) if (x !== y && !pairs.has([x, y].sort().join("|"))) { a = x; b = y; break outer; }
     const pick = await goSim(page);
+    // The away list leaves out the team already chosen as home (and the home list the away team), so the pair avoids the game the simulator opens on.
+    const home0 = await page.locator('.spp select[aria-label="Home team"]').inputValue();
+    let a = "", b = "";
+    outer: for (const x of abbrs) for (const y of abbrs) if (x !== y && x !== home0 && !pairs.has([x, y].sort().join("|"))) { a = x; b = y; break outer; }
     await page.locator('.spp select[aria-label="Away team"]').selectOption(a);
     await page.locator('.spp select[aria-label="Home team"]').selectOption(b);
     await expect(pick.getByLabel("Game")).toHaveValue("");

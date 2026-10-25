@@ -1283,8 +1283,8 @@ writeFileSync(new URL("src/data/network-ids.json", root), JSON.stringify(network
 // New logos needed?
 const logos = src("logos.json");
 const missing = [...new Map(games.flatMap((g) => g.teams).filter((t) => !logos[t.logoId]).map((t) => [t.logoId, t])).values()];
-writeFileSync(
-  new URL("src/data/team-ids.json", root),
-  JSON.stringify(Object.fromEntries(games.flatMap((g) => g.teams.map((t) => [t.logoId, { espnId: t.espnId, league: g.league, name: t.name }]))), null, 2) + "\n",
-);
+// Every team the board has had, not only this week's: the college ranks and the SP+ lookups key on this list, and a week with no college games on the board
+// (Sunday and Monday, after the finished week is archived) would otherwise empty them.
+const teamIds = { ...optSrc("team-ids.json", {}), ...Object.fromEntries(games.flatMap((g) => g.teams.map((t) => [t.logoId, { espnId: t.espnId, league: g.league, name: t.name }]))) };
+writeFileSync(new URL("src/data/team-ids.json", root), JSON.stringify(teamIds, null, 2) + "\n");
 console.log(`Built ${games.length} games (${games.filter((g) => g.league === "NFL").length} NFL). Missing logos: ${missing.map((t) => t.logoId).join(", ") || "none"}`);

@@ -1,10 +1,12 @@
 import { test, expect } from "./fixtures";
+import { hasCfbGame, NO_CFB } from "./helpers/slate";
 import { stubFinals } from "./helpers/finals";
 import { openSppTab } from "./helpers/spp";
 
 // On a small phone no view may make the page itself scroll sideways. (The TV grid and the conference chart keep their own scroll area on purpose.)
 for (const lg of ["CFB", "NFL"] as const) {
   test(`@phone no view widens the page on a 360px phone (${lg})`, async ({ page }) => {
+    test.skip(lg === "CFB" && !hasCfbGame(), NO_CFB);
     test.setTimeout(150_000);
     await stubFinals(page);
     await page.setViewportSize({ width: 360, height: 800 });
@@ -16,7 +18,7 @@ for (const lg of ["CFB", "NFL"] as const) {
       expect(sw, `${what} is wider than the screen`).toBeLessThanOrEqual(cw);
     };
     await widest("board");
-    for (const v of ["picks", "standings", "injuries", "upset", "insanity", "sim", "grid", "outlook", "empire"]) {
+    for (const v of ["picks", "resumes", "standings", "injuries", "upset", "insanity", "sim", "grid", "outlook", "empire"]) {
       await page.evaluate((d) => window.dispatchEvent(new CustomEvent("fbwatch:open-view", { detail: d })), v);
       await page.waitForTimeout(1200);
       await widest(v);

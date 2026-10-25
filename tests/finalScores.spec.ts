@@ -11,7 +11,7 @@ test.describe("the final scores strip", () => {
     const tiles = fs.locator(".fs-tile");
     expect(await tiles.count()).toBeGreaterThan(0);
     await expect(tiles.first().locator(".fs-row")).toHaveCount(2);
-    await tiles.first().click();
+    await tiles.first().locator(".fs-open").click();
     await expect(page.locator("dialog.gc")).toBeVisible();
   });
 

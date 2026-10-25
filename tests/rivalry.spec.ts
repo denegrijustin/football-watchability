@@ -1,4 +1,5 @@
 import { test, expect } from "./fixtures";
+import { hasCfbGame, NO_CFB } from "./helpers/slate";
 import { readFileSync } from "node:fs";
 import { RIVALRIES, RIVALRY_MAX, namedRivalry, rivalryFor, rivalryLine, rivalryPoints, seriesOf } from "../scripts/rivalry.mjs";
 import { forecastScore } from "../scripts/score.mjs";
@@ -49,6 +50,8 @@ test("every named rivalry points at teams the site has a logo for", () => {
 });
 
 test("this week's board carries its rivalries: a part in the breakdown, a rivalry line first in why-watch, and a trophy where there is one", () => {
+
+  test.skip(!hasCfbGame(), NO_CFB);
   const slate = JSON.parse(readFileSync("src/data/slate.json", "utf8"));
   const riv = slate.games.filter((g: any) => g.rivalry);
   expect(riv.length).toBeGreaterThan(0);
@@ -62,6 +65,8 @@ test.describe("on the cards", () => {
   test.beforeEach(async ({ page }) => { await stubFinals(page); });
 
   test("a rivalry game has a small badge, and one with a trophy shows the trophy's drawing", async ({ page }) => {
+
+    test.skip(!hasCfbGame(), NO_CFB);
     await page.goto("/?league=CFB");
     const badge = page.getByTestId("rivalry-badge").first();
     await expect(badge).toBeVisible({ timeout: 15_000 });
@@ -71,6 +76,8 @@ test.describe("on the cards", () => {
   });
 
   test("the Game Center shows the same badge with the trophy's name written out", async ({ page }) => {
+
+    test.skip(!hasCfbGame(), NO_CFB);
     await page.goto("/?league=CFB");
     const id = await page.locator(".game-card:has(.rv-badge.trophy)").first().getAttribute("data-game-id");
     await page.locator(`.game-card[data-game-id="${id}"]`).getByRole("button", { name: /Game Center/ }).first().click();

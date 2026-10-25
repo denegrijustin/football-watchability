@@ -3,6 +3,7 @@ import { logos } from "../data";
 import { useLiveMap } from "../live";
 import { upsetBy } from "../upset";
 import { useOpenGame } from "./GameCenterContext";
+import { TeamOpen } from "../openTeam";
 import type { Board } from "./GameBoard";
 import "../finalScores.css";
 
@@ -59,17 +60,18 @@ export function FinalScores({ tiles, open }: { tiles: Tile[]; open: boolean }) {
           const up = t.upset ? `Upset: ${t.teams[t.upset.winner].name}, FPI #${t.teams[t.upset.winner].fpi}, beat ${t.teams[1 - t.upset.winner].name}, FPI #${t.teams[1 - t.upset.winner].fpi}.` : "";
           return (
             <li key={t.id}>
-              <button type="button" className={`fs-tile${t.upset ? " upset" : ""}`} data-event-id={t.id} data-upset={t.upset ? "true" : undefined} title={up || undefined} onClick={() => openGame(t.id)} aria-label={`${a.name} ${a.score}, ${h.name} ${h.score}, final${t.ot ? " in overtime" : ""}. ${a.fpi && h.fpi ? `FPI rank ${a.name} ${a.fpi}, ${h.name} ${h.fpi}. ` : ""}${up} Open the game.`}>
+              <div className={`fs-tile${t.upset ? " upset" : ""}`} data-event-id={t.id} data-upset={t.upset ? "true" : undefined} title={up || undefined}>
+                <button type="button" className="fs-open" onClick={() => openGame(t.id)} aria-label={`${a.name} ${a.score}, ${h.name} ${h.score}, final${t.ot ? " in overtime" : ""}. ${a.fpi && h.fpi ? `FPI rank ${a.name} ${a.fpi}, ${h.name} ${h.fpi}. ` : ""}${up} Open the game.`} />
                 {t.teams.map((tm, i) => (
                   <span key={i} className={`fs-row${w === i ? " won" : w === -1 ? "" : " lost"}`}>
-                    <img src={logos[tm.logoId]} alt="" width="16" height="16" loading="lazy" decoding="async" />
+                    <TeamOpen className="img" team={{ league: t.league, name: tm.name, abbr: tm.abbr }}><img src={logos[tm.logoId]} alt="" width="16" height="16" loading="lazy" decoding="async" /></TeamOpen>
                     {tm.fpi != null && <small className="fs-fpi" title={`ESPN FPI rank ${tm.fpi}`}>{tm.fpi}</small>}
-                    <span className="fs-abbr">{tm.abbr}</span>
+                    <TeamOpen className="fs-abbr" team={{ league: t.league, name: tm.name, abbr: tm.abbr }}>{tm.abbr}</TeamOpen>
                     <b>{tm.score}</b>
                   </span>
                 ))}
                 <small className="fs-tag">{t.upset ? <><em>Upset</em><span>+{t.upset.gap}</span></> : t.ot ? "F/OT" : "F"}</small>
-              </button>
+              </div>
             </li>
           );
         })}

@@ -1,4 +1,5 @@
 import { test, expect } from "./fixtures";
+import { hasCfbGame, NO_CFB } from "./helpers/slate";
 import { readFileSync } from "node:fs";
 const slate = JSON.parse(readFileSync("src/data/slate.json", "utf8"));
 // Slate cards (not archived result cards, which also carry .game-card). The board lists every
@@ -189,6 +190,8 @@ test("day and watchability filters narrow the board", async ({ page }) => {
 });
 
 test("season form chart, trends panel and network logos render", async ({ page }) => {
+
+  test.skip(!hasCfbGame(), NO_CFB);
   await page.goto("/?league=NFL");
   await league(page, "CFB");
   let card = page.locator(CARD).first();
@@ -423,9 +426,10 @@ test("Game Center overlay opens from a card with projection, momentum, field til
   const first = page.locator(CARD).first();
   await expect(first.locator(".card-more")).toHaveCount(0);
   await expect(first.locator(".matchup")).toHaveCount(1); // just the strip until it is opened
-  await first.locator(".compact-overview .matchup").click();
+  // (a team's logo and name open its profile, so the card opens with its Details button and the Game Center with its own button)
+  await first.locator(".cc-chevron").click();
   await expect(first.locator(".card-more .take")).toBeVisible();
-  await first.locator(".matchup").click();
+  await first.getByRole("button", { name: /Game Center/ }).first().click();
   const gc = page.locator("dialog.gc");
   await expect(gc).toBeVisible();
   await expect(gc.locator(".gc-proj")).toContainText("Projected score");
@@ -504,7 +508,7 @@ test("insanity meter updates live from the flow feed", async ({ page }) => {
     return route.fulfill({ json: { wp } });
   });
   await page.goto("/?league=NFL");
-  await expect(page.locator(".game-card .flow-mini").first()).toBeVisible();
+  await expect(page.locator(".game-card .live-meters .lm").first()).toBeVisible();
   await page.screenshot({path: "test-results/live-momentum-" + test.info().project.name + ".png"});
   await expand(page.locator(CARD).first()); // the meter lives in the expanded card
   const meter = page.locator(".game-card .insanity.live").first();
@@ -589,6 +593,8 @@ test("NFL cards carry an injury report with Out / Doubtful / Questionable and th
 });
 
 test("college conference games carry the conference availability report", async ({ page }) => {
+
+  test.skip(!hasCfbGame(), NO_CFB);
   const games = slate.games.filter((g: any) => g.league === "CFB" && g.availability);
   test.skip(!games.length, "no conference availability reports in this build");
   for (const g of games) {
@@ -1231,6 +1237,8 @@ test("a page left open across a deploy says a new version is ready, and Reload b
 
 test("Games is the first tab on the left of the menu bar", async ({ page }) => {
   await page.goto("/");
+  await expect(page.locator('.view-switch [data-tab="board"]')).toBeVisible();
+  await page.waitForTimeout(300); // the tab row settles after the fonts load
   const tabs = await page.locator(".view-switch button[data-tab]").evaluateAll((els) => els.filter((e) => e.getBoundingClientRect().width > 0).sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left).map((e) => (e as HTMLElement).dataset.tab));
   expect(tabs[0]).toBe("board");
 });

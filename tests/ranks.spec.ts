@@ -1,4 +1,5 @@
 import { test, expect } from "./fixtures";
+import { hasCfbGame, NO_CFB } from "./helpers/slate";
 import { fpiConfRanks } from "../scripts/ranks.mjs";
 import { rankLine, rankTitle } from "../src/rankLine";
 
@@ -52,6 +53,7 @@ test("ranks are labeled where they appear: on the cards, in the TV grid key and 
 });
 
 test("TV grid: every team shows its record, and the national rank is the AP rank when it has one, otherwise FPI", async ({ page }) => {
+  test.skip(!hasCfbGame(), NO_CFB);
   // The grid opens on today's games; pin the clock to the day of a game with an AP-ranked team, so the check doesn't depend on
   // which day of the week the suite runs (on a Sunday the grid holds only late kickoffs).
   const { default: slate } = await import("../src/data/slate.json", { with: { type: "json" } });

@@ -1,4 +1,5 @@
 import { expect, test } from "./fixtures";
+import { hasCfbGame, NO_CFB } from "./helpers/slate";
 import { readFileSync } from "node:fs";
 
 const slate = JSON.parse(readFileSync("src/data/slate.json", "utf8"));
@@ -10,6 +11,8 @@ const series = (wild: boolean) =>
   Array.from({ length: 60 }, (_, i) => [wild ? (i % 2 ? 90 : 10) : 50 + (i % 3), 1 + Math.floor(i / 15), { id: String(i), text: "play", clock: "1:00" }]);
 
 test("a game in progress joins the Insanity list, scored live, and refreshes every 60 seconds along with the ledger", async ({ page }) => {
+
+  test.skip(!hasCfbGame(), NO_CFB);
   const start = new Date(live.date).getTime();
   await page.clock.install({ time: start + 90 * 60e3 });
   let wild = false;
@@ -57,6 +60,8 @@ test("with no game in progress nothing polls and no live row or note appears", a
 });
 
 test("a game that ended since the last rebuild is scored from its win-probability line and listed as FINAL, not left out", async ({ page }) => {
+
+  test.skip(!hasCfbGame(), NO_CFB);
   const ledger = JSON.parse(readFileSync("src/data/season.json", "utf8")).games;
   const inLedger = new Set(ledger.map((g: any) => g.id));
   const results = JSON.parse(readFileSync("src/data/results.json", "utf8")).games;

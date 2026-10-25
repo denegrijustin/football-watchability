@@ -4,6 +4,7 @@ import { backShort, basisShort, impactShort, injuryLine, type Player } from "../
 import { ChipImg } from "../logoTone";
 import { Headshot } from "./Headshot";
 import { InjuryFigure } from "./InjuryFigure";
+import { TeamOpen } from "../openTeam";
 import "../injuryCard.css";
 
 const short = (s: string) => ({ "Injured Reserve": "Injured reserve", "Out for season": "Out for season" })[s] ?? s;
@@ -20,7 +21,7 @@ export function InjuryCard({ p, nfl, season }: { p: Player; nfl: boolean; season
     <li className={`jc sev-${sev}`}>
       <div className="jc-who">
         <Headshot src={p.headshot} name={p.name} size={48} className="jc-head" />
-        <div className="jc-name"><b>{p.name}</b><span>{p.pos}{p.jersey ? ` #${p.jersey}` : ""} · {logo && <ChipImg src={logo} size={16} />} {p.teamName ?? p.team}</span></div>
+        <div className="jc-name"><b>{p.name}</b><span>{p.pos}{p.jersey ? ` #${p.jersey}` : ""} · {(() => { const to = { league: nfl ? "NFL" : "CFB", name: p.teamName ?? p.team, abbr: p.team }; return <><TeamOpen className="img" team={to}>{logo && <ChipImg src={logo} size={16} />}</TeamOpen> <TeamOpen team={to}>{p.teamName ?? p.team}</TeamOpen></>; })()}</span></div>
         <span className={`jc-sev ${sev}`}>{p.severity}</span>
       </div>
       <div className="jc-mid">
