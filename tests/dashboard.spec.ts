@@ -1225,7 +1225,9 @@ test("a page left open across a deploy says a new version is ready, and Reload b
   await expect(page.locator(".update-bar")).toHaveCount(0); // this build is the current one
   // The site is published again: its id is no longer the one this page carries.
   await page.route("**/version.json", (route) => route.fulfill({ json: { id: "a-newer-build" } }));
-  await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+  await page.evaluate(() => { (window as any).__oldPage = true; document.dispatchEvent(new Event("visibilitychange")); });
+  // The page reloads itself; wait for the new one before looking for the bar (the old page shows it for an instant first), and keep the newer id until then.
+  await page.waitForFunction(() => !(window as any).__oldPage, undefined, { timeout: 20_000 });
   // Coming back to the page reloads it by itself (see useUpdateCheck), so the bar appears on the reloaded page; give a busy machine time to load it.
   const bar = page.locator(".update-bar");
   await expect(bar).toContainText("new version", { timeout: 20_000 });

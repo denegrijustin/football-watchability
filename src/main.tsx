@@ -5,6 +5,7 @@ import { LiveScores } from "./live";
 import { GameCenterProvider, preloadGameCenter } from "./components/GameCenterContext";
 import "./styles.css";
 import "./motion.css";
+import "./phoneTop.css";
 import { guardLogos } from "./logoGuard";
 import { initMotion } from "./motion";
 initMotion();

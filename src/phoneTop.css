@@ -1,0 +1,49 @@
+/* A phone: everything above the first game card in as little height as will still read. */
+@media (max-width: 760px) {
+  .site-header { height: 42px; }
+  .filter-dock { padding-top: 4px; padding-bottom: 4px; }
+  .filter-toggle, .filter-dock .fmenu > button, .filter-bar .search { min-height: 40px; }
+  /* one line of status chips: "2 live · 18 final · 8 soon · Scores 4" */
+  .board-heading { margin: 4px 0 4px; gap: 4px 8px; }
+  .board-heading h2, .board-heading .sort-label { display: none; }
+  .status-chips { flex-wrap: nowrap; width: 100%; gap: 6px; }
+  .status-chip { flex: 1 1 0; min-width: 0; min-height: 32px; padding: 0 6px; font-size: 0.8125rem; white-space: nowrap; display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+  .status-chip .sc-l { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .status-chip[data-short]::after { content: attr(data-short); }
+  /* Watch now: a tile is two lines, the heading shares the top of the strip */
+  .watch-now { margin: 2px 0 6px; }
+  .watch-now h3 { margin: 0 0 3px; font-size: 0.6875rem; }
+  .watch-now ul { grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 6px; }
+  .wn-tile { grid-template-columns: 1fr auto; grid-template-areas: "when foot" "teams teams"; gap: 2px 6px; padding: 6px 10px; border-radius: 10px; }
+  .wn-when { grid-area: when; font-size: 0.6875rem; }
+  .wn-foot { grid-area: foot; flex-wrap: nowrap; font-size: 0.6875rem; }
+  .wn-foot strong { display: none; }
+  .wn-teams { grid-area: teams; display: flex; gap: 4px 8px; align-items: baseline; font-size: 0.8125rem; justify-content: space-between; }
+  .wn-teams b { margin-right: -4px; }
+  .wn-teams em { font-size: 1rem; margin-right: 6px; }
+  /* section heading and time slot sit tight to the cards */
+  .section-head { margin-top: 6px; margin-bottom: 4px; }
+  .kickoff-slot > h4 { margin: 4px 0 6px; padding-bottom: 4px; font-size: 0.8125rem; }
+
+  /* ---- the game cards ---- */
+  .compact-overview.v2 .card-top.cc-top { margin-bottom: 4px; gap: 6px; }
+  .compact-overview.v2 .cc-when { flex-wrap: nowrap; gap: 6px; }
+  .cc-when:has(.game-status) .cc-time { display: none; } /* a game on the clock needs its clock, not its kickoff */
+  .late-flag { margin: 0 0 4px; padding: 2px 9px 2px 7px; font-size: 0.6875rem; }
+  .compact-overview.v2 .matchup { gap: 8px; }
+  .compact-overview.v2 .cc-team { grid-template-columns: 28px minmax(0, 1fr) auto; gap: 8px; padding: 2px 0; }
+  .compact-overview.v2 .cc-team img { width: 28px; height: 28px; }
+  .compact-overview.v2 .cc-team > div { flex-wrap: wrap; gap: 0 6px; }
+  .compact-overview.v2 .cc-team h4 { flex: 0 1 auto; min-width: 0; font-size: 0.9375rem; line-height: 1.15; }
+  .compact-overview.v2 .cc-team p { flex: none; font-size: 0.75rem; white-space: nowrap; color: var(--muted); }
+  .compact-overview.v2 .home-tag { display: none; } /* home is the second line; it says so in Details */
+  .compact-overview.v2 .cc-rate { min-width: 0; padding: 4px 6px; border-radius: 10px; }
+  .compact-overview.v2 .cc-rate .score-tier { margin-top: 1px; font-size: 0.5625rem; }
+  .compact-overview.v2 .cc-rate strong { font-size: 1.25rem; }
+  .compact-overview.v2 .score-ring { width: 40px; height: 40px; }
+  .compact-overview.v2 .facts { margin-top: 2px; }
+  .compact-overview.v2 .facts li { padding: 0; }
+  .gi-strip { margin-top: 3px; gap: 3px 5px; }
+  .gi-strip .gi-label { display: none; }
+  .compact-overview.v2 .cc-actions .card-toggle { min-height: 34px; padding-top: 0; padding-bottom: 0; }
+}
