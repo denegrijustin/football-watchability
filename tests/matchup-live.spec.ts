@@ -1,8 +1,10 @@
 import { test, expect } from '@playwright/test';
+import { hasCfbGame, NO_CFB } from "./helpers/slate";
 import { readFileSync } from 'node:fs';
 const stats = JSON.parse(readFileSync('src/data/matchup-stats.json', 'utf8'));
 const slate = JSON.parse(readFileSync('src/data/slate.json', 'utf8'));
 for (const league of ['NFL', 'CFB']) test(`${league} game cards show real crossover statistics`, async ({ page }) => {
+  test.skip(league === 'CFB' && !hasCfbGame(), NO_CFB);
   await page.goto(`/?league=${league}`);
   const card = page.locator('.game-card:not(.result-card):visible').first();
   const id = await card.getAttribute('data-game-id');

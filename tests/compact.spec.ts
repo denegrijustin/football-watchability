@@ -1,4 +1,5 @@
 import { expect, test } from "./fixtures";
+import { hasCfbGame, NO_CFB } from "./helpers/slate";
 import { readFileSync } from "node:fs";
 
 // The Watch-now strip appears when a game is live or about to start, so these measurements are taken at a time with neither: well before the first kickoff.
@@ -7,6 +8,7 @@ const quiet = Math.min(...slate.games.map((g: any) => new Date(g.date).getTime()
 
 // The top of the page is mostly controls; keep them to a few slim rows so the games start high on a phone.
 test("@phone on a phone the controls take few rows and the first game starts high", async ({ page }) => {
+  test.skip(!hasCfbGame(), NO_CFB);
   await page.clock.install({ time: quiet });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/?league=CFB");
@@ -46,6 +48,8 @@ test("How to read a card is a button in the header that opens its guide over the
 });
 
 test("on a desktop the first game starts in the upper third of the screen", async ({ page }) => {
+
+  test.skip(!hasCfbGame(), NO_CFB);
   await page.clock.install({ time: quiet });
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/?league=CFB");
