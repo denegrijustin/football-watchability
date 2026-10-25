@@ -2471,12 +2471,7 @@ details.proj summary strong {
   padding-bottom: 20px;
 }
 .tv-game.is-live {
-  animation: tv-live 2s ease-in-out infinite;
-}
-@keyframes tv-live {
-  50% {
-    box-shadow: 0 0 0 2px var(--lime), 0 0 18px rgb(192 237 128 / 45%);
-  }
+  box-shadow: 0 0 0 1px var(--lime), 0 0 10px rgb(192 237 128 / 30%);
 }
 
 /* Game card dialog over the grid */
@@ -3687,7 +3682,7 @@ details.proj summary strong {
 }
 @keyframes ins-pulse {
   50% {
-    box-shadow: 0 0 0 1px rgb(0 0 0 / 45%), 0 0 8px 2px rgb(196 127 214 / 55%);
+    opacity: 0.6;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -4589,7 +4584,16 @@ p.booth {
   background: #ff6b6b;
 }
 .live-dot {
-  animation: live-pulse 1.8s ease-in-out infinite;
+  position: relative;
+}
+.live-dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: #ff6b6b;
+  opacity: 0;
+  animation: live-pulse 1.8s ease-out infinite;
 }
 .is-live-filter::before {
   content: "";
@@ -4597,13 +4601,13 @@ p.booth {
 }
 @keyframes live-pulse {
   0% {
-    box-shadow: 0 0 0 0 rgb(255 107 107 / 55%);
+    transform: scale(1);
+    opacity: 0.55;
   }
-  70% {
-    box-shadow: 0 0 0 8px rgb(255 107 107 / 0%);
-  }
+  70%,
   100% {
-    box-shadow: 0 0 0 0 rgb(255 107 107 / 0%);
+    transform: scale(2.6);
+    opacity: 0;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -5947,8 +5951,16 @@ select,
 .drive-live.loading {
   height: 56px;
   border-radius: 10px;
-  background: linear-gradient(90deg, rgb(255 255 255 / 4%), rgb(255 255 255 / 10%), rgb(255 255 255 / 4%));
-  background-size: 200% 100%;
+  background: rgb(255 255 255 / 6%);
+  position: relative;
+  overflow: hidden;
+}
+.drive-live.loading::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 10%), transparent);
+  transform: translateX(-100%);
   animation: drive-shimmer 1.4s linear infinite;
 }
 .drive-live.empty:not(:has(*)) {
@@ -5956,7 +5968,7 @@ select,
 }
 @keyframes drive-shimmer {
   to {
-    background-position: -200% 0;
+    transform: translateX(100%);
   }
 }
 .drive-svg {
@@ -6067,7 +6079,8 @@ select,
 @media (prefers-reduced-motion: reduce) {
   .df-pulse,
   .drive-dot,
-  .drive-live.loading {
+  .drive-live.loading,
+  .drive-live.loading::after {
     animation: none;
   }
   .df-ball {
@@ -6603,18 +6616,12 @@ select,
   border-radius: 8px;
   /* a thin, quiet outline: a 1px line and a faint halo */
   box-shadow: 0 0 0 1px rgb(57 255 136 / 0.55), 0 0 5px rgb(57 255 136 / 0.2);
-  animation: upset-glow 3.2s ease-in-out infinite;
 }
 .ticker-item.upset .ticker-final {
   color: rgb(95 255 160 / 0.9);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-}
-@keyframes upset-glow {
-  50% {
-    box-shadow: 0 0 0 1px rgb(57 255 136 / 0.7), 0 0 7px rgb(57 255 136 / 0.3);
-  }
 }
 @media (prefers-reduced-motion: reduce) {
   .ticker-item.upset {
@@ -6636,7 +6643,6 @@ select,
   box-shadow: 0 0 0 1px rgb(57 255 136 / 0.45), 0 0 6px rgb(57 255 136 / 0.18);
 }
 .game-card.upset-alert {
-  animation: upset-glow 3.2s ease-in-out infinite;
 }
 @media (prefers-reduced-motion: reduce) {
   .game-card.upset-alert {
