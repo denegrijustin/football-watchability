@@ -48,6 +48,8 @@ async function open(page: Page, league: "CFB" | "NFL", detail: string) {
   );
   await page.route("**/api/flow**", (route) => route.fulfill({ json: { wp: [] } }));
   await page.route("**/api/game**", (route) => route.fulfill({ status: 503, json: { error: "none" } }));
+  // the act only runs while its card is on screen, so on a phone the viewport is tall enough to hold it
+  if (test.info().project.name === "mobile") await page.setViewportSize({ width: 390, height: 1800 });
   await page.goto(`/?league=${league}`);
 }
 const live = (page: Page) => page.locator(".board-section.live .game-card").first();
@@ -115,8 +117,8 @@ test("NFL halftime is twelve minutes, and every act is in the rotation", () => {
   expect(clockText(halftimeLeft(t0, t0, NFL_HALFTIME_MS))).toBe("11:00");
   expect(halftimeLeft(t0, t0 + 11 * 60_000, NFL_HALFTIME_MS)).toBe(0);
   expect(NFL_ACTS.map((a) => a.id).sort()).toEqual(["cash", "dizzy", "inflatable", "shoe", "slingshot", "tron", "wiener"]);
-  // The slate's games rotate through all of them, and a game always gets the same one.
-  const seen = new Set(nfl.map((g: any) => actFor(g.espnId).id));
+  // Games rotate through all of them (the week's slate may be too short to show that, so a run of ids stands in), and a game always gets the same one.
+  const seen = new Set(Array.from({ length: 200 }, (_, i) => actFor(String(401800000 + i)).id));
   expect(seen.size).toBe(NFL_ACTS.length);
   expect(actFor("401872990")).toBe(actFor("401872990"));
 });
