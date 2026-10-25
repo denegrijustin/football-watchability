@@ -1,5 +1,5 @@
 import { test, expect, type Page } from "./fixtures";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { stubFinals } from "./helpers/finals";
 import { DEFAULT_SELECTION, type PerfData, type PerfRow, type PerfSelection } from "../src/perf/types";
 import { downDistanceGrid, summarize } from "../src/perf/engine";
@@ -230,6 +230,8 @@ test.describe("Situations: calculations", () => {
       const e = want.get(k) ?? want.set(k, [0, 0]).get(k)!;
       e[0]++; if (td || yards >= need) e[1]++;
     });
+    // The cached file is a download made on some earlier day; it can only be compared with the saved data if it is not older than it.
+    test.skip(statSync(".cache/nflverse/pbp_2026.csv.gz").mtimeMs < Date.parse((nfl as unknown as { dataUpdatedAt?: string }).dataUpdatedAt ?? "0"), "the cached play-by-play is older than the saved data");
     for (const t of teams.slice(0, 8)) {
       const m = situationModel(nfl, base({ team: t, garbage: "skip" }), t, short);
       for (let d = 1; d <= 4; d++) for (let b = 0; b < 4; b++) expect([m.grid[d - 1][b].n, m.grid[d - 1][b].succ], `${t} ${d}/${b}`).toEqual(want.get(`${t}|${d}|${b}`) ?? [0, 0]);

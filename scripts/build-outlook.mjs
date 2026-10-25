@@ -152,7 +152,9 @@ if (force || saved.nfl?.cycle !== nflKey || (!saved.nfl?.sim && schedule?.games?
     const sim = schedule?.games?.length ? simulateNfl(teams, schedule.games, { seed: hashSeed(nflKey), sims: 50000, playedWeek: playedIn(feed("nfl-finals.json"), lvWeek) }) : null;
     if (schedule?.games?.length && !sim) console.log("NFL seed simulation skipped: the schedule does not cover the rest of the season.");
     const rating = (t) => ({ ...t, ...logo(t) });
-    out.nfl = {
+    const prev = saved.nfl;
+    if (!sim && prev?.sim && prev.cycle === nflKey) console.log("NFL outlook kept: this run has no simulation and the saved snapshot for the week has one.");
+    else out.nfl = {
       ...stamp("nfl-fpi.json", nflKey),
       rules: NFL_FIELD,
       sim: sim ? { sims: sim.sims, games: schedule.games.length } : null,

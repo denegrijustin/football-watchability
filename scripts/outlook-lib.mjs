@@ -281,7 +281,7 @@ export function simulateNfl(teams, games, { sims = 20000, seed = 1, hfa = 2, sd 
   const byId = new Map(teams.map((t, i) => [t.id, i]));
   const played = teams.reduce((n, t) => n + t.wins + t.losses + t.ties, 0) / 2;
   const left = games.filter((g) => byId.has(g.home) && byId.has(g.away));
-  if (!left.length || played + left.length < 270) return null;
+  if (!left.length || played + left.length < 250) return null; // a Sunday has games on the clock that are neither played nor left, so a full 272 is not expected
   const p = left.map((g) => phi((teams[byId.get(g.home)].fpi - teams[byId.get(g.away)].fpi + hfa) / sd));
   const h = left.map((g) => byId.get(g.home));
   const a = left.map((g) => byId.get(g.away));

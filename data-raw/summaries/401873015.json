@@ -17,7 +17,7 @@
     "conferenceCompetition": false,
     "boxscoreAvailable": true,
     "commentaryAvailable": false,
-    "liveAvailable": true,
+    "liveAvailable": false,
     "onWatchESPN": false,
     "recent": true,
     "wallclockAvailable": true,
@@ -29,6 +29,7 @@
       "uid": "s:20~l:28~t:20",
       "order": 0,
       "homeAway": "home",
+      "winner": false,
       "team": {
        "id": "20",
        "guid": "732d3caf-b350-1e34-48c6-b7cebb4a0d88",
@@ -260,21 +261,15 @@
       "record": [
        {
         "type": "total",
-        "summary": "2-4",
-        "displayValue": "2-4"
+        "summary": "2-5",
+        "displayValue": "2-5"
        },
        {
         "type": "home",
-        "summary": "1-1",
-        "displayValue": "1-1"
-       },
-       {
-        "type": "vsconf",
-        "summary": "2-1",
-        "displayValue": "2-1"
+        "summary": "1-2",
+        "displayValue": "1-2"
        }
       ],
-      "timeoutsUsed": 3,
       "possession": false
      },
      {
@@ -282,6 +277,7 @@
       "uid": "s:20~l:28~t:15",
       "order": 1,
       "homeAway": "away",
+      "winner": true,
       "team": {
        "id": "15",
        "guid": "af33088b-1e19-d27d-dbc0-354fd7151703",
@@ -513,40 +509,29 @@
       "record": [
        {
         "type": "total",
-        "summary": "0-5",
-        "displayValue": "0-5"
+        "summary": "1-5",
+        "displayValue": "1-5"
        },
        {
         "type": "road",
-        "summary": "0-3",
-        "displayValue": "0-3"
-       },
-       {
-        "type": "vsconf",
-        "summary": "0-3",
-        "displayValue": "0-3"
+        "summary": "1-3",
+        "displayValue": "1-3"
        }
       ],
-      "timeoutsUsed": 0,
-      "possession": true
+      "possession": false
      }
     ],
     "status": {
-     "displayClock": "2:00",
-     "period": 4,
      "type": {
-      "id": "2",
-      "name": "STATUS_IN_PROGRESS",
-      "state": "in",
-      "completed": false,
-      "description": "In Progress",
-      "detail": "2:00 - 4th Quarter",
-      "shortDetail": "2:00 - 4th",
-      "statusPrimary": "2:00",
-      "statusSecondary": "4th"
+      "id": "3",
+      "name": "STATUS_FINAL",
+      "state": "post",
+      "completed": true,
+      "description": "Final",
+      "detail": "Final",
+      "shortDetail": "Final"
      },
-     "isTBDFlex": false,
-     "displayPeriod": "4th"
+     "isTBDFlex": false
     },
     "broadcasts": [
      {
@@ -572,13 +557,25 @@
   "links": [
    {
     "rel": [
-     "live",
+     "summary",
      "desktop",
      "event"
     ],
-    "href": "https://www.espn.com/nfl/game?gameId=401873015",
+    "href": "https://www.espn.com/nfl/game/_/gameId/401873015/dolphins-jets",
     "text": "Gamecast",
-    "shortText": "Gamecast",
+    "shortText": "Summary",
+    "isExternal": false,
+    "isPremium": false
+   },
+   {
+    "rel": [
+     "recap",
+     "desktop",
+     "event"
+    ],
+    "href": "https://www.espn.com/nfl/recap?gameId=401873015",
+    "text": "Recap",
+    "shortText": "Recap",
     "isExternal": false,
     "isPremium": false
    },
@@ -615,6 +612,18 @@
     "href": "https://www.espn.com/nfl/matchup?gameId=401873015",
     "text": "Team Stats",
     "shortText": "Team Stats",
+    "isExternal": false,
+    "isPremium": false
+   },
+   {
+    "rel": [
+     "videos",
+     "desktop",
+     "event"
+    ],
+    "href": "https://www.espn.com/nfl/video?gameId=401873015",
+    "text": "Videos",
+    "shortText": "Videos",
     "isExternal": false,
     "isPremium": false
    }
@@ -887,17 +896,7 @@
      "text": "Home Bet",
      "shortText": "Home Bet",
      "isExternal": true,
-     "isPremium": false,
-     "tracking": {
-      "campaign": "betting-integrations",
-      "tags": {
-       "league": "nfl",
-       "sport": "football",
-       "gameId": 401873015,
-       "betSide": "home",
-       "betType": "straight"
-      }
-     }
+     "isPremium": false
     },
     {
      "language": "en-US",
@@ -911,17 +910,7 @@
      "text": "Away Bet",
      "shortText": "Away Bet",
      "isExternal": true,
-     "isPremium": false,
-     "tracking": {
-      "campaign": "betting-integrations",
-      "tags": {
-       "league": "nfl",
-       "sport": "football",
-       "gameId": 401873015,
-       "betSide": "away",
-       "betType": "straight"
-      }
-     }
+     "isPremium": false
     },
     {
      "language": "en-US",
@@ -934,18 +923,7 @@
      "text": "Home Point Spread",
      "shortText": "Home Point Spread",
      "isExternal": true,
-     "isPremium": false,
-     "tracking": {
-      "campaign": "betting-integrations",
-      "tags": {
-       "league": "nfl",
-       "sport": "football",
-       "gameId": 401873015,
-       "betSide": "none",
-       "betType": "straight",
-       "betDetails": "Spread:NYJ-3.5"
-      }
-     }
+     "isPremium": false
     },
     {
      "language": "en-US",
@@ -958,18 +936,7 @@
      "text": "Away Point Spread",
      "shortText": "Away Point Spread",
      "isExternal": true,
-     "isPremium": false,
-     "tracking": {
-      "campaign": "betting-integrations",
-      "tags": {
-       "league": "nfl",
-       "sport": "football",
-       "gameId": 401873015,
-       "betSide": "none",
-       "betType": "straight",
-       "betDetails": "Spread:MIA+3.5"
-      }
-     }
+     "isPremium": false
     },
     {
      "language": "en-US",
@@ -982,18 +949,7 @@
      "text": "Over Odds",
      "shortText": "Over Odds",
      "isExternal": true,
-     "isPremium": false,
-     "tracking": {
-      "campaign": "betting-integrations",
-      "tags": {
-       "league": "nfl",
-       "sport": "football",
-       "gameId": 401873015,
-       "betSide": "over",
-       "betType": "straight",
-       "betDetails": "Over:39.5"
-      }
-     }
+     "isPremium": false
     },
     {
      "language": "en-US",
@@ -1006,18 +962,7 @@
      "text": "Under Odds",
      "shortText": "Under Odds",
      "isExternal": true,
-     "isPremium": false,
-     "tracking": {
-      "campaign": "betting-integrations",
-      "tags": {
-       "league": "nfl",
-       "sport": "football",
-       "gameId": 401873015,
-       "betSide": "under",
-       "betType": "straight",
-       "betDetails": "Under:39.5"
-      }
-     }
+     "isPremium": false
     },
     {
      "language": "en-US",
@@ -1038,120 +983,18 @@
     "shortDisplayName": "ML",
     "home": {
      "close": {
-      "odds": "-218",
-      "link": {
-       "language": "en-US",
-       "rel": [
-        "home",
-        "desktop",
-        "bets",
-        "draftkings"
-       ],
-       "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34118187%3Foutcomes%3D0ML84695620_1",
-       "text": "Home Bet",
-       "shortText": "Home Bet",
-       "isExternal": true,
-       "isPremium": false,
-       "tracking": {
-        "campaign": "betting-integrations",
-        "tags": {
-         "league": "nfl",
-         "sport": "football",
-         "gameId": 401873015,
-         "betSide": "home",
-         "betType": "straight"
-        }
-       }
-      }
+      "odds": "-218"
      },
      "open": {
       "odds": "-142"
-     },
-     "live": {
-      "odds": "+456",
-      "link": {
-       "language": "en-US",
-       "rel": [
-        "home",
-        "desktop",
-        "bets",
-        "draftkings---live-odds"
-       ],
-       "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34118187%3Foutcomes%3D0ML86921429_1",
-       "text": "Home Bet",
-       "shortText": "Home Bet",
-       "isExternal": true,
-       "isPremium": false,
-       "tracking": {
-        "campaign": "betting-integrations",
-        "tags": {
-         "league": "nfl",
-         "sport": "football",
-         "gameId": 401873015,
-         "betSide": "home",
-         "betType": "straight"
-        }
-       }
-      }
      }
     },
     "away": {
      "close": {
-      "odds": "+180",
-      "link": {
-       "language": "en-US",
-       "rel": [
-        "away",
-        "desktop",
-        "bets",
-        "draftkings"
-       ],
-       "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34118187%3Foutcomes%3D0ML84695620_3",
-       "text": "Away Bet",
-       "shortText": "Away Bet",
-       "isExternal": true,
-       "isPremium": false,
-       "tracking": {
-        "campaign": "betting-integrations",
-        "tags": {
-         "league": "nfl",
-         "sport": "football",
-         "gameId": 401873015,
-         "betSide": "away",
-         "betType": "straight"
-        }
-       }
-      }
+      "odds": "+180"
      },
      "open": {
       "odds": "+120"
-     },
-     "live": {
-      "odds": "-710",
-      "link": {
-       "language": "en-US",
-       "rel": [
-        "away",
-        "desktop",
-        "bets",
-        "draftkings---live-odds"
-       ],
-       "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34118187%3Foutcomes%3D0ML86921429_3",
-       "text": "Away Bet",
-       "shortText": "Away Bet",
-       "isExternal": true,
-       "isPremium": false,
-       "tracking": {
-        "campaign": "betting-integrations",
-        "tags": {
-         "league": "nfl",
-         "sport": "football",
-         "gameId": 401873015,
-         "betSide": "away",
-         "betType": "straight"
-        }
-       }
-      }
      }
     }
    },
@@ -1161,125 +1004,21 @@
     "home": {
      "close": {
       "line": "-3.5",
-      "odds": "-120",
-      "link": {
-       "language": "en-US",
-       "rel": [
-        "homeSpread",
-        "desktop",
-        "bets"
-       ],
-       "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34118187%3Foutcomes%3D0HC84695620N350_1",
-       "text": "Home Point Spread",
-       "shortText": "Home Point Spread",
-       "isExternal": true,
-       "isPremium": false,
-       "tracking": {
-        "campaign": "betting-integrations",
-        "tags": {
-         "league": "nfl",
-         "sport": "football",
-         "gameId": 401873015,
-         "betSide": "none",
-         "betType": "straight",
-         "betDetails": "Spread:NYJ-3.5"
-        }
-       }
-      }
+      "odds": "-120"
      },
      "open": {
       "line": "-2.5",
       "odds": "-110"
-     },
-     "live": {
-      "line": "+2.5",
-      "odds": "+390",
-      "link": {
-       "language": "en-US",
-       "rel": [
-        "homeSpread",
-        "desktop",
-        "bets"
-       ],
-       "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34118187%3Foutcomes%3D0HC86921429P250_1",
-       "text": "Home Point Spread",
-       "shortText": "Home Point Spread",
-       "isExternal": true,
-       "isPremium": false,
-       "tracking": {
-        "campaign": "betting-integrations",
-        "tags": {
-         "league": "nfl",
-         "sport": "football",
-         "gameId": 401873015,
-         "betSide": "none",
-         "betType": "straight",
-         "betDetails": "Spread:NYJ+2.5"
-        }
-       }
-      }
      }
     },
     "away": {
      "close": {
       "line": "+3.5",
-      "odds": "+100",
-      "link": {
-       "language": "en-US",
-       "rel": [
-        "awaySpread",
-        "desktop",
-        "bets"
-       ],
-       "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34118187%3Foutcomes%3D0HC84695620P350_3",
-       "text": "Away Point Spread",
-       "shortText": "Away Point Spread",
-       "isExternal": true,
-       "isPremium": false,
-       "tracking": {
-        "campaign": "betting-integrations",
-        "tags": {
-         "league": "nfl",
-         "sport": "football",
-         "gameId": 401873015,
-         "betSide": "none",
-         "betType": "straight",
-         "betDetails": "Spread:MIA+3.5"
-        }
-       }
-      }
+      "odds": "+100"
      },
      "open": {
       "line": "+2.5",
       "odds": "-110"
-     },
-     "live": {
-      "line": "-2.5",
-      "odds": "-610",
-      "link": {
-       "language": "en-US",
-       "rel": [
-        "awaySpread",
-        "desktop",
-        "bets"
-       ],
-       "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34118187%3Foutcomes%3D0HC86921429N250_3",
-       "text": "Away Point Spread",
-       "shortText": "Away Point Spread",
-       "isExternal": true,
-       "isPremium": false,
-       "tracking": {
-        "campaign": "betting-integrations",
-        "tags": {
-         "league": "nfl",
-         "sport": "football",
-         "gameId": 401873015,
-         "betSide": "none",
-         "betType": "straight",
-         "betDetails": "Spread:MIA-2.5"
-        }
-       }
-      }
      }
     }
    },
@@ -1289,139 +1028,34 @@
     "over": {
      "close": {
       "line": "o39.5",
-      "odds": "-102",
-      "link": {
-       "language": "en-US",
-       "rel": [
-        "over",
-        "desktop",
-        "bets"
-       ],
-       "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34118187%3Foutcomes%3D0OU84695620O3950_1",
-       "text": "Over Odds",
-       "shortText": "Over Odds",
-       "isExternal": true,
-       "isPremium": false,
-       "tracking": {
-        "campaign": "betting-integrations",
-        "tags": {
-         "league": "nfl",
-         "sport": "football",
-         "gameId": 401873015,
-         "betSide": "over",
-         "betType": "straight",
-         "betDetails": "Over:39.5"
-        }
-       }
-      }
+      "odds": "-102"
      },
      "open": {
       "line": "o41.5",
       "odds": "-110"
-     },
-     "live": {
-      "line": "o53.5",
-      "odds": "+254",
-      "link": {
-       "language": "en-US",
-       "rel": [
-        "over",
-        "desktop",
-        "bets"
-       ],
-       "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34118187%3Foutcomes%3D0OU86921429O5350_1",
-       "text": "Over Odds",
-       "shortText": "Over Odds",
-       "isExternal": true,
-       "isPremium": false,
-       "tracking": {
-        "campaign": "betting-integrations",
-        "tags": {
-         "league": "nfl",
-         "sport": "football",
-         "gameId": 401873015,
-         "betSide": "over",
-         "betType": "straight",
-         "betDetails": "Over:53.5"
-        }
-       }
-      }
      }
     },
     "under": {
      "close": {
       "line": "u39.5",
-      "odds": "-118",
-      "link": {
-       "language": "en-US",
-       "rel": [
-        "under",
-        "desktop",
-        "bets"
-       ],
-       "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34118187%3Foutcomes%3D0OU84695620U3950_3",
-       "text": "Under Odds",
-       "shortText": "Under Odds",
-       "isExternal": true,
-       "isPremium": false,
-       "tracking": {
-        "campaign": "betting-integrations",
-        "tags": {
-         "league": "nfl",
-         "sport": "football",
-         "gameId": 401873015,
-         "betSide": "under",
-         "betType": "straight",
-         "betDetails": "Under:39.5"
-        }
-       }
-      }
+      "odds": "-118"
      },
      "open": {
       "line": "u41.5",
       "odds": "-110"
-     },
-     "live": {
-      "line": "u53.5",
-      "odds": "-360",
-      "link": {
-       "language": "en-US",
-       "rel": [
-        "under",
-        "desktop",
-        "bets"
-       ],
-       "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34118187%3Foutcomes%3D0OU86921429U5350_3",
-       "text": "Under Odds",
-       "shortText": "Under Odds",
-       "isExternal": true,
-       "isPremium": false,
-       "tracking": {
-        "campaign": "betting-integrations",
-        "tags": {
-         "league": "nfl",
-         "sport": "football",
-         "gameId": 401873015,
-         "betSide": "under",
-         "betType": "straight",
-         "betDetails": "Under:53.5"
-        }
-       }
-      }
      }
     }
    },
    "link": {
+    "text": "See More Odds",
     "language": "en-US",
     "rel": [
-     "odds",
+     "main",
      "desktop",
-     "event"
+     "bets"
     ],
-    "href": "https://www.espn.com/nfl/odds/_/gameId/401873015",
-    "text": "See More Odds and Props",
-    "shortText": "Odds",
-    "isExternal": false,
+    "href": "https://sportsbook.draftkings.com",
+    "isExternal": true,
     "isPremium": false
    },
    "header": {
@@ -1474,25 +1108,7 @@
     }
    ]
   },
-  "weather": {
-   "temperature": 65,
-   "highTemperature": 65,
-   "lowTemperature": 65,
-   "conditionId": "Sunny",
-   "gust": 4,
-   "precipitation": 0,
-   "link": {
-    "language": "en-US",
-    "rel": [
-     "07073"
-    ],
-    "href": "http://www.accuweather.com/en/us/metlife-stadium-nj/07073/current-weather/52866_poi?lang=en-us",
-    "text": "Weather",
-    "shortText": "Weather",
-    "isExternal": true,
-    "isPremium": false
-   }
-  },
+  "attendance": 72456,
   "officials": [
    {
     "fullName": "Brad Allen",
@@ -1791,8 +1407,8 @@
          "description": "Losses",
          "abbreviation": "L",
          "type": "losses",
-         "value": 4,
-         "displayValue": "4"
+         "value": 5,
+         "displayValue": "5"
         },
         {
          "name": "pointsAgainst",
@@ -1801,8 +1417,8 @@
          "description": "Total Points Against",
          "abbreviation": "PA",
          "type": "pointsagainst",
-         "value": 122,
-         "displayValue": "122"
+         "value": 150,
+         "displayValue": "150"
         },
         {
          "name": "pointsFor",
@@ -1811,8 +1427,8 @@
          "description": "Total Points For",
          "abbreviation": "PF",
          "type": "pointsfor",
-         "value": 112,
-         "displayValue": "112"
+         "value": 137,
+         "displayValue": "137"
         },
         {
          "name": "ties",
@@ -1831,8 +1447,8 @@
          "description": "Winning Percentage",
          "abbreviation": "PCT",
          "type": "winpercent",
-         "value": 0.33333334,
-         "displayValue": ".333"
+         "value": 0.2857143,
+         "displayValue": ".286"
         },
         {
          "name": "wins",
@@ -1849,8 +1465,8 @@
          "name": "overall",
          "abbreviation": "Any",
          "type": "total",
-         "summary": "2-4",
-         "displayValue": "2-4"
+         "summary": "2-5",
+         "displayValue": "2-5"
         }
        ],
        "logo": [
@@ -1902,8 +1518,8 @@
          "description": "Total Points Against",
          "abbreviation": "PA",
          "type": "pointsagainst",
-         "value": 132,
-         "displayValue": "132"
+         "value": 157,
+         "displayValue": "157"
         },
         {
          "name": "pointsFor",
@@ -1912,8 +1528,8 @@
          "description": "Total Points For",
          "abbreviation": "PF",
          "type": "pointsfor",
-         "value": 70,
-         "displayValue": "70"
+         "value": 98,
+         "displayValue": "98"
         },
         {
          "name": "ties",
@@ -1932,8 +1548,8 @@
          "description": "Winning Percentage",
          "abbreviation": "PCT",
          "type": "winpercent",
-         "value": 0,
-         "displayValue": ".000"
+         "value": 0.16666667,
+         "displayValue": ".167"
         },
         {
          "name": "wins",
@@ -1942,16 +1558,16 @@
          "description": "Wins",
          "abbreviation": "W",
          "type": "wins",
-         "value": 0,
-         "displayValue": "0"
+         "value": 1,
+         "displayValue": "1"
         },
         {
          "id": "0",
          "name": "overall",
          "abbreviation": "Any",
          "type": "total",
-         "summary": "0-5",
-         "displayValue": "0-5"
+         "summary": "1-5",
+         "displayValue": "1-5"
         }
        ],
        "logo": [
@@ -2099,7 +1715,7 @@
         "status": "Active",
         "injuries": {
          "status": "Active",
-         "date": "2026-10-19T08:27Z",
+         "date": "2026-10-25T20:58Z",
          "type": {
           "id": "0",
           "name": "INJURY_STATUS_ACTIVE",
@@ -2158,7 +1774,7 @@
         "status": "Active",
         "injuries": {
          "status": "Active",
-         "date": "2026-10-25T15:44Z",
+         "date": "2026-10-25T20:29Z",
          "type": {
           "id": "0",
           "name": "INJURY_STATUS_ACTIVE",
@@ -2217,7 +1833,7 @@
         "status": "Active",
         "injuries": {
          "status": "Active",
-         "date": "2026-10-24T00:36Z",
+         "date": "2026-10-25T20:34Z",
          "type": {
           "id": "0",
           "name": "INJURY_STATUS_ACTIVE",
@@ -2298,8 +1914,8 @@
      "displayName": "Tackles",
      "leaders": [
       {
-       "displayValue": "9",
-       "value": 9,
+       "displayValue": "10",
+       "value": 10,
        "athlete": {
         "id": "3925345",
         "uid": "s:20~l:28~a:3925345",
@@ -2345,10 +1961,10 @@
         }
        },
        "mainStat": {
-        "value": "9",
+        "value": "10",
         "label": "TOT"
        },
-       "summary": "5 SOLO"
+       "summary": "6 SOLO"
       }
      ]
     }
@@ -2462,7 +2078,7 @@
         "status": "Active",
         "injuries": {
          "status": "Active",
-         "date": "2026-10-21T20:52Z",
+         "date": "2026-10-25T20:59Z",
          "type": {
           "id": "0",
           "name": "INJURY_STATUS_ACTIVE",
@@ -2521,7 +2137,7 @@
         "status": "Active",
         "injuries": {
          "status": "Active",
-         "date": "2026-10-11T23:06Z",
+         "date": "2026-10-25T20:31Z",
          "type": {
           "id": "0",
           "name": "INJURY_STATUS_ACTIVE",
@@ -2580,7 +2196,7 @@
         "status": "Active",
         "injuries": {
          "status": "Active",
-         "date": "2026-10-13T01:01Z",
+         "date": "2026-10-25T21:29Z",
          "type": {
           "id": "0",
           "name": "INJURY_STATUS_ACTIVE",
@@ -2732,8 +2348,8 @@
     "statistics": [
      {
       "name": "firstDowns",
-      "displayValue": "23",
-      "value": 23,
+      "displayValue": "24",
+      "value": 24,
       "label": "1st Downs"
      },
      {
@@ -2744,8 +2360,8 @@
      },
      {
       "name": "firstDownsRushing",
-      "displayValue": "11",
-      "value": 11,
+      "displayValue": "12",
+      "value": 12,
       "label": "Rushing 1st downs"
      },
      {
@@ -2762,14 +2378,14 @@
      },
      {
       "name": "fourthDownEff",
-      "displayValue": "2-2",
+      "displayValue": "3-3",
       "value": 1,
       "label": "4th down efficiency"
      },
      {
       "name": "totalOffensivePlays",
-      "displayValue": "61",
-      "value": 61,
+      "displayValue": "64",
+      "value": 64,
       "label": "Total Plays"
      },
      {
@@ -2780,8 +2396,8 @@
      },
      {
       "name": "yardsPerPlay",
-      "displayValue": "5.9",
-      "value": 5.9016393443,
+      "displayValue": "5.6",
+      "value": 5.625,
       "label": "Yards per Play"
      },
      {
@@ -2828,14 +2444,14 @@
      },
      {
       "name": "rushingAttempts",
-      "displayValue": "38",
-      "value": 38,
+      "displayValue": "41",
+      "value": 41,
       "label": "Rushing Attempts"
      },
      {
       "name": "yardsPerRushAttempt",
-      "displayValue": "4.1",
-      "value": 4.105,
+      "displayValue": "3.8",
+      "value": 3.805,
       "label": "Yards per rush"
      },
      {
@@ -2876,8 +2492,8 @@
      },
      {
       "name": "possessionTime",
-      "displayValue": "32:36",
-      "value": 1956,
+      "displayValue": "34:36",
+      "value": 2076,
       "label": "Possession"
      }
     ],
@@ -3673,6 +3289,10 @@
    4
   ],
   [
+   0.18,
+   4
+  ],
+  [
    0.199,
    4
   ],
@@ -3702,6 +3322,26 @@
   ],
   [
    0.151,
+   4
+  ],
+  [
+   0.001,
+   4
+  ],
+  [
+   0.001,
+   4
+  ],
+  [
+   0.001,
+   4
+  ],
+  [
+   0.001,
+   4
+  ],
+  [
+   0,
    4
   ]
  ],
@@ -3785,18 +3425,18 @@
    "team": "15",
    "players": [
     {
-     "name": "Dante Trader Jr.",
-     "short": "D. Trader Jr.",
-     "pos": "S",
-     "jersey": "11",
-     "headshot": "https://a.espncdn.com/i/headshots/nfl/players/full/4431664.png",
+     "name": "Jaylen Wright",
+     "short": "J. Wright",
+     "pos": "RB",
+     "jersey": "5",
+     "headshot": "https://a.espncdn.com/i/headshots/nfl/players/full/4682745.png",
      "status": "Questionable",
      "code": "Q",
-     "type": "Shoulder",
+     "type": "Quadriceps",
      "detail": null,
      "side": null,
-     "returnDate": "2026-10-25",
-     "date": "2026-10-25T18:59Z"
+     "returnDate": "2026-11-01",
+     "date": "2026-10-25T20:00Z"
     },
     {
      "name": "Robert Beal Jr.",
@@ -3876,9 +3516,9 @@
   },
   {
    "period": 1,
-   "clock": "0:58",
+   "clock": "1:02",
    "team": "15",
-   "text": "Ollie Gordon II 1 Yd Rush (Zane Gonzalez Kick)",
+   "text": "Ollie Gordon II 1 Yd Run (Zane Gonzalez Kick)",
    "away": 14,
    "home": 7
   },
