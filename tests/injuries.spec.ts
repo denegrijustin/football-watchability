@@ -1,4 +1,5 @@
 import { test, expect } from "./fixtures";
+import { hasCfbGame, NO_CFB } from "./helpers/slate";
 import { readFileSync } from "node:fs";
 import { impactScore, impactTier, nameKey, parseTimeline, percentile, returnInfo, severityOf, typeWeeks } from "../scripts/injuries-lib.mjs";
 import { stubFinals } from "./helpers/finals";
@@ -117,6 +118,8 @@ test.describe("injuries on the game card", () => {
   });
 
   test("college cards carry the week's availability the same way", async ({ page }) => {
+
+    test.skip(!hasCfbGame(), NO_CFB);
     await page.goto("/?league=CFB");
     await expect(page.locator(".game-card .gi-strip, .game-card .gi").first()).toBeAttached({ timeout: 15_000 });
   });
@@ -125,6 +128,8 @@ test.describe("injuries on the game card", () => {
 test("the Game Center's injury report is the same compact view, closed until opened", async ({ page }) => {
   await stubFinals(page);
   await page.goto("/?league=NFL");
+  await expect(page.locator(".game-card").first()).toBeVisible();
+  test.skip((await page.locator(".game-card:has(.gi-strip)").count()) === 0, "no key injuries on a game this week");
   const id = await page.locator(".game-card:has(.gi-strip)").first().getAttribute("data-game-id");
   const card = page.locator(`.game-card[data-game-id="${id}"]`);
   await card.getByRole("button", { name: /Game Center/ }).first().click();

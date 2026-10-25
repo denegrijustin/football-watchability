@@ -75,7 +75,7 @@ jobs:
           # the scripts, tests and application code maintained on main.
           git checkout origin/main -- . ':!data-raw' ':!data-raw-test' ':!data-raw-prev' ':!src/data/*.json' ':!public'
           # Keep the last published independent TV checks even if sources are down.
-          git checkout origin/main -- src/data/broadcast-checks.json src/data/matchup-stats.json src/data/game-logos.json src/data/spplus.json src/data/nfl.json src/data/nfl-calibration.json src/data/finals.json public/game-logos
+          git checkout origin/main -- src/data/broadcast-checks.json src/data/matchup-stats.json src/data/game-logos.json src/data/spplus.json src/data/nfl.json src/data/nfl-calibration.json src/data/finals.json src/data/team-ids.json public/game-logos
           # Any other data file that exists only on main (a new one the application imports, such as the conference logos or the
           # team conferences) is brought over too, or the build below fails with "Cannot find module".
           for f in $(git ls-tree -r --name-only origin/main src/data); do
@@ -230,10 +230,9 @@ jobs:
           src=$(git rev-parse HEAD)
           git fetch -q origin main
           git checkout -q -B main origin/main
-          # Publish generated data/assets only; never replace main's code or
-          # workflows with a stale copy from the data branch.
-          # public/_headers (cache rules) is code, so it stays as main has it.
-          git checkout "$src" -- 'src/data/*.json' public ':!public/_headers'
+          # Publish generated data/assets only (scripts/publish-generated.mjs): never replace main's code or workflows, or a file kept up
+          # by hand on main (the conference logos, the custom team logos), with a stale copy from the data branch.
+          node scripts/publish-generated.mjs "$src"
           git diff --cached --quiet && { echo "Nothing to deploy"; exit 0; }
           git commit -q -m "Refresh board $(TZ=America/Chicago date +'%a %b %-d, %-I:%M %p %Z')"
           git push origin main

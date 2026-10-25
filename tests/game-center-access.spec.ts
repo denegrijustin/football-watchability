@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { hasCfbGame, NO_CFB } from "./helpers/slate";
 test('compact shortcut opens deeper analysis without expanding the card', async ({page}) => {
   await page.goto('/?league=NFL');
   const card = page.locator('.game-card:visible').first();
@@ -11,6 +12,7 @@ test('compact shortcut opens deeper analysis without expanding the card', async 
   await expect(dialog.locator('.game-details details')).not.toHaveCount(0);
 });
 test('first expansion is concise and puts Game Center near the top', async ({page}) => {
+  test.skip(!hasCfbGame(), NO_CFB);
   await page.goto('/?league=CFB');
   const card = page.locator('.game-card:visible').first();
   await card.getByRole('button', {name:'Show game details'}).click();

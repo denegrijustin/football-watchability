@@ -1,4 +1,5 @@
 import { test, expect } from "./fixtures";
+import { hasCfbGame, NO_CFB } from "./helpers/slate";
 import { gameBadge } from "../src/gameLogo";
 import { withRedRiver } from "./helpers/redRiver";
 
@@ -18,6 +19,8 @@ test("an ordinary home game has no game logo; a named or neutral-site game gets 
 });
 
 test("the card shows the Red River logo and no badge on a normal game", async ({ page }) => {
+
+  test.skip(!hasCfbGame(), NO_CFB);
   await withRedRiver(page);
   await page.goto("/?league=CFB");
   const rr = page.locator(".game-card", { hasText: "Texas @ Oklahoma" }).first();
@@ -32,6 +35,8 @@ test("a registry entry can match by ESPN's event headline, for future games", ()
 });
 
 test("at halftime the game's logo is painted at midfield and tops the card", async ({ page }) => {
+
+  test.skip(!hasCfbGame(), NO_CFB);
   const { slate, g } = await withRedRiver(page);
   const T = new Date(g.date).getTime() + 90 * 60e3;
   await page.clock.install({ time: T });
@@ -46,6 +51,8 @@ test("at halftime the game's logo is painted at midfield and tops the card", asy
 });
 
 test("if the Game Center's file is gone (site updated under an open page), the page survives and says so", async ({ page }) => {
+
+  test.skip(!hasCfbGame(), NO_CFB);
   // Chunk names are plain hashes, so the Game Center's file is recognised by what is in it.
   await page.route(/\/assets\/c-.*\.js/, async (r) => {
     const res = await r.fetch();

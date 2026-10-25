@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "./fixtures";
+import { hasCfbGame, NO_CFB } from "./helpers/slate";
 import { readFileSync } from "node:fs";
 const conferences = JSON.parse(readFileSync("src/data/conference-logos.json", "utf8")).conferences as Record<string, unknown>;
 const confEntry = (name?: string | null) => (name ? conferences[name] ?? null : null);
@@ -52,6 +53,8 @@ async function open(page: Page, league: "CFB" | "NFL", detail: string) {
 const live = (page: Page) => page.locator(".board-section.live .game-card").first();
 
 test("a college game at halftime shows the band, second under the score, with a 20-minute countdown", async ({ page }) => {
+
+  test.skip(!hasCfbGame(), NO_CFB);
   await open(page, "CFB", "Halftime");
   const band = live(page).locator(".halftime-band");
   await expect(band.locator("svg.band-svg")).toBeVisible();
@@ -77,6 +80,8 @@ test("a college game at halftime shows the band, second under the score, with a 
 });
 
 test("the band changes formation every few seconds", async ({ page }) => {
+
+  test.skip(!hasCfbGame(), NO_CFB);
   await open(page, "CFB", "Halftime");
   const dot = live(page).locator(".band-member").nth(5);
   await expect(dot).toBeAttached();
@@ -94,6 +99,8 @@ test("the band changes formation every few seconds", async ({ page }) => {
 });
 
 test("the clock keeps its place across a reload", async ({ page }) => {
+
+  test.skip(!hasCfbGame(), NO_CFB);
   await open(page, "CFB", "Halftime");
   await expect(live(page).locator(".halftime-band .band-count-t")).toHaveText("19:00");
   await page.clock.fastForward(5 * 60_000);
@@ -155,12 +162,16 @@ test("the Game Center shows the same act at the top for an NFL game", async ({ p
 });
 
 test("a college game that is not at halftime shows the drive chart slot, not the band", async ({ page }) => {
+
+  test.skip(!hasCfbGame(), NO_CFB);
   await open(page, "CFB", "5:12 - 3rd");
   await expect(live(page)).toBeVisible();
   await expect(page.locator(".halftime-band")).toHaveCount(0);
 });
 
 test("with reduced motion the band stays in one formation", async ({ page }) => {
+
+  test.skip(!hasCfbGame(), NO_CFB);
   await page.emulateMedia({ reducedMotion: "reduce" });
   await open(page, "CFB", "Halftime");
   const band = live(page).locator(".halftime-band");
@@ -171,6 +182,8 @@ test("with reduced motion the band stays in one formation", async ({ page }) => 
 });
 
 test("every member keeps marching, and the countdown also tops the expanded card", async ({ page }) => {
+
+  test.skip(!hasCfbGame(), NO_CFB);
   await open(page, "CFB", "Halftime");
   const step = live(page).locator(".band-march").first();
   expect(await step.evaluate((e) => getComputedStyle(e).animationName)).toBe("band-cadence");
@@ -181,6 +194,8 @@ test("every member keeps marching, and the countdown also tops the expanded card
 });
 
 test("the Game Center opens with the band and countdown at the very top", async ({ page }) => {
+
+  test.skip(!hasCfbGame(), NO_CFB);
   await open(page, "CFB", "Halftime");
   const id = await live(page).locator(".cc-gc").first().getAttribute("aria-label");
   expect(id).toBeTruthy();
@@ -197,6 +212,8 @@ test("the Game Center opens with the band and countdown at the very top", async 
 });
 
 test("the team with the ball gets a football beside its score on a live card", async ({ page }) => {
+
+  test.skip(!hasCfbGame(), NO_CFB);
   const games = cfb as any[];
   const start = Math.max(...games.map((g) => new Date(g.date).getTime()));
   await page.clock.install({ time: start + 90 * 60e3 });
@@ -213,6 +230,8 @@ test("the team with the ball gets a football beside its score on a live card", a
 });
 
 test("the two feet swing in opposite directions, as in a march", async ({ page }) => {
+
+  test.skip(!hasCfbGame(), NO_CFB);
   await open(page, "CFB", "Halftime");
   await page.clock.resume();
   await expect(live(page).locator(".band-foot.b").first()).toBeAttached();

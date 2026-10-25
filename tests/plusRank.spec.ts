@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "./fixtures";
 import { readFileSync } from "node:fs";
+import { hasCfbGame, NO_CFB } from "./helpers/slate";
 import { buildPlusRanks } from "../src/plusRanksBuild";
 import { plusRankFor, plusRankTitle } from "../src/plusRanks";
 import { buildModel } from "../src/spplus/data/model";
@@ -70,6 +71,7 @@ async function cardFor(page: Page, league: "CFB" | "NFL") {
 
 for (const league of ["CFB", "NFL"] as const) {
   test(`${league}: the ${league === "CFB" ? "SP+" : "NFL+"} rank sits to the left of each team's name, compact and expanded`, async ({ page }) => {
+    test.skip(league === "CFB" && !hasCfbGame(), NO_CFB);
     const { game, card } = await cardFor(page, league);
     const kind = league === "CFB" ? "SP+" : "NFL+";
     const heads = card.locator(".cc-team h4");

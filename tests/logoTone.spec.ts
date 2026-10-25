@@ -1,4 +1,5 @@
 import { expect, test } from "./fixtures";
+import { hasCfbGame, NO_CFB } from "./helpers/slate";
 import { CHIP_DARK, CHIP_LIGHT, chipFor } from "../src/logoTone";
 import { withRedRiver } from "./helpers/redRiver";
 
@@ -18,6 +19,8 @@ test("transparent pixels are ignored, so a white logo on a clear background stil
 });
 
 test("on the live field, Texas's white longhorn sits on a dark chip and a dark logo on a light one", async ({ page }) => {
+
+  test.skip(!hasCfbGame(), NO_CFB);
   const { g, games } = await withRedRiver(page);
   const start = Math.max(...games.map((x: any) => new Date(x.date).getTime()));
   await page.clock.install({ time: start + 90 * 60e3 });
