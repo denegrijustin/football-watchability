@@ -31,6 +31,8 @@ async function withNflGame(page: Page, g: NflGame, espn = g.espn) {
   x.matchup = `${nfl.teams[g.away].name} @ ${nfl.teams[g.home].name}`;
   x.date = `${g.date}T20:00Z`;
   x.status = "pre";
+  // The game is still ahead of the page's clock whatever day the suite runs on.
+  await page.clock.install({ time: Date.parse(`${g.date}T20:00Z`) - 24 * 3600e3 });
   x.teams[0] = { ...x.teams[0], name: nfl.teams[g.away].name, abbr: g.away, logoId: logoSlug(nfl.teams[g.away].name) };
   x.teams[1] = { ...x.teams[1], name: nfl.teams[g.home].name, abbr: g.home, logoId: logoSlug(nfl.teams[g.home].name) };
   await page.route("**/data/slate.json", (r) => r.fulfill({ json: slate }));
