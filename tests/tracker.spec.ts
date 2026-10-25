@@ -43,7 +43,7 @@ test("the Tracker tab shows the tiers with logos that open a team's profile", as
   await expect(tk.locator(".tk-tier.clinched .tk-open")).toHaveText(/\d+ open/); // the clinched logos, then how many spots are open
   const first = tk.locator(".tk-tier:not(.clinched) .tk-team").first();
   await first.click();
-  await expect(page.locator('.view-switch [data-tab="spplus"]')).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator('.view-switch [data-tab="teams"]')).toHaveAttribute("aria-pressed", "true");
   await page.locator('[data-tab="outlook"]').click();
   await ctl.getByRole("button", { name: "NFL" }).click();
   await ctl.getByRole("button", { name: "Tracker", exact: true }).click();

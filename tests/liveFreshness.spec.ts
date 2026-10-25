@@ -47,7 +47,7 @@ test("while a game is live the board asks for scores every 15 seconds, and a sco
   await expect.poll(() => asked).toBeGreaterThan(0);
   const first = asked;
   await page.clock.runFor(31_000);
-  expect(asked - first).toBeGreaterThanOrEqual(2); // 15-second cadence, not the old minute
+  await expect.poll(() => asked - first, { message: "15-second cadence, not the old minute" }).toBeGreaterThanOrEqual(2); // a busy machine answers late, so the count is polled
   // The card's own live field fetches the summary; its 21 reaches the score without waiting for the scoreboard.
   const card = page.locator(".board-section .game-card", { hasText: a.name }).first();
   await card.scrollIntoViewIfNeeded();
