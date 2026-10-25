@@ -6,6 +6,7 @@ import { Skeleton } from "./Skeleton";
 import { LeverageChart, LeverageGames, type Leverage } from "./Leverage";
 import { TeamOpen } from "../openTeam";
 import "../tracker.css";
+import "../seeds.css";
 
 type Team = { id: string; name: string; abbr: string; logoId: string | null };
 type Seed = Team & {
@@ -165,20 +166,6 @@ function SeedGrid({
         </tbody>
       </table>
     </div>
-  );
-}
-
-function OutRow({ t }: { t: Out }) {
-  return (
-    <li className="ol-out">
-      <Logo t={t} />
-      <span>{t.name}</span>
-      <small>
-        {t.record}
-        {t.rank ? ` · #${t.rank}` : ""}
-        {t.pPlayoffs != null ? ` · ${pct(t.pPlayoffs)} to make it` : ""}
-      </small>
-    </li>
   );
 }
 
@@ -348,7 +335,7 @@ function TrackerPart({ tracker, title, sims, nfl = false, league, compact = fals
 /** The NFL tracker, one conference at a time (switch between AFC and NFC), so every tier shows without scrolling on a phone. */
 function NflTracker({ nfl }: { nfl: NonNullable<Data["nfl"]> }) {
   const confs = Object.keys(nfl.conferences);
-  const [conf, setConf] = useState(confs[0] ?? "AFC");
+  const [conf, setConf] = useNflConf(confs);
   const c = nfl.conferences[conf];
   return (
     <TrackerPart
@@ -376,6 +363,132 @@ function TrackerLogo({ t, league, compact }: { t: TrackerTeam; league: "CFB" | "
         <span className="sr-only">{t.name}</span>
       </span>
     </TeamOpen>
+  );
+}
+
+/** Which conference the NFL views show, shared by the seeds and the tracker so switching tabs keeps it. */
+let nflConf = "AFC";
+function useNflConf(confs: string[]): [string, (c: string) => void] {
+  const [conf, set] = useState(confs.includes(nflConf) ? nflConf : confs[0] ?? "AFC");
+  return [conf, (c) => { nflConf = c; set(c); }];
+}
+const ConfSwitch = ({ confs, conf, onPick }: { confs: string[]; conf: string; onPick: (c: string) => void }) => (
+  <div className="segmented tk-conf" role="group" aria-label="Conference">
+    {confs.map((k) => <button key={k} type="button" aria-pressed={conf === k} onClick={() => onPick(k)}>{k}</button>)}
+  </div>
+);
+
+/**
+ * The NFL seeds for one conference (switch between AFC and NFC): every team against the seven seeds, small enough that all sixteen fit on a phone screen.
+ * Each cell is the chance of finishing in that seed; seed 1 is the first-round bye.
+ */
+function NflSeeds({ nfl }: { nfl: NonNullable<Data["nfl"]> }) {
+  const confs = Object.keys(nfl.conferences);
+  const [conf, setConf] = useNflConf(confs);
+  const c = nfl.conferences[conf];
+  return (
+    <section className="sd2" aria-label={`${conf} seed odds`}>
+      <header className="sd2-head">
+        <ConfSwitch confs={confs} conf={conf} onPick={setConf} />
+        <p>{nfl.sim ? <><b>{nfl.sim.sims.toLocaleString()}</b> simulated seasons</> : "ESPN's playoff odds"}</p>
+      </header>
+      {c?.grid ? (
+        <table className="sd2-table">
+          <thead>
+            <tr>
+              <th scope="col">Team</th>
+              {Array.from({ length: 7 }, (_, i) => <th scope="col" key={i} className={i === 0 ? "bye" : undefined} title={i === 0 ? "Seed 1: first-round bye" : `Seed ${i + 1}`}>{i + 1}</th>)}
+              <th scope="col" className="tot" title="Chance of making the playoffs">Playoffs</th>
+              <th scope="col" title="Chance of winning the division">Div</th>
+            </tr>
+          </thead>
+          <tbody>
+            {c.grid.filter((r) => r.pPlayoffs >= 0.5).map((r) => (
+              <tr key={r.id}>
+                <th scope="row">
+                  <TeamOpen className="sd2-team" team={{ league: "NFL", name: r.name, abbr: r.abbr }} >
+                    <Logo t={r} size={16} /><b>{r.abbr}</b><small>{r.record}</small>
+                  </TeamOpen>
+                </th>
+                {r.pSeed.map((v, i) => <td key={i} className={`cell${i === 0 ? " bye" : ""}`} style={heat(v)}>{cell(v)}</td>)}
+                <td className="tot">{pct(r.pPlayoffs)}</td>
+                <td>{pct(r.pDiv)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : (
+        <>
+          <ol className="ol-list" aria-label={`${conf} playoff seeds`}>
+            {c?.field.map((s) => <SeedRow key={s.id} s={{ ...s, conf: s.division }} tag={s.bid} odds={[["playoffs", s.pPlayoffs], ["division", s.pDiv], ["title", s.pTitle]]} />)}
+          </ol>
+          <p className="ol-note">The seed grid appears once the schedule has been fetched; until then only ESPN's playoff odds are shown.</p>
+        </>
+      )}
+      {c?.grid && c.grid.some((r) => r.pPlayoffs < 0.5) && (
+        <div className="sd2-out">
+          <span>Under 0.5%</span>
+          <ul>{c.grid.filter((r) => r.pPlayoffs < 0.5).map((t) => <li key={t.id} title={`${t.name} ${t.record}`}><TeamOpen className="img" team={{ league: "NFL", name: t.name, abbr: t.abbr }}><Logo t={t} size={18} /></TeamOpen></li>)}</ul>
+        </div>
+      )}
+      <details className="tk-how">
+        <summary>How to read this</summary>
+        <p>
+          As of the Tuesday {dayText(nfl.cycle)} refresh; updates every Tuesday morning. Division winners take seeds 1–4, then the three best remaining records; only seed 1 gets a bye. Odds come from playing out
+          the rest of the schedule {nfl.sim ? `${nfl.sim.sims.toLocaleString()} times (${nfl.sim.games} games left)` : "many times"}, each won by the better ESPN FPI team with a home-field edge. Ties for a seed are split
+          evenly instead of using head-to-head tiebreakers, so treat close races as close. Each cell is the chance of finishing in that seed; the shaded 1 column is the first-round bye.
+        </p>
+      </details>
+    </section>
+  );
+}
+
+/**
+ * The college playoff seeds: the projected twelve-team field as one row each (seed, team, odds), the first teams out below it, and the full
+ * team-by-seed odds grid folded away. The field fits a phone screen.
+ */
+function CfbSeeds({ cfb }: { cfb: NonNullable<Data["cfb"]> }) {
+  const r = cfb.playoff.rules;
+  return (
+    <section className="sd2 cfb" aria-label="Projected playoff field">
+      <header className="sd2-head">
+        <h3>Projected {r.teams}-team field</h3>
+        <p>{r.autoBids} champions + at-large · seeds 1–{r.byes} get a bye</p>
+      </header>
+      <ol className="sd2-field">
+        {cfb.playoff.field.map((s) => (
+          <li key={s.id} className={s.bye ? "bye" : undefined}>
+            <b className="sd2-seed" aria-label={`Seed ${s.seed}`}>{s.seed}</b>
+            <TeamOpen className="sd2-team" team={{ league: "CFB", name: s.name, abbr: s.abbr }}><Logo t={s} size={16} /><b>{s.abbr}</b><small>{s.record}{s.conf ? ` · ${s.conf}` : ""}</small></TeamOpen>
+            <span className="sd2-bid" title={s.bid === "champion" ? "projected conference champion" : "at-large"}>{s.bid === "champion" ? "champ" : "at-large"}</span>
+            <span className="sd2-odds" title="Chance of making the playoffs"><b>{pct(s.pPlayoffs)}</b></span>
+          </li>
+        ))}
+      </ol>
+      <div className="sd2-out">
+        <span>First out</span>
+        <ul>{cfb.playoff.out.map((t) => <li key={t.id} title={`${t.name} ${t.record}${t.pPlayoffs != null ? ` · ${pct(t.pPlayoffs)} to make it` : ""}`}><TeamOpen className="img" team={{ league: "CFB", name: t.name, abbr: t.abbr }}><Logo t={t} size={18} /></TeamOpen></li>)}</ul>
+      </div>
+      {cfb.grid && cfb.sim && (
+        <details className="tk-how">
+          <summary>Full seed odds, every team</summary>
+          <SeedGrid
+            label="Playoff seed odds"
+            seeds={r.teams}
+            byes={r.byes}
+            extra={["Playoffs", "Bye", "Conf title"]}
+            rows={cfb.grid.map((g) => ({ ...g, sub: `${g.record} · ${g.conf === "Ind" ? "Independent" : g.conf}`, cols: [g.pPlayoffs, g.pBye, g.pConfTitle] }))}
+          />
+        </details>
+      )}
+      <details className="tk-how">
+        <summary>How to read this</summary>
+        <p>
+          As of the Sunday {dayText(cfb.cycle)} refresh; updates every Sunday morning. The {r.autoBids} highest-ranked projected conference champions get in, plus the next best teams, seeded by composite rank.
+          {cfb.sim ? ` The odds come from playing out the rest of the regular season ${cfb.sim.sims.toLocaleString()} times (${cfb.sim.games} games left), each won by the better ESPN FPI team with a home-field edge; a conference's champion is its best conference record (the title games aren't played), and the field is ordered by FPI minus 6 points per loss, a stand-in for the selection committee.` : ""}
+        </p>
+      </details>
+    </section>
   );
 }
 
@@ -429,46 +542,7 @@ export function Outlook({ defaultLeague }: { defaultLeague: League }) {
         ) : part === "tracker" ? (
           <NflTracker nfl={nfl} />
         ) : (
-          <>
-            <p className="ol-note">
-              As of the Tuesday {dayText(nfl.cycle)} refresh; updates every Tuesday morning. Division winners take seeds 1–4, then the three best remaining records; only seed 1 gets a bye.
-            </p>
-            {nfl.sim ? (
-              <p className="ol-note">
-                Odds come from playing out the rest of the schedule {nfl.sim.sims.toLocaleString()} times ({nfl.sim.games} games left), each won by the better ESPN FPI team with a home-field edge.
-                Ties for a seed are split evenly instead of using head-to-head tiebreakers, so treat close races as close. Each cell is the chance of finishing in that seed; the shaded #1 column is the
-                chance at the first-round bye.
-              </p>
-            ) : (
-              <p className="ol-note">The seed grid appears once the schedule has been fetched; until then only ESPN's playoff odds are shown.</p>
-            )}
-            <div className="ol-cols">
-              {Object.entries(nfl.conferences).map(([conf, c]) => (
-                <div key={conf} className={c.grid ? "ol-wide" : undefined}>
-                  <h3>{conf}</h3>
-                  {c.grid ? (
-                    <SeedGrid
-                      label={`${conf} seed odds`}
-                      seeds={7}
-                      byes={1}
-                      extra={["Playoffs", "Division"]}
-                      rows={c.grid.map((r) => ({ ...r, sub: `${r.record} · ${r.division.replace(/^(AFC|NFC) /, "")}`, cols: [r.pPlayoffs, r.pDiv] }))}
-                    />
-                  ) : (
-                    <>
-                      <ol className="ol-list" aria-label={`${conf} playoff seeds`}>
-                        {c.field.map((s) => (
-                          <SeedRow key={s.id} s={{ ...s, conf: s.division }} tag={s.bid} odds={[["playoffs", s.pPlayoffs], ["division", s.pDiv], ["title", s.pTitle]]} />
-                        ))}
-                      </ol>
-                      <p className="ol-sub">First out</p>
-                      <ul className="ol-outs">{c.out.map((t) => <OutRow key={t.id} t={t} />)}</ul>
-                    </>
-                  )}
-                </div>
-              ))}
-            </div>
-          </>
+          <NflSeeds nfl={nfl} />
         )
       ) : !cfb ? (
         <p className="ol-note">The college outlook has not been built yet.</p>
@@ -477,36 +551,7 @@ export function Outlook({ defaultLeague }: { defaultLeague: League }) {
       ) : part === "tracker" ? (
         <TrackerPart tracker={cfb.tracker} title="College Football Playoff tracker" sims={cfb.sim?.sims} league="CFB" compact />
       ) : part === "playoff" ? (
-        <>
-          <p className="ol-note">
-            Projected {cfb.playoff.rules.teams}-team field as of the Sunday {dayText(cfb.cycle)} refresh; updates every Sunday morning. The {cfb.playoff.rules.autoBids} highest-ranked
-            projected conference champions get in, plus the next best teams, seeded by composite rank. Seeds 1–{cfb.playoff.rules.byes} get a first-round bye.
-          </p>
-          {cfb.grid && cfb.sim && (
-            <>
-              <p className="ol-note">
-                Odds come from playing out the rest of the regular season {cfb.sim.sims.toLocaleString()} times ({cfb.sim.games} games left), each won by the better ESPN FPI team with a home-field edge. A team's conference champion is whoever finishes with the best
-                conference record (the title games aren't played), the five best champions get in, and the field is ordered by FPI minus 6 points per loss, a stand-in for the selection committee. Each cell is the chance of that seed;
-                the shaded #1–#{cfb.playoff.rules.byes} columns are the first-round byes. Teams under 0.5% are left out.
-              </p>
-              <SeedGrid
-                label="Playoff seed odds"
-                seeds={cfb.playoff.rules.teams}
-                byes={cfb.playoff.rules.byes}
-                extra={["Playoffs", "Bye", "Conf title"]}
-                rows={cfb.grid.map((r) => ({ ...r, sub: `${r.record} · ${r.conf === "Ind" ? "Independent" : r.conf}`, cols: [r.pPlayoffs, r.pBye, r.pConfTitle] }))}
-              />
-              <p className="ol-sub">Field if the season ended on today's composite</p>
-            </>
-          )}
-          <ol className="ol-list" aria-label="Projected playoff field">
-            {cfb.playoff.field.map((s) => (
-              <SeedRow key={s.id} s={s} tag={s.bid === "champion" ? "projected conference champion" : "at-large"} odds={[["playoffs", s.pPlayoffs], ["conf title", s.pConf], ["title", s.pTitle]]} />
-            ))}
-          </ol>
-          <p className="ol-sub">First four out</p>
-          <ul className="ol-outs">{cfb.playoff.out.map((t) => <OutRow key={t.id} t={t} />)}</ul>
-        </>
+        <CfbSeeds cfb={cfb} />
       ) : part === "ranking" ? (
         <RankingTable cfb={cfb} conf={conf} setConf={setConf} shown={shown} setShown={setShown} />
       ) : (
