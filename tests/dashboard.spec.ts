@@ -508,7 +508,7 @@ test("insanity meter updates live from the flow feed", async ({ page }) => {
     return route.fulfill({ json: { wp } });
   });
   await page.goto("/?league=NFL");
-  await expect(page.locator(".game-card .flow-mini").first()).toBeVisible();
+  await expect(page.locator(".game-card .live-meters .lm").first()).toBeVisible();
   await page.screenshot({path: "test-results/live-momentum-" + test.info().project.name + ".png"});
   await expand(page.locator(CARD).first()); // the meter lives in the expanded card
   const meter = page.locator(".game-card .insanity.live").first();

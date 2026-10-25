@@ -50,7 +50,7 @@ async function fetchSummary(league: string, id: string): Promise<Summary | null>
  * The live game summary for one card. It is fetched only while the card is on screen and the tab is visible, every
  * 15 seconds (the edge cache holds it for 15), so thirteen live cards don't mean thirteen constant requests.
  */
-function useSummary(league: string, id: string, active: boolean) {
+export function useSummary(league: string, id: string, active: boolean) {
   const ref = useRef<HTMLDivElement>(null);
   const report = useReportLive();
   const [data, setData] = useState<Summary | null>(() => cache.get(id)?.data ?? null);

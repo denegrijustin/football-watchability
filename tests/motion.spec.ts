@@ -51,7 +51,7 @@ test.describe("on the board", () => {
     await expect(tile).toContainText("One-score game · 4th quarter");
     await expect(tile).toContainText("%");
     await expect(page.locator(".late-flag").first()).toContainText("One-score game");
-    await expect(page.locator(".wp-bar").first()).toBeVisible();
+    await expect(page.locator(".live-meters .lm").first()).toBeVisible();
     away = 28;
     await page.locator(".live-fresh").evaluate((b) => (b as HTMLElement).click());
     await expect(page.locator(".team-score.scored").first()).toBeVisible();
