@@ -70,8 +70,8 @@ export default function Conferences() {
     { key: "n", label: "Teams", align: "r", first: "desc", get: (s) => s.n },
     { key: "mean", label: `Mean ${mm.label}`, align: "r", first: mm.lowerBetter ? "asc" : "desc", get: (s) => s.mean, render: (s) => fmt(s.mean) },
     { key: "med", label: "Median", align: "r", first: mm.lowerBetter ? "asc" : "desc", get: (s) => s.median, render: (s) => fmt(s.median) },
-    { key: "best", label: "Best", get: (s) => s.best.v, render: (s) => `${s.best.name} ${fmt(s.best.v)}` },
-    { key: "worst", label: "Worst", get: (s) => s.worst.v, render: (s) => `${s.worst.name} ${fmt(s.worst.v)}` },
+    { key: "best", hideSm: true, label: "Best", get: (s) => s.best.v, render: (s) => `${s.best.name} ${fmt(s.best.v)}` },
+    { key: "worst", hideSm: true, label: "Worst", get: (s) => s.worst.v, render: (s) => `${s.worst.name} ${fmt(s.worst.v)}` },
     { key: "t25", label: "In top 25", align: "r", first: "desc", get: (s) => s.top25 },
   ];
 
@@ -110,7 +110,7 @@ export default function Conferences() {
       })()}
       <div className="panel">
         <h2>Conference summary</h2>
-        <SortTable label="Conference summary" cols={cols} rows={stats} rowKey={(s) => s.conf} onRowClick={(s) => nav({ conf: route.conf === s.conf ? "" : s.conf }, { replace: true })} selected={route.conf}
+        <SortTable label="Conference summary" cols={cols} phoneLine={(s) => <>Best {s.best.name} {fmt(s.best.v)} · Worst {s.worst.name} {fmt(s.worst.v)}</>} rows={stats} rowKey={(s) => s.conf} onRowClick={(s) => nav({ conf: route.conf === s.conf ? "" : s.conf }, { replace: true })} selected={route.conf}
           sort={{ key: route.p.sort || "mean", dir: (route.p.dir as "asc" | "desc") || (mm.lowerBetter ? "asc" : "desc"), set: (key, dir) => nav({ p: { sort: key, dir } }, { replace: true }) }} />
       </div>
     </div>

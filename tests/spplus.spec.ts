@@ -267,3 +267,17 @@ test.describe("simulator: picking a game", () => {
   });
 });
 
+
+test("on a phone the conference summary fits the screen: every column shows, none is clipped or scrolls sideways", async ({ page }) => {
+  test.skip(test.info().project.name !== "mobile", "phone layout");
+  await openTab(page);
+  await openSppTab(page, "Conferences");
+  const wrap = page.locator('.tbl-wrap[aria-label="Conference summary"]');
+  await expect(wrap.locator("tbody tr").first()).toBeVisible();
+  const m = await wrap.evaluate((el) => ({ sw: el.scrollWidth, cw: el.clientWidth }));
+  expect(m.sw).toBeLessThanOrEqual(m.cw + 1);
+  const heads = await wrap.locator("thead th:visible").allInnerTexts();
+  expect(heads.join("|")).toMatch(/Conference.*Teams.*Mean.*Median.*In top 25/);
+  await expect(wrap.locator("tr.phone-line").first()).toBeVisible(); // Best and Worst sit under the conference name
+  await wrap.screenshot({ path: "test-results/conf-summary.png" });
+});

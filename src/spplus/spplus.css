@@ -479,3 +479,13 @@ ol.steps b { color: var(--ink); }
   .mv-table .mv-spark { width: 40px; height: auto; }
   .mv-table th, .mv-table td { padding-left: 6px; padding-right: 6px; }
 }
+
+/* a table can carry one line under each row for what its hidden columns held; it shows on a phone only */
+.phone-line { display: none; }
+@media (max-width: 560px) {
+  .tbl tr.phone-line { display: table-row; }
+  .tbl tr.phone-line td { padding: 0 4px 6px 14px; border-bottom: 1px solid var(--grid); font-size: 0.6875rem; color: var(--muted); white-space: normal; }
+  .tbl tr:has(+ .phone-line) td { border-bottom: 0; }
+  .tbl-wrap[aria-label="Conference summary"] th { white-space: normal; line-height: 1.15; vertical-align: bottom; }
+  .tbl-wrap[aria-label="Conference summary"] td { padding-left: 3px; padding-right: 3px; }
+}
