@@ -40,7 +40,7 @@ test("the Tracker tab shows the tiers with logos that open a team's profile", as
   const tk = page.locator("section.tk");
   await expect(tk).toBeVisible();
   await expect(tk.locator(".tk-tier")).toHaveCount(8);
-  await expect(tk.locator(".tk-tier.clinched .tk-logos li")).toHaveCount(12); // logos and open slots
+  await expect(tk.locator(".tk-tier.clinched .tk-open")).toHaveText(/\d+ open/); // the clinched logos, then how many spots are open
   const first = tk.locator(".tk-tier:not(.clinched) .tk-team").first();
   await first.click();
   await expect(page.locator('.view-switch [data-tab="spplus"]')).toHaveAttribute("aria-pressed", "true");
@@ -56,18 +56,19 @@ test("the Tracker tab shows the tiers with logos that open a team's profile", as
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
 });
 
-test("@phone the NFL tracker shows every tier on one phone screen, without scrolling", async ({ page }) => {
+for (const [league, tiersN] of [["NFL", 7], ["College", 8]] as const)
+test(`@phone the ${league} tracker shows every tier on one phone screen, without scrolling`, async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
   await page.locator(".view-switch .tab-more").click();
   await page.locator('[data-tab="outlook"]').click();
   const ctl = page.locator(".ol-controls");
-  await ctl.getByRole("button", { name: "NFL" }).click();
+  await ctl.getByRole("button", { name: league }).click();
   await ctl.getByRole("button", { name: "Tracker", exact: true }).click();
   const tk = page.locator("section.tk");
   await expect(tk).toBeVisible();
   const tiers = tk.locator(".tk-tier");
-  expect(await tiers.count()).toBe(7);
+  expect(await tiers.count()).toBe(tiersN);
   await tk.scrollIntoViewIfNeeded();
   const last = await tiers.last().boundingBox();
   const bar = await page.locator(".view-switch").boundingBox(); // the tab bar at the bottom of the screen

@@ -12,10 +12,10 @@
 .tk-top h4 small { margin-left: 6px; font-size: 0.75rem; font-weight: 400; letter-spacing: 0; text-transform: none; color: var(--muted); }
 .tk-count { font-weight: 800; font-variant-numeric: tabular-nums; color: var(--text-2); }
 .tk-logos { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
-.tk-logos li { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 9px; background: var(--surface-3); }
+.tk-logos li { display: grid; place-items: center; width: 38px; height: 38px; }
 .tk-logos li.avail { border: 1px dashed var(--line-strong); background: transparent; color: var(--muted); font-size: 0.5625rem; font-weight: 700; letter-spacing: 0.04em; }
 .tk-tier.out .tk-logos li { width: 32px; height: 32px; opacity: 0.8; }
-.tk-team { display: grid; place-items: center; width: 100%; height: 100%; border-radius: 9px; }
+.tk-team { display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%; }
 .tk-none { margin: 0; font-size: 0.8125rem; font-style: italic; color: var(--muted); }
 .tk-foot { padding: 10px 14px; margin: 0; }
 @media (max-width: 520px) { .tk-top h4 small { display: block; margin: 2px 0 0; } .tk-top { align-items: flex-start; } }
@@ -24,12 +24,21 @@
 .tk-conf { flex: none; }
 .tk-conf button { min-width: 64px; min-height: 36px; }
 .tk.compact .tk-head { padding: 8px 12px; align-items: center; }
-.tk.compact .tk-tier { display: grid; grid-template-columns: 7.2rem minmax(0, 1fr); align-items: center; gap: 4px 8px; padding: 6px 10px 6px 10px; }
+.tk.compact .tk-tier { display: grid; grid-template-columns: 5.6rem minmax(0, 1fr); align-items: center; gap: 4px 8px; padding: 6px 10px 6px 10px; }
 .tk.compact .tk-top { display: grid; gap: 0; margin: 0; align-items: center; justify-content: start; }
 .tk.compact .tk-top h4 { font-size: 0.75rem; line-height: 1.15; }
-.tk.compact .tk-top h4 small { display: block; margin: 1px 0 0; font-size: 0.6875rem; }
+.tk.compact .tk-top h4 small { display: none; }
 .tk.compact .tk-count { display: none; }
-.tk.compact .tk-logos { gap: 4px; }
-.tk.compact .tk-logos li, .tk.compact .tk-tier.out .tk-logos li { width: 32px; height: 32px; border-radius: 8px; opacity: 1; }
+.tk.compact .tk-logos { gap: 2px; }
+.tk.compact .tk-logos li, .tk.compact .tk-tier.out .tk-logos li { width: 26px; height: 26px; opacity: 1; }
 .tk.compact .tk-none { font-size: 0.75rem; }
-.tk.compact .tk-foot { padding: 6px 12px; font-size: 0.6875rem; }
+
+.tk-logos li.tk-open { width: auto; padding: 0 8px; height: 26px; border: 1px dashed var(--line-strong); border-radius: 13px; color: var(--muted); font-size: 0.6875rem; white-space: nowrap; }
+.tk-more summary { cursor: pointer; min-height: 28px; display: flex; align-items: center; font-size: 0.75rem; color: var(--muted); }
+.tk-more[open] summary { margin-bottom: 6px; }
+.tk.compact .tk-tier { padding-top: 5px; padding-bottom: 5px; }
+.tk.compact .tk-top h4 { font-size: 0.6875rem; }
+.tk-how { padding: 0 12px; font-size: 0.75rem; color: var(--muted); }
+.tk-how summary { cursor: pointer; min-height: 32px; display: flex; align-items: center; }
+.tk-how ul { margin: 0 0 6px; padding-left: 16px; display: grid; gap: 2px; } .tk-how b { color: var(--text); }
+.tk-how p { margin: 4px 0 8px; }
