@@ -481,9 +481,9 @@ export default function App() {
           <div className="board-heading">
             <h2>{heading}</h2>
             <span role="status" className="status-chips">
-              {([["live", board.counts.live, "in progress"], ["final", board.counts.final, "completed"], ["upcoming", board.counts.upcoming, "upcoming"]] as const).map(([k, n, label]) => (
-                <button key={k} type="button" className={`status-chip${filters.status === k ? " on" : ""}`} aria-pressed={filters.status === k} onClick={() => update({ status: filters.status === k ? "all" : k })}>
-                  <b>{n}</b> {label}
+              {([["live", board.counts.live, "in progress", "live"], ["final", board.counts.final, "completed", "final"], ["upcoming", board.counts.upcoming, "upcoming", "soon"]] as const).map(([k, n, label, short]) => (
+                <button key={k} type="button" data-short={short} className={`status-chip${filters.status === k ? " on" : ""}`} aria-pressed={filters.status === k} onClick={() => update({ status: filters.status === k ? "all" : k })}>
+                  <b>{n}</b> <span className="sc-l">{label}</span>
                 </button>
               ))}
               <FinalScoresToggle count={finalTiles.length} open={fsOpen} onToggle={() => setFsOpen(!fsOpen)} />
