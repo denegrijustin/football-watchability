@@ -127,9 +127,8 @@ test.describe("the NFL+ tab", () => {
   test("movement and team views render for any team", async ({ page }) => {
     await openTab(page);
     await openSppTab(page, "Movement");
-    const bump = page.locator('.spp svg[aria-label="Bump chart of rating rank by week"]');
-    await expect(bump).toBeVisible();
-    await expect(bump.locator("path")).toHaveCount(12);
+    await expect(page.locator(".spp .mv-table tbody tr").first()).toBeVisible(); // the movers table: risers and fallers, then every team
+    await expect(page.locator(".spp .mv-list")).toHaveCount(2);
     await openSppTab(page, "Team", true);
     await page.locator('.spp select[aria-label="Team"]').selectOption("KC");
     await expect(page.locator(".spp h2", { hasText: "Kansas City Chiefs" })).toBeVisible();
