@@ -1,11 +1,12 @@
 import { expect, test } from "./fixtures";
+import { openPicksPart } from "./helpers/outlook";
 import { readFileSync } from "node:fs";
 
 const ledger = JSON.parse(readFileSync("src/data/season.json", "utf8")).games as any[];
 
 test("the Upset Meter's completed games sort by insanity in an earlier week too (the ledger has them, the archive does not)", async ({ page }) => {
   await page.goto("/?league=CFB");
-  await page.getByRole("button", { name: "Upset Alert Meter" }).click();
+  await openPicksPart(page, "Upset Alert Meter");
   await page.getByLabel("Week", { exact: true }).selectOption({ label: "Oct. 1–5, 2026" });
   const sort = page.getByRole("group", { name: "Sort completed games by" });
   await sort.getByRole("button", { name: "Most insane" }).click();
