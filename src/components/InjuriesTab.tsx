@@ -15,10 +15,10 @@ const GROUPS = ["QB", "RB", "WR", "TE", "OL", "DL", "LB", "DB", "ST"];
 const GROUP_NAME: Record<string, string> = { QB: "Quarterbacks", RB: "Running backs", WR: "Receivers", TE: "Tight ends", OL: "Offensive line", DL: "Defensive line", LB: "Linebackers", DB: "Defensive backs", ST: "Kickers and punters" };
 
 /** League-wide injury report: what the injury is, how serious, when the player is likely back, and how much his absence matters. */
-export function InjuriesTab({ defaultLeague }: { defaultLeague: League }) {
+export function InjuriesTab({ defaultLeague, only }: { defaultLeague: League; /** Just one team (the Teams tab): its league and the names it goes by. */ only?: { league: "NFL" | "CFB"; names: string[] } }) {
   const [data, setData] = useState<Data | null>(null);
   const [error, setError] = useState(false);
-  const [lg, setLg] = useState<"NFL" | "CFB">(defaultLeague === "CFB" ? "CFB" : "NFL");
+  const [lg, setLg] = useState<"NFL" | "CFB">(only?.league ?? (defaultLeague === "CFB" ? "CFB" : "NFL"));
   const [sort, setSort] = useState<"impact" | "return" | "severity">("impact");
   const [group, setGroup] = useState("all");
   const [team, setTeam] = useState("all");
@@ -28,7 +28,8 @@ export function InjuriesTab({ defaultLeague }: { defaultLeague: League }) {
   const [shown, setShown] = useState(30);
   useEffect(() => { let on = true; fetchData<Data>("injuries").then((d) => on && setData(d), () => on && setError(true)); return () => { on = false; }; }, []);
   const block = data ? (lg === "NFL" ? data.nfl : data.cfb) : null;
-  const players = block?.players ?? [];
+  const names = only?.names.map((n) => n.toLowerCase());
+  const players = (block?.players ?? []).filter((p) => !names || names.includes(p.team.toLowerCase()) || names.includes((p.teamName ?? "").toLowerCase()));
   const teams = useMemo(() => [...new Set(players.map((p) => p.team))].sort(), [players]);
   const list = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -49,10 +50,10 @@ export function InjuriesTab({ defaultLeague }: { defaultLeague: League }) {
   return (
     <section className="ij" aria-label="Injury report">
       <div className="ol-controls">
-        <div className="segmented" role="group" aria-label="League">
+        {!only && <div className="segmented" role="group" aria-label="League">
           <button aria-pressed={lg === "CFB"} onClick={() => { setLg("CFB"); setTeam("all"); }}>College</button>
           <button aria-pressed={lg === "NFL"} onClick={() => { setLg("NFL"); setTeam("all"); }}>NFL</button>
-        </div>
+        </div>}
         <div className="segmented" role="group" aria-label="Sort by">
           <button aria-pressed={sort === "impact"} onClick={() => setSort("impact")}>Impact</button>
           <button aria-pressed={sort === "severity"} onClick={() => setSort("severity")}>Severity</button>

@@ -251,9 +251,13 @@ test.describe("Big Plays: in the browser", () => {
     await expect(page.locator('.bp-dot[tabindex="0"]')).toHaveCount(1);
     await page.locator('.bp-dot[tabindex="0"]').focus();
     const first = await page.locator(".bp-dot:focus").getAttribute("aria-label");
-    await page.keyboard.press("ArrowRight");
-    await page.keyboard.press("ArrowUp");
-    const next = await page.locator(".bp-dot:focus").getAttribute("aria-label");
+    // Arrows move to the neighbouring dot; at an edge of the chart a key can stay put, so keys are tried until one moves.
+    let next = first;
+    for (const key of ["ArrowRight", "ArrowUp", "ArrowDown", "ArrowLeft"]) {
+      await page.keyboard.press(key);
+      next = await page.locator(".bp-dot:focus").getAttribute("aria-label");
+      if (next !== first) break;
+    }
     expect(next).not.toBe(first);
     await expect(page.locator('.bp-dot[tabindex="0"]')).toHaveCount(1);
     await page.keyboard.press("Enter");

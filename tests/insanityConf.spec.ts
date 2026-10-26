@@ -96,16 +96,18 @@ test("the main board has a conference filter for the NFL (AFC, NFC) as well as c
   await expect(conf.locator("option")).toHaveText(["Both conferences", "AFC", "NFC"]);
   const cards = page.locator(".game-card");
   await expect(cards.first()).toBeVisible();
-  const both = await cards.count();
+  // The count is read once the list has stopped changing after a pick.
+  const settled = async () => { let last = -1, now = await cards.count(); while (now !== last) { last = now; await page.waitForTimeout(200); now = await cards.count(); } return now; };
+  const both = await settled();
   await conf.selectOption("afc");
   await expect(page.locator(".game-card").first().or(page.locator(".empty-state"))).toBeVisible();
-  const afc = await cards.count();
+  const afc = await settled();
   await conf.selectOption("nfc");
-  const nfc = await cards.count();
+  const nfc = await settled();
   expect(afc).toBeGreaterThan(0);
   expect(nfc).toBeGreaterThan(0);
   expect(afc).toBeLessThan(both);
-  expect(nfc).toBeLessThan(both);
+  expect(nfc).toBeLessThanOrEqual(both) // every game left this week can have an NFC team in it;
   expect(afc + nfc).toBeGreaterThanOrEqual(both); // a game between the two is in both lists
   // Back to both; and college keeps its own list.
   await conf.selectOption("all-fbs");

@@ -1,3 +1,4 @@
+import { TeamName } from "../teamShort";
 import { TeamOpen } from "../openTeam";
 import { MomentumFlow } from "./MomentumFlow";
 import { ScoreBreakdown } from "./ScoreBreakdown";
@@ -252,7 +253,7 @@ export function GameCard({
               <div>
                 <h4>
                   <PlusRank league={game.league} team={team} />
-                  <TeamOpen team={{ league: game.league, name: team.name, abbr: (team as { abbr?: string }).abbr }}>{team.name}</TeamOpen>
+                  <TeamOpen team={{ league: game.league, name: team.name, abbr: (team as { abbr?: string }).abbr }}><TeamName league={game.league} name={team.name} /></TeamOpen>
                   {i === 1 && <span className="home-tag">Home</span>}
                 </h4>
                 <p>{recordLine(team.record, game.league)}</p>

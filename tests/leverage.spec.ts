@@ -1,4 +1,5 @@
 import { test, expect } from "./fixtures";
+import { openOutlook } from "./helpers/outlook";
 import { readFileSync } from "node:fs";
 import { stubFinals } from "./helpers/finals";
 
@@ -26,7 +27,7 @@ test("the saved leverage numbers make sense: a win never hurts, byes carry no sw
 for (const [name, lg, label] of [["NFL", "nfl", "NFL"], ["College", "cfb", "CFB"]] as const) {
   test(`the Outlook tab's Leverage view draws every team and the games of the week (${name})`, async ({ page }) => {
     await page.goto(`/?league=${label}`);
-    await page.getByRole("button", { name: /^Outlook/ }).click();
+    await openOutlook(page);
     const group = page.getByRole("group", { name: "Outlook section" });
     await group.getByRole("button", { name: "Leverage" }).click();
     const lev = outlook[lg].leverage;

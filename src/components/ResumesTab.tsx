@@ -23,7 +23,7 @@ function Game({ g, win, logo, to }: { g: ResGame; win: boolean; logo: string | u
   );
 }
 
-function Row({ r, logoOf }: { r: Resume; logoOf: (key: string, name: string) => string | undefined }) {
+export function ResumeRow({ r, logoOf }: { r: Resume; logoOf: (key: string, name: string) => string | undefined }) {
   return (
     <li className="rs-row">
       <div className="rs-team">
@@ -52,10 +52,8 @@ function Row({ r, logoOf }: { r: Resume; logoOf: (key: string, name: string) => 
  * Every team's resumé, ranked by the same SP+ (college) and NFL+ (NFL) ratings as the rating tabs: who each team beat, who beat it, how hard its schedule
  * has been, and how its offense and defense rank. College covers every FBS team, not only a top 25.
  */
-export function ResumesTab({ defaultLeague }: { defaultLeague: League }) {
-  const [lg, setLg] = useState<"CFB" | "NFL">(defaultLeague === "CFB" ? "CFB" : "NFL");
-  const [q, setQ] = useState("");
-  const dq = useDeferredValue(q.trim().toLowerCase());
+/** Every team's resumé for a league, and how to find a logo for the names in them. */
+export function useResumes(lg: "CFB" | "NFL") {
   const { data, error } = usePickData();
   const rows = useMemo(() => (data ? (lg === "CFB" ? cfbResumes(data.model) : nflResumes(data.nfl)) : []), [data, lg]);
   const logoOf = useMemo(() => (key: string, name: string): string | undefined => {
@@ -63,6 +61,14 @@ export function ResumesTab({ defaultLeague }: { defaultLeague: League }) {
     const t = data?.model.byName.get(name)?.find((x) => x.division === "FBS") ?? data?.model.byName.get(name)?.[0];
     return t?.logo?.local ?? t?.logo?.remote;
   }, [lg, data]);
+  return { data, error, rows, logoOf };
+}
+
+export function ResumesTab({ defaultLeague }: { defaultLeague: League }) {
+  const [lg, setLg] = useState<"CFB" | "NFL">(defaultLeague === "CFB" ? "CFB" : "NFL");
+  const [q, setQ] = useState("");
+  const dq = useDeferredValue(q.trim().toLowerCase());
+  const { data, error, rows, logoOf } = useResumes(lg);
   const shown = dq ? rows.filter((r) => r.name.toLowerCase().includes(dq) || (r.conf ?? "").toLowerCase().includes(dq)) : rows;
   const nfl = lg === "NFL";
   return (
@@ -83,7 +89,7 @@ export function ResumesTab({ defaultLeague }: { defaultLeague: League }) {
       </details>
       {error ? <p role="alert" className="rs-none">The resumés could not load. Reload the page to try again.</p> : !data ? <Skeleton rows={6} /> : (
         <ol className="rs-list">
-          {shown.map((r) => <Row key={r.key} r={r} logoOf={logoOf} />)}
+          {shown.map((r) => <ResumeRow key={r.key} r={r} logoOf={logoOf} />)}
           {!shown.length && <li className="rs-none">No team matches “{q}”.</li>}
         </ol>
       )}

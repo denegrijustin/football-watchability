@@ -1,4 +1,5 @@
 import { expect, test } from "./fixtures";
+import { openOutlook } from "./helpers/outlook";
 import { readFileSync } from "node:fs";
 import { nflTier, trackerTier } from "../scripts/outlook-lib.mjs";
 
@@ -33,7 +34,7 @@ test("the saved tracker puts every team in exactly one tier", () => {
 
 test("the Tracker tab shows the tiers with logos that open a team's profile", async ({ page }) => {
   await page.goto("/");
-  await page.locator('[data-tab="outlook"]').click();
+  await openOutlook(page);
   const ctl = page.locator(".ol-controls");
   await ctl.getByRole("button", { name: "College" }).click();
   await ctl.getByRole("button", { name: "Tracker", exact: true }).click();
@@ -43,8 +44,8 @@ test("the Tracker tab shows the tiers with logos that open a team's profile", as
   await expect(tk.locator(".tk-tier.clinched .tk-open")).toHaveText(/\d+ open/); // the clinched logos, then how many spots are open
   const first = tk.locator(".tk-tier:not(.clinched) .tk-team").first();
   await first.click();
-  await expect(page.locator('.view-switch [data-tab="spplus"]')).toHaveAttribute("aria-pressed", "true");
-  await page.locator('[data-tab="outlook"]').click();
+  await expect(page.locator('.view-switch [data-tab="teams"]')).toHaveAttribute("aria-pressed", "true");
+  await openOutlook(page);
   await ctl.getByRole("button", { name: "NFL" }).click();
   await ctl.getByRole("button", { name: "Tracker", exact: true }).click();
   await expect(page.locator("section.tk")).toHaveCount(1); // one conference at a time
@@ -61,7 +62,7 @@ test(`@phone the ${league} tracker shows every tier on one phone screen, without
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
   await page.locator(".view-switch .tab-more").click();
-  await page.locator('[data-tab="outlook"]').click();
+  await openOutlook(page);
   const ctl = page.locator(".ol-controls");
   await ctl.getByRole("button", { name: league }).click();
   await ctl.getByRole("button", { name: "Tracker", exact: true }).click();
@@ -82,7 +83,7 @@ test(`@phone the ${league} seeds fit one phone screen without scrolling`, async 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
   await page.locator(".view-switch .tab-more").click();
-  await page.locator('[data-tab="outlook"]').click();
+  await openOutlook(page);
   await page.locator(".ol-controls").getByRole("button", { name: league }).click();
   const body = page.locator(check);
   await expect(body).toBeVisible();
@@ -97,7 +98,7 @@ test(`@phone the ${league} Outlook menu is one line and its instructions are two
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
   await page.locator(".view-switch .tab-more").click();
-  await page.locator('[data-tab="outlook"]').click();
+  await openOutlook(page);
   const ctl = page.locator(".ol-controls");
   await ctl.getByRole("button", { name: league }).click();
   const tops = await ctl.locator('[aria-label="Outlook section"] button').evaluateAll((bs) => [...new Set(bs.map((b) => Math.round(b.getBoundingClientRect().top)))]);

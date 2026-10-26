@@ -5,6 +5,7 @@ const PATHS: Record<string, string> = {
   picks: "M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.5 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z",
   insanity: "M13 3L5 14h6l-1 7 8-11h-6z",
   sim: "M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5L18 18M6 18l2.5-2.5M15.5 8.5L18 6",
+  teams: "M12 4a3.2 3.2 0 100 6.4A3.2 3.2 0 0012 4zM5 20c0-3.6 3.1-6 7-6s7 2.4 7 6",
   more: "M5 12h.01M12 12h.01M19 12h.01",
   grid: "M4 5h16v14H4zM4 10h16M9 5v14M15 5v14",
   outlook:

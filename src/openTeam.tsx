@@ -17,16 +17,33 @@ export interface TeamRef {
   id?: string;
 }
 
-/** Opens a team's profile: the NFL+ tab's Team view for an NFL team, the SP+ tab's team profile for a college team. */
-export function openTeam(t: TeamRef) {
+/** Points the NFL+ tab's Team view (NFL) or the SP+ tab's team profile (college) at a team, without leaving the page the caller is on. */
+export function pointRatingsAt(t: TeamRef) {
   if (t.league === "NFL") {
     if (!t.abbr) return;
     navigateNfl({ view: "team", team: NFL_ABBR[t.abbr] ?? t.abbr });
-    window.dispatchEvent(new CustomEvent("fbwatch:open-view", { detail: "nfl" }));
   } else {
     navigateSp({ view: "team", team: t.id ?? `FBS:${BOARD_TO_SHEET[t.name] ?? t.name}` });
-    window.dispatchEvent(new CustomEvent("fbwatch:open-view", { detail: "spplus" }));
   }
+}
+
+const KEY = "fbwatch-team";
+const listeners = new Set<() => void>();
+let shown: TeamRef | null = (() => { try { return JSON.parse(sessionStorage.getItem(KEY) ?? "null"); } catch { return null; } })();
+/** The team the Teams tab is showing (null: the list of teams). */
+export const hubTeam = () => shown;
+export function setHubTeam(t: TeamRef | null) {
+  shown = t;
+  try { t ? sessionStorage.setItem(KEY, JSON.stringify(t)) : sessionStorage.removeItem(KEY); } catch { /* storage blocked */ }
+  listeners.forEach((f) => f());
+}
+export function subscribeHub(f: () => void) { listeners.add(f); return () => { listeners.delete(f); }; }
+
+/** Opens a team's page: the Teams tab, with its resumé, ratings and performance, and injuries. */
+export function openTeam(t: TeamRef) {
+  if (t.league === "NFL" && !t.abbr) return;
+  setHubTeam(t);
+  window.dispatchEvent(new CustomEvent("fbwatch:open-view", { detail: "teams" }));
 }
 
 /** A team's logo or name that opens its profile. It stops the click so a card or row around it does not also open. */

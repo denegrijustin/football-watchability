@@ -99,8 +99,12 @@ test("@phone search, empty state, league switch and responsive layout", async ({
 }, testInfo) => {
   await page.goto("/?league=NFL");
   const search = page.getByRole("searchbox");
-  await search.fill("Ravens");
-  await expect(page.locator(CARD)).toHaveCount(1);
+  // A team that is on a card today (a game already final is a result, not a card), whichever week this runs in.
+  await expect(page.locator(CARD).first()).toBeVisible();
+  const gid = await page.locator(CARD).first().getAttribute("data-game-id");
+  const nick = slate.games.find((g: any) => g.id === gid).teams[0].name.split(" ").pop();
+  await search.fill(nick);
+  await expect(page.locator(CARD)).toHaveCount(slate.games.filter((g: any) => g.league === "NFL" && g.teams.some((t: any) => t.name.endsWith(nick))).length);
   await search.fill("definitely-no-such-team");
   await expect(page.getByText("No games found.")).toBeVisible();
   await page.getByRole("button", { name: "Clear filters" }).click();
@@ -1209,11 +1213,11 @@ test("a tab that fails twice shows what went wrong and a way to reload", async (
   await page.goto("/?league=NFL");
   await expect(page.locator(".game-card").first()).toBeVisible();
   await page.evaluate(() => {
-    sessionStorage.setItem("fbwatch-view-reload-Outlook", "1"); // it has already reloaded once
+    sessionStorage.setItem("fbwatch-view-reload-StandingsHub", "1"); // it has already reloaded once
     sessionStorage.setItem("fbwatch-gc-reload", "1");
   });
   await page.route("**/assets/c-*.js", (route) => route.abort());
-  await page.getByRole("button", { name: /^Outlook/ }).click();
+  await page.locator('[data-tab="standings"]').evaluate((b) => (b as HTMLElement).click());
   const note = page.getByRole("alert").filter({ hasText: "could not load" });
   await expect(note).toBeVisible({ timeout: 10000 });
   await expect(note.getByRole("button", { name: "Reload the page" })).toBeVisible();
