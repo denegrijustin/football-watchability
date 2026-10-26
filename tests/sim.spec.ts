@@ -1,4 +1,5 @@
 import { expect, test } from "./fixtures";
+import { openPicksPart } from "./helpers/outlook";
 import { hasCfbGame, NO_CFB } from "./helpers/slate";
 
 // The simulator is a lazy tab. It must open, run a game and its forecast, and never disturb the rest of the page.
@@ -6,7 +7,7 @@ test("the Simulator tab runs a game: forecast, stage, play feed and a final scor
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.goto("/?league=NFL");
-  await page.getByRole("button", { name: "Simulator" }).click();
+  await openPicksPart(page, "Simulator");
   await expect(page.getByRole("heading", { name: "Game simulator" })).toBeVisible();
   await page.getByRole("button", { name: "Simulate this game" }).click();
   const forecast = page.getByRole("region", { name: "Forecast" });
@@ -34,13 +35,13 @@ test("@phone all the tabs stay on one row, visible and not overlapping, from 375
       for (let i = 0; i < bs.length; i++) for (let j = i + 1; j < bs.length; j++) if (bs[i].left < bs[j].right - 0.5 && bs[j].left < bs[i].right - 0.5 && bs[i].top < bs[j].bottom - 0.5 && bs[j].top < bs[i].bottom - 0.5) overlaps++;
       return { n: bs.length, overlaps, off: bs.filter((b) => b.right > innerWidth + 1 || b.left < -1).length, rows: new Set(bs.map((b) => Math.round(b.top))).size };
     });
-    expect(r, `tabs at ${w}px`).toEqual({ n: phone ? 6 : 13, overlaps: 0, off: 0, rows: 1 });
+    expect(r, `tabs at ${w}px`).toEqual({ n: phone ? 5 : 11, overlaps: 0, off: 0, rows: 1 });
   }
 });
 
 test("the Upset Alert Meter: filters on one line, a week selector, and an earlier week loads its own games", async ({ page }) => {
   await page.goto("/?league=CFB");
-  await page.getByRole("button", { name: "Upset Alert Meter" }).click();
+  await openPicksPart(page, "Upset Alert Meter");
   await expect(page.locator(".um-row").first()).toBeVisible();
   // The league and Show filters never make the row scroll sideways (on a narrow phone they wrap rather than hide).
   expect(await page.evaluate(() => { const c = document.querySelector(".um-controls")!; return c.scrollWidth <= c.clientWidth + 1; })).toBe(true);
@@ -119,7 +120,7 @@ test("the simulator names real players with ESPN and the server function both un
   await page.route("**/api/teaminfo*", (r) => r.abort());
   await page.route(/espn\.com/, (r) => r.abort());
   await page.goto("/?league=NFL");
-  await page.getByRole("button", { name: "Simulator" }).click();
+  await openPicksPart(page, "Simulator");
   await page.locator(".sim-custom summary").click();
   const pick = async (n: number, name: string) => {
     const sel = page.locator(".sim-custom select").nth(n);
@@ -181,7 +182,7 @@ test("end zones: each known program's look, and a readable default for everyone 
 test("the field carries the conference logo at each 25 (the second upside down), the NFL shield for NFL games, and Notre Dame's Touchdown Jesus line", async ({ page }) => {
   const run = async (league: "CFB" | "NFL", away: string, home: string) => {
     await page.goto(`/?league=${league}`);
-    await page.getByRole("button", { name: "Simulator" }).click();
+    await openPicksPart(page, "Simulator");
     await page.locator(".sim-custom summary").click();
     const pick = async (n: number, name: string) => {
       const sel = page.locator(".sim-custom select").nth(n);
@@ -208,7 +209,7 @@ test("the field carries the conference logo at each 25 (the second upside down),
 test("the Upset Alert Meter can be filtered by conference, on one line with the other filters", async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 800 });
   await page.goto("/?league=CFB");
-  await page.getByRole("button", { name: "Upset Alert Meter" }).click();
+  await openPicksPart(page, "Upset Alert Meter");
   await expect(page.locator(".um-row").first()).toBeVisible();
   const all = await page.locator(".um-row").count();
   const sel = page.locator(".um-conf select");
@@ -239,7 +240,7 @@ test("on a phone the whole simulator stage fits the screen's width, with no side
   for (const w of [320, 360, 390]) {
     await page.setViewportSize({ width: w, height: 800 });
     await page.goto("/?league=CFB");
-    await page.getByRole("button", { name: "Simulator" }).click();
+    await openPicksPart(page, "Simulator");
     await page.getByRole("button", { name: "Simulate this game" }).click();
     await expect(page.locator(".st")).toBeVisible({ timeout: 45_000 });
     const m = await page.evaluate(() => { const st = document.querySelector(".st")!.getBoundingClientRect(); return { left: st.left, right: st.right, page: document.documentElement.scrollWidth, vw: innerWidth }; });
@@ -320,7 +321,7 @@ test("NFL+ has a Conf & Div view: both conferences and all eight divisions ranke
 test("the Chargers and Denver put their own art at midfield, in the simulator, when they are the home team; other teams keep their logo", async ({ page }) => {
   const run = async (away: string, home: string) => {
     await page.goto("/?league=NFL");
-    await page.getByRole("button", { name: "Simulator" }).click();
+    await openPicksPart(page, "Simulator");
     await page.locator(".sim-custom summary").click();
     const pick = async (n: number, name: string) => {
       const sel = page.locator(".sim-custom select").nth(n);

@@ -295,8 +295,8 @@ test("@phone the view tabs and Export never overlap, down to the narrowest phone
     // Ten tabs share one row. From 375px up they all fit; on narrower phones the row scrolls sideways rather than wrapping or squeezing.
     if (w >= 375) expect(boxes.sw, `tabs overflow at ${w}px`).toBeLessThanOrEqual(0);
     expect(new Set(boxes.tabs.map((t) => Math.round(t.t))).size, `tabs wrapped at ${w}px`).toBe(1);
-    // On a phone they are five tabs and More, in a bar at the bottom; Export moves into the More sheet.
-    expect(boxes.tabs).toHaveLength(w <= 760 ? 6 : 10);
+    // On a phone they are four tabs and More, in a bar at the bottom; Export moves into the More sheet.
+    expect(boxes.tabs).toHaveLength(w <= 760 ? 5 : 8);
     if (w <= 760) continue;
     for (const t of boxes.tabs) {
       if (t.r > boxes.swr + 0.5) continue; // scrolled out of view past the row's edge, so it cannot cover Export

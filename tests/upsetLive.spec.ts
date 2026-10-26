@@ -1,4 +1,5 @@
 import { expect, test } from "./fixtures";
+import { openPicksPart } from "./helpers/outlook";
 import { readFileSync } from "node:fs";
 
 const slate = JSON.parse(readFileSync("src/data/slate.json", "utf8"));
@@ -11,7 +12,7 @@ test("the Upset Alert Meter has a Live column with the score and the game clock,
   await page.route("**/api/flow**", (r) => r.fulfill({ json: { wp: [] } }));
   await page.route("**/api/game**", (r) => r.fulfill({ json: { id: first.espnId, status: { state: "in", detail: "5:12 - 3rd", period: 3, clock: "5:12" }, teams: first.teams.map((t: any, i: number) => ({ id: t.espnId, abbr: t.abbr, name: t.name, homeAway: i ? "home" : "away", score: i ? 7 : 14, linescores: [], possession: false })), situation: null, drives: [], plays: [], curPlays: [], wp: [], allOffense: [], scoring: [], teamStats: {}, players: {} } }));
   await page.goto("/?league=NFL");
-  await page.getByRole("button", { name: "Upset Alert Meter" }).click();
+  await openPicksPart(page, "Upset Alert Meter");
   const col = page.locator(".um-col[aria-label='Live']");
   await expect(col).toBeVisible();
   await expect(col.locator(".um-row")).toHaveCount(1);
