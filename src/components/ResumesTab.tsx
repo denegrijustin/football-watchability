@@ -5,6 +5,7 @@ import { ChipImg } from "../logoTone";
 import { cfbResumes, nflResumes, BAD_HOME, BAD_ROAD, type ResGame, type Resume } from "../resume";
 import { TeamOpen, type TeamRef } from "../openTeam";
 import { Skeleton } from "./Skeleton";
+import { FraudMeter } from "./FraudMeter";
 import "../resume.css";
 
 const dateText = (iso: string) => new Date(`${iso.slice(0, 10)}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
@@ -68,6 +69,7 @@ export function ResumesTab({ defaultLeague }: { defaultLeague: League }) {
   const [lg, setLg] = useState<"CFB" | "NFL">(defaultLeague === "CFB" ? "CFB" : "NFL");
   const [q, setQ] = useState("");
   const dq = useDeferredValue(q.trim().toLowerCase());
+  const [view, setView] = useState<"resumes" | "fraud">("resumes");
   const { data, error, rows, logoOf } = useResumes(lg);
   const shown = dq ? rows.filter((r) => r.name.toLowerCase().includes(dq) || (r.conf ?? "").toLowerCase().includes(dq)) : rows;
   const nfl = lg === "NFL";
@@ -78,8 +80,13 @@ export function ResumesTab({ defaultLeague }: { defaultLeague: League }) {
         <div className="sd-chips" role="group" aria-label="League">
           {(["CFB", "NFL"] as const).map((k) => <button key={k} type="button" aria-pressed={lg === k} onClick={() => setLg(k)}>{k === "CFB" ? "College (all FBS)" : "NFL"}</button>)}
         </div>
-        <label className="rs-search"><span className="sr-only">Find a team or conference</span><input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Find a team or conference" /></label>
+        <div className="sd-chips" role="group" aria-label="Resumé view">
+          <button type="button" aria-pressed={view === "resumes"} onClick={() => setView("resumes")}>Resumés</button>
+          <button type="button" aria-pressed={view === "fraud"} onClick={() => setView("fraud")}>Fraud meter</button>
+        </div>
+        {view === "resumes" && <label className="rs-search"><span className="sr-only">Find a team or conference</span><input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Find a team or conference" /></label>}
       </div>
+      {view === "fraud" ? (nfl ? <FraudMeter /> : <p className="rs-none">The fraud meter is NFL only for now: it needs each team's simulated final wins, which the college simulation does not save for every FBS team.</p>) : <>
       <details className="rs-note">
         <summary>How to read this</summary>
         <p>
@@ -93,6 +100,7 @@ export function ResumesTab({ defaultLeague }: { defaultLeague: League }) {
           {!shown.length && <li className="rs-none">No team matches “{q}”.</li>}
         </ol>
       )}
+      </>}
     </section>
   );
 }
