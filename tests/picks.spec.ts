@@ -1,4 +1,5 @@
 import { test, expect } from "./fixtures";
+import { openOutlook } from "./helpers/outlook";
 import { hasCfbGame, NO_CFB } from "./helpers/slate";
 import { stubFinals } from "./helpers/finals";
 
@@ -45,6 +46,6 @@ test("the ATS & Parlays tab has its own ATS record with a weekly chart, and the 
   await expect(page.getByRole("group", { name: /Share of picks that covered/ })).toBeVisible({ timeout: 20_000 });
   await expect(page.locator(".pr-tiles")).toContainText("Break-even");
   await expect(page.locator(".pr-results .pr-why").first()).toContainText(/Covered by|Missed by|Push/);
-  await page.getByRole("button", { name: /^Outlook/ }).click();
+  await openOutlook(page);
   await expect(page.getByRole("group", { name: "Outlook section" }).getByRole("button", { name: "Parlays" })).toHaveCount(0);
 });
