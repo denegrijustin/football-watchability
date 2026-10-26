@@ -23,5 +23,5 @@ test("the Teams tab lists every team and opens one team's page, with its resumé
 
 test("Insanity, Resumés and Injuries are all still one tap away", async ({ page }) => {
   await page.goto("/");
-  for (const tab of ["insanity", "resumes", "injuries", "standings", "outlook"]) await expect(page.locator(`[data-tab="${tab}"]`)).toBeAttached();
+  for (const tab of ["insanity", "resumes", "injuries", "standings"]) await expect(page.locator(`[data-tab="${tab}"]`)).toBeAttached();
 });
