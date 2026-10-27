@@ -138,9 +138,13 @@ const teamSel = (page: Page) => page.locator(".pcontrols select").nth(0);
 const oppSel = (page: Page) => page.locator(".pcontrols select").nth(1);
 
 test("@smoke matchup defaults to the next scheduled opponent and shows paired bars for both directions", async ({ page }) => {
+  // The next opponent moves on as the season does, so it is read from the saved schedule: the earliest game of Seattle's not yet played.
+  const sched = JSON.parse(readFileSync("src/data/nfl.json", "utf8")).games as { type: string; aS: number | null; away: string; home: string; date: string }[];
+  const next = sched.filter((g) => g.type === "REG" && g.aS == null && (g.away === "SEA" || g.home === "SEA")).sort((a, b) => a.date.localeCompare(b.date))[0];
+  const expected = next ? (next.away === "SEA" ? next.home : next.away) : "";
   await openMatchup(page);
   await expect(teamSel(page)).toHaveValue("SEA");
-  await expect(oppSel(page)).toHaveValue("KC");
+  if (expected) await expect(oppSel(page)).toHaveValue(expected);
   await expect(page.locator(".mu-row")).toHaveCount(16);
   await expect(page.locator(".ptake")).toContainText("percentile");
   await expect(page.locator(".ptake")).toContainText("not a forecast");
