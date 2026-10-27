@@ -5,7 +5,7 @@ import { useUpdateCheck } from "./useUpdateCheck";
 import { LiveFreshness } from "./live";
 import { TabIcon } from "./components/TabIcon";
 
-const MORE_VIEWS: View[] = ["insanity", "resumes", "standings", "injuries", "grid", "empire", "spplus", "nfl"];
+const MORE_VIEWS: View[] = ["insanity", "resumes", "injuries", "grid", "empire", "spplus", "nfl"];
 import { dayName, results, slate, tiers, type FilterState, type League, type View } from "./data";
 import { Filters } from "./components/Filters";
 import { GameBoard, useBoard } from "./components/GameBoard";
@@ -18,7 +18,7 @@ import { defaultLeague } from "./league";
 const ImperialismMap = lazyView(() => import("./components/ImperialismMap").then((m) => ({ default: m.ImperialismMap })), "ImperialismMap");
 import { RefreshUi } from "./components/RefreshUi";
 import { ViewSkeleton } from "./components/Skeleton";
-const PicksTab = lazyView(() => import("./components/PicksTab").then((m) => ({ default: m.PicksTab })), "PicksTab");
+const PicksHub = lazyView(() => import("./components/PicksHub").then((m) => ({ default: m.PicksHub })), "PicksHub");
 const InsanityBoard = lazyView(() => import("./components/InsanityBoard").then((m) => ({ default: m.InsanityBoard })), "InsanityBoard");
 const TvGrid = lazyView(() => import("./components/TvGrid").then((m) => ({ default: m.TvGrid })), "TvGrid");
 const SpPlusTab = lazyView(() => import("./spplus/SpPlusTab"), "SpPlusTab");
@@ -27,8 +27,6 @@ const InjuriesTab = lazyView(() => import("./components/InjuriesTab").then((m) =
 const TeamsTab = lazyView(() => import("./components/TeamsTab").then((m) => ({ default: m.TeamsTab })), "TeamsTab");
 const ResumesTab = lazyView(() => import("./components/ResumesTab").then((m) => ({ default: m.ResumesTab })), "ResumesTab");
 const StandingsHub = lazyView(() => import("./components/StandingsHub").then((m) => ({ default: m.StandingsHub })), "StandingsHub");
-const UpsetMeter = lazyView(() => import("./components/UpsetMeter").then((m) => ({ default: m.UpsetMeter })), "UpsetMeter");
-const SimTab = lazyView(() => import("./sim/SimTab"), "SimTab");
 import { setTz, tzLabel, useTz, ZONES } from "./tz";
 
 const gameCount = (l: League) => slate.games.filter((g) => g.league === l).length + results.filter((r) => r.league === l).length;
@@ -264,23 +262,10 @@ export default function App() {
                 aria-label="ATS picks and parlays"
                 aria-pressed={view === "picks"}
                 onClick={() => go("picks")}
-                title="This week's against-the-spread picks, over/under picks and recommended parlays"
+                title="Picks and parlays, the game simulator, the Upset Alert Meter and the full ATS tracker"
               >
                 <TabIcon name="picks" />
                 <span className="tab-label"><span className="tl-wide">ATS &amp; Parlays</span><span className="tl-short">Picks</span></span>
-              </button>
-              <button
-                data-tab="upset"
-                aria-label="Upset Alert Meter"
-                aria-pressed={view === "upset"}
-                onClick={() => go("upset")}
-                title="Upset Alert Meter: how much has to go wrong for each favorite, and which upsets have happened"
-              >
-                <TabIcon name="upset" />
-                <span className="tab-label">
-                  <span className="t-long">Upsets</span>
-                  <span className="t-short">Upsets</span>
-                </span>
               </button>
               <button
                 data-tab="teams"
@@ -293,17 +278,14 @@ export default function App() {
                 <span className="tab-label">Teams</span>
               </button>
               <button
-                data-tab="sim"
-                aria-label="Simulator"
-                aria-pressed={view === "sim"}
-                onClick={() => go("sim")}
-                title="Game simulator: a full play-by-play game built from real season stats, with a forecast from thousands of replays"
+                data-tab="standings"
+                aria-label="Standings"
+                aria-pressed={view === "standings"}
+                onClick={() => go("standings")}
+                title="Standings and playoff picture: the NFL by division, every college conference, seeds, tracker, leverage, rankings and bowls"
               >
-                <TabIcon name="sim" />
-                <span className="tab-label">
-                  <span className="t-long">Simulator</span>
-                  <span className="t-short">Sim</span>
-                </span>
+                <TabIcon name="standings" />
+                <span className="tab-label">Standings</span>
               </button>
               <button
                 type="button"
@@ -335,16 +317,6 @@ export default function App() {
                 >
                   <TabIcon name="resumes" />
                   <span className="tab-label">Resumés</span>
-                </button>
-                <button
-                  data-tab="standings"
-                  aria-label="Standings"
-                  aria-pressed={view === "standings"}
-                  onClick={() => go("standings")}
-                  title="Standings and playoff picture: the NFL by division, every college conference, seeds, tracker, leverage, rankings and bowls"
-                >
-                  <TabIcon name="standings" />
-                  <span className="tab-label">Standings</span>
                 </button>
                 <button
                   data-tab="injuries"
@@ -454,7 +426,7 @@ export default function App() {
                 {view === "empire" ? (
                   <ImperialismMap defaultLeague={league} />
                 ) : view === "picks" ? (
-                  <PicksTab defaultLeague={league} />
+                  <PicksHub defaultLeague={league} />
                 ) : view === "teams" ? (
                   <TeamsTab defaultLeague={league} />
                 ) : view === "resumes" ? (
@@ -470,9 +442,9 @@ export default function App() {
                 ) : view === "nfl" ? (
                   <NflTab />
                 ) : view === "upset" ? (
-                  <UpsetMeter defaultLeague={league} />
+                  <PicksHub defaultLeague={league} start="upset" />
                 ) : view === "sim" ? (
-                  <SimTab defaultLeague={league} />
+                  <PicksHub defaultLeague={league} start="sim" />
                 ) : view === "insanity" ? (
                   <InsanityBoard defaultLeague={league === "CFB" ? "CFB" : "NFL"} />
                 ) : (

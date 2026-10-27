@@ -27,6 +27,12 @@ export function pointRatingsAt(t: TeamRef) {
   }
 }
 
+/** Points the NFL+ or SP+ tab at its ATS tracker. */
+export function pointRatingsAtTracker(lg: "CFB" | "NFL") {
+  if (lg === "NFL") navigateNfl({ view: "ats" });
+  else navigateSp({ view: "ats" });
+}
+
 const KEY = "fbwatch-team";
 const listeners = new Set<() => void>();
 let shown: TeamRef | null = (() => { try { return JSON.parse(sessionStorage.getItem(KEY) ?? "null"); } catch { return null; } })();
