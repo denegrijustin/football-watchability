@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+import { SecHead } from "./Info";
 type Reading = { at: string; home: number; espn: number | null; market: number | null };
 export type WinProbData = {
   home: number;
@@ -37,10 +39,10 @@ export function PregameWinProb({ wp, away, home }: { wp: WinProbData; away: stri
 
   return (
     <section className="pwp" aria-label={`Pregame win probability. ${summary}.`}>
-      <div className="pwp-head">
-        <h4 className="micro-label">Win probability</h4>
-        <span className={split ? "pwp-split" : undefined}>{summary}</span>
-      </div>
+      <SecHead as="h4" className="micro-label" title="Win probability" aside={<span className={`pwp-chip${split ? " pwp-split" : ""}`}>{summary}</span>} info={{
+        means: "How likely each team is to win, before kickoff. The red and blue split is each team's share, and the white tick is 50%. When ESPN's model and the betting market disagree on who is favored, it says “Split”, which usually means the game is closer than it looks.",
+        how: "ESPN's matchup predictor is their own model's number. The odds bar takes the sportsbook moneyline and removes the bookmaker's built-in margin so the two sides add to 100%. If neither is available, it falls back to our rating-based estimate.",
+      }} />
       {rows.map((r) => (
         <div className="pwp-row" key={r.label}>
           <span className="pwp-label">{r.label}</span>
@@ -49,6 +51,7 @@ export function PregameWinProb({ wp, away, home }: { wp: WinProbData; away: stri
           </span>
           <span
             className="pwp-bar"
+            style={{ "--a": `${100 - r.home}%` } as CSSProperties}
             role="img"
             aria-label={`${r.label}: ${away} ${pct(100 - r.home)}, ${home} ${pct(r.home)}`}
           >

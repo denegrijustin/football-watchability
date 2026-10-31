@@ -23,7 +23,7 @@ export function CardLine({ line, wp, projected, away, home, showBar }: { line: s
       {hasBar && (
         <div className="cl-bar" role="img" aria-label={`Win probability: ${away} ${pct(100 - homeWin!)}, ${home} ${pct(homeWin!)}${fav ? `. ${fav} favored` : ""}`}>
           <span className={`cl-val a${fav === away ? " fav" : ""}`}>{away} {pct(100 - homeWin!)}</span>
-          <span className="cl-track"><i className="a" style={{ width: `${100 - homeWin!}%` }} /><i className="h" style={{ width: `${homeWin!}%` }} /><b aria-hidden="true" /></span>
+          <span className="cl-track" style={{ "--a": `${100 - homeWin!}%` } as React.CSSProperties}><i className="a" style={{ width: `${100 - homeWin!}%` }} /><i className="h" style={{ width: `${homeWin!}%` }} /><b aria-hidden="true" /></span>
           <span className={`cl-val h${fav === home ? " fav" : ""}`}>{pct(homeWin!)} {home}</span>
         </div>
       )}

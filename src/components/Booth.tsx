@@ -16,7 +16,7 @@ function People({ list }: { list: CrewMember[] }) {
             <Headshot src={c.photo} name={c.name} size={20} className="booth-head" />
             {c.name}
           </span>
-          {sep(i, list.length)}
+          <span className="booth-sep">{sep(i, list.length)}</span>
         </span>
       ))}
     </>

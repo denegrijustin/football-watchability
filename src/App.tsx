@@ -159,9 +159,7 @@ export default function App() {
       <ScoreTicker />
       <header className="site-header">
         <a href="/" className="brand" aria-label="Football Watchability home">
-          <span className="brand-mark" aria-hidden="true">
-            FW
-          </span>
+          <img className="brand-logo" src="/icon-192.png" alt="" width="34" height="34" decoding="async" />
           <span className="brand-name">Football Watchability</span>
         </a>
       <details className="how-to">

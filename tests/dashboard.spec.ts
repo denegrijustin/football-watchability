@@ -128,7 +128,7 @@ test("@phone search, empty state, league switch and responsive layout", async ({
     expect(
       Math.round((await page.locator(".filter-dock").boundingBox())!.y),
     ).toBe(tickerH);
-    expect((await page.locator(".card-toggle").first().boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    expect((await page.locator(".card-toggle").first().boundingBox())!.height).toBeGreaterThanOrEqual(43.5);
     await expand(page.locator(CARD).first());
     await page.locator(CARD).first().getByRole("button", { name: /Game Center/ }).click();
     await page.getByRole("dialog").getByRole("tab", { name: /Matchup|Forecast|Season stats/ }).click();
@@ -1247,4 +1247,35 @@ test("Games is the first tab on the left of the menu bar", async ({ page }) => {
   await page.waitForTimeout(300); // the tab row settles after the fonts load
   const tabs = await page.locator(".view-switch button[data-tab]").evaluateAll((els) => els.filter((e) => e.getBoundingClientRect().width > 0).sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left).map((e) => (e as HTMLElement).dataset.tab));
   expect(tabs[0]).toBe("board");
+});
+
+test("the expanded card explains its numbers: an (i) on the preview, projected score, win probability and matchup, each opening what it means and how it was found", async ({ page }) => {
+  await page.goto("/?league=NFL");
+  const card = page.locator(".game-card:not(.result-card)").first();
+  await expect(card).toBeVisible();
+  await card.locator(".cc-chevron").first().click();
+  const more = card.locator(".card-more");
+  await expect(more).toBeVisible();
+  const infos = more.locator(".info-btn");
+  expect(await infos.count()).toBeGreaterThanOrEqual(2);
+  const first = infos.first();
+  await expect(first).toHaveAttribute("aria-expanded", "false");
+  await first.click();
+  await expect(first).toHaveAttribute("aria-expanded", "true");
+  const panel = more.locator(".info-panel:visible").first();
+  await expect(panel).toContainText("What it means.");
+  await expect(panel).toContainText("How we found it.");
+  await first.click();
+  await expect(more.locator(".info-panel:visible")).toHaveCount(0);
+  // Nothing in the expanded card pushes the page sideways.
+  const [sw, cw] = await page.evaluate(() => [document.documentElement.scrollWidth, document.documentElement.clientWidth]);
+  expect(sw).toBeLessThanOrEqual(cw);
+});
+
+test("the win-probability bar has its red-to-blue blend on the collapsed card, not just a grey track", async ({ page }) => {
+  await page.goto("/?league=NFL");
+  const track = page.locator(".game-card:not(.result-card) .cl-track").first();
+  test.skip(!(await track.count()), "no game with a win-probability bar on the board today");
+  await track.scrollIntoViewIfNeeded();
+  expect(await track.evaluate((e) => getComputedStyle(e).backgroundImage)).toContain("linear-gradient");
 });

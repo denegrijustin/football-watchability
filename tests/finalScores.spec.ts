@@ -51,3 +51,20 @@ test.describe("the final scores strip", () => {
     }
   });
 });
+
+test("every completed-game tile is the same size, its rows line up, and the upset tag stays inside it", async ({ page }) => {
+  await page.goto("/");
+  const tiles = page.locator("section.fs .fs-tile");
+  await expect(tiles.first()).toBeVisible();
+  const m = await tiles.evaluateAll((els) => els.map((e) => {
+    const r = e.getBoundingClientRect();
+    const tag = e.querySelector(".fs-tag")!.getBoundingClientRect();
+    const rows = [...e.querySelectorAll(".fs-row")].map((row) => ({ score: Math.round(row.querySelector("b")!.getBoundingClientRect().right - r.left), abbr: Math.round(row.querySelector(".fs-abbr")!.getBoundingClientRect().left - r.left), over: row.querySelector("b")!.getBoundingClientRect().right > tag.left + 0.5 }));
+    return { w: Math.round(r.width), h: Math.round(r.height), tagInside: tag.left >= r.left && tag.right <= r.right + 0.5, rows };
+  }));
+  expect(new Set(m.map((t) => t.w)).size, "tile widths").toBe(1);
+  expect(new Set(m.map((t) => t.h)).size, "tile heights").toBe(1);
+  expect(new Set(m.flatMap((t) => t.rows.map((r) => r.score))).size, "score columns line up").toBe(1);
+  expect(new Set(m.flatMap((t) => t.rows.map((r) => r.abbr))).size, "team columns line up").toBe(1);
+  for (const t of m) { expect(t.tagInside).toBe(true); expect(t.rows.every((r) => !r.over), "a score runs into the tag").toBe(true); }
+});

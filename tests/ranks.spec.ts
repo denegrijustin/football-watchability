@@ -49,7 +49,7 @@ test("ranks are labeled where they appear: on the cards, in the TV grid key and 
   await expect(page.locator(".tv-key .k-rank")).toContainText("national rank (AP if ranked, otherwise ESPN FPI)");
   const compact = await page.locator(".tv-rank").allInnerTexts(); // compact, no label of its own; independents show just the national rank, labeled AP or FPI
   expect(compact.length).toBeGreaterThan(0);
-  for (const t of compact) expect(t).toMatch(/^([^#]+ #\d+ · )?(AP|FPI) #\d+$/);
+  for (const t of compact) expect(t).toMatch(/^([^#]+ #\d+(?: · |\n))?(AP|FPI) #\d+$/);
 });
 
 test("TV grid: every team shows its record, and the national rank is the AP rank when it has one, otherwise FPI", async ({ page }) => {
