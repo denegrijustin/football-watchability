@@ -1,4 +1,5 @@
 import { TeamName } from "../teamShort";
+import { SecHead } from "./Info";
 import { TeamOpen } from "../openTeam";
 import { MomentumFlow } from "./MomentumFlow";
 import { ScoreBreakdown } from "./ScoreBreakdown";
@@ -51,6 +52,16 @@ const impactLevel = (impact: string) =>
  * weather); a click expands it in place to the full card, and a click on the
  * matchup of an expanded card opens the Game Center.
  */
+function WeatherInfo() {
+  const [open, setOpen] = useState(false);
+  return (
+    <span className="info-inline">
+      <button type="button" className="info-btn" aria-expanded={open} aria-label="About the weather: what it means and how we found it" onClick={(e) => { e.stopPropagation(); setOpen((o) => !o); }}><span aria-hidden="true">i</span></button>
+      {open && <span className="info-pop" role="note"><b>What it means.</b> The weather during the game and how much it is likely to change play: wind and rain hurt passing and kicking, heat and cold wear on players. “Impact” is low, moderate or high. <b>How we found it.</b> An hourly forecast for the stadium's city (Open-Meteo) across the four hours of the game, then wind, rain chance, feels-like temperature and storms are checked against set thresholds. Forecasts more than a few days out are less certain. Roofed stadiums show no weather factor.</span>}
+    </span>
+  );
+}
+
 export function GameCard({
   game,
   defaultExpanded = false,
@@ -300,10 +311,10 @@ export function GameCard({
           </li>
         )}
         <li className={`cd-tile weather impact-${impact}`}>
-          <span className="cd-k"><span className="fact-icon" aria-hidden="true">{game.weather.icon}</span> Weather</span>
+          <span className="cd-k"><span className="fact-icon" aria-hidden="true">{game.weather.icon}</span> Weather <WeatherInfo /></span>
           <span className="cd-v">
             {game.weather.title}
-            <span className="weather-detail"> · {game.weather.detail}</span>
+            <span className="weather-detail">{game.weather.detail}</span>
             {impact !== "low" && impact !== "none" && <span className={`impact-pill ${impact}`}>{impact} weather impact</span>}
           </span>
         </li>
@@ -314,7 +325,10 @@ export function GameCard({
       {expanded && (
         <div className="card-more" id={`${game.id}-more`}>
           <section className="cd-sec" aria-labelledby={`${game.id}-preview`}>
-            <h4 className="cd-h" id={`${game.id}-preview`}>Preview</h4>
+            <SecHead id={`${game.id}-preview`} title="Preview" info={{
+              means: "The game in a sentence or two: what is at stake and what to watch, followed by where the model thinks it ends up and who is favored.",
+              how: "The headline is written from this week's data: rankings, records, the betting line and the stakes. The projected score and win probabilities below are worked out separately and explained under their own (i).",
+            }} />
             <p className="take">{game.narrative}</p>
             {"projected" in game && (
               <ProjectedScore
@@ -336,7 +350,10 @@ export function GameCard({
             if (!adv.away.adv?.eff && !adv.home.adv?.eff && !adv.away.adv?.qbr && !adv.home.adv?.qbr) return null;
             return (
               <section className="cd-sec" aria-labelledby={`${game.id}-matchup`}>
-                <h4 className="cd-h" id={`${game.id}-matchup`}>Matchup</h4>
+                <SecHead id={`${game.id}-matchup`} title="Matchup" info={{
+              means: "Each row pulls toward the team that is better at that thing, by how much better. Offense is set against the other team's defense, because that is the comparison that decides a game. Long bar = big edge; no bar = even.",
+              how: "Ratings are ESPN's FPI efficiency (0–100) for offense, defense and special teams, with the team's rank among all teams. Net EPA is expected points added per game. QBR is ESPN's Total QBR for the starting quarterback. An edge shows when the gap is more than about 6% of the row's scale.",
+            }} />
                 <MatchupBars away={adv.away} home={adv.home} />
               </section>
             );

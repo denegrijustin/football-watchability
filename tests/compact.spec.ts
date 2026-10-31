@@ -22,7 +22,7 @@ test("@phone on a phone the controls take few rows and the first game starts hig
   // The sections live in a tab bar fixed to the bottom of the screen, five tabs and More.
   const bar = await page.locator(".view-switch").boundingBox();
   expect(Math.round(bar!.y + bar!.height)).toBeGreaterThan(844 - 4);
-  await expect(page.locator(".view-switch button:visible")).toHaveCount(6);
+  await expect(page.locator(".view-switch button:visible")).toHaveCount(5);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(391);
   // Every filter is still reachable, in the Filters sheet.
   await page.getByRole("button", { name: /^Filters/ }).click();

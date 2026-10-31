@@ -1,3 +1,5 @@
+import { SecHead } from "./Info";
+
 export type Projection = {
   away: number;
   home: number;
@@ -13,19 +15,23 @@ export type Projection = {
 export function ProjectedScore({ p, away, home, listOnly }: { p: Projection; away: string; home: string; listOnly?: boolean }) {
   if (listOnly) return <PartsList p={p} away={away} home={home} />;
   return (
-    <details className="proj">
-      <summary>
-        <span className="micro-label">Projected score</span>
-        <strong>
-          {away} {p.away}
-          <span aria-hidden="true">–</span>
-          <span className="sr-only"> to </span>
-          {p.home} {home}
-        </strong>
-        <span className="proj-src">How it's built</span>
-      </summary>
-      <PartsList p={p} away={away} home={home} />
-    </details>
+    <div className="proj-wrap">
+      <SecHead as="h4" className="micro-label" title="Projected score" info={{
+        means: "The final score we expect, rounded to a score that can really happen in football. It is a single most-likely picture, not a promise: the winner is the team ahead in this score, and the gap is the expected margin.",
+        how: "The betting line and total (about 65%) are blended with each team's season scoring (about 35%), then adjusted for home field and weather, and snapped to the nearest realistic score that keeps the same winner. “How it's built” lists every piece.",
+      }} />
+      <details className="proj">
+        <summary>
+          <span className="proj-board" aria-label={`${away} ${p.away}, ${home} ${p.home}`}>
+            <span className="pb-side"><small>{away}</small><b>{p.away}</b></span>
+            <span className="pb-dash" aria-hidden="true">–</span>
+            <span className="pb-side"><b>{p.home}</b><small>{home}</small></span>
+          </span>
+          <span className="proj-src">How it's built <i aria-hidden="true" /></span>
+        </summary>
+        <PartsList p={p} away={away} home={home} />
+      </details>
+    </div>
   );
 }
 

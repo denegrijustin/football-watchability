@@ -1248,3 +1248,26 @@ test("Games is the first tab on the left of the menu bar", async ({ page }) => {
   const tabs = await page.locator(".view-switch button[data-tab]").evaluateAll((els) => els.filter((e) => e.getBoundingClientRect().width > 0).sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left).map((e) => (e as HTMLElement).dataset.tab));
   expect(tabs[0]).toBe("board");
 });
+
+test("the expanded card explains its numbers: an (i) on the preview, projected score, win probability and matchup, each opening what it means and how it was found", async ({ page }) => {
+  await page.goto("/?league=NFL");
+  const card = page.locator(".game-card:not(.result-card)").first();
+  await expect(card).toBeVisible();
+  await card.locator(".cc-chevron").first().click();
+  const more = card.locator(".card-more");
+  await expect(more).toBeVisible();
+  const infos = more.locator(".info-btn");
+  expect(await infos.count()).toBeGreaterThanOrEqual(2);
+  const first = infos.first();
+  await expect(first).toHaveAttribute("aria-expanded", "false");
+  await first.click();
+  await expect(first).toHaveAttribute("aria-expanded", "true");
+  const panel = more.locator(".info-panel:visible").first();
+  await expect(panel).toContainText("What it means.");
+  await expect(panel).toContainText("How we found it.");
+  await first.click();
+  await expect(more.locator(".info-panel:visible")).toHaveCount(0);
+  // Nothing in the expanded card pushes the page sideways.
+  const [sw, cw] = await page.evaluate(() => [document.documentElement.scrollWidth, document.documentElement.clientWidth]);
+  expect(sw).toBeLessThanOrEqual(cw);
+});
