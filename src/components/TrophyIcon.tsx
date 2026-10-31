@@ -14,6 +14,12 @@ const ART: Record<string, ReactElement> = {
   barrel: <><path d="M6 5h12c1 4 1 10 0 14H6c-1-4-1-10 0-14z" /><path d="M6 9h12M6 15h12" /></>,
   wheel: <><circle cx="12" cy="12" r="8" /><circle cx="12" cy="12" r="2" /><path d="M12 4v16M4 12h16M6.3 6.3l11.4 11.4M17.7 6.3L6.3 17.7" /></>,
   skillet: <><circle cx="10" cy="12" r="6" /><path d="M16 12h6" /></>,
+  cannon: <><path d="M3 12h13l3-2v6l-3-2" /><circle cx="8" cy="17" r="3" /><path d="M5 12v2" /></>,
+  can: <><path d="M7 8h10v12H7z" /><path d="M7 8c0-3 10-3 10 0" /><path d="M17 12c3 0 3 4 0 4" /></>,
+  rifle: <><path d="M3 15l14-6 4 1v2l-4 1-14 4z" /><path d="M9 14l2 4" /></>,
+  megaphone: <><path d="M4 10v4l12 5V5z" /><path d="M16 9c2 1 2 5 0 6" /><path d="M7 14l1 5" /></>,
+  spade: <><path d="M12 3c4 4 7 6 7 10a4 4 0 0 1-7 2.500A4 4 0 0 1 5 13c0-4 3-6 7-10z" /><path d="M12 15v6M9 21h6" /></>,
+  phone: <><path d="M5 8c0-3 14-3 14 0v3H5z" /><path d="M7 11l-1 8h12l-1-8" /><path d="M10 15h4" /></>,
 };
 
 /** The trophy as a small gold line drawing; falls back to a cup for a trophy with no drawing of its own. */
