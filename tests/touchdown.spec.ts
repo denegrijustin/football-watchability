@@ -36,7 +36,7 @@ test("a touchdown covers the card for a few seconds, takes the first spot on the
   await page.goto("/?league=NFL");
   const card = page.locator(`.game-card[data-game-id="${g.id}"]`);
   await expect(card).toBeVisible({ timeout: 15_000 });
-  await expect(card.locator(".team-score").first()).toContainText("7"); // the first live scores are in
+  await expect(card.locator(".team-score").first()).toContainText("14"); // the first live scores are in
   test.skip((await page.locator(".game-card").first().getAttribute("data-game-id")) === g.id, "the scoring game is already first on the board");
   await expect(page.locator(".td-burst")).toHaveCount(0); // opening the page does not celebrate points already on the board
   away = 21; // a touchdown and the extra point
