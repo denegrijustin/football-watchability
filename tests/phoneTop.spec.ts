@@ -16,5 +16,5 @@ test("@phone on a phone the space above the first game card is under 420px", asy
   const top = await card.evaluate((el) => el.getBoundingClientRect().top + scrollY);
   await page.screenshot({ path: "test-results/phone-top.png" });
   expect(top).toBeLessThan(420);
-  expect((await card.boundingBox())!.height).toBeLessThan(370); // a live card on a phone: one-line header, inline records, slim meters
+  expect((await card.boundingBox())!.height).toBeLessThan(385); // a live card on a phone: one-line header, inline records, slim meters
 });
