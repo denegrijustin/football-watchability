@@ -13,14 +13,16 @@
   /* Watch now: a tile is two lines, the heading shares the top of the strip */
   .watch-now { margin: 2px 0 6px; }
   .watch-now h3 { margin: 0 0 3px; font-size: 0.6875rem; }
-  .watch-now ul { grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 6px; }
-  .wn-tile { grid-template-columns: 1fr auto; grid-template-areas: "when foot" "teams teams"; gap: 2px 6px; padding: 6px 10px; border-radius: 10px; }
-  .wn-when { grid-area: when; font-size: 0.6875rem; }
-  .wn-foot { grid-area: foot; flex-wrap: nowrap; font-size: 0.6875rem; }
+  /* a row of equal tiles that swipes sideways, so no team or score is ever cut off by its tile */
+  .watch-now ul { display: flex; gap: 6px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity; scrollbar-width: none; padding-bottom: 2px; }
+  .watch-now ul::-webkit-scrollbar { display: none; }
+  .watch-now li { flex: 0 0 150px; scroll-snap-align: start; min-width: 0; }
+  .wn-tile { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "when foot" "teams teams"; gap: 2px 6px; padding: 6px 10px; border-radius: 10px; }
+  .wn-when { grid-area: when; font-size: 0.6875rem; white-space: nowrap; min-width: 0; }
+  .wn-foot { grid-area: foot; flex-wrap: nowrap; font-size: 0.6875rem; white-space: nowrap; }
   .wn-foot strong { display: none; }
-  .wn-teams { grid-area: teams; display: flex; gap: 4px 8px; align-items: baseline; font-size: 0.8125rem; justify-content: space-between; }
-  .wn-teams b { margin-right: -4px; }
-  .wn-teams em { font-size: 1rem; margin-right: 6px; }
+  .wn-teams { grid-area: teams; display: grid; grid-template-columns: auto auto auto auto; justify-content: space-between; gap: 0 4px; align-items: baseline; font-size: 0.8125rem; }
+  .wn-teams b { justify-self: start; } .wn-teams em { justify-self: start; margin-right: 0; }
   /* section heading and time slot sit tight to the cards */
   .section-head { margin-top: 6px; margin-bottom: 4px; }
   .kickoff-slot > h4 { margin: 4px 0 6px; padding-bottom: 4px; font-size: 0.8125rem; }
