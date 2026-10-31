@@ -98,3 +98,21 @@ details.proj .proj-parts { margin-top: 8px; }
 }
 .pwp .pwp-bar i, .cl-bar .cl-track i { background: transparent !important; }
 .cl-bar .cl-track { --blend: 7%; }
+
+/* ---- every bar blends instead of changing colour at a hard edge ---- */
+@property --a { syntax: "<percentage>"; inherits: true; initial-value: 50%; }
+/* the live Win and Deserve meters: away colour into home colour around the split, easing as the number moves */
+.live-meters .lm-track:not(.mid) {
+  --blend: 10%;
+  background: linear-gradient(90deg, #4f9bf0 0%, #5aa6f2 max(0%, calc(var(--a) - var(--blend))), #b8e86e min(100%, calc(var(--a) + var(--blend))), #c0ed80 100%);
+  transition: --a 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.live-meters .lm-track:not(.mid) i { background: transparent; }
+/* momentum grows from the middle and fades out toward its end */
+.live-meters .lm-track.mid i { background: linear-gradient(90deg, var(--lime, #c0ed80), color-mix(in srgb, var(--lime, #c0ed80) 25%, transparent)); }
+/* the matchup bars fade out at their ends too */
+.mb-track .fill.a { -webkit-mask-image: linear-gradient(270deg, #000 55%, transparent); mask-image: linear-gradient(270deg, #000 55%, transparent); }
+.mb-track .fill.h { -webkit-mask-image: linear-gradient(90deg, #000 55%, transparent); mask-image: linear-gradient(90deg, #000 55%, transparent); }
+/* the fraud meter */
+.fm-row.up .fm-bar i { background: linear-gradient(90deg, #2fa866, color-mix(in srgb, #2fa866 35%, transparent)); }
+.fm-row.down .fm-bar i { background: linear-gradient(270deg, #d65151, color-mix(in srgb, #d65151 35%, transparent)); }
