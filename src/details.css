@@ -87,7 +87,8 @@ details.proj .proj-parts { margin-top: 8px; }
 .mb-track .fill { border-radius: 0; }
 
 /* ---- the red and blue meet in a soft blend at the split instead of a hard edge ---- */
-.pwp-bar, .cl-track {
+/* (these selectors are doubled up so the blend wins whichever stylesheet loads last) */
+.pwp .pwp-bar, .cl-bar .cl-track {
   --blend: 9%;
   background: linear-gradient(90deg,
     #d95c54 0%,
@@ -95,5 +96,5 @@ details.proj .proj-parts { margin-top: 8px; }
     #4f84dc min(100%, calc(var(--a) + var(--blend))),
     #5b8fe0 100%);
 }
-.pwp-bar i, .cl-track i { background: transparent !important; }
-.cl-track { --blend: 7%; }
+.pwp .pwp-bar i, .cl-bar .cl-track i { background: transparent !important; }
+.cl-bar .cl-track { --blend: 7%; }
