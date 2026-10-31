@@ -345,9 +345,10 @@ export function FootballIcon({ title }: { title: string }) {
 }
 
 /** A team's score, shown beside its name and logo once the game has started. It flashes and ticks over when the team scores. */
-export function TeamScore({ live, side }: { live?: LiveScore; side: "away" | "home" }) {
+/** `flash` keeps the score flash going when the card was just moved (a touchdown lifts it to the top, which rebuilds it and would lose the change it was watching). */
+export function TeamScore({ live, side, flash = false }: { live?: LiveScore; side: "away" | "home"; flash?: boolean }) {
   const mine = live ? live[side] : 0;
-  const scored = useChanged(live?.state === "in" ? mine : undefined, 1300);
+  const scored = useChanged(live?.state === "in" ? mine : undefined, 1300) || flash;
   if (!live || live.state === "pre") return null;
   const theirs = live[side === "away" ? "home" : "away"];
   const cls = live.state === "post" ? (mine > theirs ? " won" : mine < theirs ? " lost" : "") : mine > theirs ? " lead" : "";

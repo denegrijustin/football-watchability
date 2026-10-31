@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { filterGames, filterResults, results, type FilterState, type Result } from "../data";
 import { gameStatus, useLiveMap, useNow } from "../live";
 import { timeOf, tzAbbr, useTz } from "../tz";
@@ -14,6 +14,7 @@ import { LinesBar } from "./LinesBar";
 import { WatchNow } from "./WatchNow";
 import { useFlip } from "../motion";
 import { liveHeat } from "../watchNow";
+import { observeScores, useTouchdowns } from "../touchdown";
 
 type Game = ReturnType<typeof filterGames>[number];
 const refOf = (r: Result) => ({ id: r.espnId, league: r.league, teams: r.teams });
@@ -111,6 +112,9 @@ export function GameBoard({
   filtered: boolean;
   onReset: () => void;
 }) {
+  const liveNow = useLiveMap();
+  useEffect(() => observeScores(liveNow), [liveNow]);
+  const scored = useTouchdowns();
   usePlusRanks(); // the "highest ranked" order needs the ranks, and re-sorts when they arrive
   const [showAll, setShowAll] = useState(false);
   const [showCompleted, setShowCompleted] = useState(false);
@@ -118,9 +122,18 @@ export function GameBoard({
   const [chosen, setChosen] = useState<DoneSort | null>(null);
   const doneSort: DoneSort = chosen ?? (status === "final" ? "watch" : "insanity");
   const completedExpanded = status === "final" || showCompleted;
-  const { live, closing, justFinal, finals, upcoming, counts } = board;
-  const showClosing = (status === "all" || status === "live") && closing.length > 0;
-  const showLive = (status === "all" || status === "live") && live.length > 0;
+  // A game that just scored a touchdown moves to the top of the board for a minute and a half, whichever section it was in.
+  const hot = new Map(scored.map((t) => [t.id, t.at]));
+  const byRecent = (a: Game, b: Game) => (hot.get(b.espnId) ?? 0) - (hot.get(a.espnId) ?? 0);
+  const pinned = [...board.closing, ...board.live].filter((g) => hot.has(g.espnId)).sort(byRecent);
+  const unpinned = (gs: Game[]) => gs.filter((g) => !hot.has(g.espnId));
+  const { justFinal, finals, upcoming, counts } = board;
+  const closing = unpinned(board.closing), live = unpinned(board.live);
+  // The game that just scored is the first card of the board (top left), in whichever section the board starts with; it does not get a section of its own.
+  const inLive = (status === "all" || status === "live");
+  const showClosing = inLive && (closing.length > 0 || (pinned.length > 0 && board.closing.length > 0));
+  const showLive = inLive && board.live.length > 0 && (live.length > 0 || (pinned.length > 0 && !showClosing));
+  const leadsClosing = showClosing, leadsLive = !showClosing && showLive;
   const showFinal = (status === "all" || status === "final") && counts.final > 0;
   const showUpcoming = (status === "all" || status === "upcoming") && upcoming.length > 0;
 
@@ -151,17 +164,17 @@ export function GameBoard({
 
   return (
     <>
-      {(status === "all" || status === "live") && <WatchNow games={[...closing, ...live, ...upcoming]} />}
+      {(status === "all" || status === "live") && <WatchNow games={[...board.closing, ...board.live, ...upcoming]} />}
       {showClosing && (
         <section className="board-section live closing" aria-label="Upset brewing">
           <div className="section-head">
             <h3>
               <span className="live-dot" aria-hidden="true" /> Upset brewing
             </h3>
-            <span className="count">{closing.length}</span>
+            <span className="count">{board.closing.length}</span>
             <span className="section-note">An upset is brewing in the 4th quarter or overtime; the game closest to final is first.</span>
           </div>
-          <FlipGrid games={closing}>{closing.map((game) => <GameCard key={game.id} game={game} />)}</FlipGrid>
+          <FlipGrid games={leadsClosing ? [...pinned, ...closing] : closing}>{(leadsClosing ? [...pinned, ...closing] : closing).map((game) => <GameCard key={game.id} game={game} />)}</FlipGrid>
         </section>
       )}
 
@@ -171,9 +184,10 @@ export function GameBoard({
             <h3>
               <span className="live-dot" aria-hidden="true" /> In progress
             </h3>
-            <span className="count">{live.length}</span>
+            <span className="count">{board.live.length}</span>
             <span className="section-note">{SECTION_HELP.live}</span>
           </div>
+          {leadsLive && pinned.length > 0 && <FlipGrid games={pinned} className="game-grid td-lead">{pinned.map((game) => <GameCard key={game.id} game={game} />)}</FlipGrid>}
           <KickoffSlots games={live} hot />
         </section>
       )}

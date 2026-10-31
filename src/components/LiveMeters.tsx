@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { useSummary } from "../liveDrive";
 import type { WpPoint } from "../insanity";
 import { deserveIndex, momentumSwing, type Stats } from "../meterMath";
@@ -9,7 +10,7 @@ function Split({ label, home, away, h, title }: { label: string; home: string; a
   return (
     <div className="lm" role="img" aria-label={v == null ? `${title}: not enough play yet` : `${title}: ${away} ${Math.round(100 - v)} percent, ${home} ${Math.round(v)} percent`}>
       <span className="lm-k">{label}</span>
-      <span className="lm-track"><i style={{ transform: `scaleX(${v == null ? 0.5 : (100 - v) / 100})` }} /></span>
+      <span className="lm-track" style={{ "--a": `${v == null ? 50 : 100 - v}%` } as CSSProperties}><i style={{ transform: `scaleX(${v == null ? 0.5 : (100 - v) / 100})` }} /></span>
       <span className="lm-v">{lead}</span>
     </div>
   );

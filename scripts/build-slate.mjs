@@ -1235,6 +1235,7 @@ const games = built
       espnId: g.espnId,
       league: g.league,
       conferences: g.conferences,
+      ...(g.rivalry ? { rivalry: g.rivalry } : {}),
       score: g.score,
       tier,
       delta: d == null ? "new" : `Δ ${d > 0 ? "+" : ""}${d}`,

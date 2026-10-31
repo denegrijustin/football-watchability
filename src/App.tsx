@@ -2,6 +2,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { motionOff } from "./motion";
 import { lazyView } from "./lazyView";
 import { useUpdateCheck } from "./useUpdateCheck";
+import { TrophyCredits } from "./components/TrophyCredits";
 import { LiveFreshness } from "./live";
 import { TabIcon } from "./components/TabIcon";
 
@@ -488,6 +489,7 @@ export default function App() {
             {slate.footerNotes.map((note, i) => (
               <p key={i}>{note}</p>
             ))}
+            <TrophyCredits />
             <p>
               Watchability scores rate how worth watching a game should be, not
               who will win. The board refreshes five mornings a week, not live.

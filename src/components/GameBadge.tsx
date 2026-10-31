@@ -6,7 +6,7 @@ export function GameBadgeRow({ badge, large }: { badge: GameBadge | null; large?
   return (
     <div className={`game-badge${large ? " large" : ""}`}>
       {badge.src && <img src={badge.src} alt="" width={large ? 72 : 48} height={large ? 72 : 48} decoding="async" />}
-      <span><b>{badge.name}</b>{badge.neutral && <i> · neutral site</i>}</span>
+      <span><b>{badge.name}</b>{badge.neutral && !/neutral site/i.test(badge.name) && <i> · neutral site</i>}</span>
     </div>
   );
 }

@@ -1,7 +1,15 @@
 import { TrophyIcon } from "./TrophyIcon";
+import { trophyPhoto } from "../trophyPhoto";
 import "../rivalry.css";
 
-export type Rivalry = { level: number; name: string | null; trophy: { name: string; icon: string } | null; sameGroup?: boolean; meetings?: number };
+export type Rivalry = { level: number; name: string | null; trophy: { name: string; icon: string; key?: string } | null; sameGroup?: boolean; meetings?: number };
+
+/** The trophy's photograph when there is a freely licensed one, otherwise the app's own drawing of it. */
+export function TrophyArt({ name, icon, size, pair }: { name: string; icon: string; size: number; pair?: string }) {
+  const photo = pair ? trophyPhoto(pair) : null;
+  if (!photo) return <TrophyIcon kind={icon} size={Math.round(size * 0.65)} title={name} />;
+  return <img className="trophy-photo" src={photo.src} alt="" width={size} height={size} loading="lazy" decoding="async" title={`${name} · photo: ${photo.author} (${photo.license})`} />;
+}
 
 /**
  * A small chip for a rivalry game: the trophy drawing (when the teams play for one) and the rivalry's name. Nothing for a game that is not one.
@@ -13,7 +21,7 @@ export function RivalryBadge({ rivalry, compact = true }: { rivalry?: Rivalry | 
   const tip = `${label}${rivalry.trophy ? `: they play for the ${rivalry.trophy.name}` : ""}${rivalry.meetings ? ` · ${rivalry.meetings} meetings` : ""}`;
   return (
     <span className={`rv-badge${compact ? " compact" : ""}${rivalry.trophy ? " trophy" : ""}`} title={tip} data-testid="rivalry-badge">
-      {rivalry.trophy ? <TrophyIcon kind={rivalry.trophy.icon} size={compact ? 18 : 24} title={rivalry.trophy.name} /> : <span className="rv-flame" aria-hidden="true">🔥</span>}
+      {rivalry.trophy ? <TrophyArt name={rivalry.trophy.name} icon={rivalry.trophy.icon} pair={rivalry.trophy.key} size={compact ? 34 : 56} /> : <span className="rv-flame" aria-hidden="true">🔥</span>}
       <span className="rv-name">{label}</span>
       {!compact && rivalry.trophy && <span className="rv-trophy">{rivalry.trophy.name}</span>}
     </span>
