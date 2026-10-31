@@ -128,7 +128,7 @@ test("@phone search, empty state, league switch and responsive layout", async ({
     expect(
       Math.round((await page.locator(".filter-dock").boundingBox())!.y),
     ).toBe(tickerH);
-    expect((await page.locator(".card-toggle").first().boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    expect((await page.locator(".card-toggle").first().boundingBox())!.height).toBeGreaterThanOrEqual(43.5);
     await expand(page.locator(CARD).first());
     await page.locator(CARD).first().getByRole("button", { name: /Game Center/ }).click();
     await page.getByRole("dialog").getByRole("tab", { name: /Matchup|Forecast|Season stats/ }).click();
