@@ -1,5 +1,7 @@
 import { TeamName } from "../teamShort";
 import { SecHead } from "./Info";
+import { FLASH_MS, useTouchdowns } from "../touchdown";
+import { TouchdownBurst } from "./TouchdownBurst";
 import { TeamOpen } from "../openTeam";
 import { MomentumFlow } from "./MomentumFlow";
 import { ScoreBreakdown } from "./ScoreBreakdown";
@@ -126,6 +128,9 @@ export function GameCard({
     if (wasState.current === "pre" && live?.state === "in") haptic();
     wasState.current = live?.state;
   }, [live?.state]);
+  const tds = useTouchdowns();
+  const td = game.espnId ? tds.find((t) => t.id === game.espnId && Date.now() - t.at < FLASH_MS) : undefined;
+  useEffect(() => { if (td) haptic(60); }, [td?.at]);
   const injuryData = useInjuryReport();
   const openGame = useOpenGame();
   const homeColor = teamColor((home as { color?: string | null }).color);
@@ -174,6 +179,7 @@ export function GameCard({
       }}
     >
       {pulse && <span className="pulse-ring" aria-hidden="true" />}
+      {td && <TouchdownBurst key={td.at} team={abbrOf(game.teams[td.side])} color={teamColor((game.teams[td.side] as { color?: string | null }).color)} />}
       {!expanded && <CompactGame titleId={`${game.id}-title`} matchup={game.matchup} date={date} broadcast={game.broadcast} network={game.network} espnId={game.espnId} teams={game.teams} league={game.league} score={game.score} tier={game.tier} venue={meta.venue} driveChart={live?.state === "in" && game.espnId ? <LiveMeters espnId={game.espnId} league={game.league} wp={flow ?? []} away={awayAbbr} home={homeAbbr} /> : undefined} top={<>{cl.both && <div className="late-flag" role="status"><i aria-hidden="true" />{cl.label}</div>}{upsetBanner}{bandTop}</>} badge={<><GameBadgeRow badge={badge} /><RivalryBadge rivalry={(game as { rivalry?: Rivalry }).rivalry} /></>} weather={game.weather} status={<GameStatus live={live} />} scores={[<TeamScore live={live} side="away" />, <TeamScore live={live} side="home" />]} lineStrip={<><CardLine line={meta.line} wp={"winProb" in game ? (game.winProb as WinProbData) : null} projected={"projected" in game ? (game.projected as Projection) : null} away={awayAbbr} home={homeAbbr} showBar={!live || live.state === "pre"} /></>} injuries={<InjuryStrip teams={game.teams as never} league={game.league} />} why={"breakdown" in game ? <ScoreBreakdown {...(game.breakdown as Breakdown)} total={game.score} caption={`Why it's a ${game.score}`} /> : undefined} rise={rise} onExpand={() => setExpanded(true)} momentum={live?.state === "post" ? <MomentumFlow wp={flow ?? []} away={awayAbbr} home={homeAbbr} compact status={live ? { state: live.state, period: flow?.at(-1)?.[1] ?? 1, clock: flow?.at(-1)?.[2]?.clock ?? "15:00" } : undefined} pendingLabel="Play data unavailable" /> : undefined} />}
       {expanded && (
         <>
