@@ -24,33 +24,35 @@ test("scores are watched: the first look and a look after a long gap set a basel
   expect(FLASH_MS).toBeLessThan(PIN_MS);
 });
 
-test("a touchdown covers the card for a few seconds, moves the game to the top of the board for a while, then puts it back", async ({ page }) => {
-  const g = games[0];
+test("a touchdown covers the card for a few seconds, takes the first spot on the board (top left) for a while, then goes back to its place", async ({ page }) => {
+  const g = games[2];
   const start = new Date(g.date).getTime();
   await page.clock.install({ time: start + 90 * 60e3 });
   let away = 14;
-  const payload = () => games.map((x: any, i: number) => ({ id: x.espnId, state: i < 3 ? "in" : "pre", detail: "5:12 - 3rd", away: i === 0 ? away : 7, home: 17 }));
+  const payload = () => games.map((x: any, i: number) => ({ id: x.espnId, state: i < 3 ? "in" : "pre", detail: "5:12 - 3rd", away: i === 2 ? away : 7, home: 17 }));
   await page.route("**/api/scores**", (r) => r.fulfill({ json: payload() }));
   await page.route("**/api/flow**", (r) => r.fulfill({ json: { wp: [] } }));
   await page.route("**/api/game**", (r) => r.fulfill({ status: 503, json: { error: "none" } }));
   await page.goto("/?league=NFL");
   const card = page.locator(`.game-card[data-game-id="${g.id}"]`);
   await expect(card).toBeVisible({ timeout: 15_000 });
-  await expect(card.locator(".team-score").first()).toContainText("14"); // the first live scores are in
+  await expect(card.locator(".team-score").first()).toContainText("7"); // the first live scores are in
+  test.skip((await page.locator(".game-card").first().getAttribute("data-game-id")) === g.id, "the scoring game is already first on the board");
   await expect(page.locator(".td-burst")).toHaveCount(0); // opening the page does not celebrate points already on the board
   away = 21; // a touchdown and the extra point
   await page.locator(".live-fresh").evaluate((b) => (b as HTMLElement).click());
   const burst = card.locator(".td-burst");
   await expect(burst).toBeVisible({ timeout: 10_000 });
   await expect(burst).toContainText(/Touchdown/i);
-  // The game that scored is first on the board, in a strip of its own.
-  await expect(page.locator(".td-pinned .game-card").first()).toHaveAttribute("data-game-id", g.id);
+  // The game that scored is the first card on the board, in the grid it was already in: no section of its own.
+  await expect(page.locator(".game-card").first()).toHaveAttribute("data-game-id", g.id);
+  await expect(page.locator(".td-pinned")).toHaveCount(0);
   // The celebration ends after a few seconds; the game stays at the top for a minute and a half, then goes back to its place.
   await page.clock.fastForward(FLASH_MS + 1500);
   await expect(card.locator(".td-burst")).toHaveCount(0);
-  await expect(page.locator(".td-pinned")).toHaveCount(1);
+  await expect(page.locator(".game-card").first()).toHaveAttribute("data-game-id", g.id); // still first
   await page.clock.fastForward(PIN_MS);
-  await expect(page.locator(".td-pinned")).toHaveCount(0);
+  await expect(page.locator(".game-card").first()).not.toHaveAttribute("data-game-id", g.id); // back in its place
   await expect(card).toBeVisible();
 });
 
