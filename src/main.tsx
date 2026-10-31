@@ -6,6 +6,7 @@ import { GameCenterProvider, preloadGameCenter } from "./components/GameCenterCo
 import "./styles.css";
 import "./motion.css";
 import "./phoneTop.css";
+import "./cardSize.css";
 import { guardLogos } from "./logoGuard";
 import { initMotion } from "./motion";
 initMotion();
