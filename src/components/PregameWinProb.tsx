@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { SecHead } from "./Info";
 type Reading = { at: string; home: number; espn: number | null; market: number | null };
 export type WinProbData = {
@@ -50,6 +51,7 @@ export function PregameWinProb({ wp, away, home }: { wp: WinProbData; away: stri
           </span>
           <span
             className="pwp-bar"
+            style={{ "--a": `${100 - r.home}%` } as CSSProperties}
             role="img"
             aria-label={`${r.label}: ${away} ${pct(100 - r.home)}, ${home} ${pct(r.home)}`}
           >
