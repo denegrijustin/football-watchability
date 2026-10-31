@@ -1271,3 +1271,11 @@ test("the expanded card explains its numbers: an (i) on the preview, projected s
   const [sw, cw] = await page.evaluate(() => [document.documentElement.scrollWidth, document.documentElement.clientWidth]);
   expect(sw).toBeLessThanOrEqual(cw);
 });
+
+test("the win-probability bar has its red-to-blue blend on the collapsed card, not just a grey track", async ({ page }) => {
+  await page.goto("/?league=NFL");
+  const track = page.locator(".game-card:not(.result-card) .cl-track").first();
+  test.skip(!(await track.count()), "no game with a win-probability bar on the board today");
+  await track.scrollIntoViewIfNeeded();
+  expect(await track.evaluate((e) => getComputedStyle(e).backgroundImage)).toContain("linear-gradient");
+});
