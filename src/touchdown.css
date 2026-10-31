@@ -1,0 +1,31 @@
+/* A touchdown: a short celebration over the card. Only transform and opacity move. */
+.td-burst { position: absolute; inset: 0; z-index: 8; display: grid; place-items: center; border-radius: inherit; overflow: hidden; pointer-events: none; animation: td-life 4.5s ease both; }
+.td-glow { position: absolute; inset: 0; background: radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--td, #c0ed80) 70%, #000) 0%, rgb(0 0 0 / 84%) 90%); }
+.td-center { position: relative; display: grid; justify-items: center; gap: 2px; text-align: center; animation: td-pop 0.55s cubic-bezier(0.2, 1.4, 0.4, 1) both; }
+.td-center strong { font-size: 1.75rem; letter-spacing: 0.08em; font-weight: 900; color: #fff; text-shadow: 0 2px 10px rgb(0 0 0 / 55%); }
+.td-center em { font-style: normal; font-size: 1rem; font-weight: 800; letter-spacing: 0.1em; color: #fff; opacity: 0.92; }
+.td-ref { width: 88px; height: 88px; fill: #fff; stroke: none; filter: drop-shadow(0 3px 8px rgb(0 0 0 / 45%)); }
+.td-ref .td-stripes { stroke: #1b2733; stroke-width: 5; fill: none; }
+.td-ref .td-body { fill: #f4f6f8; }
+.td-ref .td-head { fill: #f4f6f8; }
+.td-ref .td-cap { fill: #1b2733; }
+.td-arm { transform-origin: 50% 58px; animation: td-raise 0.7s cubic-bezier(0.2, 1.3, 0.4, 1) 0.1s both; }
+.td-arm.l { transform-origin: 36px 58px; } .td-arm.r { transform-origin: 64px 58px; animation-name: td-raise-r; }
+.td-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.td-emoji { position: absolute; bottom: -12%; font-size: 1.75rem; opacity: 0; animation: td-float 3.2s ease-out both; }
+.td-emoji.e1 { left: 8%; animation-delay: 0.15s; } .td-emoji.e2 { left: 22%; animation-delay: 0.5s; font-size: 2.1rem; }
+.td-emoji.e3 { left: 38%; animation-delay: 0.3s; } .td-emoji.e4 { left: 54%; animation-delay: 0.7s; font-size: 2.1rem; }
+.td-emoji.e5 { left: 68%; animation-delay: 0.1s; } .td-emoji.e6 { left: 80%; animation-delay: 0.45s; font-size: 2.1rem; } .td-emoji.e7 { left: 91%; animation-delay: 0.25s; }
+@keyframes td-life { 0% { opacity: 0; } 8% { opacity: 1; } 82% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes td-pop { from { transform: scale(0.4); opacity: 0; } }
+@keyframes td-raise { from { transform: rotate(-70deg); } }
+@keyframes td-raise-r { from { transform: rotate(70deg); } }
+@keyframes td-float { 0% { transform: translateY(0) rotate(0); opacity: 0; } 12% { opacity: 1; } 100% { transform: translateY(-520px) rotate(25deg); opacity: 0; } }
+/* with motion off or reduced the banner still shows for its time, but nothing moves */
+html[data-motion="off"] .td-burst, html[data-motion="off"] .td-burst *, html[data-hidden] .td-burst * { animation: none !important; }
+html[data-motion="off"] .td-emoji { display: none; }
+html[data-motion="off"] .td-burst { opacity: 1; }
+@media (prefers-reduced-motion: reduce) { .td-burst, .td-burst * { animation: none !important; } .td-emoji { display: none; } }
+/* the games that just scored sit in a strip of their own at the top */
+.td-pinned { margin-bottom: 14px; }
+.td-pinned .section-head h3 { color: var(--lime, #c0ed80); }
