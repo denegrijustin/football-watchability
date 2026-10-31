@@ -189,7 +189,7 @@ export function rivalryFor({ league, ids, sameGroup, series }) {
   }
   if (!level) return null;
   void league;
-  return { level, name: named?.name ?? null, trophy: named?.trophy ?? null, sameGroup: !!sameGroup, meetings: series?.total ?? 0 };
+  return { level, name: named?.name ?? null, trophy: named?.trophy ? { ...named.trophy, key: [...ids].sort().join("|") } : null, sameGroup: !!sameGroup, meetings: series?.total ?? 0 };
 }
 
 export const rivalryPoints = (r) => Math.round(Math.max(0, Math.min(1, r.level)) * RIVALRY_MAX * 10) / 10;
