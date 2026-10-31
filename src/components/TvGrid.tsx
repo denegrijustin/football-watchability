@@ -297,7 +297,7 @@ function Side({ t, cls }: { t: GridGame["sides"][number]; cls: string }) {
       {t.tag && <span className="tv-tag">{t.tag}</span>}
       {rankLine(t.ranks, true, t.poll) && (
         <span className="tv-rank" title={rankTitle(t.ranks, t.poll)}>
-          {rankLine(t.ranks, true, t.poll).split(" · ").map((part) => <span key={part}>{part}</span>)}
+          {rankLine(t.ranks, true, t.poll).split(" · ").map((part, i) => <span key={part}>{i > 0 && <span className="tv-sep" aria-hidden="true"> · </span>}{part}</span>)}
         </span>
       )}
       <img src={logos[t.logoId]} alt="" loading="lazy" decoding="async" />

@@ -129,13 +129,15 @@ export function GameBoard({
   const unpinned = (gs: Game[]) => gs.filter((g) => !hot.has(g.espnId));
   const { justFinal, finals, upcoming, counts } = board;
   const closing = unpinned(board.closing), live = unpinned(board.live);
-  const showPinned = (status === "all" || status === "live") && pinned.length > 0;
-  const showClosing = (status === "all" || status === "live") && closing.length > 0;
-  const showLive = (status === "all" || status === "live") && live.length > 0;
+  // The game that just scored is the first card of the board (top left), in whichever section the board starts with; it does not get a section of its own.
+  const inLive = (status === "all" || status === "live");
+  const showClosing = inLive && (closing.length > 0 || (pinned.length > 0 && board.closing.length > 0));
+  const showLive = inLive && board.live.length > 0 && (live.length > 0 || (pinned.length > 0 && !showClosing));
+  const leadsClosing = showClosing, leadsLive = !showClosing && showLive;
   const showFinal = (status === "all" || status === "final") && counts.final > 0;
   const showUpcoming = (status === "all" || status === "upcoming") && upcoming.length > 0;
 
-  if (!showPinned && !showClosing && !showLive && !showFinal && !showUpcoming) {
+  if (!showClosing && !showLive && !showFinal && !showUpcoming) {
     const label = { all: "games", live: "games in progress", final: "completed games", upcoming: "upcoming games" }[status];
     return (
       <div className="empty-state">
@@ -163,18 +165,6 @@ export function GameBoard({
   return (
     <>
       {(status === "all" || status === "live") && <WatchNow games={[...board.closing, ...board.live, ...upcoming]} />}
-      {showPinned && (
-        <section className="board-section live td-pinned" aria-label="Just scored">
-          <div className="section-head">
-            <h3>
-              <span className="live-dot" aria-hidden="true" /> Touchdown
-            </h3>
-            <span className="count">{pinned.length}</span>
-            <span className="section-note">A game that just scored stays here for a minute and a half.</span>
-          </div>
-          <FlipGrid games={pinned}>{pinned.map((game) => <GameCard key={game.id} game={game} />)}</FlipGrid>
-        </section>
-      )}
       {showClosing && (
         <section className="board-section live closing" aria-label="Upset brewing">
           <div className="section-head">
@@ -184,7 +174,7 @@ export function GameBoard({
             <span className="count">{board.closing.length}</span>
             <span className="section-note">An upset is brewing in the 4th quarter or overtime; the game closest to final is first.</span>
           </div>
-          <FlipGrid games={closing}>{closing.map((game) => <GameCard key={game.id} game={game} />)}</FlipGrid>
+          <FlipGrid games={leadsClosing ? [...pinned, ...closing] : closing}>{(leadsClosing ? [...pinned, ...closing] : closing).map((game) => <GameCard key={game.id} game={game} />)}</FlipGrid>
         </section>
       )}
 
@@ -197,6 +187,7 @@ export function GameBoard({
             <span className="count">{board.live.length}</span>
             <span className="section-note">{SECTION_HELP.live}</span>
           </div>
+          {leadsLive && pinned.length > 0 && <FlipGrid games={pinned} className="game-grid td-lead">{pinned.map((game) => <GameCard key={game.id} game={game} />)}</FlipGrid>}
           <KickoffSlots games={live} hot />
         </section>
       )}

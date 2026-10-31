@@ -2329,8 +2329,8 @@ details.proj summary strong {
   width: 100%;
   height: 100%;
   min-height: 0;
-  max-width: 40px;
-  max-height: 40px;
+  max-width: 34px;
+  max-height: 34px;
   object-fit: contain;
   filter: drop-shadow(0 1px 1px rgb(0 0 0 / 40%));
 }
@@ -2425,6 +2425,9 @@ details.proj summary strong {
 }
 /* the conference place and the national rank are one short line each, so a narrow block never cuts the line off */
 .tv-rank > span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* on a phone the grid has little height per block, so the two parts share one line */
+.tall .tv-rank > span { display: inline; overflow: visible; }
+.wide .tv-sep { display: none; }
 .tv-side { min-width: 0; }
 .tv-side.home .tv-rank {
   grid-row: 1;

@@ -1,0 +1,29 @@
+/* Every game card on the board is the same size. The optional parts (the game's logo and rivalry chip, the injuries, the weather, the lines) each
+   fit one line, and the card has one fixed height with the Details button at the bottom, so a card with a trophy is no taller than one without. */
+:root { --card-h: 360px; }
+@media (min-width: 761px) { :root { --card-h: 404px; } }
+.game-card.compact { min-height: var(--card-h); height: var(--card-h); display: flex; flex-direction: column; }
+.game-card.compact > .compact-overview { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: space-between; min-height: 0; }
+/* the halftime show is its own tall thing, and the one case that is allowed to be taller */
+.game-card.compact:has(.halftime-band, .halftime-act) { height: auto; min-height: var(--card-h); }
+.game-card.compact .cc-actions { margin-top: auto; }
+/* one row for the game's logo and the rivalry or trophy chip */
+.cc-badges { display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; min-width: 0; margin-bottom: 6px; overflow: hidden; }
+.cc-badges > * { margin: 0; min-width: 0; }
+.cc-badges .game-badge { flex: 0 1 auto; }
+.cc-badges .game-badge img { width: 28px; height: 28px; }
+.cc-badges .game-badge span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cc-badges .rv-badge { flex: 0 1 auto; }
+/* the venue and weather share one line */
+.compact-overview .cc-venue { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.compact-overview .cc-venue .cc-weather { white-space: nowrap; }
+/* injuries on one line, the line and projection in two equal columns */
+.compact-overview .gi-strip { flex-wrap: nowrap; overflow: hidden; }
+.compact-overview .gi-strip .gi-chip { flex: 0 1 auto; flex-wrap: nowrap; min-width: 0; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.compact-overview .cl-chips { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.compact-overview .cl-chip { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* a team is one line: rank, name (cut with an ellipsis if it is long; the full name is the link's title) and record */
+.compact-overview.v2 .cc-team > div { display: flex; flex-wrap: nowrap; align-items: center; gap: 0 8px; min-width: 0; }
+.compact-overview.v2 .cc-team h4 { display: flex; align-items: center; gap: 6px; min-width: 0; flex: 0 1 auto; margin: 0; white-space: nowrap; overflow: visible; }
+.compact-overview.v2 .cc-team h4 > .team-open { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.compact-overview.v2 .cc-team p { flex: none; margin: 0; white-space: nowrap; }
