@@ -130,3 +130,13 @@ test("the Trade finder lists a club's players, each with a best trade, and opens
   const [sw, cw] = await page.evaluate(() => [document.documentElement.scrollWidth, document.documentElement.clientWidth]);
   expect(sw).toBeLessThanOrEqual(cw);
 });
+
+test("the licensed-data importer reads a contracts export and a cap-room list into the override files' shapes", async () => {
+  const { parseCsv, contractsFrom, capFrom, dollars } = await import("../scripts/import-trade-overrides.mjs");
+  expect(dollars("$12,500,000")).toBe(12_500_000);
+  expect(dollars("12.5M")).toBe(12_500_000);
+  const contracts = contractsFrom(parseCsv('Player,Team,Cap Hit,Guaranteed,Years Left\n"Smith, Jr.",KC,"$20,000,000",$35M,3\nNo Money,KC,,,\n'));
+  expect(Object.keys(contracts)).toEqual(["smith"]);
+  expect(contracts.smith).toEqual({ apy: 20_000_000, gtd: 35_000_000, years: 3 });
+  expect(capFrom(parseCsv("Team,Cap Space\nKC,\"$8,400,000\"\nGB,3.2\n"))).toEqual({ KC: 8.4, GB: 3.2 });
+});
