@@ -123,6 +123,7 @@ test("the Trade finder lists a club's players, each with a best trade, and opens
   const first = rows.first();
   await first.locator(".tf-head").click();
   await expect(first.locator(".tf-trade, .tf-nonote").first()).toBeVisible();
+  await expect(first.locator(".tf-check a").first()).toHaveAttribute("href", /^https:\/\/overthecap\.com\/salary-cap\/[a-z-]+$/);
   await page.getByRole("group", { name: "Position" }).getByRole("button", { name: "QB", exact: true }).click();
   const n = await rows.count();
   expect(n).toBeGreaterThan(0);

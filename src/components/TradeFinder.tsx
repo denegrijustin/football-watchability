@@ -10,6 +10,8 @@ import { Skeleton } from "./Skeleton";
 import "../tradeFinder.css";
 
 const money = (m: number) => `$${m >= 10 ? Math.round(m) : m.toFixed(1)}M`;
+/** Over the Cap's own page for a club's cap: linked, not copied (their terms forbid copying their data), so a reader can check the real figures. */
+const otcUrl = (team: string) => `https://overthecap.com/salary-cap/${(NFL_TEAMS[team]?.name ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
 const SRC: Record<Player["src"], string> = { k: "known contract", r: "rookie scale", e: "estimated", o: "supplied" };
 
 function Logo({ team, size = 22 }: { team: string; size?: number }) {
@@ -40,6 +42,7 @@ function TradeCard({ t, p }: { t: Trade; p: Player }) {
         <span className="tf-get"><b>{t.partner} sends</b> {t.get.map(describeAsset).join(" + ")}</span>
       </p>
       <p className="tf-caps"><Cap label={p.team} side={t.from} /><Cap label={t.partner} side={t.to} /></p>
+      <p className="tf-check">Check the real cap: <a href={otcUrl(p.team)} target="_blank" rel="noreferrer noopener">{p.team} ↗</a> · <a href={otcUrl(t.partner)} target="_blank" rel="noreferrer noopener">{t.partner} ↗</a> (Over the Cap)</p>
       <ul className="tf-why">
         {t.reasons.map((r, i) => <li key={i}>{r}</li>)}
         {t.warnings.map((r, i) => <li key={`w${i}`} className="warn">{r}</li>)}
@@ -103,7 +106,7 @@ export function TradeFinder() {
         means: "For every player on the roster, the best few trades another club could realistically agree to: the other club would start him or needs the depth, sends back a player your club can use and/or a pick of the right value, and both clubs stay under the cap with a legal roster. “Realism” is 0 to 100.",
         how: "Value is in the draft-pick chart's points, from the player's rating by position, his age and how his contract compares with the market. Ratings come from this and last season's production and snap share (nflverse); there are no free grades for blockers, so those are a depth-level estimate from snaps, draft slot and experience. Most contracts are estimates (rookie scale for recent draftees, the market for his rating otherwise), cap room is assumed to be the same typical amount for every club, and which picks a club owns is not checked. Official figures can be supplied in src/data/contract-overrides.json and team-cap-overrides.json.",
       }} />
-      <p className="tf-note">Trades are only possible inside the league's trade window; these are what-ifs for the offseason or the next deadline. {data.cap.assumed ? `Cap assumed at ${money(data.cap.limit)} with ${money(data.cap.typicalSpaceM)} of room per club.` : ""}</p>
+      <p className="tf-note">Trades are only possible inside the league's trade window; these are what-ifs for the offseason or the next deadline. {data.cap.assumed ? `Cap assumed at ${money(data.cap.limit)} with ${money(data.cap.typicalSpaceM)} of room per club; ` : ""}<a href="https://overthecap.com/salary-cap-space" target="_blank" rel="noreferrer noopener">every club's real cap room is on Over the Cap ↗</a>.</p>
       <div className="tf-groups" role="group" aria-label="Position">
         {["all", ...GROUPS].map((g) => <button key={g} type="button" aria-pressed={group === g} onClick={() => setGroup(g)}>{g === "all" ? "All" : g}</button>)}
       </div>
