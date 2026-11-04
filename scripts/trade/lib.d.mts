@@ -1,0 +1,13 @@
+export const CAP_2026: number;
+export const GROUPS: string[];
+export const STARTERS: Record<string, number>;
+export const DEPTH: Record<string, number>;
+export function groupOf(pos: string): string | null;
+export function marketShare(group: string, rating: number): number;
+export function marketApy(group: string, rating: number, cap?: number): number;
+export function rookieApy(overall: number, cap?: number): number;
+export function pickPoints(overall: number): number;
+export function ageFactor(group: string, age: number): number;
+export function ratingFromZ(z: number): number;
+export function priorRating(draftOverall: number): number;
+export function yearsLeft(signed: number, years: number, season?: number): number;
