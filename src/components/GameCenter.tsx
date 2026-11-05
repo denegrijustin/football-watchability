@@ -17,6 +17,7 @@ import { NflProjectionBlock, NflSettingPanel } from "./NflGameInfo";
 import { InsanityMeter } from "./InsanityMeter";
 import { Headshot } from "./Headshot";
 import { GameDetails } from "./GameDetails";
+import { RivalryDeepCut, loreFor } from "./RivalryDeepCut";
 import { FootballIcon, liveFromSummary, useLive, useReportLive } from "../live";
 import { LastPlay, latestShape } from "../LastPlayView";
 import type { WeatherLike } from "../weatherFx";
@@ -429,6 +430,7 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
             )}
 
                 {game && state !== "pre" && <Momentum game={game} away={abbr(away)} home={abbr(home)} />}
+                {up && loreFor(up) && <section className="gc-panel gc-wide"><h3 className="micro-label">The rivalry, deep cut</h3><RivalryDeepCut game={up} /></section>}
               </>
             )}
             {tab === "stats" && game && state !== "pre" && (
