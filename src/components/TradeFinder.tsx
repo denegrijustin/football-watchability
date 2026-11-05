@@ -5,7 +5,7 @@ import { ChipImg } from "../logoTone";
 import { NFL_NAMES, NFL_TEAMS } from "../trade/teams";
 import { allOffers, describeAsset, findTrades, pickPackage, toLeague, tradeValue, tradesForRoster, whyNoTrade, type League, type Offer, type Player, type Trade, type TradeData } from "../trade/engine";
 import { GROUPS } from "../../scripts/trade/lib.mjs";
-import { acquirable, draftCapital, projectedOrder, GROUP_NAME, ordinal, poss, teamNeeds, type Buy, type NeedLevel } from "../trade/acquire";
+import { acquirable, draftCapital, projectedOrder, type DraftPicks, GROUP_NAME, ordinal, poss, teamNeeds, type Buy, type NeedLevel } from "../trade/acquire";
 import { SecHead } from "./Info";
 import { Skeleton } from "./Skeleton";
 import "../tradeFinder.css";
@@ -178,11 +178,11 @@ const REJECT_LABEL = { need: "would not help", price: "too expensive", cap: "doe
 const ROUND = ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th"];
 
 /** The main way a trade happens: the club spends its own draft picks on a player from another club. */
-function Acquire({ league, team, order }: { league: League; team: string; order: Record<string, number> }) {
+function Acquire({ league, team, order, picks }: { league: League; team: string; order: Record<string, number>; picks: DraftPicks | null }) {
   const [group, setGroup] = useState("all");
   const [sort, setSort] = useState<"fit" | "cheap" | "rating">("fit");
   const [openId, setOpenId] = useState<string | null>(null);
-  const capital = useMemo(() => draftCapital(team, order), [team, order]);
+  const capital = useMemo(() => draftCapital(team, order, picks?.byTeam[team]), [team, order, picks]);
   const needs = useMemo(() => teamNeeds(league).get(team) ?? [], [league, team]);
   const res = useMemo(() => acquirable(league, team, capital, group === "all" ? {} : { group }), [league, team, capital, group]);
   const list = useMemo(() => {
@@ -209,7 +209,8 @@ function Acquire({ league, team, order }: { league: League; team: string; order:
           ))}
         </ul>
       </details>
-      <p className="tf-ask"><b>Draft capital:</b> {capital.map((c) => <span key={c.round} className="tf-pickchip" title={c.label}>R{c.round} <small>#{c.overall}</small></span>)}</p>
+      <p className="tf-ask"><b>Draft capital:</b> {capital.map((c) => <span key={c.id} className={`tf-pickchip${c.from === team ? "" : " got"}`} title={c.label}>R{c.round} <small>{c.from === team ? "" : `${c.from} `}#{c.overall}</small></span>)}</p>
+      <p className="tf-count">{picks ? `${picks.season} draft, from every trade through ${picks.asOf}${picks.conditional.length ? ` (${picks.conditional.length} conditional picks are not counted)` : ""}. A pick sits at the spot its original club's record projects. Trades since then and compensatory picks are not in the data.` : "Pick ownership did not load, so these are each club's own seven picks."}</p>
       <div className="tf-groups" role="group" aria-label="Position">
         {["all", ...GROUPS].map((g) => <button key={g} type="button" aria-pressed={group === g} onClick={() => { setGroup(g); setOpenId(null); }}>{g === "all" ? "All" : g}</button>)}
       </div>
@@ -256,6 +257,8 @@ export function TradeFinder() {
   const [rosterOpen, setRosterOpen] = useState(false);
   const [mode, setMode] = useState<"buy" | "sell">("buy");
   const [order, setOrder] = useState<Record<string, number>>({});
+  const [picks, setPicks] = useState<DraftPicks | null>(null);
+  useEffect(() => { let on = true; fetchData<DraftPicks>("draft-picks").then((d) => on && setPicks(d), () => {}); return () => { on = false; }; }, []);
   useEffect(() => { let on = true; fetchData<Standings>("standings").then((d) => { if (on) setOrder(projectedOrder(d.nfl.conferences.flatMap((c) => c.divisions.flatMap((v) => v.teams)))); }, () => {}); return () => { on = false; }; }, []);
   useEffect(() => { let on = true; fetchData<TradeData>("trade-players").then((d) => on && setData(d), () => on && setError(true)); return () => { on = false; }; }, []);
   const league = useMemo(() => (data ? toLeague(data) : null), [data]);
@@ -293,7 +296,7 @@ export function TradeFinder() {
           </select>
         </label>}
       </div>
-      {mode === "buy" && <Acquire league={league} team={team} order={order} />}
+      {mode === "buy" && <Acquire league={league} team={team} order={order} picks={picks} />}
       {mode === "sell" && <><SecHead as="h3" className="tf-h" title="How this works" info={{
         means: "Pick a club and one of its players, and see what each of the other 31 clubs would have to send to get him: a player, a pick or a package. A club only appears with an offer if he would help it (he would start, or it is short at his position), it has something your club can use that it can spare, and both clubs stay under the cap with a legal roster. “Realism” is 0 to 100; the clubs that could not or would not say why.",
         how: "Value is in the draft-pick chart's points, from the player's rating by position, his age and how his contract compares with the market. Ratings come from this and last season's production and snap share (nflverse); there are no free grades for blockers, so those are a depth-level estimate from snaps, draft slot and experience. Most contracts are estimates (rookie scale for recent draftees, the market for his rating otherwise), cap room is assumed to be the same typical amount for every club, and which picks a club owns is not checked. Official figures can be supplied in src/data/contract-overrides.json and team-cap-overrides.json.",

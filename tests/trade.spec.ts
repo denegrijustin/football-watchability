@@ -1,6 +1,7 @@
 import { expect, test } from "./fixtures";
 import { readFileSync } from "node:fs";
 import { acquirable, draftCapital, priceInPicks, projectedOrder } from "../src/trade/acquire";
+import { CLUBS, nextDraftSeason, ownership, parseCsv } from "../scripts/trade/picks.mjs";
 import { allOffers, findTrades, toLeague, tradeValue, tradesForRoster, whyNoTrade, type League, type Player, type TradeData } from "../src/trade/engine";
 import { ageFactor, marketShare, pickPoints, rookieApy, STARTERS } from "../scripts/trade/lib.mjs";
 
@@ -207,7 +208,12 @@ test("a price is the fewest picks that cover a player's value without paying muc
   const big = priceInPicks(cap[0].value + cap[1].value, cap)!;
   expect(big.length).toBeGreaterThanOrEqual(2);
   expect(big.length).toBeLessThanOrEqual(3);
-  expect(new Set(big.map((c) => c.round)).size).toBe(big.length);
+  // a club that owns two picks in a round can spend both
+  const two = draftCapital("KC", order, [{ round: 3, from: "KC" }, { round: 3, from: "LA" }, { round: 5, from: "KC" }]);
+  expect(two.map((c) => c.id)).toEqual(["KC-3", "LA-3", "KC-5"]);
+  expect(two[1].label).toMatch(/3rd-round pick from Los Angeles Rams/);
+  const both = priceInPicks(two[0].value + two[1].value, two)!;
+  expect(both.filter((c) => c.round === 3)).toHaveLength(2);
   expect(priceInPicks(99999, cap)).toBeNull();
 });
 
@@ -242,7 +248,9 @@ test("Buy with picks is the default: pick a team and see the players it could bu
   await page.locator('[data-tab="trades"]').evaluate((b) => (b as HTMLElement).click());
   await expect(page.getByRole("button", { name: "Buy with picks" })).toHaveAttribute("aria-pressed", "true", { timeout: 20_000 });
   await page.getByLabel("Team", { exact: true }).selectOption("KC");
-  await expect(page.locator(".tf-pickchip")).toHaveCount(7);
+  await expect(page.locator(".tf-pickchip").first()).toBeVisible();
+  expect(await page.locator(".tf-pickchip").count()).toBeGreaterThanOrEqual(4);
+  await expect(page.getByText(/draft, from every trade through/)).toBeVisible();
   const list = page.locator('[data-testid="acquire-list"] .tf-offer');
   await expect(list.first()).toBeVisible();
   await page.getByRole("group", { name: "Position" }).getByRole("button", { name: "WR", exact: true }).click();
@@ -297,4 +305,50 @@ test("every buy explains why it works and every pass explains why it will not, i
   // a trade a club could do in the other view carries a story too
   const star = league.players.find((p) => p.group === "WR" && p.rating >= 80)!;
   for (const t of findTrades(league, star)) expect(t.narrative).toMatch(/rank \d+(st|nd|rd|th) of 32|cannot even fill|needs/);
+});
+
+const trade = (id: string, date: string, gave: string, received: string, round: string, extra: Record<string, string> = {}) =>
+  ({ trade_id: id, season: "2026", trade_date: date, gave, received, pick_season: "2027", pick_round: round, pick_number: "", conditional: "0", pfr_id: "", pfr_name: "", ...extra });
+
+test("pick ownership: each club starts with its seven, a trade moves one, a pick traded twice is followed, a conditional pick does not move", () => {
+  const rows = [
+    trade("1", "2026-03-04", "LA", "KC", "3"),
+    trade("2", "2026-03-16", "KC", "NYJ", "6"),
+    trade("3", "2026-04-01", "KC", "NYJ", "3"), // KC's own 3rd goes first; the Rams' 3rd stays
+    trade("4", "2026-04-02", "NYJ", "DAL", "3", { conditional: "1" }), // not moved
+    { ...trade("5", "2026-04-03", "KC", "SF", "1"), pick_season: "2028" }, // another draft
+    { trade_id: "6", season: "2026", trade_date: "2026-04-17", gave: "KC", received: "SF", pick_season: "", pick_round: "", pick_number: "", conditional: "", pfr_id: "x", pfr_name: "Player" }, // a player, not a pick
+  ];
+  const { byTeam, conditional, asOf } = ownership(rows, 2027);
+  expect(Object.values(byTeam).reduce((a, l) => a + l.length, 0)).toBe(224);
+  expect(byTeam.KC.filter((p) => p.round === 3).map((p) => p.from)).toEqual(["LA"]);
+  expect(byTeam.LA.filter((p) => p.round === 3)).toHaveLength(0);
+  expect(byTeam.NYJ.filter((p) => p.round === 3).map((p) => p.from).sort()).toEqual(["KC", "NYJ"]);
+  expect(byTeam.KC.some((p) => p.round === 6)).toBe(false);
+  expect(byTeam.KC.some((p) => p.round === 1 && p.from === "KC")).toBe(true);
+  expect(conditional).toHaveLength(1);
+  expect(asOf).toBe("2026-04-17");
+  // every pick is owned by exactly one club
+  const all = Object.values(byTeam).flat().map((p) => `${p.from}-${p.round}`);
+  expect(new Set(all).size).toBe(224);
+  expect(CLUBS).toHaveLength(32);
+  // two thirds for one club, none for the other
+  const kcThirds = ownership([trade("1", "2026-03-04", "LA", "KC", "3")], 2027).byTeam.KC.filter((p) => p.round === 3);
+  expect(kcThirds.map((p) => p.from)).toEqual(["KC", "LA"]);
+});
+
+test("the draft is in April, so from May on the next draft is next year's; and the CSV reader keeps quoted commas", () => {
+  expect(nextDraftSeason(new Date("2026-11-05"))).toBe(2027);
+  expect(nextDraftSeason(new Date("2027-02-01"))).toBe(2027);
+  expect(nextDraftSeason(new Date("2027-05-02"))).toBe(2028);
+  expect(parseCsv('a,b\n1,"x, y"\n')).toEqual([{ a: "1", b: "x, y" }]);
+});
+
+test("the saved pick ownership covers every pick in the draft once", async () => {
+  const saved = JSON.parse(readFileSync("src/data/draft-picks.json", "utf8"));
+  expect(saved.season).toBeGreaterThanOrEqual(2026);
+  const all = Object.values(saved.byTeam as Record<string, { round: number; from: string }[]>).flat().map((p) => `${p.from}-${p.round}`);
+  expect(all).toHaveLength(224);
+  expect(new Set(all).size).toBe(224);
+  expect(Object.keys(saved.byTeam)).toHaveLength(32);
 });

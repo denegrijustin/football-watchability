@@ -156,6 +156,8 @@ jobs:
           timeout 300s node scripts/build-injuries.mjs || echo "injuries failed; keeping the saved report"
           # Trade finder: every roster player with a value rating, age and contract (known, rookie scale or estimated) from nflverse's roster, stats, snaps and historical contracts.
           timeout 300s node scripts/build-trade-data.mjs || echo "trade data failed; keeping the saved file"
+          # Trade finder: who owns which picks in the next draft, from nflverse's list of every trade.
+          timeout 120s node scripts/build-draft-picks.mjs || echo "draft picks failed; keeping the saved file"
           # Standings tab: ESPN's official NFL standings (divisions, playoff seeds) and college conference standings.
           timeout 120s node scripts/build-standings.mjs || echo "standings failed; keeping the saved file"
           # Finished games (ESPN) for the CFB SP+ and NFL+ against-the-spread trackers: grades a pick as soon as its game ends, without waiting for the sheet or nflverse.
