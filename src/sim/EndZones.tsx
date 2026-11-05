@@ -2,9 +2,9 @@ import { useId } from "react";
 import { logos } from "../data";
 import type { EndzoneArt } from "./endzone";
 
-/** The field's coordinate system the art is drawn in: 1200 wide with 100-wide end zones, 560 tall. Anything that shows it scales this box. */
+/** The field's coordinate system the art is drawn in: 1200 wide with 100-wide end zones, 533 tall: a real field is 120 yards long with the end zones and 53 1/3 yards wide, 10 units to the yard both ways. Anything that shows it scales this box. */
 export const EZ_W = 1200;
-export const EZ_H = 560;
+export const EZ_H = 533;
 const EZ = 100;
 
 const lettering = (ez: EndzoneArt, size: number) => ({

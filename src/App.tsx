@@ -6,7 +6,7 @@ import { TrophyCredits } from "./components/TrophyCredits";
 import { LiveFreshness } from "./live";
 import { TabIcon } from "./components/TabIcon";
 
-const MORE_VIEWS: View[] = ["insanity", "resumes", "injuries", "grid", "empire", "spplus", "nfl"];
+const MORE_VIEWS: View[] = ["insanity", "trades", "resumes", "injuries", "grid", "empire", "spplus", "nfl"];
 import { dayName, results, slate, tiers, type FilterState, type League, type View } from "./data";
 import { Filters } from "./components/Filters";
 import { GameBoard, useBoard } from "./components/GameBoard";
@@ -25,6 +25,7 @@ const TvGrid = lazyView(() => import("./components/TvGrid").then((m) => ({ defau
 const SpPlusTab = lazyView(() => import("./spplus/SpPlusTab"), "SpPlusTab");
 const NflTab = lazyView(() => import("./nfl/NflTab"), "NflTab");
 const InjuriesTab = lazyView(() => import("./components/InjuriesTab").then((m) => ({ default: m.InjuriesTab })), "InjuriesTab");
+const TradeFinder = lazyView(() => import("./components/TradeFinder").then((m) => ({ default: m.TradeFinder })), "TradeFinder");
 const TeamsTab = lazyView(() => import("./components/TeamsTab").then((m) => ({ default: m.TeamsTab })), "TeamsTab");
 const ResumesTab = lazyView(() => import("./components/ResumesTab").then((m) => ({ default: m.ResumesTab })), "ResumesTab");
 const StandingsHub = lazyView(() => import("./components/StandingsHub").then((m) => ({ default: m.StandingsHub })), "StandingsHub");
@@ -308,6 +309,16 @@ export default function App() {
                   <span className="tab-label">Insanity</span>
                 </button>
                 <button
+                  data-tab="trades"
+                  aria-label="Trade finder"
+                  aria-pressed={view === "trades"}
+                  onClick={() => go("trades")}
+                  title="Trade finder: a realistic trade for every player on a roster, with the cap and roster limits"
+                >
+                  <TabIcon name="trades" />
+                  <span className="tab-label">Trades</span>
+                </button>
+                <button
                   data-tab="resumes"
                   aria-label="Team resumés"
                   aria-pressed={view === "resumes"}
@@ -426,6 +437,8 @@ export default function App() {
                   <ImperialismMap defaultLeague={league} />
                 ) : view === "picks" ? (
                   <PicksHub defaultLeague={league} />
+                ) : view === "trades" ? (
+                  <TradeFinder />
                 ) : view === "teams" ? (
                   <TeamsTab defaultLeague={league} />
                 ) : view === "resumes" ? (

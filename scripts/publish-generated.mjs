@@ -10,7 +10,7 @@ import { existsSync, writeFileSync } from "node:fs";
 
 export const GENERATED = [
   "slate", "results", "season", "forecasts", "finals", "matchup-stats", "imperialism", "broadcast-checks", "nfl", "team-ids", "team-players", "network-ids",
-  "perf-cfb", "perf-nfl", "perf-status", "injuries", "outlook", "standings", "spplus",
+  "perf-cfb", "perf-nfl", "perf-status", "injuries", "outlook", "standings", "spplus", "trade-players",
 ].map((n) => `src/data/${n}.json`);
 /** Registries kept by hand on main; the refresh may add entries to them. `list`: the array under `key`, matched by `id`; otherwise the object under `key` (or the root). */
 export const ADDITIONS = [
