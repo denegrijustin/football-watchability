@@ -203,7 +203,8 @@ test("the field carries the conference logo at each 25 (the second upside down),
   await expect(page.locator(".st-nd")).toHaveCount(1); // an independent: no conference mark, but the line to Touchdown Jesus
   await expect(page.locator(".st .lf-conf")).toHaveCount(0);
   await run("NFL", "Buffalo Bills", "Green Bay Packers");
-  await expect(page.locator(".st .lf-conf").first()).toHaveAttribute("data-conf", "NFL");
+  await expect(page.locator(".st image[data-retro-field='green-bay-packers']")).toHaveCount(1); // an NFL home club plays on its own retro field, which carries its own markings
+  await expect(page.locator(".st .lf-conf")).toHaveCount(0);
 });
 
 test("the Upset Alert Meter can be filtered by conference, on one line with the other filters", async ({ page }) => {
@@ -318,7 +319,7 @@ test("NFL+ has a Conf & Div view: both conferences and all eight divisions ranke
   expect(await sh((r) => [...r.querySelectorAll(".div-card")].every((c) => { const v = [...c.querySelectorAll("li .num:not(.muted)")].map((e) => parseFloat((e.textContent ?? "").replace("−", "-"))); return v.every((x, i) => i === 0 || v[i - 1] >= x); }))).toBe(true);
 });
 
-test("the Chargers and Denver put their own art at midfield, in the simulator, when they are the home team; other teams keep their logo", async ({ page }) => {
+test("an NFL home team's retro field replaces the plain turf and the midfield logo, whoever the visitor is", async ({ page }) => {
   const run = async (away: string, home: string) => {
     await page.goto("/?league=NFL");
     await openPicksPart(page, "Simulator");
@@ -333,9 +334,23 @@ test("the Chargers and Denver put their own art at midfield, in the simulator, w
     await expect(page.getByRole("region", { name: "Forecast" })).toBeVisible({ timeout: 45_000 });
   };
   await run("Kansas City Chiefs", "Los Angeles Chargers");
-  await expect(page.locator(".st image[data-midfield='art']")).toHaveAttribute("href", "/field-art/chargers.webp");
-  await run("Los Angeles Chargers", "Denver Donkeys");
-  await expect(page.locator(".st image[data-midfield='art']")).toHaveAttribute("href", "/field-art/denver.webp");
-  await run("Los Angeles Chargers", "Kansas City Chiefs");
+  await expect(page.locator(".st image[data-retro-field='los-angeles-chargers']")).toHaveAttribute("href", "/field-art/nfl/los-angeles-chargers.webp");
   await expect(page.locator(".st image[data-midfield='art']")).toHaveCount(0);
+  await run("Los Angeles Chargers", "Denver Donkeys");
+  await expect(page.locator(".st image[data-retro-field='denver-broncos']")).toHaveAttribute("href", "/field-art/nfl/denver-broncos.webp");
+  await run("Los Angeles Chargers", "Kansas City Chiefs");
+  await expect(page.locator(".st image[data-retro-field='kansas-city-chiefs']")).toHaveCount(1);
+  await expect(page.locator(".st image[data-midfield='art']")).toHaveCount(0);
+});
+
+test("an NFL club at home in the simulator plays on its own retro field, and a club without one keeps the plain turf", async ({ page }) => {
+  const { RETRO_FIELDS, retroFieldSrc } = await import("../src/sim/retroField");
+  expect(RETRO_FIELDS.size).toBe(32);
+  expect(retroFieldSrc("arizona-cardinals")).toBe("/field-art/nfl/arizona-cardinals.webp");
+  expect(retroFieldSrc("alabama")).toBeNull();
+  expect(retroFieldSrc(undefined)).toBeNull();
+  for (const id of RETRO_FIELDS) {
+    const res = await page.request.get(`/field-art/nfl/${id}.webp`);
+    expect(res.ok(), id).toBe(true);
+  }
 });

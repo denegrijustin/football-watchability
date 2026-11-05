@@ -5,10 +5,12 @@ import { clockText, downText, type GameCfg, type PlayRec, type TeamSim } from ".
 import { playerStats, type TeamPlayers } from "./box";
 import { ConfMark } from "../ConfMark";
 import { endzoneFor } from "./endzone";
-import { EndZones } from "./EndZones";
+import { EndZones, EZ_H } from "./EndZones";
+import { retroFieldSrc } from "./retroField";
 import { MIDFIELD_ART } from "./midfield";
 
-const FW = 1200, FH = 560, EZ = 100, YD = (FW - 2 * EZ) / 100, CY = FH / 2;
+/** A real field to scale: 120 yards long with the end zones, 53 1/3 wide, 10 units to the yard. */
+const FW = 1200, FH = EZ_H, EZ = 100, YD = (FW - 2 * EZ) / 100, CY = FH / 2;
 const fx = (x: number) => EZ + Math.max(-4, Math.min(104, x)) * YD;
 const qLabel = (q: number) => (q > 4 ? "OT" : `Q${q}`);
 
@@ -228,6 +230,8 @@ export function Stage({ cfg, plays, idx, pps }: { cfg: GameCfg; plays: PlayRec[]
   const first = p && p.nextDown > 0 && p.kind !== "kickoff" && !final ? ball + (p.nextOff === 0 ? 1 : -1) * p.nextDist : null;
   const lead = p && p.scorer !== null && p.pts > 0 ? p.scorer : null;
   const midArt = cfg.home.logoId ? MIDFIELD_ART[cfg.home.logoId] : undefined;
+  const retro = cfg.league === "NFL" ? retroFieldSrc(cfg.home.logoId) : null;
+  const hashY = cfg.league === "CFB" ? [FH / 2 - 66.7, FH / 2 + 66.7] : [FH / 2 - 30.8, FH / 2 + 30.8];
   const ez = useMemo(() => endzoneFor(cfg.home), [cfg.home]);
   const notreDame = cfg.home.short.toLowerCase() === "notre dame";
   const style = { ["--home" as string]: cfg.home.color, ["--away" as string]: cfg.away.color } as CSSProperties;
@@ -252,9 +256,15 @@ export function Stage({ cfg, plays, idx, pps }: { cfg: GameCfg; plays: PlayRec[]
       <div className="st-view">
         <div className="st-plane">
           <svg viewBox={`0 0 ${FW} ${FH}`} role="img" aria-label={p ? p.text : "Football field"}>
+            {retro ? <image href={retro} data-retro-field={cfg.home.logoId} x="0" y="0" width={FW} height={FH} preserveAspectRatio="none" /> : (
+              <>
             <rect width={FW} height={FH} fill={ez.field?.[0] ?? "#2c6b3d"} />
             {Array.from({ length: 20 }, (_, i) => <rect key={i} x={EZ + i * 5 * YD} width={5 * YD} height={FH} fill={ez.field ? ez.field[i % 2] : i % 2 ? "#2f7040" : "#286238"} />)}
             <EndZones ez={ez} name={cfg.home.short} />
+            {/* a tick for every yard on the sidelines and along the hash marks (NFL: 18'6" apart, college: 40' apart) */}
+            {Array.from({ length: 99 }, (_, i) => i + 1).map((yd) => (
+              <path key={`h${yd}`} d={`M${fx(yd)} 0v8M${fx(yd)} ${FH}v-8M${fx(yd)} ${hashY[0] - 5}v10M${fx(yd)} ${hashY[1] - 5}v10`} stroke="#fff" strokeOpacity="0.5" strokeWidth="2" />
+            ))}
             {Array.from({ length: 21 }, (_, i) => i * 5).map((yd) => (
               <line key={yd} x1={fx(yd)} x2={fx(yd)} y1="0" y2={FH} stroke="#fff" strokeOpacity={yd % 10 === 0 ? 0.85 : 0.4} strokeWidth={yd % 10 === 0 ? 4 : 2} />
             ))}
@@ -267,6 +277,8 @@ export function Stage({ cfg, plays, idx, pps }: { cfg: GameCfg; plays: PlayRec[]
                 <g transform={`rotate(180 ${fx(75)} ${FH - 78})`}><ConfMark conf={cfg.home.conf} cx={fx(75)} cy={FH - 78} size={46} /></g>
               </>
             )}
+              </>
+            )}
             {notreDame && (
               <g className="st-nd" aria-label="Touchdown Jesus">
                 <line x1={fx(52)} x2={FW - EZ - 28} y1="26" y2="26" stroke="#c99700" strokeWidth="5" strokeDasharray="16 12" strokeLinecap="round" />
@@ -274,7 +286,7 @@ export function Stage({ cfg, plays, idx, pps }: { cfg: GameCfg; plays: PlayRec[]
                 <text x={FW - EZ - 44} y="64" className="st-ndtext">TOUCHDOWN JESUS</text>
               </g>
             )}
-            {midArt ? <image href={midArt.src} data-midfield="art" x={fx(50) - midArt.stage / 2} y={CY - midArt.stage / midArt.ratio / 2} width={midArt.stage} height={midArt.stage / midArt.ratio} opacity="0.95" /> : mid && <image href={mid} x={fx(50) - 55} y={CY - 55} width="110" height="110" opacity="0.9" />}
+            {retro ? null : midArt ? <image href={midArt.src} data-midfield="art" x={fx(50) - midArt.stage / 2} y={CY - midArt.stage / midArt.ratio / 2} width={midArt.stage} height={midArt.stage / midArt.ratio} opacity="0.95" /> : mid && <image href={mid} x={fx(50) - 55} y={CY - 55} width="110" height="110" opacity="0.9" />}
             {lead !== null && <rect key={`g${p!.n}`} className="st-flash" x={lead === 0 ? FW - EZ : 0} width={EZ} height={FH} fill="#fff" />}
             {first !== null && first > 0 && first < 100 && <rect x={fx(first) - 3} y="0" width="6" height={FH} fill="#ffd84a" />}
             {p && p.kind !== "kickoff" && <rect x={fx(ball) - 2.5} y="0" width="5" height={FH} fill="#4aa3ff" opacity="0.9" />}
