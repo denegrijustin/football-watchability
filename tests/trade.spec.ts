@@ -166,3 +166,18 @@ test("the licensed-data importer reads a contracts export and a cap-room list in
   expect(contracts.smith).toEqual({ apy: 20_000_000, gtd: 35_000_000, years: 3 });
   expect(capFrom(parseCsv("Team,Cap Space\nKC,\"$8,400,000\"\nGB,3.2\n"))).toEqual({ KC: 8.4, GB: 3.2 });
 });
+
+test("trades lean on draft picks: most best offers include a pick, and a club's list holds at most one player-for-player swap", () => {
+  let best = 0, withPick = 0, lists = 0;
+  for (const p of league.players.filter((_, i) => i % 9 === 0)) {
+    for (const o of allOffers(league, p)) {
+      if (!o.offers.length) continue;
+      lists++;
+      best++;
+      if (o.offers[0].get.some((g) => g.kind === "pick")) withPick++;
+      expect(o.offers.filter((t) => t.get.every((g) => g.kind === "player")).length, `${p.name} / ${o.partner}`).toBeLessThanOrEqual(1);
+    }
+  }
+  expect(lists).toBeGreaterThan(500);
+  expect(withPick / best, "share of best offers that include a pick").toBeGreaterThan(0.8);
+});
