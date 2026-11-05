@@ -1,4 +1,5 @@
 import { NFL_NAMES } from "./teams";
+import { GROUP_NAME, ordinal, poss, teamNeeds } from "./needs";
 import { DEPTH, STARTERS, ageFactor, marketApy, pickPoints } from "../../scripts/trade/lib.mjs";
 
 /** One player on a roster, as src/data/trade-players.json lists him. Money is in millions of dollars. */
@@ -29,6 +30,8 @@ export type Trade = {
   /** 0-100: how likely the clubs would do it (fair, fills a need, fits both caps, does not leave a hole). */
   realism: number;
   reasons: string[]; warnings: string[];
+  /** A short paragraph on why the trade works: the partner's need, what comes back, and the caps. */
+  narrative: string;
 };
 
 const r1 = (x: number) => Math.round(x * 10) / 10;
@@ -122,7 +125,9 @@ export function offerFrom(league: League, player: Player, team: string, max = 3)
   const depthShort = B.filter((y) => y.group === player.group && y.status !== "R").length < ((DEPTH as Record<string, number>)[player.group] ?? 3);
   // He would start for them, or they are short of bodies at his position and he would be depth.
   const upgrade = weak.short ? 12 : player.rating - weak.rating >= 3 ? player.rating - weak.rating : depthShort && player.rating >= 50 ? 3 : 0;
-  if (upgrade < 3) return { partner: team, offers: [], helps: false, reason: `${name} would not start him: its ${player.group} starters are as good (its weakest is a ${weak.rating}) and its depth there is full.` };
+  const need = (teamNeeds(league).get(team) ?? []).find((n) => n.group === player.group);
+  const noun = GROUP_NAME[player.group] ?? player.group;
+  if (upgrade < 3) return { partner: team, offers: [], helps: false, reason: `${name} would not start him: its ${noun} are ${need ? need.starters.join(", ") : "all better"} (${need ? `${ordinal(need.rank)} best of 32` : "a strength"}), so he would sit behind a ${weak.rating} and it has no reason to give up anything for a backup.` };
 
   // What the club could send: players it can spare (past its starters, or at a deep position), at groups where the player's own club would play them.
   const spare = B.filter((x) => x.status !== "I" && x.status !== "R").filter((x) => {
@@ -190,7 +195,11 @@ export function offerFrom(league: League, player: Player, team: string, max = 3)
     // Clubs trade for players with draft picks far more often than with other players, so picks rank above a player swap, and two or more players back rank lowest.
     const pickLean = Math.round(16 * (getValue ? pickValue / getValue : 0)) - (players.length >= 2 ? 6 : 0);
     const realism = Math.round(100 * (0.4 * fairness + 0.25 * needFit + 0.15 * capHealth + 0.2 * (hole > 6 && !holeFilled ? 0.2 : 1)) - complexity - (player.age >= 31 ? 8 : 0) - (player.rating >= 92 && player.age <= 29 && player.years >= 3 ? 12 : 0) + pickLean);
-    trades.push({ partner: team, give: [player], get, giveValue: value, getValue, fairness: Math.round(fairness * 100) / 100, from, to, realism: Math.max(1, Math.min(99, realism)), reasons, warnings });
+    const sends = get.map(describeAsset).join(" + ");
+    const needLine = need ? (need.short ? `${name} cannot even fill its ${noun} spots` : `${poss(name)} ${noun} rank ${ordinal(need.rank)} of 32 (starters ${need.starters.join(", ")}; the league average is ${need.leagueAvg})`) : `${name} needs ${noun}`;
+    const roleLine = weak.short ? `${player.name} would fill an empty spot` : `${player.name} (${player.rating}) would start ahead of a ${weak.rating}`;
+    const narrative = `${needLine}. ${roleLine}. In return it sends ${sends}, worth ${getValue} points against his ${value}, and both caps hold: ${player.team} goes to ${r1(from.after)}M of room and ${team} to ${r1(to.after)}M.${players.length ? ` ${player.team} can use ${players.map((p) => p.name).join(" and ")}.` : ""}`;
+    trades.push({ partner: team, give: [player], get, giveValue: value, getValue, fairness: Math.round(fairness * 100) / 100, from, to, realism: Math.max(1, Math.min(99, realism)), reasons, warnings, narrative });
   }
   trades.sort((a, b) => b.realism - a.realism);
   // keep packages that differ: not the same set of players twice

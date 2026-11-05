@@ -255,3 +255,46 @@ test("Buy with picks is the default: pick a team and see the players it could bu
   const [sw, cw] = await page.evaluate(() => [document.documentElement.scrollWidth, document.documentElement.clientWidth]);
   expect(sw).toBeLessThanOrEqual(cw);
 });
+
+test("team needs rank each club's starters at every position against the league, and the worst group is its biggest need", async () => {
+  const { teamNeeds } = await import("../src/trade/needs");
+  const needs = teamNeeds(league);
+  expect(needs.size).toBe(32);
+  for (const [team, list] of needs) {
+    expect(list, team).toHaveLength(12);
+    for (let i = 1; i < list.length; i++) expect(list[i - 1].rank).toBeGreaterThanOrEqual(list[i].rank);
+    for (const n of list) {
+      expect(n.rank).toBeGreaterThanOrEqual(1);
+      expect(n.rank).toBeLessThanOrEqual(32);
+      expect(["major", "need", "solid", "strength"]).toContain(n.level);
+      expect(n.starters.length).toBeGreaterThan(0);
+      expect(n.weakest).toBe(n.starters[n.starters.length - 1]);
+    }
+  }
+  // each group is ranked 1..32 exactly once across the league
+  for (const g of ["QB", "WR", "OT"]) expect(new Set([...needs.values()].map((l) => l.find((n) => n.group === g)!.rank)).size).toBe(32);
+});
+
+test("every buy explains why it works and every pass explains why it will not, in words about the clubs involved", () => {
+  const cap = draftCapital("KC", order);
+  const res = acquirable(league, "KC", cap);
+  expect(res.buys.length).toBeGreaterThan(20);
+  for (const b of res.buys) {
+    expect(b.narrative.length, b.player.name).toBeGreaterThan(120);
+    expect(b.narrative).toContain("Kansas City Chiefs");
+    expect(b.narrative).toMatch(/rank \d+(st|nd|rd|th) of 32|cannot even fill/);
+    expect(b.narrative).toContain(b.player.name);
+  }
+  expect(res.rejected.length).toBeGreaterThan(20);
+  expect(new Set(res.rejected.map((r) => r.kind)).size).toBeGreaterThanOrEqual(2);
+  for (const r of res.rejected) {
+    expect(r.why.length, r.player.name).toBeGreaterThan(60);
+    expect(r.why).toContain(r.player.name);
+  }
+  // a pass for price names the points; a cap pass names the cap room
+  for (const r of res.rejected.filter((x) => x.kind === "price")) expect(r.why).toMatch(/points/);
+  for (const r of res.rejected.filter((x) => x.kind === "cap")) expect(r.why).toMatch(/cap room/);
+  // a trade a club could do in the other view carries a story too
+  const star = league.players.find((p) => p.group === "WR" && p.rating >= 80)!;
+  for (const t of findTrades(league, star)) expect(t.narrative).toMatch(/rank \d+(st|nd|rd|th) of 32|cannot even fill|needs/);
+});

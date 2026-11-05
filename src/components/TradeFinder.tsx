@@ -2,10 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { logos } from "../data";
 import { fetchData } from "../data/load";
 import { ChipImg } from "../logoTone";
-import { NFL_TEAMS } from "../trade/teams";
+import { NFL_NAMES, NFL_TEAMS } from "../trade/teams";
 import { allOffers, describeAsset, findTrades, pickPackage, toLeague, tradeValue, tradesForRoster, whyNoTrade, type League, type Offer, type Player, type Trade, type TradeData } from "../trade/engine";
 import { GROUPS } from "../../scripts/trade/lib.mjs";
-import { acquirable, draftCapital, projectedOrder, type Buy } from "../trade/acquire";
+import { acquirable, draftCapital, projectedOrder, GROUP_NAME, ordinal, poss, teamNeeds, type Buy, type NeedLevel } from "../trade/acquire";
 import { SecHead } from "./Info";
 import { Skeleton } from "./Skeleton";
 import "../tradeFinder.css";
@@ -44,6 +44,7 @@ function TradeCard({ t, p, compact = false }: { t: Trade; p: Player; compact?: b
       </p>
       <p className="tf-caps"><Cap label={p.team} side={t.from} /><Cap label={t.partner} side={t.to} /></p>
       <p className="tf-check">Check the real cap: <a href={otcUrl(p.team)} target="_blank" rel="noreferrer noopener">{p.team} ↗</a> · <a href={otcUrl(t.partner)} target="_blank" rel="noreferrer noopener">{t.partner} ↗</a> (Over the Cap)</p>
+      <p className="tf-narr"><b>Why this works.</b> {t.narrative}</p>
       <ul className="tf-why">
         {t.reasons.map((r, i) => <li key={i}>{r}</li>)}
         {t.warnings.map((r, i) => <li key={`w${i}`} className="warn">{r}</li>)}
@@ -162,8 +163,8 @@ function BuyRow({ b, open, onToggle }: { b: Buy; open: boolean; onToggle: () => 
       </button>
       {open && (
         <div className="tf-offer-detail">
+          <p className="tf-narr"><b>Why this works.</b> {b.narrative}</p>
           <ul className="tf-why">
-            {b.reasons.map((r, i) => <li key={i}>{r}</li>)}
             {b.warnings.map((r, i) => <li key={`w${i}`} className="warn">{r}</li>)}
           </ul>
           <p className="tf-check">Check the real cap: <a href={otcUrl(p.team)} target="_blank" rel="noreferrer noopener">{p.team} ↗</a> (Over the Cap)</p>
@@ -172,6 +173,8 @@ function BuyRow({ b, open, onToggle }: { b: Buy; open: boolean; onToggle: () => 
     </li>
   );
 }
+const NEED_LABEL: Record<NeedLevel, string> = { major: "Major need", need: "Need", solid: "Solid", strength: "Strength" };
+const REJECT_LABEL = { need: "would not help", price: "too expensive", cap: "does not fit the cap", seller: "would not be sold" } as const;
 const ROUND = ["1st", "2nd", "3rd", "4th", "5th", "6th", "7th"];
 
 /** The main way a trade happens: the club spends its own draft picks on a player from another club. */
@@ -180,6 +183,7 @@ function Acquire({ league, team, order }: { league: League; team: string; order:
   const [sort, setSort] = useState<"fit" | "cheap" | "rating">("fit");
   const [openId, setOpenId] = useState<string | null>(null);
   const capital = useMemo(() => draftCapital(team, order), [team, order]);
+  const needs = useMemo(() => teamNeeds(league).get(team) ?? [], [league, team]);
   const res = useMemo(() => acquirable(league, team, capital, group === "all" ? {} : { group }), [league, team, capital, group]);
   const list = useMemo(() => {
     const l = [...res.buys];
@@ -189,6 +193,22 @@ function Acquire({ league, team, order }: { league: League; team: string; order:
   }, [res, sort]);
   return (
     <div className="tf-acq">
+      <details className="tf-needs" open>
+        <summary>{poss(NFL_NAMES[team] ?? team)} needs by position ▾</summary>
+        <p className="tf-count">Each position's starters, rated against the other 31 clubs. Tap one to see who it could buy there.</p>
+        <ul className="tf-needlist">
+          {needs.map((n) => (
+            <li key={n.group}>
+              <button type="button" className={`tf-need ${n.level}`} aria-pressed={group === n.group} onClick={() => { setGroup(group === n.group ? "all" : n.group); setOpenId(null); }} title={`${GROUP_NAME[n.group]}: starters ${n.starters.join(", ")}`}>
+                <b>{n.group}</b>
+                <span className="tf-needbar"><i style={{ width: `${Math.max(6, Math.min(100, ((n.avg - 45) / 50) * 100))}%` }} /></span>
+                <span className="tf-needtxt">{n.avg}<small> vs {n.leagueAvg} · {ordinal(n.rank)}</small></span>
+                <em>{NEED_LABEL[n.level]}</em>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </details>
       <p className="tf-ask"><b>Draft capital:</b> {capital.map((c) => <span key={c.round} className="tf-pickchip" title={c.label}>R{c.round} <small>#{c.overall}</small></span>)}</p>
       <div className="tf-groups" role="group" aria-label="Position">
         {["all", ...GROUPS].map((g) => <button key={g} type="button" aria-pressed={group === g} onClick={() => { setGroup(g); setOpenId(null); }}>{g === "all" ? "All" : g}</button>)}
@@ -203,6 +223,20 @@ function Acquire({ league, team, order }: { league: League; team: string; order:
           {list.map((b) => <BuyRow key={b.player.id} b={b} open={openId === b.player.id} onToggle={() => setOpenId(openId === b.player.id ? null : b.player.id)} />)}
         </ol>
       ) : <p className="tf-nonote">No player at this position fits.</p>}
+      <details className="tf-cannot">
+        <summary>Why others won't work ({res.noNeed + res.unaffordable + res.capBlocked + res.sellerNo}) ▾</summary>
+        <p className="tf-count">The best players it is not buying and why, highest rated first: {res.noNeed} would not help {team}, {res.unaffordable} cost more than its picks cover, {res.capBlocked} do not fit its cap room, {res.sellerNo} would not be sold.</p>
+        <ul className="tf-offers">
+          {res.rejected.slice(0, 40).map((r) => (
+            <li key={r.player.id} className="tf-offer none">
+              <div className="tf-offer-head static">
+                <Logo team={r.player.team} />
+                <span className="tf-offer-who"><b>{r.player.name}</b><small>{r.player.team} · {r.player.group} · {r.player.rating} · {REJECT_LABEL[r.kind]}</small><small className="tf-why-not">{r.why}</small></span>
+              </div>
+            </li>
+          ))}
+        </ul>
+      </details>
       <p className="tf-count">Left out: {res.noNeed} players who would not help {team}, {res.unaffordable} who cost more than its picks cover, {res.capBlocked} whose salary does not fit its cap room.</p>
     </div>
   );

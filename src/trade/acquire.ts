@@ -1,4 +1,8 @@
 import { DEPTH, STARTERS, pickPoints } from "../../scripts/trade/lib.mjs";
+import { NFL_NAMES } from "./teams";
+import { GROUP_NAME, ordinal, poss, teamNeeds } from "./needs";
+export { GROUP_NAME, ordinal, poss, teamNeeds } from "./needs";
+export type { Need, NeedLevel } from "./needs";
 import { tradeValue, type League, type Player, type TradeSide } from "./engine";
 
 /**
@@ -19,6 +23,8 @@ export type Buy = {
   /** How much of a starter's job he would take: rating over the buyer's weakest starter at his position. */
   upgrade: number;
   reasons: string[]; warnings: string[];
+  /** A short paragraph on why the trade works: the buyer's need, the price, the cap and why the seller would do it. */
+  narrative: string;
 };
 
 const r1 = (x: number) => Math.round(x * 10) / 10;
@@ -70,55 +76,85 @@ function weakestStarter(roster: Player[], group: string): { rating: number; shor
   return live.length < starters(group) ? { rating: 0, short: true } : { rating: live[starters(group) - 1].rating, short: false };
 }
 
-export type Acquire = { buys: Buy[]; unaffordable: number; capBlocked: number; noNeed: number };
+export type Rejected = { player: Player; kind: "need" | "price" | "cap" | "seller"; why: string };
+export type Acquire = { buys: Buy[]; rejected: Rejected[]; unaffordable: number; capBlocked: number; noNeed: number; sellerNo: number };
+
+const money = (m: number) => `${r1(m)}M`;
+const name = (t: string) => NFL_NAMES[t] ?? t;
+const picksText = (picks: Capital[]) => picks.map((c) => `a ${c.label.replace(/ \(about.*/, "")}`).join(" and ");
 
 /**
  * Every player on another club the buyer could pay for in picks: he would help (start, or fill a short spot), its own picks cover his price, the
- * salary fits its cap, and the other club could part with him. Most realistic first.
+ * salary fits its cap, and the other club could part with him. Most realistic first, and every player who fails one of those, with the reason.
  */
 export function acquirable(league: League, team: string, capital: Capital[], opts: { group?: string } = {}): Acquire {
   const A = league.byTeam.get(team) ?? [];
   const aSpace = league.space[team] ?? 0;
-  const out: Buy[] = [];
-  let unaffordable = 0, capBlocked = 0, noNeed = 0;
+  const needs = teamNeeds(league).get(team) ?? [];
+  const out: Buy[] = [], rejected: Rejected[] = [];
+  let unaffordable = 0, capBlocked = 0, noNeed = 0, sellerNo = 0;
+  const bestCover = capital.reduce((a, c) => a + c.value, 0);
+  const club = name(team);
   for (const [other, roster] of league.byTeam) {
     if (other === team) continue;
     const bSpace = league.space[other] ?? 0;
     for (const p of roster) {
       if (p.status !== "A" || p.rating < 55 || (opts.group && p.group !== opts.group)) continue;
+      const need = needs.find((n) => n.group === p.group)!;
+      const noun = GROUP_NAME[p.group] ?? p.group;
       const weak = weakestStarter(A, p.group);
       const depthShort = A.filter((y) => y.group === p.group && y.status !== "R").length < ((DEPTH as Record<string, number>)[p.group] ?? 3);
       const upgrade = weak.short ? 12 : p.rating - weak.rating >= 3 ? p.rating - weak.rating : depthShort && p.rating >= 50 ? 3 : 0;
-      if (upgrade < 3) { noNeed++; continue; }
+      if (upgrade < 3) {
+        noNeed++;
+        if (p.rating >= 62) rejected.push({ player: p, kind: "need", why: `${p.name} (${p.rating}) would not start for ${club}: its ${noun} are ${need.starters.join(", ")} (${ordinal(need.rank)} best of 32), so he would be a backup at ${money(p.apy)} a year, and it has no reason to spend a pick on that.` });
+        continue;
+      }
       const value = tradeValue(p);
       const price = priceInPicks(value, capital);
-      if (!price) { unaffordable++; continue; }
+      if (!price) {
+        unaffordable++;
+        rejected.push({ player: p, kind: "price", why: `${p.name} is worth about ${value} points on the draft chart, and all seven of ${poss(club)} picks together are worth ${bestCover}. ${bestCover < value * 0.9 ? "It could not pay for him even by emptying its draft." : "No combination of three picks lands close to his price without a big overpay."}` });
+        continue;
+      }
       const aAfter = aSpace - p.apy;
-      if (aAfter < 0) { capBlocked++; continue; }
+      if (aAfter < 0) {
+        capBlocked++;
+        rejected.push({ player: p, kind: "cap", why: `${club} has ${money(aSpace)} of cap room and ${p.name} costs ${money(p.apy)} a year, so a trade for picks alone does not fit. It would have to send salary back, which this view does not do.` });
+        continue;
+      }
       const priceValue = price.reduce((a, c) => a + c.value, 0);
       // The seller: could it part with him without a hole at his position?
       const left = roster.filter((y) => y.group === p.group && y.id !== p.id && y.status !== "R").sort((a, b) => b.rating - a.rating);
       const nextBest = left[starters(p.group) - 1]?.rating ?? 0;
       const hole = Math.max(0, nextBest ? p.rating - nextBest - 8 : p.rating - 55);
       const franchise = p.rating >= 92 && p.age <= 29 && p.years >= 3;
+      if (franchise || hole > 12) {
+        sellerNo++;
+        rejected.push({ player: p, kind: "seller", why: franchise ? `${name(other)} would not sell ${p.name}: at ${p.rating} and ${p.age} with ${p.years} years left he is a franchise player, and clubs rarely shop one for ${picksText(price)}.` : `${name(other)} would be left thin at ${noun} without ${p.name} (its next best is ${nextBest || "nobody"}), so it would say no to ${picksText(price)}.` });
+        continue;
+      }
       const fairness = Math.max(0, 1 - Math.abs(priceValue - value) / Math.max(value, 1));
       const needFit = Math.min(1, upgrade / 12);
       const capHealth = Math.min(1, aAfter / 12 + 0.5);
       const sellerOk = hole > 6 ? 0.2 : 1;
-      const realism = Math.round(100 * (0.3 * needFit + 0.25 * fairness + 0.15 * capHealth + 0.3 * sellerOk) - (franchise ? 18 : 0) - (price.length > 2 ? 8 : 0) - (p.age >= 31 ? 5 : 0));
+      const realism = Math.round(100 * (0.3 * needFit + 0.25 * fairness + 0.15 * capHealth + 0.3 * sellerOk) - (price.length > 2 ? 8 : 0) - (p.age >= 31 ? 5 : 0));
       const reasons = [
-        weak.short ? `${team} is short at ${p.group}` : `${p.name} (${p.rating}) would start for ${team}, ahead of a ${weak.rating}`,
-        `${team} pays ${price.map((c) => c.label).join(" + ")}, worth ${priceValue} points on the draft chart against his ${value}`,
-        `${team} takes on ${r1(p.apy)}M, so its cap room goes ${r1(aSpace)}M to ${r1(aAfter)}M`,
+        weak.short ? `${club} is short at ${p.group}` : `${p.name} (${p.rating}) would start for ${club}, ahead of a ${weak.rating}`,
+        `${club} pays ${price.map((c) => c.label).join(" + ")}, worth ${priceValue} points on the draft chart against his ${value}`,
+        `${club} takes on ${money(p.apy)}, so its cap room goes ${money(aSpace)} to ${money(aAfter)}`,
       ];
       const warnings: string[] = [];
-      if (hole > 6) warnings.push(`${other} would be thin at ${p.group} without him (next best is ${nextBest || "none"}): it would ask for more or say no`);
-      if (franchise) warnings.push("a franchise-level player: a club rarely shops one");
+      if (hole > 6) warnings.push(`${name(other)} would be thin at ${p.group} without him (next best is ${nextBest || "none"}): it would want more or might say no`);
       if (p.age >= 31 && p.group !== "QB") warnings.push("an older player: he costs less because his best years are behind him");
       if (p.years <= 1) warnings.push("his contract ends after this season (a rental)");
       if (league.spaceAssumed[team] || league.spaceAssumed[other]) warnings.push("cap room is an assumption, not an official figure");
+      const need1 = need.short ? `${club} cannot even fill its ${noun} spots` : `${poss(club)} ${noun} rank ${ordinal(need.rank)} of 32 (starters ${need.starters.join(", ")}; the league average is ${need.leagueAvg})`;
+      const role = weak.short ? `${p.name} would fill an empty spot` : `${p.name} (${p.rating}) would start ahead of a ${weak.rating}, a ${upgrade}-point upgrade`;
+      const sellerLine = left.length > starters(p.group) || (nextBest && p.rating - nextBest <= 8) ? `${name(other)} can part with him: its next best ${p.group} is ${nextBest || "an empty spot"}.` : `${name(other)} has ${p.group} depth to cover for him.`;
+      const narrative = `${need1}. ${role}. ${picksText(price)} ${price.length > 1 ? "cover" : "covers"} his price (${priceValue} points against ${value}), and the ${money(p.apy)} salary fits, leaving ${money(aAfter)} of cap room. ${sellerLine}${p.years <= 1 ? " His contract is up after the season, so it is a rental." : ""}`;
       out.push({
-        player: p, price, value, priceValue, upgrade, reasons, warnings,
+        player: p, price, value, priceValue, upgrade, reasons, warnings, narrative,
         buyer: { before: r1(aSpace), after: r1(aAfter), change: r1(-p.apy), ok: true },
         seller: { before: r1(bSpace), after: r1(bSpace + p.apy), change: r1(p.apy), ok: true },
         realism: Math.max(1, Math.min(99, realism)),
@@ -126,5 +162,6 @@ export function acquirable(league: League, team: string, capital: Capital[], opt
     }
   }
   out.sort((a, b) => b.realism - a.realism || b.player.rating - a.player.rating || a.player.name.localeCompare(b.player.name));
-  return { buys: out, unaffordable, capBlocked, noNeed };
+  rejected.sort((a, b) => b.player.rating - a.player.rating || a.player.name.localeCompare(b.player.name));
+  return { buys: out, rejected, unaffordable, capBlocked, noNeed, sellerNo };
 }
