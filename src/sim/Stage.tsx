@@ -230,7 +230,7 @@ export function Stage({ cfg, plays, idx, pps }: { cfg: GameCfg; plays: PlayRec[]
   const first = p && p.nextDown > 0 && p.kind !== "kickoff" && !final ? ball + (p.nextOff === 0 ? 1 : -1) * p.nextDist : null;
   const lead = p && p.scorer !== null && p.pts > 0 ? p.scorer : null;
   const midArt = cfg.home.logoId ? MIDFIELD_ART[cfg.home.logoId] : undefined;
-  const retro = cfg.league === "NFL" ? retroFieldSrc(cfg.home.logoId) : null;
+  const retro = retroFieldSrc(cfg.home.logoId, cfg.league === "CFB" ? "CFB" : "NFL");
   const hashY = cfg.league === "CFB" ? [FH / 2 - 66.7, FH / 2 + 66.7] : [FH / 2 - 30.8, FH / 2 + 30.8];
   const ez = useMemo(() => endzoneFor(cfg.home), [cfg.home]);
   const notreDame = cfg.home.short.toLowerCase() === "notre dame";

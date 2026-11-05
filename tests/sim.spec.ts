@@ -354,3 +354,27 @@ test("an NFL club at home in the simulator plays on its own retro field, and a c
     expect(res.ok(), id).toBe(true);
   }
 });
+
+test("a college team with its own field picture (Arizona) plays on it at home; other college teams keep the plain turf", async ({ page }) => {
+  const { CFB_FIELDS, retroFieldSrc } = await import("../src/sim/retroField");
+  expect(retroFieldSrc("arizona", "CFB")).toBe("/field-art/cfb/arizona.webp");
+  expect(retroFieldSrc("arizona", "NFL")).toBeNull();
+  for (const id of CFB_FIELDS) expect((await page.request.get(`/field-art/cfb/${id}.webp`)).ok(), id).toBe(true);
+  const run = async (away: string, home: string) => {
+    await page.goto("/?league=CFB");
+    await openPicksPart(page, "Simulator");
+    await page.locator(".sim-custom summary").click();
+    const pick = async (n: number, name: string) => {
+      const sel = page.locator(".sim-custom select").nth(n);
+      await sel.selectOption(await sel.locator("option").evaluateAll((os, s) => (os as HTMLOptionElement[]).find((o) => o.textContent === s)?.value ?? "", name));
+    };
+    await pick(0, away);
+    await pick(1, home);
+    await page.getByRole("button", { name: "Simulate matchup" }).click();
+    await expect(page.getByRole("region", { name: "Forecast" })).toBeVisible({ timeout: 45_000 });
+  };
+  await run("Alabama Crimson Tide", "Arizona Wildcats");
+  await expect(page.locator(".st image[data-retro-field='arizona']")).toHaveAttribute("href", "/field-art/cfb/arizona.webp");
+  await run("Arizona Wildcats", "Alabama Crimson Tide");
+  await expect(page.locator(".st image[data-retro-field]")).toHaveCount(0);
+});
