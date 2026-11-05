@@ -76,3 +76,29 @@
 .tf-roster { border-top: 1px solid var(--line); padding-top: 8px; }
 .tf-roster summary { cursor: pointer; min-height: 40px; display: flex; align-items: center; font-weight: 600; }
 .tf-roster > .tf-groups, .tf-roster > .tf-count, .tf-roster > .tf-list { margin-top: 8px; }
+
+.tf-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.tf-modes { display: inline-flex; border: 1px solid var(--line); border-radius: 99px; overflow: hidden; }
+.tf-modes button { padding: 8px 14px; min-height: 44px; border: 0; background: transparent; color: var(--text); font: inherit; font-size: 0.8125rem; font-weight: 650; cursor: pointer; }
+.tf-modes button[aria-pressed="true"] { background: var(--accent, #1f7a3a); color: #fff; }
+.tf-cost { display: grid; justify-items: end; font-weight: 750; font-size: 0.875rem; white-space: nowrap; }
+.tf-cost small { font-size: 0.6875rem; font-weight: 600; color: var(--muted); }
+.tf-pickchip { display: inline-flex; align-items: baseline; gap: 3px; margin: 2px 4px 2px 0; padding: 2px 8px; border-radius: 99px; background: var(--surface-3); font-size: 0.8125rem; font-weight: 700; }
+.tf-pickchip small { font-size: 0.6875rem; font-weight: 600; color: var(--muted); }
+.tf-acq .tf-groups { margin: 8px 0; }
+
+.tf-narr { margin: 6px 0 8px; font-size: 0.875rem; line-height: 1.45; }
+.tf-needs { margin: 10px 0; }
+.tf-needs summary { cursor: pointer; font-weight: 700; }
+.tf-needlist { list-style: none; margin: 8px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 6px; }
+.tf-need { width: 100%; display: grid; grid-template-columns: 44px 1fr auto; grid-template-areas: "g bar txt" "g lab txt"; align-items: center; gap: 2px 10px; padding: 8px 10px; min-height: 44px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2, transparent); color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.tf-need[aria-pressed="true"] { border-color: var(--accent, #1f7a3a); box-shadow: 0 0 0 1px var(--accent, #1f7a3a); }
+.tf-need b { grid-area: g; font-size: 0.9375rem; }
+.tf-need .tf-needbar { grid-area: bar; height: 6px; border-radius: 99px; background: var(--surface-3); overflow: hidden; }
+.tf-need .tf-needbar i { display: block; height: 100%; border-radius: 99px; background: currentColor; }
+.tf-need .tf-needtxt { grid-area: txt; font-weight: 700; font-size: 0.875rem; text-align: right; }
+.tf-need .tf-needtxt small { display: block; font-size: 0.6875rem; font-weight: 600; color: var(--muted); }
+.tf-need em { grid-area: lab; font-style: normal; font-size: 0.6875rem; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; }
+.tf-need.major { color: #d64545; } .tf-need.need { color: #d98a1f; } .tf-need.solid { color: #6b7d8c; } .tf-need.strength { color: #2e9a52; }
+.tf-need b, .tf-need .tf-needtxt { color: var(--text); }
+.tf-pickchip.got { background: color-mix(in srgb, var(--accent, #1f7a3a) 22%, var(--surface-3)); }
