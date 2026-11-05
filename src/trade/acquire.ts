@@ -11,7 +11,9 @@ import { tradeValue, type League, type Player, type TradeSide } from "./engine";
  */
 
 /** One of a club's picks. `overall` is where it is projected to fall in the draft, from the standings; `value` is that slot on the draft chart. */
-export type Capital = { round: number; overall: number; label: string; value: number };
+export type Capital = { round: number; overall: number; label: string; value: number; /** The club the pick originally belonged to: its record sets the slot. */ from: string; id: string };
+/** Who owns which picks in the next draft (src/data/draft-picks.json). */
+export type DraftPicks = { season: number; asOf: string; byTeam: Record<string, { round: number; from: string }[]>; conditional: { round: number; from: string; to: string }[] };
 export type Buy = {
   player: Player;
   /** The picks it would cost, the fewest that cover his value. */
@@ -39,16 +41,20 @@ export function projectedOrder(rows: { abbr: string; pct: number; diff: number }
   return Object.fromEntries(sorted.map((r, i) => [ABBR[r.abbr] ?? r.abbr, i + 1]));
 }
 
-/** A club's picks, one for each of the seven rounds, at the spot its record projects. Trades of picks already made are not in the data, so these are its own. */
-export function draftCapital(team: string, order: Record<string, number>): Capital[] {
-  const slot = order[team] ?? 16;
-  return ROUND.map((name, i) => {
-    const overall = i * 32 + slot;
-    return { round: i + 1, overall, label: `${name}-round pick (about #${overall})`, value: pickPoints(overall) };
+/**
+ * A club's picks in the next draft: the ones it owns now (its own, plus any it got in trades, minus any it traded away), each at the spot of the club it
+ * came from. With no ownership data it is its own seven.
+ */
+export function draftCapital(team: string, order: Record<string, number>, owned?: { round: number; from: string }[]): Capital[] {
+  const picks = owned ?? ROUND.map((_, i) => ({ round: i + 1, from: team }));
+  return picks.map(({ round, from }) => {
+    const overall = (round - 1) * 32 + (order[from] ?? 16);
+    const origin = from === team ? "" : ` from ${NFL_NAMES[from] ?? from}`;
+    return { round, from, id: `${from}-${round}`, overall, label: `${ROUND[round - 1]}-round pick${origin} (about #${overall})`, value: pickPoints(overall) };
   });
 }
 
-/** The fewest picks, at most three and from different rounds, whose value covers `value` without paying much more than it. */
+/** The fewest picks, at most three, whose value covers `value` without paying much more than it. */
 export function priceInPicks(value: number, capital: Capital[]): Capital[] | null {
   let best: { picks: Capital[]; cost: number } | null = null;
   const n = capital.length;
