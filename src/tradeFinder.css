@@ -40,3 +40,39 @@
 .tf-nologo { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--surface-3); font-size: 0.5625rem; }
 .tf-check { margin: 0; font-size: 0.75rem; color: var(--muted); }
 .tf-check a, .tf-note a { color: var(--lime); }
+
+/* pick a club, then a player, then the price from every other club */
+.tf-pick { display: grid; grid-template-columns: 1fr; gap: 10px; }
+@media (min-width: 640px) { .tf-pick { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); } }
+.tf-team, .tf-player { display: grid; gap: 4px; min-width: 0; }
+.tf-step { font-size: 0.6875rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+.tf-selwrap { display: flex; align-items: center; gap: 8px; }
+.tf-selwrap select, .tf-player select { flex: 1; min-width: 0; width: 100%; }
+.tf-player select { min-height: 40px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--text); font: inherit; }
+.tf-price { display: grid; gap: 10px; min-width: 0; }
+.tf-card { display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); }
+.tf-card-who { min-width: 0; }
+.tf-card-who h3 { margin: 0; font-size: 1.125rem; }
+.tf-card-who p { margin: 2px 0 0; color: var(--muted); font-size: 0.8125rem; }
+.tf-ask { margin: 0; font-size: 0.875rem; line-height: 1.5; color: var(--text-2); }
+.tf-ask b { color: var(--text); }
+.tf-sorts { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 0.8125rem; color: var(--muted); }
+.tf-sorts button { min-height: 34px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--text-2); font: inherit; font-size: 0.8125rem; cursor: pointer; }
+.tf-sorts button[aria-pressed="true"] { background: var(--lime); color: #12210a; border-color: var(--lime); font-weight: 700; }
+.tf-sub { margin: 4px 0 0; font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--lime); }
+.tf-offers { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.tf-offer { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); overflow: hidden; }
+.tf-offer.none { background: transparent; }
+.tf-offer-head { all: unset; box-sizing: border-box; width: 100%; display: flex; align-items: center; gap: 10px; padding: 9px 10px; cursor: pointer; }
+.tf-offer-head.static { cursor: default; align-items: flex-start; }
+.tf-offer-head:focus-visible { outline: 2px solid var(--lime); outline-offset: -2px; }
+.tf-offer-who { display: grid; min-width: 0; flex: 1; }
+.tf-offer-who b { font-size: 0.9375rem; }
+.tf-offer-who small { color: var(--text-2); font-size: 0.8125rem; line-height: 1.35; }
+.tf-offer.none .tf-offer-who small { color: var(--muted); }
+.tf-offer-detail { padding: 0 10px 10px; }
+.tf-cannot { font-size: 0.8125rem; }
+.tf-cannot summary { cursor: pointer; min-height: 36px; display: flex; align-items: center; color: var(--text-2); }
+.tf-roster { border-top: 1px solid var(--line); padding-top: 8px; }
+.tf-roster summary { cursor: pointer; min-height: 40px; display: flex; align-items: center; font-weight: 600; }
+.tf-roster > .tf-groups, .tf-roster > .tf-count, .tf-roster > .tf-list { margin-top: 8px; }

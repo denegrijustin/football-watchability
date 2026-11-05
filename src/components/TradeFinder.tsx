@@ -3,7 +3,7 @@ import { logos } from "../data";
 import { fetchData } from "../data/load";
 import { ChipImg } from "../logoTone";
 import { NFL_TEAMS } from "../trade/teams";
-import { describeAsset, findTrades, toLeague, tradeValue, tradesForRoster, whyNoTrade, type League, type Player, type Trade, type TradeData } from "../trade/engine";
+import { allOffers, describeAsset, findTrades, pickPackage, toLeague, tradeValue, tradesForRoster, whyNoTrade, type League, type Offer, type Player, type Trade, type TradeData } from "../trade/engine";
 import { GROUPS } from "../../scripts/trade/lib.mjs";
 import { SecHead } from "./Info";
 import { Skeleton } from "./Skeleton";
@@ -28,13 +28,13 @@ function Cap({ label, side }: { label: string; side: Trade["from"] }) {
   );
 }
 
-function TradeCard({ t, p }: { t: Trade; p: Player }) {
+function TradeCard({ t, p, compact = false }: { t: Trade; p: Player; compact?: boolean }) {
   const tone = t.realism >= 80 ? "hi" : t.realism >= 60 ? "mid" : "lo";
   return (
     <li className="tf-trade">
       <div className="tf-trade-head">
-        <Logo team={t.partner} size={28} />
-        <strong>{NFL_TEAMS[t.partner]?.name ?? t.partner}</strong>
+        {!compact && <Logo team={t.partner} size={28} />}
+        <strong>{compact ? "This package" : (NFL_TEAMS[t.partner]?.name ?? t.partner)}</strong>
         <span className={`tf-real ${tone}`} title="How likely the two clubs would do it: even value, a real need, both caps work, no hole left behind">{t.realism}<small>realism</small></span>
       </div>
       <p className="tf-swap">
@@ -73,6 +73,78 @@ function Row({ p, league, open, onToggle }: { p: Player; league: League; open: b
   );
 }
 
+type Sort = "realism" | "value" | "team";
+
+/** One club's answer for the chosen player: the package it would send, with the other ways it could do it, or why it can't. */
+function OfferRow({ o, p, open, onToggle }: { o: Offer; p: Player; open: boolean; onToggle: () => void }) {
+  const best = o.offers[0];
+  const name = NFL_TEAMS[o.partner]?.name ?? o.partner;
+  if (!best) {
+    return (
+      <li className="tf-offer none">
+        <div className="tf-offer-head static">
+          <Logo team={o.partner} size={26} />
+          <span className="tf-offer-who"><b>{name}</b><small className="tf-why-not">{o.reason}</small></span>
+        </div>
+      </li>
+    );
+  }
+  const tone = best.realism >= 80 ? "hi" : best.realism >= 60 ? "mid" : "lo";
+  return (
+    <li className={`tf-offer${open ? " open" : ""}`}>
+      <button type="button" className="tf-offer-head" aria-expanded={open} onClick={onToggle}>
+        <Logo team={o.partner} size={26} />
+        <span className="tf-offer-who"><b>{name}</b><small>{best.get.map(describeAsset).join(" + ")}</small></span>
+        <span className={`tf-real ${tone}`} title="How likely the two clubs would do it">{best.realism}</span>
+      </button>
+      {open && (
+        <div className="tf-offer-detail">
+          <ul className="tf-trades">{o.offers.map((t, i) => <TradeCard key={i} t={t} p={p} compact />)}</ul>
+        </div>
+      )}
+    </li>
+  );
+}
+
+/** Pick a club, pick one of its players, and see what it would take from each of the other 31 clubs to get him. */
+function Price({ league, p }: { league: League; p: Player }) {
+  const [sort, setSort] = useState<Sort>("realism");
+  const [openTeam, setOpenTeam] = useState<string | null>(null);
+  const offers = useMemo(() => allOffers(league, p), [league, p]);
+  useEffect(() => setOpenTeam(null), [p.id]);
+  const value = tradeValue(p);
+  const could = offers.filter((o) => o.offers.length);
+  const cannot = offers.filter((o) => !o.offers.length);
+  const ordered = [...could].sort((a, b) => sort === "team" ? (NFL_TEAMS[a.partner]?.name ?? a.partner).localeCompare(NFL_TEAMS[b.partner]?.name ?? b.partner) : sort === "value" ? b.offers[0].getValue - a.offers[0].getValue || b.offers[0].realism - a.offers[0].realism : b.offers[0].realism - a.offers[0].realism || a.partner.localeCompare(b.partner));
+  const ask = pickPackage(value);
+  return (
+    <section className="tf-price" aria-label={`What it would take to get ${p.name}`}>
+      <div className="tf-card">
+        <span className={`tf-rating r${Math.min(9, Math.floor(p.rating / 10))}`}>{p.rating}</span>
+        <div className="tf-card-who">
+          <h3>{p.name}</h3>
+          <p>{NFL_TEAMS[p.team]?.name} · {p.group} · age {p.age} · {money(p.apy)} × {p.years} ({SRC[p.src]}){p.status === "R" ? " · on injured reserve" : ""}</p>
+        </div>
+      </div>
+      <p className="tf-ask"><b>His price:</b> about {value.toLocaleString()} points on the draft chart, roughly {ask.map((k) => k.label).join(" + ")}. {could.length} of the other 31 clubs could realistically get a deal done.</p>
+      <div className="tf-sorts" role="group" aria-label="Order the clubs">
+        <span>Order by</span>
+        {([["realism", "Most likely"], ["value", "Biggest offer"], ["team", "Team A–Z"]] as const).map(([k, l]) => <button key={k} type="button" aria-pressed={sort === k} onClick={() => setSort(k)}>{l}</button>)}
+      </div>
+      <h4 className="tf-sub">What each club would send ({could.length})</h4>
+      <ol className="tf-offers">
+        {ordered.map((o) => <OfferRow key={o.partner} o={o} p={p} open={openTeam === o.partner} onToggle={() => setOpenTeam(openTeam === o.partner ? null : o.partner)} />)}
+      </ol>
+      {cannot.length > 0 && (
+        <details className="tf-cannot">
+          <summary>{cannot.length} clubs that could not or would not ▾</summary>
+          <ul className="tf-offers">{cannot.map((o) => <OfferRow key={o.partner} o={o} p={p} open={false} onToggle={() => {}} />)}</ul>
+        </details>
+      )}
+    </section>
+  );
+}
+
 /**
  * A realistic trade for every player on a club's roster: who would want him, what they could send back, and whether both clubs' caps and rosters survive it.
  * Open data only, so the ratings, the contracts and each club's cap room are estimates; the page says which.
@@ -81,39 +153,62 @@ export function TradeFinder() {
   const [data, setData] = useState<TradeData | null>(null);
   const [error, setError] = useState(false);
   const [team, setTeam] = useState("KC");
+  const [pid, setPid] = useState<string | null>(null);
   const [group, setGroup] = useState("all");
   const [openId, setOpenId] = useState<string | null>(null);
+  const [rosterOpen, setRosterOpen] = useState(false);
   useEffect(() => { let on = true; fetchData<TradeData>("trade-players").then((d) => on && setData(d), () => on && setError(true)); return () => { on = false; }; }, []);
   const league = useMemo(() => (data ? toLeague(data) : null), [data]);
-  const roster = useMemo(() => (league ? tradesForRoster(league, team) : []), [league, team]);
+  // The club's players, most valuable first, grouped by position for the picker.
+  const players = useMemo(() => (league ? [...(league.byTeam.get(team) ?? [])].sort((a, b) => tradeValue(b) - tradeValue(a)) : []), [league, team]);
+  const chosen = players.find((p) => p.id === pid) ?? players[0] ?? null;
+  const roster = useMemo(() => (league && rosterOpen ? tradesForRoster(league, team) : []), [league, team, rosterOpen]);
   if (error) return <p role="alert" className="ol-note">The trade finder could not load. Reload the page to try again.</p>;
   if (!league || !data) return <Skeleton rows={6} />;
+  const byGroup = GROUPS.map((g) => [g, players.filter((p) => p.group === g).sort((a, b) => b.rating - a.rating)] as const).filter(([, ps]) => ps.length);
   const shown = roster.filter((r) => group === "all" || r.player.group === group).map((r) => r.player);
   const withTrade = roster.filter((r) => r.trades.length).length;
   return (
     <section className="tf" aria-label="Trade finder">
       <div className="tf-top">
         <h2>Trade finder</h2>
+      </div>
+      <div className="tf-pick">
         <label className="tf-team">
-          <span className="sr-only">Team</span>
-          <Logo team={team} size={26} />
-          <select value={team} onChange={(e) => { setTeam(e.target.value); setOpenId(null); }}>
-            {Object.entries(NFL_TEAMS).sort((a, b) => a[1].name.localeCompare(b[1].name)).map(([k, v]) => <option key={k} value={k}>{v.name}</option>)}
+          <span className="tf-step">1 · Team</span>
+          <span className="tf-selwrap"><Logo team={team} size={26} />
+            <select aria-label="Team" value={team} onChange={(e) => { setTeam(e.target.value); setPid(null); setOpenId(null); }}>
+              {Object.entries(NFL_TEAMS).sort((a, b) => a[1].name.localeCompare(b[1].name)).map(([k, v]) => <option key={k} value={k}>{v.name}</option>)}
+            </select>
+          </span>
+        </label>
+        <label className="tf-player">
+          <span className="tf-step">2 · Player</span>
+          <select aria-label="Player" value={chosen?.id ?? ""} onChange={(e) => setPid(e.target.value)}>
+            {byGroup.map(([g, ps]) => <optgroup key={g} label={g}>{ps.map((p) => <option key={p.id} value={p.id}>{p.name} · {p.rating} · {money(p.apy)}</option>)}</optgroup>)}
           </select>
         </label>
       </div>
       <SecHead as="h3" className="tf-h" title="How this works" info={{
-        means: "For every player on the roster, the best few trades another club could realistically agree to: the other club would start him or needs the depth, sends back a player your club can use and/or a pick of the right value, and both clubs stay under the cap with a legal roster. “Realism” is 0 to 100.",
+        means: "Pick a club and one of its players, and see what each of the other 31 clubs would have to send to get him: a player, a pick or a package. A club only appears with an offer if he would help it (he would start, or it is short at his position), it has something your club can use that it can spare, and both clubs stay under the cap with a legal roster. “Realism” is 0 to 100; the clubs that could not or would not say why.",
         how: "Value is in the draft-pick chart's points, from the player's rating by position, his age and how his contract compares with the market. Ratings come from this and last season's production and snap share (nflverse); there are no free grades for blockers, so those are a depth-level estimate from snaps, draft slot and experience. Most contracts are estimates (rookie scale for recent draftees, the market for his rating otherwise), cap room is assumed to be the same typical amount for every club, and which picks a club owns is not checked. Official figures can be supplied in src/data/contract-overrides.json and team-cap-overrides.json.",
       }} />
+      {chosen && <Price league={league} p={chosen} />}
       <p className="tf-note">Trades are only possible inside the league's trade window; these are what-ifs for the offseason or the next deadline. {data.cap.assumed ? `Cap assumed at ${money(data.cap.limit)} with ${money(data.cap.typicalSpaceM)} of room per club; ` : ""}<a href="https://overthecap.com/salary-cap-space" target="_blank" rel="noreferrer noopener">every club's real cap room is on Over the Cap ↗</a> and on <a href="https://www.spotrac.com/nfl/cap/_/year/2026" target="_blank" rel="noreferrer noopener">Spotrac ↗</a>, and in the <a href="https://nflpa.com/reports/public-salary-cap-report" target="_blank" rel="noreferrer noopener">NFLPA's public salary cap report ↗</a>.</p>
-      <div className="tf-groups" role="group" aria-label="Position">
-        {["all", ...GROUPS].map((g) => <button key={g} type="button" aria-pressed={group === g} onClick={() => setGroup(g)}>{g === "all" ? "All" : g}</button>)}
-      </div>
-      <p className="tf-count">{withTrade} of {roster.length} players have a realistic trade; the rest say why not.</p>
-      <ol className="tf-list">
-        {shown.map((p) => <Row key={p.id} p={p} league={league} open={openId === p.id} onToggle={() => setOpenId(openId === p.id ? null : p.id)} />)}
-      </ol>
+      <details className="tf-roster" onToggle={(e) => setRosterOpen((e.currentTarget as HTMLDetailsElement).open)}>
+        <summary>The best trade for every player on the roster ▾</summary>
+        {rosterOpen && (
+          <>
+            <div className="tf-groups" role="group" aria-label="Position">
+              {["all", ...GROUPS].map((g) => <button key={g} type="button" aria-pressed={group === g} onClick={() => setGroup(g)}>{g === "all" ? "All" : g}</button>)}
+            </div>
+            <p className="tf-count">{withTrade} of {roster.length} players have a realistic trade; the rest say why not.</p>
+            <ol className="tf-list">
+              {shown.map((p) => <Row key={p.id} p={p} league={league} open={openId === p.id} onToggle={() => setOpenId(openId === p.id ? null : p.id)} />)}
+            </ol>
+          </>
+        )}
+      </details>
     </section>
   );
 }

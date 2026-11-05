@@ -12,3 +12,6 @@ export const NFL_TEAMS: Record<string, { name: string; logo: string }> = {
   SEA: { name: "Seattle Seahawks", logo: "seattle-seahawks" }, SF: { name: "San Francisco 49ers", logo: "san-francisco-49ers" }, TB: { name: "Tampa Bay Buccaneers", logo: "tampa-bay-buccaneers" },
   TEN: { name: "Tennessee Titans", logo: "tennessee-titans" }, WAS: { name: "Washington Commanders", logo: "washington-commanders" },
 };
+
+/** Team abbreviation to full name. */
+export const NFL_NAMES: Record<string, string> = Object.fromEntries(Object.entries(NFL_TEAMS).map(([k, v]) => [k, v.name]));

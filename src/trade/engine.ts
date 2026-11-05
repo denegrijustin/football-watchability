@@ -1,3 +1,4 @@
+import { NFL_NAMES } from "./teams";
 import { DEPTH, STARTERS, ageFactor, marketApy, pickPoints } from "../../scripts/trade/lib.mjs";
 
 /** One player on a roster, as src/data/trade-players.json lists him. Money is in millions of dollars. */
@@ -96,95 +97,119 @@ const lowRoster = (roster: Player[]) => [...roster].sort((a, b) => a.rating - b.
 
 export type Options = { max?: number };
 
-/**
- * Realistic trades for one player. For each other club: does he help (he would start, or the club is short at his position), what could that club
- * send back that helps the player's own club (a player it can spare at a position of need, and/or a pick of the right value), and do both clubs' cap
- * and rosters survive it. The best few are returned, most realistic first.
- */
-export function findTrades(league: League, player: Player, opts: Options = {}): Trade[] {
+/** What one other club would do about a player: the packages it could realistically send for him, or why it could not or would not. */
+export type Offer = { partner: string; offers: Trade[]; reason: string | null; helps: boolean };
+
+/** The player's own club's side of the picture, worked out once for all the partners. */
+function context(league: League, player: Player) {
   const A = league.byTeam.get(player.team) ?? [];
-  const value = tradeValue(player);
-  const aSpace = league.space[player.team] ?? 0;
   const aAfterGroup = A.filter((p) => p.group === player.group && p.id !== player.id && p.status !== "R").sort((x, y) => y.rating - x.rating);
   const nStart = (STARTERS as Record<string, number>)[player.group] ?? 1;
-  const nextBest = aAfterGroup[nStart - 1]?.rating ?? 0; // who fills his spot on his own club
-  const out: Trade[] = [];
+  return { A, value: tradeValue(player), aSpace: league.space[player.team] ?? 0, nextBest: aAfterGroup[nStart - 1]?.rating ?? 0 };
+}
 
-  for (const [team, B] of league.byTeam) {
-    if (team === player.team) continue;
-    const bSpace = league.space[team] ?? 0;
-    const weak = weakestStarter(B, player.group);
-    const depthShort = B.filter((y) => y.group === player.group && y.status !== "R").length < ((DEPTH as Record<string, number>)[player.group] ?? 3);
-    // He would start for them, or they are short of bodies at his position and he would be depth.
-    const upgrade = weak.short ? 12 : player.rating - weak.rating >= 3 ? player.rating - weak.rating : depthShort && player.rating >= 50 ? 3 : 0;
-    if (upgrade < 3) continue;
+/**
+ * What it would take for one club to get this player: does he help it (he would start, or it is short at his position), what could it send back that
+ * helps his own club (a player it can spare at a position of need, and/or a pick of the right value), and do both clubs' caps survive it.
+ * Up to three packages, most realistic first; with none, the reason.
+ */
+export function offerFrom(league: League, player: Player, team: string, max = 3): Offer {
+  const { A, value, aSpace, nextBest } = context(league, player);
+  const B = league.byTeam.get(team) ?? [];
+  const bSpace = league.space[team] ?? 0;
+  const name = NFL_NAMES[team] ?? team;
+  const weak = weakestStarter(B, player.group);
+  const depthShort = B.filter((y) => y.group === player.group && y.status !== "R").length < ((DEPTH as Record<string, number>)[player.group] ?? 3);
+  // He would start for them, or they are short of bodies at his position and he would be depth.
+  const upgrade = weak.short ? 12 : player.rating - weak.rating >= 3 ? player.rating - weak.rating : depthShort && player.rating >= 50 ? 3 : 0;
+  if (upgrade < 3) return { partner: team, offers: [], helps: false, reason: `${name} would not start him: its ${player.group} starters are as good (its weakest is a ${weak.rating}) and its depth there is full.` };
 
-    // What the club could send: players it can spare (past its starters, or at a deep position), at groups where the player's own club would play them.
-    const spare = B.filter((x) => x.status !== "I" && x.status !== "R").filter((x) => {
-      const rosterGroup = B.filter((y) => y.group === x.group && y.status !== "R").sort((a, b) => b.rating - a.rating);
-      const pos = rosterGroup.findIndex((y) => y.id === x.id);
-      const n = (STARTERS as Record<string, number>)[x.group] ?? 1;
-      return pos >= n || (pos === n - 1 && rosterGroup.length > n + 2 && x.rating <= (rosterGroup[n]?.rating ?? 0) + 6);
-    });
-    const fits = spare.filter((x) => {
-      const w = weakestStarter(A.filter((y) => y.id !== player.id), x.group);
-      return w.short || x.rating >= w.rating + 2 || x.group === player.group;
-    });
-    const cands = fits.map((x) => ({ x, v: tradeValue(x) })).filter((c) => c.v >= value * 0.2 && c.v <= value * 1.15).sort((a, b) => Math.abs(a.v - value * 0.85) - Math.abs(b.v - value * 0.85));
+  // What the club could send: players it can spare (past its starters, or at a deep position), at groups where the player's own club would play them.
+  const spare = B.filter((x) => x.status !== "I" && x.status !== "R").filter((x) => {
+    const rosterGroup = B.filter((y) => y.group === x.group && y.status !== "R").sort((a, b) => b.rating - a.rating);
+    const pos = rosterGroup.findIndex((y) => y.id === x.id);
+    const n = (STARTERS as Record<string, number>)[x.group] ?? 1;
+    return pos >= n || (pos === n - 1 && rosterGroup.length > n + 2 && x.rating <= (rosterGroup[n]?.rating ?? 0) + 6);
+  });
+  const fits = spare.filter((x) => {
+    const w = weakestStarter(A.filter((y) => y.id !== player.id), x.group);
+    return w.short || x.rating >= w.rating + 2 || x.group === player.group;
+  });
+  const cands = fits.map((x) => ({ x, v: tradeValue(x) })).filter((c) => c.v >= value * 0.2 && c.v <= value * 1.15).sort((a, b) => Math.abs(a.v - value * 0.85) - Math.abs(b.v - value * 0.85));
 
-    const options: Asset[][] = [];
-    const topUp = (items: Player[], total: number): Asset[] => {
-      const gap = value - total;
-      const assets: Asset[] = items.map((p) => ({ kind: "player", p }));
-      return gap > Math.max(6, value * 0.12) ? [...assets, ...(items.length ? [pickFor(gap)] : pickPackage(gap))] : assets;
-    };
-    for (const c of cands.slice(0, 4)) options.push(topUp([c.x], c.v));
-    // Two players: the way a club with little cap room takes on a large salary is to send salary back.
-    const pool = fits.map((x) => ({ x, v: tradeValue(x) })).filter((c) => c.v <= value * 0.9).sort((a, b) => b.x.apy - a.x.apy).slice(0, 7);
-    for (let i = 0; i < pool.length; i++) for (let j = i + 1; j < pool.length; j++) {
-      const sum = pool[i].v + pool[j].v;
-      if (sum >= value * 0.2 && sum <= value * 1.15) options.push(topUp([pool[i].x, pool[j].x], sum));
-      for (let k = j + 1; k < Math.min(pool.length, 6); k++) {
-        const sum3 = sum + pool[k].v;
-        if (sum3 >= value * 0.2 && sum3 <= value * 1.15 && pool[i].x.apy + pool[j].x.apy + pool[k].x.apy >= player.apy * 0.6) options.push(topUp([pool[i].x, pool[j].x, pool[k].x], sum3));
-      }
-    }
-    options.push(pickPackage(value * 0.9)); // picks alone
-    for (const get of options) {
-      const getValue = get.reduce((a, g) => a + (g.kind === "player" ? tradeValue(g.p) : g.value), 0);
-      const sendApy = get.reduce((a, g) => a + (g.kind === "player" ? g.p.apy : 0), 0);
-      const incomingA = sendApy, outgoingA = player.apy;
-      const aChange = incomingA - outgoingA, bChange = outgoingA - incomingA;
-      const from: TradeSide = { before: r1(aSpace), after: r1(aSpace - aChange), change: r1(-aChange), ok: aSpace - aChange >= 0 };
-      const to: TradeSide = { before: r1(bSpace), after: r1(bSpace - bChange), change: r1(-bChange), ok: bSpace - bChange >= 0 };
-      if (!to.ok || !from.ok) continue;
-      const fairness = Math.max(0, 1 - Math.abs(getValue - value) / Math.max(value, 1));
-      const players = get.filter((g): g is { kind: "player"; p: Player } => g.kind === "player").map((g) => g.p);
-      const hole = Math.max(0, nextBest ? player.rating - nextBest - 8 : player.rating - 55);
-      const holeFilled = players.some((p) => p.group === player.group && p.rating >= nextBest);
-      const reasons: string[] = [], warnings: string[] = [];
-      reasons.push(weak.short ? `${team} is short at ${player.group}` : `${player.name} (${player.rating}) would start for ${team}, ahead of a ${weak.rating}`);
-      for (const p of players) reasons.push(`${player.team} can use ${p.name} (${p.group}, ${p.rating}) as ${p.rank > (STARTERS as Record<string, number>)[p.group] ? "depth" : "a starter"}`);
-      if (get.some((g) => g.kind === "pick")) reasons.push("a pick evens out the value (which picks a club owns is not checked)");
-      reasons.push(`${team} takes on ${r1(outgoingA)}M and sends ${r1(incomingA)}M, so its cap room goes ${to.before}M to ${to.after}M`);
-      if (hole > 6 && !holeFilled) warnings.push(`${player.team} would be thin at ${player.group} (next best is ${nextBest || "none"})`);
-      if (player.rating >= 92 && player.age <= 29 && player.years >= 3) warnings.push("a franchise-level player: a club rarely shops one");
-      if (player.status === "R") warnings.push("he is on injured reserve: a club pays little and waits for him to heal");
-      if (player.age >= 31 && player.group !== "QB") warnings.push("an older player: the return is small");
-      if (player.years <= 1) warnings.push("his contract ends after this season (a rental)");
-      if (league.spaceAssumed[team] || league.spaceAssumed[player.team]) warnings.push("cap room is an assumption, not an official figure");
-      if (players.length > 1) warnings.push("the two clubs' rosters would need a small move to stay at 53");
-      const needFit = Math.min(1, upgrade / 12);
-      const capHealth = Math.min(1, Math.min(to.after, from.after + 6) / 12 + 0.5);
-      const complexity = 8 * Math.max(0, get.length - 2); // a big package of many pieces is harder to get done than a simple swap
-      const realism = Math.round(100 * (0.4 * fairness + 0.25 * needFit + 0.15 * capHealth + 0.2 * (hole > 6 && !holeFilled ? 0.2 : 1)) - complexity - (player.age >= 31 ? 8 : 0) - (player.rating >= 92 && player.age <= 29 && player.years >= 3 ? 12 : 0));
-      out.push({ partner: team, give: [player], get, giveValue: value, getValue, fairness: Math.round(fairness * 100) / 100, from, to, realism: Math.max(1, Math.min(99, realism)), reasons, warnings });
+  const options: Asset[][] = [];
+  const topUp = (items: Player[], total: number): Asset[] => {
+    const gap = value - total;
+    const assets: Asset[] = items.map((p) => ({ kind: "player", p }));
+    return gap > Math.max(6, value * 0.12) ? [...assets, ...(items.length ? [pickFor(gap)] : pickPackage(gap))] : assets;
+  };
+  for (const c of cands.slice(0, 4)) options.push(topUp([c.x], c.v));
+  // Two or three players: the way a club with little cap room takes on a large salary is to send salary back.
+  const pool = fits.map((x) => ({ x, v: tradeValue(x) })).filter((c) => c.v <= value * 0.9).sort((a, b) => b.x.apy - a.x.apy).slice(0, 7);
+  for (let i = 0; i < pool.length; i++) for (let j = i + 1; j < pool.length; j++) {
+    const sum = pool[i].v + pool[j].v;
+    if (sum >= value * 0.2 && sum <= value * 1.15) options.push(topUp([pool[i].x, pool[j].x], sum));
+    for (let k = j + 1; k < Math.min(pool.length, 6); k++) {
+      const sum3 = sum + pool[k].v;
+      if (sum3 >= value * 0.2 && sum3 <= value * 1.15 && pool[i].x.apy + pool[j].x.apy + pool[k].x.apy >= player.apy * 0.6) options.push(topUp([pool[i].x, pool[j].x, pool[k].x], sum3));
     }
   }
-  // best per partner, then the best few overall
-  const best = new Map<string, Trade>();
-  for (const t of out) if (!best.has(t.partner) || best.get(t.partner)!.realism < t.realism) best.set(t.partner, t);
-  return [...best.values()].sort((a, b) => b.realism - a.realism || a.partner.localeCompare(b.partner)).slice(0, opts.max ?? 3);
+  options.push(pickPackage(value * 0.9)); // picks alone
+
+  const trades: Trade[] = [];
+  let capBlocked = 0;
+  for (const get of options) {
+    const getValue = get.reduce((a, g) => a + (g.kind === "player" ? tradeValue(g.p) : g.value), 0);
+    const sendApy = get.reduce((a, g) => a + (g.kind === "player" ? g.p.apy : 0), 0);
+    const incomingA = sendApy, outgoingA = player.apy;
+    const aChange = incomingA - outgoingA, bChange = outgoingA - incomingA;
+    const from: TradeSide = { before: r1(aSpace), after: r1(aSpace - aChange), change: r1(-aChange), ok: aSpace - aChange >= 0 };
+    const to: TradeSide = { before: r1(bSpace), after: r1(bSpace - bChange), change: r1(-bChange), ok: bSpace - bChange >= 0 };
+    if (!to.ok || !from.ok) { capBlocked++; continue; }
+    const fairness = Math.max(0, 1 - Math.abs(getValue - value) / Math.max(value, 1));
+    const players = get.filter((g): g is { kind: "player"; p: Player } => g.kind === "player").map((g) => g.p);
+    const hole = Math.max(0, nextBest ? player.rating - nextBest - 8 : player.rating - 55);
+    const holeFilled = players.some((p) => p.group === player.group && p.rating >= nextBest);
+    const reasons: string[] = [], warnings: string[] = [];
+    reasons.push(weak.short ? `${team} is short at ${player.group}` : `${player.name} (${player.rating}) would start for ${team}, ahead of a ${weak.rating}`);
+    for (const p of players) reasons.push(`${player.team} can use ${p.name} (${p.group}, ${p.rating}) as ${p.rank > (STARTERS as Record<string, number>)[p.group] ? "depth" : "a starter"}`);
+    if (get.some((g) => g.kind === "pick")) reasons.push("a pick evens out the value (which picks a club owns is not checked)");
+    reasons.push(`${team} takes on ${r1(outgoingA)}M and sends ${r1(incomingA)}M, so its cap room goes ${to.before}M to ${to.after}M`);
+    if (hole > 6 && !holeFilled) warnings.push(`${player.team} would be thin at ${player.group} (next best is ${nextBest || "none"})`);
+    if (player.rating >= 92 && player.age <= 29 && player.years >= 3) warnings.push("a franchise-level player: a club rarely shops one");
+    if (player.status === "R") warnings.push("he is on injured reserve: a club pays little and waits for him to heal");
+    if (player.age >= 31 && player.group !== "QB") warnings.push("an older player: the return is small");
+    if (player.years <= 1) warnings.push("his contract ends after this season (a rental)");
+    if (league.spaceAssumed[team] || league.spaceAssumed[player.team]) warnings.push("cap room is an assumption, not an official figure");
+    if (players.length > 1) warnings.push("the two clubs' rosters would need a small move to stay at 53");
+    const needFit = Math.min(1, upgrade / 12);
+    const capHealth = Math.min(1, Math.min(to.after, from.after + 6) / 12 + 0.5);
+    const complexity = 8 * Math.max(0, get.length - 2); // a big package of many pieces is harder to get done than a simple swap
+    const realism = Math.round(100 * (0.4 * fairness + 0.25 * needFit + 0.15 * capHealth + 0.2 * (hole > 6 && !holeFilled ? 0.2 : 1)) - complexity - (player.age >= 31 ? 8 : 0) - (player.rating >= 92 && player.age <= 29 && player.years >= 3 ? 12 : 0));
+    trades.push({ partner: team, give: [player], get, giveValue: value, getValue, fairness: Math.round(fairness * 100) / 100, from, to, realism: Math.max(1, Math.min(99, realism)), reasons, warnings });
+  }
+  trades.sort((a, b) => b.realism - a.realism);
+  // keep packages that differ: not the same set of players twice
+  const seen = new Set<string>(), distinct: Trade[] = [];
+  for (const t of trades) {
+    const key = t.get.map((g) => (g.kind === "player" ? g.p.id : g.label)).sort().join("|");
+    if (!seen.has(key)) { seen.add(key); distinct.push(t); }
+  }
+  if (!distinct.length) {
+    return { partner: team, offers: [], helps: true, reason: capBlocked ? `${name} could use him but cannot fit his ${r1(player.apy)}M salary: it has ${r1(bSpace)}M of cap room and no spare player of the right value to send back.` : `${name} has nothing it can spare that would help ${player.team} at the right value.` };
+  }
+  return { partner: team, offers: distinct.slice(0, max), helps: true, reason: null };
+}
+
+/** What it would take from each of the other 31 clubs to get this player, with the reason for every club that cannot or would not. */
+export function allOffers(league: League, player: Player): Offer[] {
+  return [...league.byTeam.keys()].filter((t) => t !== player.team).map((t) => offerFrom(league, player, t));
+}
+
+/** Realistic trades for one player: the best package from each club that could do it, the most realistic few overall. */
+export function findTrades(league: League, player: Player, opts: Options = {}): Trade[] {
+  const best = allOffers(league, player).filter((o) => o.offers.length).map((o) => o.offers[0]);
+  return best.sort((a, b) => b.realism - a.realism || a.partner.localeCompare(b.partner)).slice(0, opts.max ?? 3);
 }
 
 /** The best trade for every player on a club's roster, most valuable player first. A player nobody would realistically want has none. */

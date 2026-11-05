@@ -1,6 +1,6 @@
 import { expect, test } from "./fixtures";
 import { readFileSync } from "node:fs";
-import { findTrades, toLeague, tradeValue, tradesForRoster, whyNoTrade, type League, type Player, type TradeData } from "../src/trade/engine";
+import { allOffers, findTrades, toLeague, tradeValue, tradesForRoster, whyNoTrade, type League, type Player, type TradeData } from "../src/trade/engine";
 import { ageFactor, marketShare, pickPoints, rookieApy, STARTERS } from "../scripts/trade/lib.mjs";
 
 const data: TradeData = JSON.parse(readFileSync("src/data/trade-players.json", "utf8"));
@@ -112,22 +112,47 @@ test("a club that is already strong at the position does not want the player, an
   expect(tradeValue({ ...hurt.players[0], status: "A" })).toBeGreaterThan(tradeValue(hurt.players[0]));
 });
 
-test("the Trade finder lists a club's players, each with a best trade, and opens the detail", async ({ page }) => {
+test("every other club is asked about a player: each answers with a package that respects both caps, or says why not", () => {
+  for (const p of league.players.filter((_, i) => i % 40 === 0)) {
+    const all = allOffers(league, p);
+    expect(all).toHaveLength(31);
+    expect(all.some((o) => o.partner === p.team)).toBe(false);
+    expect(new Set(all.map((o) => o.partner)).size).toBe(31);
+    for (const o of all) {
+      if (o.offers.length) {
+        expect(o.offers.length).toBeLessThanOrEqual(3);
+        for (const t of o.offers) expect(t.from.ok && t.to.ok, `${p.name} to ${o.partner}`).toBe(true);
+      } else expect((o.reason ?? "").length, `${p.name} / ${o.partner}`).toBeGreaterThan(10);
+    }
+  }
+});
+
+test("pick a team, then a player, and see what each of the other 31 clubs would send", async ({ page }) => {
   await page.goto("/");
   await page.locator('[data-tab="trades"]').evaluate((b) => (b as HTMLElement).click());
-  const rows = page.locator(".tf-row");
-  await expect(rows.first()).toBeVisible({ timeout: 20_000 });
-  expect(await rows.count()).toBeGreaterThan(40);
-  await page.locator(".tf-team select").selectOption("GB");
-  await expect(page.locator(".tf-top .tf-nologo, .tf-top img").first()).toBeVisible();
-  const first = rows.first();
-  await first.locator(".tf-head").click();
-  await expect(first.locator(".tf-trade, .tf-nonote").first()).toBeVisible();
-  await expect(first.locator(".tf-check a").first()).toHaveAttribute("href", /^https:\/\/overthecap\.com\/salary-cap\/[a-z-]+$/);
+  const team = page.getByLabel("Team", { exact: true });
+  await expect(team).toBeVisible({ timeout: 20_000 });
+  await team.selectOption("GB");
+  const player = page.getByLabel("Player", { exact: true });
+  const opt = player.locator("option").nth(1);
+  await player.selectOption(await opt.getAttribute("value") as string);
+  const price = page.locator(".tf-price");
+  await expect(price).toBeVisible();
+  await expect(price.locator(".tf-ask")).toContainText("of the other 31 clubs");
+  const could = await price.locator(".tf-offers").first().locator(".tf-offer").count();
+  await page.locator(".tf-cannot summary").click();
+  const cannot = await price.locator(".tf-cannot .tf-offer").count();
+  expect(could + cannot).toBe(31);
+  if (could) {
+    await price.locator(".tf-offer-head").first().click();
+    await expect(price.locator(".tf-trade").first()).toBeVisible();
+    await expect(price.locator(".tf-check a").first()).toHaveAttribute("href", /^https:\/\/overthecap\.com\/salary-cap\/[a-z-]+$/);
+    await page.getByRole("group", { name: "Order the clubs" }).getByRole("button").nth(2).click();
+  }
+  await page.locator(".tf-roster summary").click();
+  await expect(page.locator(".tf-row").first()).toBeVisible();
   await page.getByRole("group", { name: "Position" }).getByRole("button", { name: "QB", exact: true }).click();
-  const n = await rows.count();
-  expect(n).toBeGreaterThan(0);
-  expect(n).toBeLessThan(8);
+  expect(await page.locator(".tf-row").count()).toBeLessThan(8);
   const [sw, cw] = await page.evaluate(() => [document.documentElement.scrollWidth, document.documentElement.clientWidth]);
   expect(sw).toBeLessThanOrEqual(cw);
 });
