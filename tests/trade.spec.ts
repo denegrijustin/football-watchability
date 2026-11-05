@@ -1,5 +1,6 @@
 import { expect, test } from "./fixtures";
 import { readFileSync } from "node:fs";
+import { acquirable, draftCapital, priceInPicks, projectedOrder } from "../src/trade/acquire";
 import { allOffers, findTrades, toLeague, tradeValue, tradesForRoster, whyNoTrade, type League, type Player, type TradeData } from "../src/trade/engine";
 import { ageFactor, marketShare, pickPoints, rookieApy, STARTERS } from "../scripts/trade/lib.mjs";
 
@@ -133,6 +134,7 @@ test("pick a team, then a player, and see what each of the other 31 clubs would 
   const team = page.getByLabel("Team", { exact: true });
   await expect(team).toBeVisible({ timeout: 20_000 });
   await team.selectOption("GB");
+  await page.getByRole("button", { name: "Shop a player" }).click();
   const player = page.getByLabel("Player", { exact: true });
   const opt = player.locator("option").nth(1);
   await player.selectOption(await opt.getAttribute("value") as string);
@@ -180,4 +182,76 @@ test("trades lean on draft picks: most best offers include a pick, and a club's 
   }
   expect(lists).toBeGreaterThan(500);
   expect(withPick / best, "share of best offers that include a pick").toBeGreaterThan(0.8);
+});
+
+const order = projectedOrder(Object.keys(data.teams).map((abbr, i) => ({ abbr, pct: (i % 17) / 17, diff: i })));
+
+test("a club's draft capital is seven picks, one a round, falling in value, at the spot its record projects", () => {
+  expect(Object.keys(order)).toHaveLength(32);
+  expect(new Set(Object.values(order)).size).toBe(32);
+  const worst = Object.entries(order).find(([, v]) => v === 1)![0], best = Object.entries(order).find(([, v]) => v === 32)![0];
+  const w = draftCapital(worst, order), b = draftCapital(best, order);
+  expect(w).toHaveLength(7);
+  expect(w[0].overall).toBe(1);
+  expect(b[1].overall).toBe(64);
+  for (let i = 1; i < 7; i++) expect(w[i].value).toBeLessThan(w[i - 1].value);
+  expect(w[0].value).toBeGreaterThan(b[0].value);
+});
+
+test("a price is the fewest picks that cover a player's value without paying much over", () => {
+  const cap = draftCapital("KC", order);
+  const second = cap[1].value;
+  const one = priceInPicks(second, cap)!;
+  expect(one).toHaveLength(1);
+  expect(one[0].round).toBe(2);
+  const big = priceInPicks(cap[0].value + cap[1].value, cap)!;
+  expect(big.length).toBeGreaterThanOrEqual(2);
+  expect(big.length).toBeLessThanOrEqual(3);
+  expect(new Set(big.map((c) => c.round)).size).toBe(big.length);
+  expect(priceInPicks(99999, cap)).toBeNull();
+});
+
+test("a club buying with picks: every buy helps it, is covered by its own picks, fits its cap and comes from another club", () => {
+  let total = 0;
+  for (const team of ["KC", "GB", "DET", "MIA", "NYJ"]) {
+    const cap = draftCapital(team, order);
+    const res = acquirable(league, team, cap);
+    const spend = res.buys.reduce((a, b) => a + b.price.length, 0);
+    expect(spend).toBeGreaterThan(0);
+    for (const b of res.buys) {
+      total++;
+      expect(b.player.team).not.toBe(team);
+      expect(b.player.status).toBe("A");
+      expect(b.price.length).toBeGreaterThanOrEqual(1);
+      expect(b.price.length).toBeLessThanOrEqual(3);
+      expect(b.priceValue).toBeGreaterThanOrEqual(b.value * 0.9);
+      expect(b.buyer.after, `${team} cap after ${b.player.name}`).toBeGreaterThanOrEqual(0);
+      expect(b.upgrade).toBeGreaterThanOrEqual(3);
+      expect(b.realism).toBeGreaterThanOrEqual(1);
+      expect(b.realism).toBeLessThanOrEqual(99);
+    }
+    for (let i = 1; i < res.buys.length; i++) expect(res.buys[i - 1].realism).toBeGreaterThanOrEqual(res.buys[i].realism);
+    const wr = acquirable(league, team, cap, { group: "WR" });
+    expect(wr.buys.every((b) => b.player.group === "WR")).toBe(true);
+  }
+  expect(total).toBeGreaterThan(100);
+});
+
+test("Buy with picks is the default: pick a team and see the players it could buy and what they cost in rounds", async ({ page }) => {
+  await page.goto("/");
+  await page.locator('[data-tab="trades"]').evaluate((b) => (b as HTMLElement).click());
+  await expect(page.getByRole("button", { name: "Buy with picks" })).toHaveAttribute("aria-pressed", "true", { timeout: 20_000 });
+  await page.getByLabel("Team", { exact: true }).selectOption("KC");
+  await expect(page.locator(".tf-pickchip")).toHaveCount(7);
+  const list = page.locator('[data-testid="acquire-list"] .tf-offer');
+  await expect(list.first()).toBeVisible();
+  await page.getByRole("group", { name: "Position" }).getByRole("button", { name: "WR", exact: true }).click();
+  const n = await list.count();
+  expect(n).toBeGreaterThan(0);
+  await expect(list.first().locator(".tf-cost")).toContainText(/(1st|2nd|3rd|4th|5th|6th|7th)/);
+  await list.first().locator(".tf-offer-head").click();
+  await expect(list.first().locator(".tf-check a")).toHaveAttribute("href", /^https:\/\/overthecap\.com\/salary-cap\/[a-z-]+$/);
+  await page.getByRole("group", { name: "Order the players" }).getByRole("button", { name: "Cheapest" }).click();
+  const [sw, cw] = await page.evaluate(() => [document.documentElement.scrollWidth, document.documentElement.clientWidth]);
+  expect(sw).toBeLessThanOrEqual(cw);
 });
