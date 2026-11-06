@@ -355,7 +355,7 @@ test("an NFL club at home in the simulator plays on its own retro field, and a c
   }
 });
 
-test("a college team with its own field picture (Arizona) plays on it at home; other college teams keep the plain turf", async ({ page }) => {
+test("a college team with its own field picture (Arizona) plays on it at home; a college team without one (Duke) keeps the plain turf", async ({ page }) => {
   const { CFB_FIELDS, retroFieldSrc } = await import("../src/sim/retroField");
   expect(retroFieldSrc("arizona", "CFB")).toBe("/field-art/cfb/arizona.webp");
   expect(retroFieldSrc("arizona", "NFL")).toBeNull();
@@ -373,8 +373,8 @@ test("a college team with its own field picture (Arizona) plays on it at home; o
     await page.getByRole("button", { name: "Simulate matchup" }).click();
     await expect(page.getByRole("region", { name: "Forecast" })).toBeVisible({ timeout: 45_000 });
   };
-  await run("Alabama Crimson Tide", "Arizona Wildcats");
+  await run("Duke Blue Devils", "Arizona Wildcats");
   await expect(page.locator(".st image[data-retro-field='arizona']")).toHaveAttribute("href", "/field-art/cfb/arizona.webp");
-  await run("Arizona Wildcats", "Alabama Crimson Tide");
+  await run("Arizona Wildcats", "Duke Blue Devils");
   await expect(page.locator(".st image[data-retro-field]")).toHaveCount(0);
 });
