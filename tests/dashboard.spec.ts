@@ -1279,3 +1279,28 @@ test("the win-probability bar has its red-to-blue blend on the collapsed card, n
   await track.scrollIntoViewIfNeeded();
   expect(await track.evaluate((e) => getComputedStyle(e).backgroundImage)).toContain("linear-gradient");
 });
+
+test("the watch score's number sits inside its ring, even a three-digit 100", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator(".score-ring strong").first()).toBeVisible({ timeout: 20_000 });
+  // force the widest cases onto real rings: 100, 88 and 7
+  const fits = await page.evaluate(() => {
+    const rings = [...document.querySelectorAll<HTMLElement>(".score-ring")].filter((r) => r.getBoundingClientRect().width > 0).slice(0, 12);
+    const out: { text: string; ok: boolean; w: number; ring: number }[] = [];
+    rings.forEach((r, i) => {
+      const n = r.querySelector("strong") as HTMLElement;
+      const text = ["100", "88", "7"][i % 3];
+      n.textContent = text; n.setAttribute("data-digits", String(text.length));
+      const rr = r.getBoundingClientRect(), nr = n.getBoundingClientRect();
+      // the box's corners must lie inside the circle through the middle of the track
+      const rad = rr.width / 2 - 4, cx = rr.left + rr.width / 2, cy = rr.top + rr.height / 2;
+      const text0 = document.createRange(); text0.selectNodeContents(n);
+      const tb = text0.getBoundingClientRect();
+      const corners = [[tb.left, tb.top], [tb.right, tb.top], [tb.left, tb.bottom], [tb.right, tb.bottom]];
+      out.push({ text, w: Math.round(nr.width), ring: Math.round(rr.width), ok: corners.every(([x, y]) => Math.hypot(x - cx, y - cy) <= rad + 1) });
+    });
+    return out;
+  });
+  expect(fits.length).toBeGreaterThan(0);
+  for (const f of fits) expect(f.ok, `${f.text} in a ${f.ring}px ring`).toBe(true);
+});
