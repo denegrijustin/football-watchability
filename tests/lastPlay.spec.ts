@@ -87,8 +87,9 @@ test("the Game Center shows the last play as play art drawn from the play", asyn
   await expect(lp).toHaveAttribute("data-facing", "right"); // the away team drives to the right
   await expect(lp.locator("g.lp-p")).toHaveCount(22);
   // one field: the whole thing with the home team's end zones and a conference mark at each 25, and the drive so far as boxes (the pass is the play on the field)
-  await expect(lp.locator("[data-endzones]")).toHaveCount(1);
-  await expect(lp.locator("svg.lp-svg")).toHaveAttribute("viewBox", "0 0 1200 560");
+  await expect(lp.locator("[data-retro-endzones]")).toHaveCount(1); // every NFL club has its own field picture, so its end zones are cut from that
+  await expect(lp.locator("[data-endzones]")).toHaveCount(0);
+  await expect(lp.locator("svg.lp-svg")).toHaveAttribute("viewBox", "0 0 1200 533");
   await expect(lp.locator("g.lf-conf")).toHaveCount(2);
   await expect(lp.locator("g.lp-box")).toHaveCount(4);
   await expect(lp.locator(".lp-first-tag")).toHaveCount(1); // the box of the play that got a first down carries a 1st marker
