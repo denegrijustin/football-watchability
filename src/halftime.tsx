@@ -4,7 +4,8 @@ import type { GameBadge } from "./gameLogo";
 import { LogoMark } from "./logoTone";
 import { WeatherLayer } from "./WeatherEffects";
 import { ConfMark, confEntry } from "./ConfMark";
-import { EndZones, EZ_H, EZ_W } from "./sim/EndZones";
+import { HomeEndZones, EZ_H, EZ_W } from "./sim/EndZones";
+import { retroFieldSrc } from "./sim/retroField";
 import { endzoneFor } from "./sim/endzone";
 import { MIDFIELD_ART } from "./sim/midfield";
 import type { WeatherLike } from "./weatherFx";
@@ -25,6 +26,7 @@ export function FieldArt({ id, home, hc, badge }: { id: string; home: Side; away
   const nflGame = home.conf === "AFC" || home.conf === "NFC";
   const homeShort = nflGame ? home.name.split(" ").pop() ?? home.name : home.name;
   const ez = endzoneFor({ short: homeShort, color: hc, alt: undefined });
+  const ezPicture = retroFieldSrc(home.logoId, nflGame ? "NFL" : "CFB");
   const fieldConf = nflGame ? "NFL" : home.conf && home.conf !== "Independent" ? home.conf : null;
   const midArt = !badge?.src && home.logoId ? MIDFIELD_ART[home.logoId] : undefined;
   return (
@@ -41,7 +43,7 @@ export function FieldArt({ id, home, hc, badge }: { id: string; home: Side; away
         ))}
         {/* the home team's real end zone design at both ends (the same art as the game simulator and the cards) */}
         <svg x="0" y="0" width="120" height="40" viewBox={`0 0 ${EZ_W} ${EZ_H}`} preserveAspectRatio="none" className="lf-ezart">
-          <EndZones ez={ez} name={homeShort} />
+          <HomeEndZones ez={ez} name={homeShort} art={ezPicture} />
         </svg>
         {/* goal lines, end lines, sidelines and the orange pylons */}
         <line x1="10" x2="10" y1="0" y2="40" className="band-goal" />
