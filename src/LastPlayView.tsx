@@ -2,7 +2,8 @@ import { useDiscFill } from "./logoDisc";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { logos, teamColor } from "./data";
 import { ConfMark } from "./ConfMark";
-import { EndZones } from "./sim/EndZones";
+import { HomeEndZones, EZ_H } from "./sim/EndZones";
+import { retroFieldSrc } from "./sim/retroField";
 import { endzoneFor } from "./sim/endzone";
 import { MIDFIELD_ART } from "./sim/midfield";
 import { driveHistory, driveStats } from "./driveHistory";
@@ -11,8 +12,8 @@ import { choreograph, parsePlay, playDetail, type Choreo, type Key, type PlaySha
 export type LastPlayTeam = { id?: string; abbr?: string; name: string; color?: string | null; logoId?: string; conf?: string | null };
 type FeedPlay = { id?: string; team: string; text: string; kind: string; yards: number; score?: boolean; turnover?: boolean; toGo?: number | null };
 
-// The same field box as the simulator: 1200 x 560 with 100-wide end zones, ten units to the yard.
-const FW = 1200, FH = 560, EZ = 100, U = 10, CY = FH / 2;
+// The same field box as the simulator: 1200 x 533 (a real field is 120 x 53 1/3 yards) with 100-wide end zones, ten units to the yard.
+const FW = 1200, FH = EZ_H, EZ = 100, U = 10, CY = FH / 2;
 const fx = (yd: number) => EZ + Math.max(-10, Math.min(110, yd)) * U;
 const DURATION = 3400;
 
@@ -104,6 +105,7 @@ export function LastPlay({ plays, teams, live, situation, nfl }: { plays: FeedPl
   const nflGame = !!nfl || home.conf === "AFC" || home.conf === "NFC";
   const homeShort = nflGame ? home.name.split(" ").pop() ?? home.name : home.name;
   const ez = endzoneFor({ short: homeShort, color: home.color ?? defColor, alt: undefined });
+  const ezPicture = retroFieldSrc(home.logoId, nflGame ? "NFL" : "CFB");
   const fieldConf = nflGame ? "NFL" : home.conf && home.conf !== "Independent" ? home.conf : null;
   const midArt = home.logoId ? MIDFIELD_ART[home.logoId] : undefined;
   const homeLogo = home.logoId ? logos[home.logoId] : undefined;
@@ -126,7 +128,7 @@ export function LastPlay({ plays, teams, live, situation, nfl }: { plays: FeedPl
       <svg viewBox={`0 0 ${FW} ${FH}`} role="img" aria-label={`Last play: ${chor.headline}. ${found.shape.text}`} className="lp-svg">
         <rect width={FW} height={FH} className="lp-turf" />
         {Array.from({ length: 20 }, (_, i) => <rect key={i} x={EZ + i * 5 * U} width={5 * U} height={FH} className={i % 2 ? "lp-mow" : "lp-mow alt"} />)}
-        <EndZones ez={ez} name={homeShort} />
+        <HomeEndZones ez={ez} name={homeShort} art={ezPicture} />
         {Array.from({ length: 21 }, (_, i) => i * 5).map((yd) => (
           <line key={yd} x1={fx(yd)} x2={fx(yd)} y1="0" y2={FH} className="lp-tick" style={{ strokeOpacity: yd % 10 === 0 ? 0.8 : 0.4 }} />
         ))}

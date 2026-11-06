@@ -14,7 +14,7 @@ const lettering = (ez: EndzoneArt, size: number) => ({
 });
 
 /**
- * Both end zones of a field, in the home team's design, drawn in a 1200 x 560 box. Used by the simulator's stage and by the game cards, so the
+ * Both end zones of a field, in the home team's design, drawn in a 1200 x 533 box. Used by the simulator's stage and by the game cards, so the
  * two always look alike. Everything is styled inline: it needs no stylesheet.
  */
 export function EndZones({ ez, name }: { ez: EndzoneArt; name: string }) {
@@ -95,6 +95,25 @@ export function EndZones({ ez, name }: { ez: EndzoneArt; name: string }) {
           );
         });
       })}
+    </g>
+  );
+}
+
+/**
+ * The home team's end zones for the small fields (the cards, the Game Center's drive field, the halftime band and the last-play view). A team with its
+ * own field picture (see retroField.ts) shows that picture's two end zones, cut out of it, so every view of its field matches the simulator's; any
+ * other team gets the drawn end zones.
+ */
+export function HomeEndZones({ ez, name, art }: { ez: EndzoneArt; name: string; art?: string | null }) {
+  const id = useId().replace(/:/g, "");
+  if (!art) return <EndZones ez={ez} name={name} />;
+  return (
+    <g data-retro-endzones={art}>
+      <clipPath id={`${id}rz`}>
+        <rect x="0" y="0" width={EZ} height={EZ_H} />
+        <rect x={EZ_W - EZ} y="0" width={EZ} height={EZ_H} />
+      </clipPath>
+      <image href={art} x="0" y="0" width={EZ_W} height={EZ_H} preserveAspectRatio="none" clipPath={`url(#${id}rz)`} />
     </g>
   );
 }
