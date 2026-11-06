@@ -86,3 +86,23 @@ test.describe("on the cards", () => {
     await expect(gc.locator(".rv-badge svg.trophy-ico")).toBeVisible();
   });
 });
+
+test("the trophy games added from Wikipedia's list are named rivalries with their trophies, in either team order", () => {
+  const cases: [string, string, string, string][] = [
+    ["missouri", "kansas", "Border War", "Indian War Drum"],
+    ["miami-fl-", "florida", "Florida–Miami", "Florida Cup"],
+    ["miami-fl-", "florida-state", "Florida State–Miami", "Florida Cup"],
+    ["umass", "uconn", "UConn–UMass", "Southwick Jug"],
+    ["vanderbilt", "georgia-tech", "Georgia Tech–Vanderbilt", "Gold Cowbell"],
+    ["wyoming", "north-dakota-state", "Battle of the Basins", "Drill Bit"],
+  ];
+  for (const [a, b, name, trophy] of cases) {
+    const r = namedRivalry(a, b)!;
+    expect(r?.name, `${a}/${b}`).toBe(name);
+    expect(r.trophy?.name).toBe(trophy);
+    expect(namedRivalry(b, a)).toEqual(r);
+  }
+  // no pair is listed twice (a later one would silently replace an earlier)
+  const keys = RIVALRIES.map(([a, b]: string[]) => [a, b].sort().join("|"));
+  expect(new Set(keys).size).toBe(keys.length);
+});
