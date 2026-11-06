@@ -30,7 +30,7 @@ export function ScoreRing({ score, label, children }: { score: number; label: st
         <circle cx="24" cy="24" r={R} className="sr-track" />
         <circle cx="24" cy="24" r={R} className="sr-fill" strokeDasharray={C} strokeDashoffset={C * (1 - Math.min(100, shown) / 100)} />
       </svg>
-      <strong>{score}</strong>
+      <strong data-digits={String(score).length}>{score}</strong>
     </>
   );
   return (

@@ -132,3 +132,10 @@ html[data-motion="off"] :is(.sr-fill, .wp-track i, .status-chip, .view-switch bu
 .lm-track.mid { background: var(--line-strong, rgb(255 255 255 / 14%)); }
 .lm-track.mid i { left: 50%; right: 0; background: var(--lime); }
 .lm-v { color: var(--text-2); font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* The number sits inside the ring's track at any size: it is sized from the ring itself (two digits fill about 46% of the ring's width, three about 34%,
+   so 100 fits the circle and not just the box). These rules are stronger than the card's own number size on purpose. */
+.score-ring { container-type: size; }
+.cc-rate .score-ring strong, .compact-overview.v2 .cc-rate .score-ring strong, .score-ring strong { font-size: 46cqw; line-height: 1; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
+.cc-rate .score-ring strong[data-digits="3"], .compact-overview.v2 .cc-rate .score-ring strong[data-digits="3"], .score-ring strong[data-digits="3"] { font-size: 33cqw; letter-spacing: -0.06em; }
+.cc-rate .score-ring strong[data-digits="1"], .score-ring strong[data-digits="1"] { font-size: 52cqw; }

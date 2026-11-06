@@ -4,6 +4,8 @@ import { useRoute } from "../store";
 import { conferenceRanks, fmt, fmtSigned, metricMeta, METRICS, ord, percentile, resolveWeek, rkKey, rowsFor, type Metric, type Row } from "../data/derive";
 import { Derived, CompareToggle, Notes, TeamLink } from "../components/common";
 import { SortTable, type Col } from "../components/SortTable";
+import { AvgBar } from "../components/AvgBar";
+import { averageRanks, strengthOfSchedule } from "../data/avgRank";
 import { Spark } from "../charts/Spark";
 import { confColor } from "../charts/kit";
 import { ConfLogo, hasConfLogo } from "../../ConfMark";
@@ -62,6 +64,23 @@ export default function Rankings() {
   }, [built, metric, all]);
   const n = built.length;
   const hasSt = !all && div === "FBS";
+  // Strength of schedule: the average SP+ of the opponents each team has played (opponents in the same division; a game against a team outside it, such as an FCS
+  // opponent, is not counted). Rank 1 is the hardest schedule.
+  const sos = useMemo(() => {
+    if (all) return new Map<string, { avg: number; rank: number; games: number }>();
+    const rating = new Map<string, number>();
+    for (const r of built) if (r.tw?.sp != null) rating.set(r.team.name, r.tw.sp);
+    const opps = new Map<string, string[]>();
+    const names = new Set(built.map((r) => r.team.name));
+    for (const g of [...model.results, ...(model.liveResults ?? [])]) { if (names.has(g.team) && g.opp) opps.set(g.team, [...(opps.get(g.team) ?? []), g.opp]); }
+    return strengthOfSchedule(opps, rating);
+  }, [built, all, model]);
+  const sosRk = (r: R) => sos.get(r.team.name)?.rank ?? null;
+  /** The overall number: the average of the Off, Def, ST and strength-of-schedule ranks, and where that average ranks the team. */
+  const avgs = useMemo(() => averageRanks(new Map(built.map((r) => [r.id, [rk(r, "off"), rk(r, "def"), rk(r, "st"), sosRk(r)]]))), [built, sos, all]);
+  const avgOf = (r: R) => avgs.get(r.id)?.avg ?? null;
+  const avgRkOf = (r: R) => avgs.get(r.id)?.rank ?? null;
+  const avgParts = `Off, Def${hasSt ? ", ST" : ""}${all ? "" : " and strength-of-schedule"}`;
   const metricsAvail = METRICS.filter((m) => (all ? m.key !== "st" : m.key !== "st" || hasSt));
   const metricUse: Metric = metricsAvail.some((m) => m.key === metric) ? metric : "sp";
 
@@ -72,9 +91,12 @@ export default function Rankings() {
     { key: "conf", hideSm: true, label: "Conf.", get: (r) => r.tw?.conf ?? r.top?.conf ?? null, render: (r) => { const c = r.tw?.conf ?? r.top?.conf ?? null; return <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>{c ? <>{hasConfLogo(c, r.team.division) ? <ConfLogo conf={c} division={r.team.division} size={18} /> : <i style={{ display: "inline-block", width: 8, height: 8, borderRadius: 2, background: confColor(c) }} />}{c}</> : "—"}</span>; } },
     ...(all ? [{ key: "div", hideSm: true, label: "Div.", get: (r: R) => r.top?.division ?? null, render: (r: R) => <>{r.top?.division ?? "—"} <Derived why="Matched by team name to the division tabs" /></> }] : []),
     { key: "rec", hideSm: true, label: "Rec.", get: (r) => (all ? r.top?.record?.text : r.tw?.record?.text) ?? null, render: (r) => { const rec = all ? r.top?.record : r.tw?.record; return rec ? <span className="num" title={rec.recovered ? `The sheet stores this as the date ${rec.sourceDate}; read back as ${rec.text}` : undefined}>{rec.text}{rec.recovered && <sup className="muted">*</sup>}</span> : <span className="muted">—</span>; } },
-    { key: "val", label: mm.label, title: mm.long, first: mm.lowerBetter ? "asc" : "desc", get: (r) => val(r, metricUse), render: (r) => <RatingBar value={val(r, metricUse)} domain={domain} lowerBetter={mm.lowerBetter} text={fmt(val(r, metricUse))} /> },
-    ...(["off", "def", ...(hasSt ? ["st"] : [])] as Metric[]).filter((m) => m !== metricUse).map((m) => ({ key: m, hideSm: true, label: metricMeta(m).label, title: metricMeta(m).long, align: "r" as const, get: (r: R) => val(r, m), render: (r: R) => <span>{fmt(val(r, m))}<span className="muted"> #{rk(r, m) ?? "—"}</span></span> })),
-    ...(metricUse !== "sp" ? [{ key: "sp", hideSm: true, label: "SP+", title: "Overall SP+", align: "r" as const, get: (r: R) => val(r, "sp"), render: (r: R) => <span>{fmt(val(r, "sp"))}<span className="muted"> #{rk(r, "sp") ?? "—"}</span></span> }] : []),
+    ...(metricUse === "sp"
+      ? [{ key: "val", label: "SP+", title: `The average of the team's ${avgParts} ranks: lower is better. Hover for the sheet's SP+ rating.`, first: "asc" as const, get: (r: R) => avgOf(r), render: (r: R) => <AvgBar value={avgOf(r)} n={n} text={val(r, "sp") == null ? undefined : `SP+ rating ${fmt(val(r, "sp"))}`} /> }, { key: "avgrk", label: "Overall", title: `Where the average of the ${avgParts} ranks puts the team (1 is best)`, align: "r" as const, first: "asc" as const, get: (r: R) => avgRkOf(r), render: (r: R) => <span className="num rk-cell">{avgRkOf(r) != null ? `#${avgRkOf(r)}` : "—"}</span> }]
+      : [{ key: "val", label: mm.label, title: mm.long, first: (mm.lowerBetter ? "asc" : "desc") as "asc" | "desc", get: (r: R) => val(r, metricUse), render: (r: R) => <RatingBar value={val(r, metricUse)} domain={domain} lowerBetter={mm.lowerBetter} text={fmt(val(r, metricUse))} /> }]),
+    ...(["off", "def", ...(hasSt ? ["st"] : [])] as Metric[]).filter((m) => m !== metricUse).map((m) => ({ key: m, hideSm: true, label: metricMeta(m).label, align: "r" as const, first: "asc" as const, title: `${metricMeta(m).long}: its rank among all teams (1 is best); hover a rank for the rating`, get: (r: R) => rk(r, m), render: (r: R) => <span className="num rk-cell" title={`${metricMeta(m).label} rating ${fmt(val(r, m))}`}>{rk(r, m) != null ? `#${rk(r, m)}` : "—"}</span> })),
+    ...(!all ? [{ key: "sos", hideSm: true, label: "SOS", title: "Strength of schedule: its rank by the average SP+ of the opponents it has played (1 is the toughest schedule). Hover for that average.", align: "r" as const, first: "asc" as const, get: (r: R) => sosRk(r), render: (r: R) => <span className="num rk-cell" title={sos.get(r.team.name) ? `Opponents' average SP+ ${fmt(sos.get(r.team.name)!.avg)} over ${sos.get(r.team.name)!.games} games` : undefined}>{sosRk(r) != null ? `#${sosRk(r)}` : "—"}</span> }] : []),
+    ...(metricUse !== "sp" ? [{ key: "sp", hideSm: true, label: "SP+", title: `The average of the team's ${avgParts} ranks: lower is better`, align: "r" as const, first: "asc" as const, get: (r: R) => avgOf(r), render: (r: R) => <span className="num rk-cell" title={`SP+ rating ${fmt(val(r, "sp"))}`}>{avgOf(r) != null ? `#${avgOf(r)}` : "—"}</span> }, { key: "avgrk", hideSm: true, label: "Overall", title: `Where the average of the ${avgParts} ranks puts the team (1 is best)`, align: "r" as const, first: "asc" as const, get: (r: R) => avgRkOf(r), render: (r: R) => <span className="num rk-cell">{avgRkOf(r) != null ? `#${avgRkOf(r)}` : "—"}</span> }] : []),
     ...(!all ? [{ key: "chg", hideSm: true, label: "Δ rank", title: "Change in the division rank since last week (the sheet's LW columns)", align: "r" as const, get: (r: R) => r.tw?.chg ?? null, render: (r: R) => (r.tw?.chg == null ? <span className="muted">—</span> : <span className={`delta ${r.tw.chg > 0 ? "up" : r.tw.chg < 0 ? "down" : "flat"}`}>{r.tw.chg > 0 ? "▲" : r.tw.chg < 0 ? "▼" : "–"} {Math.abs(r.tw.chg)}</span>) }] : []),
     { key: "trend", hideSm: true, label: "SP+ by week", get: () => null, render: (r) => <Spark values={model.weeks.map((w) => (all ? r.team.top[w]?.sp : r.team.weeks[w]?.sp) ?? null)} label={`${r.team.name} SP+ by week`} /> },
   ];
@@ -134,7 +156,7 @@ export default function Rankings() {
         <div className="phead">
           <div>
             <h2>{all ? "SP+ rank, all 772 teams" : `${DIV_LABEL[div]} SP+ ranking`}{route.conf ? ` · ${route.conf}` : ""}</h2>
-            <p className="sub" style={{ margin: 0 }}>Week {week} · {rows.length} of {built.length} teams · bars show {mm.key === "sp" ? "overall SP+" : mm.long.replace(/ \(.*\)/, "")}{mm.lowerBetter ? "; lower is better, lowest first" : ""}</p>
+            <p className="sub" style={{ margin: 0 }}>Week {week} · {rows.length} of {built.length} teams · bars show {mm.key === "sp" ? `the average of the ${avgParts} ranks (lower is better)` : mm.long.replace(/ \(.*\)/, "")}{mm.lowerBetter ? "; lower is better, lowest first" : ""}</p>
           </div>
           <div className="seg" role="group" aria-label="Rating shown in the bars">
             {metricsAvail.map((m) => <button key={m.key} type="button" aria-pressed={m.key === metricUse} onClick={() => nav({ p: { metric: m.key === "sp" ? null : m.key, sort: null, dir: null } }, { replace: true })}>{m.label}</button>)}
