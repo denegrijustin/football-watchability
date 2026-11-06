@@ -396,6 +396,21 @@ test("the SP+ ratings table shows each team's Off, Def and ST as a rank, sorted 
   expect(info.heads.join(" ")).toMatch(/Off/);
   expect(info.heads.join(" ")).toMatch(/Def/);
   expect(info.cells.length).toBeGreaterThanOrEqual(2);
+  // the SP+ column is the average of the Off, Def and ST ranks, to one decimal
+  const sp = await page.evaluate(() => {
+    const h = [...document.querySelectorAll("*")].find((e) => e.shadowRoot?.querySelector("table"))!;
+    const root = h.shadowRoot!;
+    const ths = [...root.querySelectorAll("thead th")];
+    const spCol = ths.findIndex((t) => (t.textContent ?? "").trim().startsWith("SP+"));
+    const ofCol = ths.findIndex((t) => (t.textContent ?? "").trim().startsWith("Off"));
+    const rows = [...root.querySelectorAll("tbody tr")].slice(0, 12).map((r) => [...r.querySelectorAll("td")]).filter((c) => c.length > ofCol + 2);
+    return rows.map((c) => ({ avg: parseFloat((c[spCol]?.textContent ?? "").trim()), ranks: [ofCol, ofCol + 1, ofCol + 2].map((i) => parseInt((c[i]?.textContent ?? "").replace("#", ""), 10)) }));
+  });
+  expect(sp.length).toBeGreaterThan(3);
+  for (const r of sp) {
+    const ks = r.ranks.filter((x) => Number.isFinite(x));
+    expect(Math.abs(r.avg - Math.round((ks.reduce((a, b) => a + b, 0) / ks.length) * 10) / 10)).toBeLessThan(0.11);
+  }
   for (const c of info.cells) { expect(c.text).toMatch(/^#\d+$/); expect(c.title).toMatch(/rating -?\d/); }
   void shadow;
 });
