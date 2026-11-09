@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { flushSync } from "react-dom";
 import { slate, type View } from "../data";
 import { TabIcon } from "../components/TabIcon";
 import { CATEGORIES, categoryOf, type ActionItem, type CategoryId, type NavItem, type Status } from "./navConfig";
@@ -106,7 +107,8 @@ export function PrimaryNav({ view, status, counts, onView, onStatus, onGameCente
     else if (e.key === "End") move(all.length - 1);
     else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
       e.preventDefault();
-      setOpen(id);
+      // The menu must be open (visible) before focus can move into it, so commit the state first.
+      flushSync(() => setOpen(id));
       const list = entries(id);
       (e.key === "ArrowDown" ? list[0] : list[list.length - 1])?.focus();
     }
