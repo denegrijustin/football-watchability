@@ -24,7 +24,7 @@ Principle: any major feature is at most two interactions away (open a category, 
 | Empire | `empire` | More | Analytics > Empire |
 | ATS & Parlays (picks, simulator, Upset Alert Meter, ATS tracker) | `picks` (`sim`, `upset`) | ATS & Parlays tab | Analytics > ATS & Parlays |
 | Export CSV / calendar | header Export menu and More sheet (two copies) | two places | More > Export (one place) |
-| Time zone | header select | header only | header select stays; More > Time zone moves focus to it |
+| Time zone | header select | header only | header select stays; More > Change time zone moves focus to it |
 | How to read a card | header popover | header only | stays; More > How to read a card opens it |
 | About / methodology / credits | footer details | footer only | stays; More > About and methodology opens it |
 | External resources | none | none | More > Resources: ESPN, nflverse (new tab) |
@@ -41,7 +41,7 @@ and light the entry they belong to (Standings, ATS & Parlays).
   "Picks area" group is unchanged; the hub is the destination and its tabs are its content, as before.
 * **Playoff picture** stays inside Standings.
 * **League** is a global filter on the board, not a destination; it is not in the menus.
-* **Time zone, How to read a card, About** keep their original controls. The More entries do not rebuild them: they open or focus the existing
+* **Time zone (menu entry: "Change time zone", so it does not share an accessible name with the header select), How to read a card, About** keep their original controls. The More entries do not rebuild them: they open or focus the existing
   control (the time zone select, `details#how-to-read`, `details#about-slate`).
 * **Export** has one implementation: the More menu. The header "Export" dropdown and the phone-only copies were removed. The TV grid's own
   image export is a different feature and stays.

@@ -98,7 +98,7 @@ export const CATEGORIES: NavCategory[] = [
       {
         label: "Settings and help",
         items: [
-          { kind: "action", id: "time-zone", action: "time-zone", label: "Time zone", desc: "Choose the zone kickoff times are shown in" },
+          { kind: "action", id: "time-zone", action: "time-zone", label: "Change time zone", desc: "Choose the zone kickoff times are shown in" },
           { kind: "action", id: "how-to", action: "how-to", label: "How to read a card", desc: "What the score, the stakes and the rank line mean" },
           { kind: "action", id: "about", action: "about", label: "About and methodology", desc: "How the board is built, where the data comes from, credits" },
         ],
