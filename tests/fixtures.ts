@@ -6,13 +6,13 @@ export * from "@playwright/test";
 // they sit, so by default they lay the menus out open and inline (the five category buttons are hidden, every destination is visible);
 // a test that is about the real layout carries "@phone" (phone layout) or "@nav" (menus as they really behave) in its title.
 const NAV_INLINE = `
-  .view-row { position: static !important; height: auto !important; }
-  .site-nav { position: static !important; padding: 0 !important; border: 0 !important; }
-  .nav-list { display: flex !important; flex-wrap: wrap !important; }
-  .nav-trigger, .nav-scrim { display: none !important; }
-  .nav-panel { position: static !important; display: block !important; visibility: visible !important; opacity: 1 !important; transform: none !important; min-width: 0 !important; max-height: none !important; box-shadow: none !important; border: 0 !important; padding: 0 !important; }
-  .nav-group ul { display: flex !important; flex-wrap: wrap !important; }
-  .nav-item { width: auto !important; }
+  .view-row { position: static !important; height: auto !important; margin: 0 !important; padding: 4px 0 !important; }
+  .site-nav { position: static !important; padding: 0 !important; border: 0 !important; background: none !important; }
+  .nav-list { display: flex !important; flex-wrap: wrap !important; gap: 2px !important; }
+  .nav-trigger, .nav-scrim, .nav-item-desc, .nav-group-label, .nav-count { display: none !important; }
+  .nav-cat, .nav-panel, .nav-group, .nav-group ul, .nav-group li { display: contents !important; visibility: visible !important; }
+  .nav-item { width: auto !important; min-height: 30px !important; padding: 0 7px !important; border-left: 0 !important; }
+  .nav-item[data-action], .nav-item[data-status], .nav-item[target] { display: none !important; }
 `;
 const INLINE = `@media (max-width: 760px) {
   .filter-dock { position: static !important; }
