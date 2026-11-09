@@ -162,7 +162,8 @@ export default function SimTab({ defaultLeague }: { defaultLeague: League }) {
     const market = lineParts?.away != null && lineParts.home != null ? { awayPts: lineParts.away, homePts: lineParts.home, margin: lineParts.home - lineParts.away, total: lineParts.home + lineParts.away } : null;
     const usedLine = useLine && !!market;
     const target: [number, number] = usedLine && market ? [0.65 * market.awayPts + 0.35 * baseline[0], 0.65 * market.homePts + 0.35 * baseline[1]] : baseline;
-    const wxHours = game?.weather?.hours ?? [];
+    // An indoor game's weather has no hours, and on a board of one game (a Monday) the saved data's type has no `hours` at all, so read it through its own shape.
+    const wxHours = (game?.weather as { hours?: { windMph: number; precip: number }[] } | undefined)?.hours ?? [];
     const windMph = wxHours.length ? wxHours.reduce((s, h) => s + h.windMph, 0) / wxHours.length : 5;
     const rainPct = wxHours.length ? Math.max(...wxHours.map((h) => h.precip)) : 0;
     const cfg: GameCfg = { league, away: A.team, home: H.team, weather: { windMph, rainPct }, allowTies: league === "NFL", priorMargin: target[1] - target[0] };
