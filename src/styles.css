@@ -1506,29 +1506,6 @@ footer details[open] summary::before {
   }
 }
 
-/* ---------- Upcoming / Final switch ---------- */
-.view-switch {
-  width: fit-content;
-  max-width: 100%;
-  margin-top: 22px;
-}
-.view-switch button {
-  min-height: 40px;
-  padding: 0 14px;
-  font-size: 0.875rem;
-  font-weight: 650;
-}
-.view-switch .count {
-  margin-left: 7px;
-  padding: 1px 7px;
-  border-radius: 99px;
-  font-size: 0.75rem;
-  background: #ffffff14;
-  font-variant-numeric: tabular-nums;
-}
-.view-switch + .board-heading {
-  margin-top: 14px;
-}
 .week-block + .week-block {
   margin-top: 28px;
 }
@@ -1831,31 +1808,7 @@ footer details[open] summary::before {
 .wp-tip span {
   color: var(--muted);
 }
-@media (max-width: 760px) {
-  .view-switch {
-    width: 100%;
-  }
-  .view-switch button {
-    flex: 1;
-    padding: 0 8px;
-    font-size: 0.8125rem;
-  }
-}
-@media (max-width: 420px) {
-  .vs-extra {
-    display: none;
-  }
-}
 /* Four views (Upcoming, TV grid, Insanity, Final) on the narrowest phones. */
-@media (max-width: 380px) {
-  .view-switch button {
-    padding: 0 4px;
-    font-size: 0.7813rem;
-  }
-  .view-switch .count {
-    display: none;
-  }
-}
 
 /* ---------- Pregame win probability ---------- */
 .pwp {
@@ -2521,17 +2474,6 @@ details.proj summary strong {
   }
 }
 
-/* ---------- Export ---------- */
-.view-row {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 22px;
-}
-.view-row .view-switch {
-  margin-top: 0;
-}
 .export {
   position: relative;
   margin-left: auto;
@@ -2604,7 +2546,6 @@ details.proj summary strong {
   .site-header .edition,
   .how-to,
   .filter-dock,
-  .view-row,
   .tv-toolbar,
   .game-details,
   footer,
@@ -2741,15 +2682,6 @@ details.proj summary strong {
     max-width: 118px;
   }
 }
-.export-btns {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-left: auto;
-}
-.export-btns .export {
-  margin-left: 0;
-}
 .export-jpg {
   display: inline-flex;
   align-items: center;
@@ -2769,10 +2701,6 @@ details.proj summary strong {
   cursor: progress;
 }
 @media (max-width: 760px) {
-  .export-btns {
-    margin-left: 0;
-    width: 100%;
-  }
   .export-jpg {
     flex: 1;
     justify-content: center;
@@ -5102,13 +5030,6 @@ html:has(dialog[open]) {
   min-height: 28px;
   width: 28px;
 }
-.view-row {
-  margin-top: 8px;
-  gap: 8px;
-}
-.view-switch button {
-  min-height: 34px;
-}
 .export summary {
   min-height: 34px;
   padding: 0 12px;
@@ -5138,23 +5059,6 @@ html:has(dialog[open]) {
   }
   .filter-bar .search input {
     font-size: 1rem;
-  }
-  .view-row {
-    flex-wrap: nowrap;
-    align-items: center;
-  }
-  .view-row .view-switch {
-    flex: 1;
-    min-width: 0;
-    width: auto;
-  }
-  .view-row .export-btns {
-    width: auto;
-    flex: 0 0 auto;
-  }
-  .view-switch button {
-    min-height: 36px;
-    padding: 0 6px;
   }
 }
 
@@ -5374,24 +5278,6 @@ html:has(dialog[open]) {
   .ol-odds span { text-align: left; }
 }
 
-/* Four views plus Export no longer fit on one phone row: the views take the full row, Export drops below. */
-@media (max-width: 520px) {
-  .view-row {
-    flex-wrap: wrap;
-  }
-  .view-row .view-switch {
-    flex: 1 1 100%;
-    width: 100%;
-    min-width: 0;
-  }
-  .view-row .view-switch button {
-    min-width: 0;
-    white-space: nowrap;
-  }
-  .view-row .export-btns {
-    margin-left: auto;
-  }
-}
 
 /* Outlook: conference picker and NFL seed grid */
 .ol-pick { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 0.84rem; }
@@ -5444,12 +5330,6 @@ html:has(dialog[open]) {
 }
 
 
-/* Five view tabs: the Games count would collide with the next tab on a phone. */
-@media (max-width: 480px) {
-  .view-switch .count {
-    display: none;
-  }
-}
 
 /* Texas, Kansas and the Chiefs' AFC West rivals (Broncos, Chargers, Raiders) are shown upside down everywhere (cards, grids,
    results, the Empire map). The files are
@@ -5736,26 +5616,6 @@ select,
     height: 32px;
   }
   /* Tabs and Export share a row; Export shrinks to an icon */
-  .view-row {
-    flex-wrap: nowrap;
-    gap: 6px;
-    margin-top: 4px;
-  }
-  .view-row .view-switch {
-    flex: 1;
-    min-width: 0;
-    width: auto;
-  }
-  .view-row .export-btns {
-    flex: none;
-    width: auto;
-    margin: 0;
-  }
-  .view-switch button {
-    padding: 0 4px;
-    font-size: 0.75rem;
-    min-height: 34px;
-  }
   .export summary {
     min-height: 34px;
     padding: 0 10px;
@@ -5876,9 +5736,6 @@ select,
 }
 .board-heading:not(:has(.reset, .status-chips)) {
   display: none;
-}
-.view-row {
-  margin-top: 6px;
 }
 .board-section,
 .board-section:first-of-type {
@@ -7123,32 +6980,6 @@ select,
   contain-intrinsic-size: auto 330px;
 }
 
-/* Seven tabs. On phones and small tablets the long labels give way to short ones (TV grid -> TV, Empire -> War, CFB SP+ -> SP+, NFL+ stays NFL+)
-   and the type gets smaller; every button keeps its full accessible name. */
-.view-switch .t-short {
-  display: none;
-}
-@media (max-width: 640px) {
-  .view-switch .t-long {
-    display: none;
-  }
-  .view-switch .t-short {
-    display: inline;
-  }
-  .view-switch button {
-    font-size: 0.75rem;
-    padding: 0 5px;
-  }
-  .view-switch .count {
-    display: none;
-  }
-}
-@media (max-width: 380px) {
-  .view-switch button {
-    font-size: 0.75rem;
-    padding: 0 3px;
-  }
-}
 
 /* The ESPN FPI rank to the left of a team's name on every game card */
 .fpi-rank {
@@ -7171,73 +7002,6 @@ select,
 }
 .ls-name .fpi-rank { font-size: 0.75rem; margin-right: 6px; vertical-align: 1px; }
 
-/* Nine tabs on one line. They share the row evenly; on a phone the labels shrink (and the long ones are already short), and on the very
-   narrowest screens the row scrolls sideways instead of wrapping, so it never takes a second line or overlaps. */
-.view-row .view-switch {
-  flex-wrap: nowrap;
-  min-width: 0;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.view-row .view-switch::-webkit-scrollbar {
-  display: none;
-}
-.view-row .view-switch button {
-  flex: 1 1 auto;
-  min-width: 0;
-  text-align: center;
-}
-@media (max-width: 640px) {
-  .view-row {
-    align-items: center;
-    gap: 4px;
-  }
-  .view-row .view-switch {
-    gap: 1px;
-    padding: 2px;
-  }
-  .view-row .view-switch button {
-    padding: 0 3px;
-    font-size: 0.75rem;
-    letter-spacing: -0.01em;
-  }
-  .view-row .export-btns summary {
-    padding: 0 7px;
-    min-width: 0;
-  }
-}
-@media (max-width: 400px) {
-  .view-row .view-switch button {
-    padding: 0 2px;
-    font-size: 0.75rem;
-  }
-}
-@media (max-width: 370px) {
-  .view-row .view-switch button {
-    flex: 1 0 auto;
-  }
-}
-.view-row {
-  flex-wrap: nowrap;
-  align-items: center;
-}
-.view-row .view-switch {
-  flex: 1 1 auto;
-  width: auto;
-}
-.view-row .export-btns {
-  flex: none;
-  width: auto;
-}
-@media (min-width: 641px) and (max-width: 940px) {
-  .view-row .view-switch button {
-    font-size: 0.7813rem;
-    padding: 0 6px;
-  }
-  .view-row .view-switch .count {
-    display: none;
-  }
-}
 
 /* ---------- the last play, as play art (Game Center) ---------- */
 .lp {
@@ -7413,24 +7177,10 @@ select,
   top: var(--stk-header, 0px);
   z-index: 38;
 }
-.view-row {
-  position: sticky;
-  top: var(--stk-nav, 0px);
-  z-index: 36;
-  margin: 0 -24px;
-  padding: 8px 24px;
-  background: #0b1117;
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-}
 @media (max-width: 760px) {
   /* on a phone the brand header scrolls away; the ticker, filters and tab row stay */
   .site-header {
     position: static;
-  }
-  .view-row {
-    margin: 0 -16px;
-    padding: 6px 16px;
   }
 }
 
@@ -7464,7 +7214,6 @@ select,
   .fmenu select,
   .filter-bar .search,
   .filter-bar .search input,
-  .view-switch button,
   .export summary,
   .segmented button,
   .seg button,
@@ -7483,7 +7232,6 @@ select,
   .ticker-item {
     min-height: 44px;
   }
-  .view-switch button,
   .segmented button,
   .seg button,
   .ticker-pause,
@@ -7535,130 +7283,6 @@ select,
   color: #f4f7f9;
 }
 
-/* ---------- sections: a segmented control on a computer, a tab bar with a More sheet on a phone ---------- */
-.view-switch .more-sheet { display: contents; }
-.view-switch .tab-more,
-.view-switch .tab-ico,
-.view-switch .more-export { display: none; }
-.view-switch .tab-label { display: contents; }
-.view-switch [data-tab="board"] { order: -1; }
-.view-switch [data-tab="grid"] { order: 2; }
-.view-switch [data-tab="upset"] { order: 3; }
-.view-switch [data-tab="insanity"] { order: 4; }
-.view-switch [data-tab="outlook"] { order: 5; }
-.view-switch [data-tab="empire"] { order: 6; }
-.view-switch [data-tab="spplus"] { order: 7; }
-.view-switch [data-tab="nfl"] { order: 8; }
-.view-switch [data-tab="sim"] { order: 9; }
-
-@media (max-width: 760px) {
-  /* the old top row of tabs gives way to the bar at the bottom */
-  .view-row {
-    position: static;
-    display: block;
-    margin: 0;
-    padding: 0;
-    background: none;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-  }
-  .view-row .export-btns { display: none; }
-  .view-row .view-switch {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 60;
-    display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 0;
-    width: auto;
-    margin: 0;
-    padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
-    border: 0;
-    border-top: 1px solid var(--line-strong);
-    border-radius: 0;
-    background: color-mix(in srgb, var(--bg) 88%, transparent);
-    backdrop-filter: blur(16px) saturate(1.4);
-    -webkit-backdrop-filter: blur(16px) saturate(1.4);
-    overflow: visible;
-  }
-  .view-switch > button,
-  .view-switch .more-sheet > button {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 2px;
-    min-width: 0;
-    min-height: 50px;
-    padding: 4px 2px;
-    border: 0;
-    border-radius: 10px;
-    background: none;
-    color: var(--muted);
-    font-size: 0.75rem;
-    font-weight: 600;
-    letter-spacing: 0;
-    order: 0;
-    box-shadow: none;
-    transition: background-color 0.12s;
-  }
-  .view-switch > button .tab-ico,
-  .view-switch .more-sheet > button .tab-ico,
-  .view-switch .more-export .tab-ico { display: block; }
-  .view-switch .tab-label { display: inline; text-align: center; white-space: nowrap; }
-  .view-switch .tab-label .count { display: none; }
-  .view-switch .tab-label .t-long { display: none; }
-  .view-switch .tab-label .t-short { display: inline; }
-  .view-switch > button .tab-label { overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
-  .view-switch .tab-more { display: flex; order: 0; }
-  .view-switch > button[aria-pressed="true"] { color: var(--lime); background: none; }
-  .view-switch > button:active,
-  .view-switch .more-sheet > button:active { background: rgb(255 255 255 / 10%); }
-  .view-switch [data-tab] { order: 0; }
-  .view-switch .more-sheet {
-    display: none;
-    position: absolute;
-    left: 8px;
-    right: 8px;
-    bottom: calc(100% + 8px);
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 4px;
-    padding: 8px;
-    border: 1px solid var(--line-strong);
-    border-radius: 16px;
-    background: var(--surface-2);
-    box-shadow: 0 12px 40px rgb(0 0 0 / 50%);
-  }
-  .view-switch[data-more="open"] .more-sheet { display: grid; }
-  .view-switch .more-sheet > button,
-  .view-switch .more-export {
-    flex-direction: row;
-    justify-content: flex-start;
-    gap: 10px;
-    min-height: 48px;
-    padding: 6px 12px;
-    font-size: 1rem;
-  }
-  .view-switch .more-sheet > button[aria-pressed="true"] { color: var(--lime); background: rgb(192 237 128 / 12%); }
-  .view-switch .more-export {
-    display: flex;
-    align-items: center;
-    border-radius: 10px;
-    color: var(--text-2);
-    text-decoration: none;
-    font-weight: 600;
-  }
-  /* room above the bar for the last of the page */
-  .page { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
-  footer { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
-}
-@media (max-width: 760px) {
-  .view-row .view-switch { background: color-mix(in srgb, var(--bg) 95%, transparent); }
-  .view-switch .more-sheet .tab-label .t-long { display: inline; }
-  .view-switch .more-sheet .tab-label .t-short { display: none; }
-}
 
 /* ---------- filters: a row of menus on a computer, League + Filters sheet + Search on a phone ---------- */
 .filter-sheet { display: contents; }
@@ -7879,8 +7503,7 @@ select,
     background: var(--surface);
   }
   .ticker,
-  .filter-dock,
-  .view-row {
+  .filter-dock {
     background: var(--bg);
   }
   .ticker-item {
@@ -7893,7 +7516,6 @@ select,
 }
 
 /* ---------- Pressed and hover feedback ---------- */
-.view-switch button,
 .filter-toggle,
 .cc-gc,
 .ticker-item,
@@ -7903,7 +7525,6 @@ select,
     transform 0.12s ease,
     opacity 0.15s ease;
 }
-.view-switch button:active,
 .filter-toggle:active,
 .cc-gc:active,
 .ticker-item:active {
@@ -7926,7 +7547,6 @@ select,
 }
 @media (prefers-reduced-motion: reduce) {
   .game-card:hover,
-  .view-switch button:active,
   .filter-toggle:active,
   .cc-gc:active,
   .ticker-item:active {
@@ -8352,10 +7972,6 @@ select,
 .lp-track { margin: 4px 0 0; font-size: 0.8125rem; color: var(--text-2); }
 .lp-track b { color: var(--text); }
 
-/* Six sections in the phone tab bar (Games, Picks, Upsets, Insanity, Sim, More) on the narrowest phones. */
-@media (max-width: 380px) {
-  .view-row .view-switch > button { font-size: 0.6875rem; padding-left: 0; padding-right: 0; }
-}
 
 .status-chips{display:inline-flex;gap:6px;flex-wrap:wrap}
 .status-chip{font:inherit;font-size:.85rem;padding:4px 10px;border-radius:999px;border:1px solid var(--line,#ffffff33);background:transparent;color:inherit;cursor:pointer}
@@ -8423,12 +8039,6 @@ select,
 .pr-why { font-size: 0.8125rem; color: var(--text-2); }
 .pr-pick.win .pr-why strong { color: var(--green); } .pr-pick.loss .pr-why strong { color: var(--red); }
 .pr-edge { font-size: 0.75rem; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.tab-label .tl-short { display: none; }
-.view-switch .tab-label { white-space: nowrap; }
-@media (max-width: 760px) {
-  .tab-label .tl-wide { display: none; }
-  .tab-label .tl-short { display: inline; }
-}
 
 .lp-cover { display: grid; grid-template-columns: 1fr; gap: 6px; }
 .lp-chance { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }

@@ -22,20 +22,22 @@ test("the Simulator tab runs a game: forecast, stage, play feed and a final scor
   expect(errors).toEqual([]);
 });
 
-test("@phone all the tabs stay on one row, visible and not overlapping, from 375px up", async ({ page }) => {
+test("@phone all five categories stay on one row, visible and not overlapping, from 375px up", async ({ page }) => {
   for (const w of [375, 390, 700, 1280]) {
     await page.setViewportSize({ width: w, height: 800 });
     await page.goto("/?league=NFL");
-    await expect(page.locator(".view-switch button").first()).toBeVisible();
-    // On a phone the sections are five tabs and More (the rest sit in its sheet); wider screens show all thirteen (the picks, standings, injuries and resumés tabs came after the first eleven).
-    const phone = w <= 760;
+    await expect(page.locator(".site-nav .nav-trigger").first()).toBeVisible();
     const r = await page.evaluate(() => {
-      const bs = [...document.querySelectorAll(".view-switch button")].filter((x) => (x as HTMLElement).offsetParent !== null).map((x) => x.getBoundingClientRect());
+      const bs = [...document.querySelectorAll(".site-nav .nav-trigger")].filter((x) => (x as HTMLElement).offsetParent !== null).map((x) => x.getBoundingClientRect());
       let overlaps = 0;
       for (let i = 0; i < bs.length; i++) for (let j = i + 1; j < bs.length; j++) if (bs[i].left < bs[j].right - 0.5 && bs[j].left < bs[i].right - 0.5 && bs[i].top < bs[j].bottom - 0.5 && bs[j].top < bs[i].bottom - 0.5) overlaps++;
       return { n: bs.length, overlaps, off: bs.filter((b) => b.right > innerWidth + 1 || b.left < -1).length, rows: new Set(bs.map((b) => Math.round(b.top))).size };
     });
-    expect(r, `tabs at ${w}px`).toEqual({ n: phone ? 5 : 12, overlaps: 0, off: 0, rows: 1 });
+    expect(r, `categories at ${w}px`).toEqual({ n: 5, overlaps: 0, off: 0, rows: 1 });
+    // every destination is still in the page, once: the twelve sections the old tabs reached
+    expect(await page.locator(".site-nav [data-tab]").evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset.tab).sort())).toEqual(
+      ["board", "empire", "grid", "injuries", "insanity", "nfl", "picks", "resumes", "spplus", "standings", "teams", "trades"],
+    );
   }
 });
 

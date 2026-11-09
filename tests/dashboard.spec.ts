@@ -324,7 +324,7 @@ test("TV grid lays out every game by network and time, highlighting good games a
   expect(errors).toEqual([]);
 });
 
-test("weekend export files and advanced stats are available", async ({ page, request }, testInfo) => {
+test("weekend export files and advanced stats are available", async ({ page, request }) => {
   const csv = await (await request.get("/exports/watch-slate.csv")).text();
   const lines = csv.trim().split(/\r?\n/);
   expect(lines[0]).toContain("Watchability");
@@ -333,13 +333,9 @@ test("weekend export files and advanced stats are available", async ({ page, req
   expect(ics).toContain("BEGIN:VCALENDAR");
   expect((ics.match(/BEGIN:VEVENT/g) ?? []).length).toBe(slate.games.filter((g: any) => g.score >= 74).length);
   await page.goto("/?league=NFL");
-  if (testInfo.project.name === "mobile") {
-    // On a phone the downloads sit in the More sheet.
-    await expect(page.locator(".more-export[href='/exports/watch-slate.csv']")).toBeAttached();
-  } else {
-    await page.locator(".export summary").click();
-    await expect(page.locator(".export-menu a[href='/exports/watch-slate.csv']")).toBeVisible();
-  }
+  // The downloads live in the More menu (on every screen size).
+  await expect(page.locator(".site-nav a[href='/exports/watch-slate.csv']")).toBeVisible();
+  await expect(page.locator(".site-nav a[href='/exports/entertaining.ics']")).toBeVisible();
   await expect(page.getByRole("button", { name: /Save image/ })).toHaveCount(0);
   let card = page.locator(CARD).first();
   await expand(card);
@@ -1241,12 +1237,12 @@ test("a page left open across a deploy says a new version is ready, and Reload b
   await expect(page.locator(".update-bar")).toHaveCount(0);
 });
 
-test("Games is the first tab on the left of the menu bar", async ({ page }) => {
+test("@nav Games is the first category on the left of the menu bar, then Teams, Rankings, Analytics and More", async ({ page }) => {
   await page.goto("/");
-  await expect(page.locator('.view-switch [data-tab="board"]')).toBeVisible();
+  await expect(page.locator(".site-nav .nav-trigger").first()).toBeVisible();
   await page.waitForTimeout(300); // the tab row settles after the fonts load
-  const tabs = await page.locator(".view-switch button[data-tab]").evaluateAll((els) => els.filter((e) => e.getBoundingClientRect().width > 0).sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left).map((e) => (e as HTMLElement).dataset.tab));
-  expect(tabs[0]).toBe("board");
+  const tabs = await page.locator(".site-nav .nav-trigger").evaluateAll((els) => els.filter((e) => e.getBoundingClientRect().width > 0).sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left).map((e) => (e as HTMLElement).dataset.category));
+  expect(tabs).toEqual(["games", "teams", "rankings", "analytics", "more"]);
 });
 
 test("the expanded card explains its numbers: an (i) on the preview, projected score, win probability and matchup, each opening what it means and how it was found", async ({ page }) => {

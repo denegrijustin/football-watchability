@@ -31,9 +31,9 @@ const garbageTeam = teams.find((t) => offRows(t).some((r) => r.x.some((v) => v))
 async function open(page: Page, tab = "Situations", vw = 1280) {
   await page.setViewportSize({ width: vw, height: vw < 700 ? 844 : 900 });
   await page.goto("/?league=NFL");
-  const nflBtn = page.locator('.view-switch [data-tab="nfl"]');
-  await page.locator(".view-switch").first().waitFor();
-  if (!(await nflBtn.isVisible())) await page.locator(".view-switch button", { hasText: "More" }).click();
+  const nflBtn = page.locator('.site-nav [data-tab="nfl"]');
+  await page.locator(".site-nav").first().waitFor();
+  if (!(await nflBtn.isVisible())) await page.locator('.nav-trigger[data-category="rankings"]').click();
   await nflBtn.click();
   await goPerf(page, tab);
   await expect(page.getByRole("heading", { level: 1, name: tab })).toBeVisible({ timeout: 15_000 });

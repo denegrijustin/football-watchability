@@ -19,9 +19,9 @@ const sum = (rows: PerfRow[], i: number, garbage = true) => rows.reduce((a, r) =
 async function open(page: Page, vw = 1280) {
   await page.setViewportSize({ width: vw, height: vw < 700 ? 844 : 900 });
   await page.goto("/?league=NFL");
-  const nflBtn = page.locator('.view-switch [data-tab="nfl"]');
-  await page.locator(".view-switch").first().waitFor();
-  if (!(await nflBtn.isVisible())) await page.locator(".view-switch button", { hasText: "More" }).click();
+  const nflBtn = page.locator('.site-nav [data-tab="nfl"]');
+  await page.locator(".site-nav").first().waitFor();
+  if (!(await nflBtn.isVisible())) await page.locator('.nav-trigger[data-category="rankings"]').click();
   await nflBtn.click();
   await goPerf(page, "Big Plays");
   await expect(page.getByRole("heading", { level: 1, name: "Big Plays" })).toBeVisible({ timeout: 15_000 });

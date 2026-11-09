@@ -43,7 +43,7 @@ async function withNflGame(page: Page, g: NflGame, espn = g.espn) {
 test.describe("the NFL+ tab", () => {
   test("@smoke it sits with the other tabs and opens on the ratings table of all 32 teams", async ({ page }) => {
     await openTab(page);
-    await expect(page.getByRole("button", { name: "NFL+" })).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByRole("button", { name: "NFL+" })).toHaveAttribute("aria-current", "page");
     await expect(page.locator(".spp .tbl tbody tr:not(.detail)")).toHaveCount(32);
     await expectSppTabs(page, ["Ratings", "Simulator", "ATS tracker", "Matchups", "Movement", "Team"]);
     await expect(page.locator(".spp .foot")).toContainText("nflverse");
@@ -158,7 +158,7 @@ test.describe("NFL Game Center", () => {
     if (facts.length) await expect(dialog.getByTestId("gc-nfl-setting")).toContainText(facts[0][0]);
     await block.getByRole("button", { name: /Open in NFL+/ }).click();
     await expect(dialog).toBeHidden();
-    await expect(page.getByRole("button", { name: "NFL+" })).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByRole("button", { name: "NFL+" })).toHaveAttribute("aria-current", "page");
     await expectSppTabSelected(page, "Simulator");
     await expect(page.locator(".spp").getByLabel("Away team")).toHaveValue(upcoming.away);
     await expect(page.locator(".spp").getByLabel("Home team")).toHaveValue(upcoming.home);
