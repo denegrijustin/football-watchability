@@ -242,7 +242,7 @@ test("@smoke the page opens on the right league and the Outlook tab shows the pr
 
   // On a Sunday the same page opens on the NFL.
   await page.clock.setFixedTime(new Date("2026-10-11T18:00:00Z"));
-  await page.reload();
+  await page.goto("/"); // (a reload would stay on the Outlook section, which the address now names)
   await expect(page.getByLabel("League", { exact: true }).first()).toHaveValue("NFL");
 });
 
