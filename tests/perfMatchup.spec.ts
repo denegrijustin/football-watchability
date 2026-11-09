@@ -8,7 +8,15 @@ import { leagueSummaries } from "../src/perf/engine";
 import { goPerf } from "./helpers/perf";
 
 const data: PerfData = JSON.parse(readFileSync("src/data/perf-nfl.json", "utf8"));
-const sel = (p: Partial<PerfSelection> = {}): PerfSelection => ({ ...DEFAULT_SELECTION, team: "SEA", opp: "KC", ...p });
+/** Seattle's next opponent, from the saved schedule: the earliest game of its not yet played (it moves on as the season does). */
+const NEXT_OPP = (() => {
+  const sched = JSON.parse(readFileSync("src/data/nfl.json", "utf8")).games as { type: string; aS: number | null; away: string; home: string; date: string }[];
+  const next = sched.filter((g) => g.type === "REG" && g.aS == null && (g.away === "SEA" || g.home === "SEA")).sort((a, b) => a.date.localeCompare(b.date))[0];
+  return next ? (next.away === "SEA" ? next.home : next.away) : "KC";
+})();
+/** A team to pick in the tests that choose one: never Seattle or its next opponent. */
+const OTHER = ["DEN", "MIA", "ATL"].find((t) => t !== NEXT_OPP)!;
+const sel = (p: Partial<PerfSelection> = {}): PerfSelection => ({ ...DEFAULT_SELECTION, team: "SEA", opp: NEXT_OPP, ...p });
 
 // ---- independent recomputation straight from the JSON (no engine) ---------------------------------------------------------
 const rowsOf = (t: string) => data.rows.filter((r) => r.t === t);
@@ -157,7 +165,7 @@ test("the values in a detail panel match the engine", async ({ page }) => {
   const row = page.locator('.mu-row[data-key="mu:a:pass"]');
   await row.locator(".mu-btn").click();
   const s = sel();
-  const a = facetStat(data, s, facetById("pass")!, "SEA", "off"), b = facetStat(data, s, facetById("pass")!, "KC", "def");
+  const a = facetStat(data, s, facetById("pass")!, "SEA", "off"), b = facetStat(data, s, facetById("pass")!, NEXT_OPP, "def");
   const d = row.locator(".mu-detail");
   await expect(d).toContainText(`${a.sample} dropbacks`);
   await expect(d).toContainText(`${b.sample} dropbacks`);
@@ -183,16 +191,16 @@ test("garbage-time toggle changes the counts shown in a detail panel", async ({ 
 test("swap, clear and choose; selections persist across tabs", async ({ page }) => {
   await openMatchup(page);
   await page.getByRole("button", { name: /Swap teams/ }).click();
-  await expect(teamSel(page)).toHaveValue("KC");
+  await expect(teamSel(page)).toHaveValue(NEXT_OPP);
   await expect(oppSel(page)).toHaveValue("SEA");
-  await oppSel(page).selectOption("DEN");
+  await oppSel(page).selectOption(OTHER);
   await page.locator('.mu-row[data-key="mu:a:rush"] .mu-btn').click();
   await goPerf(page, "Team Profile");
-  await expect(teamSel(page)).toHaveValue("KC");
-  await expect(oppSel(page)).toHaveValue("DEN");
+  await expect(teamSel(page)).toHaveValue(NEXT_OPP);
+  await expect(oppSel(page)).toHaveValue(OTHER);
   await goPerf(page, "Matchup");
-  await expect(teamSel(page)).toHaveValue("KC");
-  await expect(oppSel(page)).toHaveValue("DEN");
+  await expect(teamSel(page)).toHaveValue(NEXT_OPP);
+  await expect(oppSel(page)).toHaveValue(OTHER);
   await expect(page.locator('.mu-row[data-key="mu:a:rush"] .mu-btn')).toHaveAttribute("aria-expanded", "true");
 });
 
@@ -204,7 +212,7 @@ test("clearing the opponent shows a helpful empty state and is not undone by the
   await page.waitForTimeout(400);
   await expect(oppSel(page)).toHaveValue("");
   await page.getByRole("button", { name: /Compare with next opponent/ }).click();
-  await expect(oppSel(page)).toHaveValue("KC");
+  await expect(oppSel(page)).toHaveValue(NEXT_OPP);
 });
 
 test("keyboard: Enter opens a comparison, Escape closes it and focus stays on it", async ({ page }) => {
