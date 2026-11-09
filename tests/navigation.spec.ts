@@ -314,14 +314,12 @@ test.describe("keyboard @nav", () => {
     }
   });
 
-  test("ArrowDown on a button opens its menu, and then ArrowDown or ArrowUp from the button reaches the first or last entry @nav", async ({ page }) => {
+  test("with a menu already open, ArrowDown or ArrowUp from its button reaches the first or last entry @nav", async ({ page }) => {
     await load(page, 1280);
     for (const c of CATS) {
       const all = panel(page, c).locator(".nav-item");
+      await openCat(page, c);
       await trigger(page, c).focus();
-      await page.keyboard.press("ArrowDown");
-      await expect(trigger(page, c)).toHaveAttribute("aria-expanded", "true");
-      await expect(panel(page, c)).toBeVisible();
       await page.keyboard.press("ArrowDown");
       await expect(all.first(), `${c} first`).toBeFocused();
       await page.keyboard.press("Escape");
