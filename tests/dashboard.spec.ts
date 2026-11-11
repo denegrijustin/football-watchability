@@ -1278,7 +1278,11 @@ test("the win-probability bar has its red-to-blue blend on the collapsed card, n
 
 test("the watch score's number sits inside its ring, even a three-digit 100", async ({ page }) => {
   await page.goto("/");
-  await expect(page.locator(".score-ring strong").first()).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator(".game-card").first()).toBeAttached({ timeout: 20_000 });
+  await page.waitForTimeout(1500);
+  // A board of finished games (a Monday) has only compact cards, which carry no visible ring: nothing to measure until the next week's games are in.
+  const sized = await page.evaluate(() => [...document.querySelectorAll(".score-ring")].filter((r) => r.getBoundingClientRect().width > 0).length);
+  test.skip(sized === 0, "no game card with a visible watch-score ring on this week's board (only finished games); runs again when upcoming or live games are on it");
   // force the widest cases onto real rings: 100, 88 and 7
   const fits = await page.evaluate(() => {
     const rings = [...document.querySelectorAll<HTMLElement>(".score-ring")].filter((r) => r.getBoundingClientRect().width > 0).slice(0, 12);
