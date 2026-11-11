@@ -1,4 +1,4 @@
-import { test, expect } from "./fixtures";
+import { test, expect, openSection } from "./fixtures";
 import { readFileSync } from "node:fs";
 import { closeAndLate, liveHeat, pickWatchNow } from "../src/watchNow";
 import { stubFinals } from "./helpers/finals";
@@ -70,19 +70,19 @@ test.describe("on the board", () => {
     await expect(page.locator(".sr-pop")).toHaveCount(0);
   });
 
-  test("switching tabs slides the new view in and the pressed tab carries the underline", async ({ page }) => {
+  test("@nav switching sections slides the new view in and the current category carries the underline", async ({ page }) => {
     await page.goto("/?league=NFL");
-    await page.locator('.view-switch [data-tab="picks"]').click();
+    await openSection(page, "picks");
     await expect(page.locator(".view-in").first()).toBeVisible();
-    await expect(page.locator('.view-switch [data-tab="picks"]')).toHaveAttribute("aria-pressed", "true");
-    const bar = await page.locator('.view-switch [data-tab="picks"]').evaluate((b) => getComputedStyle(b, "::after").height);
+    await expect(page.locator('.site-nav [data-tab="picks"]')).toHaveAttribute("aria-current", "page");
+    const bar = await page.locator('.nav-trigger[data-category="analytics"][aria-current]').evaluate((b) => getComputedStyle(b, "::after").height);
     expect(bar).toBe("3px");
   });
 
   test("a slow load shows card-shaped placeholders, not a Loading line", async ({ page }) => {
     await page.route("**/data/nfl*.json", async (r) => { await new Promise((x) => setTimeout(x, 1500)); await r.continue(); });
     await page.goto("/?league=NFL");
-    await page.locator('.view-switch [data-tab="picks"]').click();
+    await page.locator('.site-nav [data-tab="picks"]').click();
     await expect(page.locator(".skel").first()).toBeVisible();
   });
 });

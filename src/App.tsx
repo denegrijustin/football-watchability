@@ -1,12 +1,11 @@
-import { Suspense, useEffect, useRef, useState } from "react";
-import { motionOff } from "./motion";
+import { Suspense, useEffect, useState } from "react";
 import { lazyView } from "./lazyView";
 import { useUpdateCheck } from "./useUpdateCheck";
 import { TrophyCredits } from "./components/TrophyCredits";
 import { LiveFreshness } from "./live";
-import { TabIcon } from "./components/TabIcon";
-
-const MORE_VIEWS: View[] = ["insanity", "trades", "resumes", "injuries", "grid", "empire", "spplus", "nfl"];
+import { PrimaryNav } from "./nav/PrimaryNav";
+import { pushNav, readNav, useViewHistory } from "./nav/useViewHistory";
+import { useOpenGame } from "./components/GameCenterContext";
 import { dayName, results, slate, tiers, type FilterState, type League, type View } from "./data";
 import { Filters } from "./components/Filters";
 import { GameBoard, useBoard } from "./components/GameBoard";
@@ -14,6 +13,7 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ScoreTicker } from "./components/ScoreTicker";
 import { FinalScores, FinalScoresToggle, useFinalScoresOpen, useFinalTiles } from "./components/FinalScores";
 import { defaultLeague } from "./league";
+import { isView } from "./nav/navConfig";
 
 // The map and its shapes load only when the tab is opened.
 const ImperialismMap = lazyView(() => import("./components/ImperialismMap").then((m) => ({ default: m.ImperialismMap })), "ImperialismMap");
@@ -45,14 +45,17 @@ const initial: FilterState = {
 export default function App() {
   const tz = useTz();
   const outdated = useUpdateCheck();
-  const [filters, setFilters] = useState<FilterState>(initial);
+  const [filters, setFilters] = useState<FilterState>(() => ({ ...initial, status: readNav().status }));
   const [view, setView] = useState<View>(() => {
-    // After the automatic reload that picks up a new version, come back to the tab that was being opened.
+    // The address names the section (?view=trades); an unknown name is the board. After the automatic reload that picks up a new
+    // version, come back to the tab that was being opened.
+    const named = new URLSearchParams(location.search).get("view");
+    if (named) return readNav().view;
     try {
       if (sessionStorage.getItem("fbwatch-resume")) {
         sessionStorage.removeItem("fbwatch-resume");
-        const v = sessionStorage.getItem("fbwatch-view") as View | null;
-        if (v) return v;
+        const v = sessionStorage.getItem("fbwatch-view");
+        if (v && isView(v)) return v;
       }
     } catch {
       /* storage blocked: start on the board */
@@ -64,7 +67,7 @@ export default function App() {
   useEffect(() => {
     const open = (e: Event) => {
       const v = (e as CustomEvent<View>).detail;
-      if (v) switchView(v);
+      if (isView(v)) switchView(v);
     };
     window.addEventListener("fbwatch:open-view", open);
     return () => window.removeEventListener("fbwatch:open-view", open);
@@ -100,6 +103,7 @@ export default function App() {
   const finalTiles = useFinalTiles(board);
   const [fsOpen, setFsOpen] = useFinalScoresOpen();
   const switchView = (v: View) => {
+    pushNav(v, filters.status);
     setView(v);
     try {
       sessionStorage.setItem("fbwatch-view", v);
@@ -108,36 +112,31 @@ export default function App() {
     }
     setFilters((f) => ({ ...f, day: "all" }));
   };
-  // The tab highlight slides from the old tab to the new one: only the new tab's underline is animated, from where the old one was (transform only).
-  const lastTab = useRef<DOMRect | null>(null);
-  useEffect(() => {
-    const btn = document.querySelector<HTMLElement>(`.view-switch [data-tab="${view}"]`);
-    if (!btn) return;
-    const now = btn.getBoundingClientRect(), was = lastTab.current;
-    lastTab.current = now;
-    if (!was || !now.width || !was.width || motionOff() || !btn.animate) return;
-    const dx = was.left + was.width / 2 - (now.left + now.width / 2), sx = was.width / now.width;
-    if (Math.abs(dx) < 2) return;
-    try { btn.animate([{ transform: `translateX(${dx}px) scaleX(${sx})` }, { transform: "none" }], { duration: 280, easing: "cubic-bezier(.2,.8,.2,1)", pseudoElement: "::after" }); } catch { /* old browser: no slide */ }
-  }, [view]);
-  // Phones: the secondary sections sit in a sheet over the tab bar. Choosing one (or anything else) closes it.
-  const [moreOpen, setMoreOpen] = useState(false);
-  const go = (v: View) => {
-    setMoreOpen(false);
-    switchView(v);
+  // Games status entries in the menu: the existing status filter, on the board (choosing the active one clears it, as the chips do).
+  const showStatus = (s: Exclude<FilterState["status"], "all">) => {
+    const next = view === "board" && filters.status === s ? "all" : s;
+    pushNav("board", next);
+    setView("board");
+    setFilters((f) => ({ ...f, day: "all", status: next }));
   };
-  useEffect(() => {
-    if (!moreOpen) return;
-    const key = (e: KeyboardEvent) => e.key === "Escape" && setMoreOpen(false);
-    const away = (e: MouseEvent) =>
-      !(e.target as Element).closest?.(".view-switch") && setMoreOpen(false);
-    document.addEventListener("keydown", key);
-    document.addEventListener("click", away);
-    return () => {
-      document.removeEventListener("keydown", key);
-      document.removeEventListener("click", away);
-    };
-  }, [moreOpen]);
+  // The dashboard entry on the board itself clears the status filter; from another section it keeps the reader's filters.
+  const showBoard = (v: View) => {
+    if (v === "board" && view === "board" && filters.status !== "all") showStatus(filters.status as Exclude<FilterState["status"], "all">);
+    else switchView(v);
+  };
+  useViewHistory(view, filters.status, (n) => {
+    setView(n.view);
+    setFilters((f) => ({ ...f, status: n.status }));
+  });
+  // Game Center from the menu: the top game on the board (a live one first, else the most watchable upcoming one, else a finished one).
+  const openGame = useOpenGame();
+  const openTopGame = () => {
+    const top = board.closing[0] ?? board.live[0] ?? [...board.upcoming].sort((a, b) => b.score - a.score)[0] ?? board.justFinal[0] ?? board.finals[0];
+    if (!top) return false;
+    if (view !== "board") switchView("board");
+    openGame(top.espnId);
+    return true;
+  };
   const filtered =
     filters.query !== "" ||
     filters.day !== "all" ||
@@ -164,7 +163,7 @@ export default function App() {
           <img className="brand-logo" src="/icon-192.png" alt="" width="34" height="34" decoding="async" />
           <span className="brand-name">Football Watchability</span>
         </a>
-      <details className="how-to">
+      <details className="how-to" id="how-to-read">
         <summary aria-label="How to read a card"><span>How to read a card</span></summary>
         <div className="how-pop">
         <div className="how-grid">
@@ -241,193 +240,14 @@ export default function App() {
 
         <section id="games" tabIndex={-1} aria-label="Game dashboard">
           <div className="view-row">
-            {/* Sections: a segmented control on a computer, a bottom tab bar with a More sheet on a phone (CSS decides; the buttons are the same). */}
-            <nav
-              className="view-switch segmented"
-              aria-label="Sections"
-              data-more={moreOpen ? "open" : "closed"}
-            >
-              <button
-                data-tab="board"
-                aria-pressed={view === "board"}
-                onClick={() => go("board")}
-              >
-                <TabIcon name="board" />
-                <span className="tab-label">
-                  Games<span className="count">{gameCount(league)}</span>
-                </span>
-              </button>
-              <button
-                data-tab="picks"
-                aria-label="ATS picks and parlays"
-                aria-pressed={view === "picks"}
-                onClick={() => go("picks")}
-                title="Picks and parlays, the game simulator, the Upset Alert Meter and the full ATS tracker"
-              >
-                <TabIcon name="picks" />
-                <span className="tab-label"><span className="tl-wide">ATS &amp; Parlays</span><span className="tl-short">Picks</span></span>
-              </button>
-              <button
-                data-tab="teams"
-                aria-label="Teams"
-                aria-pressed={view === "teams"}
-                onClick={() => go("teams")}
-                title="Teams: one page per team with its resumé, ratings and performance, and injuries"
-              >
-                <TabIcon name="teams" />
-                <span className="tab-label">Teams</span>
-              </button>
-              <button
-                data-tab="standings"
-                aria-label="Standings"
-                aria-pressed={view === "standings"}
-                onClick={() => go("standings")}
-                title="Standings and playoff picture: the NFL by division, every college conference, seeds, tracker, leverage, rankings and bowls"
-              >
-                <TabIcon name="standings" />
-                <span className="tab-label">Standings</span>
-              </button>
-              <button
-                type="button"
-                className="tab-more"
-                aria-haspopup="true"
-                aria-expanded={moreOpen}
-                aria-controls="more-sheet"
-                aria-pressed={moreOpen || MORE_VIEWS.includes(view)}
-                onClick={() => setMoreOpen((o) => !o)}
-              >
-                <TabIcon name="more" />
-                <span className="tab-label">More</span>
-              </button>
-              <div className="more-sheet" id="more-sheet">
-                <button
-                  data-tab="insanity"
-                  aria-pressed={view === "insanity"}
-                  onClick={() => go("insanity")}
-                >
-                  <TabIcon name="insanity" />
-                  <span className="tab-label">Insanity</span>
-                </button>
-                <button
-                  data-tab="trades"
-                  aria-label="Trade finder"
-                  aria-pressed={view === "trades"}
-                  onClick={() => go("trades")}
-                  title="Trade finder: a realistic trade for every player on a roster, with the cap and roster limits"
-                >
-                  <TabIcon name="trades" />
-                  <span className="tab-label">Trades</span>
-                </button>
-                <button
-                  data-tab="resumes"
-                  aria-label="Team resumés"
-                  aria-pressed={view === "resumes"}
-                  onClick={() => go("resumes")}
-                  title="Team resumés: every team's best wins, losses (bad ones flagged), strength of schedule, offense and defense ranks"
-                >
-                  <TabIcon name="resumes" />
-                  <span className="tab-label">Resumés</span>
-                </button>
-                <button
-                  data-tab="injuries"
-                  aria-label="Injury report"
-                  aria-pressed={view === "injuries"}
-                  onClick={() => go("injuries")}
-                  title="Injury report: the injury, how serious, when each player is likely back, and how much his absence matters"
-                >
-                  <TabIcon name="injuries" />
-                  <span className="tab-label">
-                    <span className="t-long">Injuries</span>
-                    <span className="t-short">Injuries</span>
-                  </span>
-                </button>
-                <button
-                  data-tab="grid"
-                  aria-label="TV grid"
-                  aria-pressed={view === "grid"}
-                  onClick={() => go("grid")}
-                >
-                  <TabIcon name="grid" />
-                  <span className="tab-label">
-                    <span className="t-long">TV grid</span>
-                    <span className="t-short">TV</span>
-                  </span>
-                </button>
-                <button
-                  data-tab="empire"
-                  aria-label="Empire"
-                  aria-pressed={view === "empire"}
-                  onClick={() => go("empire")}
-                  title="Imperialism Map: territory changes hands as teams win"
-                >
-                  <TabIcon name="empire" />
-                  <span className="tab-label">
-                    <span className="t-long">Empire</span>
-                    <span className="t-short">War</span>
-                  </span>
-                </button>
-                <button
-                  data-tab="spplus"
-                  aria-label="CFB SP+"
-                  aria-pressed={view === "spplus"}
-                  onClick={() => go("spplus")}
-                  title="CFB SP+: ratings, a matchup simulator and an against-the-spread tracker for college football"
-                >
-                  <TabIcon name="spplus" />
-                  <span className="tab-label">
-                    <span className="t-long">CFB SP+</span>
-                    <span className="t-short">SP+</span>
-                  </span>
-                </button>
-                <button
-                  data-tab="nfl"
-                  aria-label="NFL+"
-                  aria-pressed={view === "nfl"}
-                  onClick={() => go("nfl")}
-                  title="NFL+: EPA-based team ratings, a matchup simulator and an against-the-spread tracker, from nflverse"
-                >
-                  <TabIcon name="nfl" />
-                  <span className="tab-label">NFL+</span>
-                </button>
-                <a
-                  className="more-export"
-                  href="/exports/watch-slate.csv"
-                  download={`watch-slate-${slate.period.replace(/[^\w]+/g, "-")}.csv`}
-                >
-                  <TabIcon name="export" />
-                  <span className="tab-label">Export CSV</span>
-                </a>
-                <a
-                  className="more-export"
-                  href="/exports/entertaining.ics"
-                  download="entertaining-games.ics"
-                >
-                  <TabIcon name="calendar" />
-                  <span className="tab-label">Add to calendar</span>
-                </a>
-              </div>
-            </nav>
-            <div className="export-btns">
-              <details className="export">
-                <summary aria-label="Export options">Export</summary>
-                <div className="export-menu">
-                  <a
-                    href="/exports/watch-slate.csv"
-                    download={`watch-slate-${slate.period.replace(/[^\w]+/g, "-")}.csv`}
-                  >
-                    <strong>Spreadsheet (CSV)</strong>
-                    <span>Every game with all the numbers, times Central</span>
-                  </a>
-                  <a
-                    href="/exports/entertaining.ics"
-                    download="entertaining-games.ics"
-                  >
-                    <strong>Calendar (.ics)</strong>
-                    <span>Entertaining games as calendar events</span>
-                  </a>
-                </div>
-              </details>
-            </div>
+            <PrimaryNav
+              view={view}
+              status={filters.status}
+              counts={{ ...board.counts, all: gameCount(league) }}
+              onView={showBoard}
+              onStatus={showStatus}
+              onGameCenter={openTopGame}
+            />
           </div>
           <div key={view} className="view-in">
           {view !== "board" ? (
@@ -496,7 +316,7 @@ export default function App() {
         </section>
         <footer>
           <p>{slate.broadcastNote.replace(/^📺\s*/, "")}</p>
-          <details>
+          <details id="about-slate">
             <summary>About this slate & data</summary>
             <p>{slate.provenance.note}</p>
             {slate.footerNotes.map((note, i) => (

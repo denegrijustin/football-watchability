@@ -44,7 +44,7 @@ test("the Tracker tab shows the tiers with logos that open a team's profile", as
   await expect(tk.locator(".tk-tier.clinched .tk-open")).toHaveText(/\d+ open/); // the clinched logos, then how many spots are open
   const first = tk.locator(".tk-tier:not(.clinched) .tk-team").first();
   await first.click();
-  await expect(page.locator('.view-switch [data-tab="teams"]')).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator('.site-nav [data-tab="teams"]')).toHaveAttribute("aria-current", "page");
   await openOutlook(page);
   await ctl.getByRole("button", { name: "NFL" }).click();
   await ctl.getByRole("button", { name: "Tracker", exact: true }).click();
@@ -61,7 +61,7 @@ for (const [league, tiersN] of [["NFL", 7], ["College", 8]] as const)
 test(`@phone the ${league} tracker shows every tier on one phone screen, without scrolling`, async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
-  await page.locator(".view-switch .tab-more").click();
+  await page.locator('.nav-trigger[data-category="more"]').click();
   await openOutlook(page);
   const ctl = page.locator(".ol-controls");
   await ctl.getByRole("button", { name: league }).click();
@@ -72,7 +72,7 @@ test(`@phone the ${league} tracker shows every tier on one phone screen, without
   expect(await tiers.count()).toBe(tiersN);
   await tk.scrollIntoViewIfNeeded();
   const last = await tiers.last().boundingBox();
-  const bar = await page.locator(".view-switch").boundingBox(); // the tab bar at the bottom of the screen
+  const bar = await page.locator(".site-nav").boundingBox(); // the tab bar at the bottom of the screen
   expect(last!.y + last!.height, "the last tier ends above the tab bar").toBeLessThanOrEqual(bar!.y + 1);
   const first = await tk.locator(".tk-head").boundingBox();
   expect(first!.y, "the heading is on screen too").toBeGreaterThanOrEqual(0);
@@ -82,14 +82,14 @@ for (const [league, check] of [["NFL", "section.sd2 .sd2-table"], ["College", "s
 test(`@phone the ${league} seeds fit one phone screen without scrolling`, async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
-  await page.locator(".view-switch .tab-more").click();
+  await page.locator('.nav-trigger[data-category="more"]').click();
   await openOutlook(page);
   await page.locator(".ol-controls").getByRole("button", { name: league }).click();
   const body = page.locator(check);
   await expect(body).toBeVisible();
   await body.scrollIntoViewIfNeeded();
   const box = await body.boundingBox();
-  const bar = await page.locator(".view-switch").boundingBox();
+  const bar = await page.locator(".site-nav").boundingBox();
   expect(box!.y + box!.height, "the seeds end above the tab bar").toBeLessThanOrEqual(bar!.y + 1);
 });
 
@@ -97,7 +97,7 @@ for (const [league, parts] of [["College", ["Playoff", "Tracker", "Leverage", "R
 test(`@phone the ${league} Outlook menu is one line and its instructions are two lines at most`, async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/");
-  await page.locator(".view-switch .tab-more").click();
+  await page.locator('.nav-trigger[data-category="more"]').click();
   await openOutlook(page);
   const ctl = page.locator(".ol-controls");
   await ctl.getByRole("button", { name: league }).click();

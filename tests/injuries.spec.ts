@@ -70,7 +70,7 @@ test.describe("the Injuries tab", () => {
 
   test("it is on the menu and lists each injury, how serious it is, when the player is back and the impact of his absence", async ({ page }) => {
     await page.goto("/?league=NFL");
-    await page.locator('.view-switch [data-tab="injuries"]').evaluate((b) => (b as HTMLElement).click());
+    await page.locator('.site-nav [data-tab="injuries"]').evaluate((b) => (b as HTMLElement).click());
     const card = page.locator(".jc").first();
     await expect(card).toBeVisible({ timeout: 15_000 });
     // a few words each: injury, status, back; an animated figure of the injured area; the impact with a bar

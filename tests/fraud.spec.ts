@@ -31,7 +31,7 @@ test("the Resumés tab has a fraud meter: every NFL team, best record-beaters fi
   await expect(rows.last()).toHaveClass(/down/);
   await expect(rows.first().locator(".fm-name small")).toContainText("→");
   await rows.first().locator(".fm-logo").click(); // a team opens its page
-  await expect(page.locator('.view-switch [data-tab="teams"]')).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator('.site-nav [data-tab="teams"]')).toHaveAttribute("aria-current", "page");
 });
 
 test("the fraud meter says it is NFL only when college is chosen, and the resumés are one tap back", async ({ page }) => {

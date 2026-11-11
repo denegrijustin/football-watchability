@@ -42,7 +42,7 @@ test.describe("the Standings tab", () => {
 
   test("it is on the menu: NFL by division with seeds, college by conference, and a conference picker", async ({ page }) => {
     await page.goto("/?league=NFL");
-    await page.locator('.view-switch [data-tab="standings"]').evaluate((b) => (b as HTMLElement).click());
+    await page.locator('.site-nav [data-tab="standings"]').evaluate((b) => (b as HTMLElement).click());
     await expect(page.locator(".sd-block").first()).toBeVisible({ timeout: 15_000 });
     await expect(page.locator(".sd-table")).toHaveCount(4); // the four divisions of the conference shown
     await expect(page.locator(".sd-seeds li").first()).toContainText(/\d-\d/); // the playoff picture
