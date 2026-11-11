@@ -30,10 +30,10 @@ export const CATEGORIES: NavCategory[] = [
     groups: [
       {
         items: [
-          v("board", "Watchability dashboard", "Every game ranked by how worth watching it should be"),
-          { kind: "status", id: "live", status: "live", label: "Live games", desc: "In progress now" },
-          { kind: "status", id: "upcoming", status: "upcoming", label: "Upcoming games", desc: "Still to play, by kickoff slot" },
-          { kind: "status", id: "final", status: "final", label: "Completed games", desc: "Finished games: forecast against what happened" },
+          v("board", "Watchability Dashboard", "Every game ranked by how worth watching it should be"),
+          { kind: "status", id: "live", status: "live", label: "Live Games", desc: "In progress now" },
+          { kind: "status", id: "upcoming", status: "upcoming", label: "Upcoming Games", desc: "Still to play, by kickoff slot" },
+          { kind: "status", id: "final", status: "final", label: "Completed Games", desc: "Finished games: forecast against what happened" },
           v("grid", "TV Grid", "Every kickoff slot and channel in one grid"),
           { kind: "action", id: "game-center", action: "game-center", label: "Game Center", desc: "Opens the top game: plays, drives, odds and injuries" },
         ],
@@ -61,7 +61,7 @@ export const CATEGORIES: NavCategory[] = [
     groups: [
       {
         items: [
-          v("standings", "Standings", "Standings and playoff picture: divisions, conferences, seeds, tracker and bowls"),
+          v("standings", "Standings", "Divisions, conferences, seeds and the playoff picture"),
           v("resumes", "Team Resumés", "Best wins, bad losses, strength of schedule, offense and defense ranks"),
           v("spplus", "CFB SP+", "College ratings, a matchup simulator and an against-the-spread tracker"),
           v("nfl", "NFL+", "EPA-based NFL ratings, a matchup simulator and an against-the-spread tracker"),
@@ -78,7 +78,7 @@ export const CATEGORIES: NavCategory[] = [
         items: [
           v("insanity", "Insanity", "The wildest games and results, ranked"),
           v("empire", "Empire", "Imperialism Map: territory changes hands as teams win"),
-          v("picks", "ATS & Parlays", "Picks and parlays, the game simulator, the Upset Alert Meter and the full ATS tracker"),
+          v("picks", "ATS & Parlays", "Picks, parlays, the simulator and the ATS tracker"),
         ],
       },
     ],
@@ -98,9 +98,9 @@ export const CATEGORIES: NavCategory[] = [
       {
         label: "Settings and help",
         items: [
-          { kind: "action", id: "time-zone", action: "time-zone", label: "Change time zone", desc: "Choose the zone kickoff times are shown in" },
-          { kind: "action", id: "how-to", action: "how-to", label: "How to read a card", desc: "What the score, the stakes and the rank line mean" },
-          { kind: "action", id: "about", action: "about", label: "About and methodology", desc: "How the board is built, where the data comes from, credits" },
+          { kind: "action", id: "time-zone", action: "time-zone", label: "Change Time Zone", desc: "Choose the zone kickoff times are shown in" },
+          { kind: "action", id: "how-to", action: "how-to", label: "How to Read a Card", desc: "What the score, the stakes and the rank line mean" },
+          { kind: "action", id: "about", action: "about", label: "About & Methodology", desc: "How the board is built and where the data comes from" },
         ],
       },
       {

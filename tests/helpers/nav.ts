@@ -6,11 +6,11 @@ export const CAT_LABELS = ["Games", "Teams", "Rankings", "Analytics", "More"];
 
 /** The labels each category lists, in order (docs/navigation-phase1.md). */
 export const ITEMS: Record<Cat, string[]> = {
-  games: ["Watchability dashboard", "Live games", "Upcoming games", "Completed games", "TV Grid", "Game Center"],
+  games: ["Watchability Dashboard", "Live Games", "Upcoming Games", "Completed Games", "TV Grid", "Game Center"],
   teams: ["Team Profiles", "Injuries", "Trade Finder"],
   rankings: ["Standings", "Team Resumés", "CFB SP+", "NFL+"],
   analytics: ["Insanity", "Empire", "ATS & Parlays"],
-  more: ["Spreadsheet (CSV)", "Calendar (.ics)", "Change time zone", "How to read a card", "About and methodology", "ESPN", "nflverse"],
+  more: ["Spreadsheet (CSV)", "Calendar (.ics)", "Change Time Zone", "How to Read a Card", "About & Methodology", "ESPN", "nflverse"],
 };
 
 /** The 12 views that have a menu entry, and the category each one lives in. */

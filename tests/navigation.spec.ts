@@ -116,8 +116,13 @@ test.describe("completeness @nav", () => {
     for (const tab of Object.keys(TABS)) await expect(page.locator(`nav.site-nav [data-tab="${tab}"]`), tab).toHaveCount(1);
     await expect(page.locator("nav.site-nav [data-tab]")).toHaveCount(12);
     for (const c of CATS) {
-      const labels = await panel(page, c).locator(".nav-item").evaluateAll((els) => els.map((e) => e.getAttribute("aria-label")));
-      expect(labels, c).toEqual(ITEMS[c]);
+      // the visible label names the entry (no separate aria-label), so the name is the label and nothing else
+      expect(await panel(page, c).locator(".nav-item[aria-label]").count(), `${c} entries with an aria-label`).toBe(0);
+      const its = await panel(page, c).locator(".nav-item").all();
+      // (the entries are hidden here, so read the name the way the browser builds it: from the element aria-labelledby points at)
+      const named = await panel(page, c).locator(".nav-item").evaluateAll((els) => els.map((e) => document.getElementById(e.getAttribute("aria-labelledby")!)?.textContent?.trim()));
+      expect(named, `${c} names`).toEqual(ITEMS[c]);
+      expect(its.length).toBe(ITEMS[c].length);
       const shown = await panel(page, c).locator(".nav-item-label").evaluateAll((els) => els.map((e) => e.textContent ?? ""));
       expect(shown.map((s) => s.trim()), `${c} visible labels`).toEqual(ITEMS[c]);
       // each entry is inside the panel of the category its data-tab belongs to
@@ -260,7 +265,7 @@ test.describe("menu behaviour @nav", () => {
       await expect(t).toHaveAttribute("aria-controls", `nav-panel-${c}`);
       await expect(page.locator(`#nav-panel-${c}`)).toHaveCount(1);
       await expect(panel(page, c)).toHaveAttribute("role", "group");
-      await expect(panel(page, c)).toHaveAttribute("aria-label", CAT_LABELS[CATS.indexOf(c)]);
+      await expect(panel(page, c)).toHaveAttribute("aria-label", `${CAT_LABELS[CATS.indexOf(c)]} menu`);
       await t.click();
       await expect(t).toHaveAttribute("aria-expanded", "true");
       await expect(panel(page, c)).toBeVisible();
@@ -268,12 +273,12 @@ test.describe("menu behaviour @nav", () => {
         await expect(it).toHaveAccessibleName(/\S/);
         const d = await it.getAttribute("aria-describedby");
         expect(d, "description id").toBeTruthy();
-        await expect(page.locator(`#${d}`)).toHaveCount(1);
+        for (const id of d!.split(/\s+/)) await expect(page.locator(`#${id}`)).toHaveCount(1);
       }
       await t.click();
       await expect(t).toHaveAttribute("aria-expanded", "false");
     }
-    expect(await page.getByRole("button", { name: "Live games", includeHidden: true }).count()).toBe(1);
+    expect(await page.getByRole("button", { name: "Live Games", includeHidden: true }).count()).toBe(1);
   });
 
   test("hovering a button does not open its menu, a click does @nav", async ({ page }) => {
@@ -502,7 +507,7 @@ test.describe("history and deep links @nav", () => {
     });
   }
 
-  test("?status=final marks Completed games current and the chip is pressed @nav", async ({ page }) => {
+  test("?status=final marks Completed Games current and the chip is pressed @nav", async ({ page }) => {
     await load(page, 1280, "/?status=final");
     await expect(item(page, '[data-status="final"]')).toHaveAttribute("aria-current", "page");
     await expect(item(page, '[data-tab="board"]')).not.toHaveAttribute("aria-current", /.*/);
@@ -588,7 +593,7 @@ test.describe("Games entries @nav", () => {
     });
   }
 
-  test("Watchability dashboard on a filtered board clears the filter @nav", async ({ page }) => {
+  test("Watchability Dashboard on a filtered board clears the filter @nav", async ({ page }) => {
     await load(page, 1280, "/?status=live&league=NFL");
     await choose(page, "games", '[data-tab="board"]');
     expect(search(page).get("status")).toBeNull();
@@ -612,7 +617,7 @@ test.describe("Games entries @nav", () => {
     await openCat(page, "games");
     await item(page, '[data-action="game-center"]').click();
     const dialog = page.locator("dialog.gc[open]");
-    const hint = page.locator(".nav-hint");
+    const hint = page.locator(".nav-hint").filter({ hasText: /\S/ });
     await expect(dialog.or(hint).first()).toBeVisible({ timeout: 8000 });
     if (await dialog.count()) {
       await expect(dialog).toBeVisible();
@@ -632,7 +637,7 @@ test.describe("Games entries @nav", () => {
     await openCat(page, "games");
     await item(page, '[data-action="game-center"]').click();
     const dialog = page.locator("dialog.gc[open]");
-    const hint = page.locator(".nav-hint");
+    const hint = page.locator(".nav-hint").filter({ hasText: /\S/ });
     await expect(dialog.or(hint).first()).toBeVisible({ timeout: 8000 });
     if (await dialog.count()) {
       expect(search(page).get("view")).toBeNull();
@@ -644,8 +649,8 @@ test.describe("Games entries @nav", () => {
 test.describe("More entries @nav", () => {
   test("the CSV and calendar entries are download links with real addresses and do not change the section @nav", async ({ page }) => {
     await load(page, 1280);
-    const csv = item(page, "[aria-label='Spreadsheet (CSV)']");
-    const ics = item(page, "[aria-label='Calendar (.ics)']");
+    const csv = item(page, "[href$='.csv']");
+    const ics = item(page, "[href$='.ics']");
     await expect(csv).toHaveJSProperty("tagName", "A");
     await expect(ics).toHaveJSProperty("tagName", "A");
     await expect(csv).toHaveAttribute("href", /\.csv$/);
@@ -669,7 +674,7 @@ test.describe("More entries @nav", () => {
   test("ESPN and nflverse are links that open in a new tab with rel noopener @nav", async ({ page }) => {
     await load(page, 1280);
     for (const [label, host] of [["ESPN", "espn.com"], ["nflverse", "nflverse"]]) {
-      const a = item(page, `[aria-label='${label}']`);
+      const a = item(page, `[href*='${host}']`);
       await expect(a).toHaveJSProperty("tagName", "A");
       await expect(a).toHaveAttribute("target", "_blank");
       await expect(a).toHaveAttribute("rel", /noopener/);
@@ -678,7 +683,7 @@ test.describe("More entries @nav", () => {
     }
   });
 
-  test("Change time zone moves focus to the time zone select @nav", async ({ page }) => {
+  test("Change Time Zone moves focus to the time zone select @nav", async ({ page }) => {
     await load(page, 1280);
     await openCat(page, "more");
     await item(page, '[data-action="time-zone"]').click();
@@ -686,7 +691,7 @@ test.describe("More entries @nav", () => {
     await expect(trigger(page, "more")).toHaveAttribute("aria-expanded", "false");
   });
 
-  test("How to read a card opens the card guide and focuses its summary @nav", async ({ page }) => {
+  test("How to Read a Card opens the card guide and focuses its summary @nav", async ({ page }) => {
     await load(page, 1280);
     await openCat(page, "more");
     await item(page, '[data-action="how-to"]').click();
@@ -695,7 +700,7 @@ test.describe("More entries @nav", () => {
     await expect(page.locator("details#how-to-read summary")).toBeFocused();
   });
 
-  test("About and methodology opens the footer details and focuses its summary @nav", async ({ page }) => {
+  test("About & Methodology opens the footer details and focuses its summary @nav", async ({ page }) => {
     await load(page, 1280);
     await openCat(page, "more");
     await item(page, '[data-action="about"]').click();
@@ -720,7 +725,7 @@ test.describe("motion and focus @nav", () => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await load(page, 1280);
     await openCat(page, "games");
-    for (const sel of ["#nav-panel-games", ".nav-trigger[data-category=games] .nav-caret"]) {
+    for (const sel of ["#nav-panel-games", ".nav-trigger[data-category=games] .nav-caret", ".nav-trigger[data-category=games]", "#nav-panel-games .nav-item >> nth=0"]) {
       const s = await page.locator(sel).evaluate((el) => {
         const c = getComputedStyle(el);
         return { property: c.transitionProperty, duration: c.transitionDuration, anims: el.getAnimations().length };
@@ -733,7 +738,7 @@ test.describe("motion and focus @nav", () => {
   test("with the site's own motion switch off the menus have no transition @nav", async ({ page }) => {
     await load(page, 1280);
     await page.evaluate(() => (document.documentElement.dataset.motion = "off"));
-    for (const sel of ["#nav-panel-games", ".nav-trigger[data-category=games] .nav-caret"]) {
+    for (const sel of ["#nav-panel-games", ".nav-trigger[data-category=games] .nav-caret", ".nav-trigger[data-category=games]", "#nav-panel-games .nav-item >> nth=0"]) {
       const d = await page.locator(sel).evaluate((el) => getComputedStyle(el).transitionProperty);
       expect(d, sel).toBe("none");
     }
@@ -764,5 +769,168 @@ test.describe("motion and focus @nav", () => {
     const i = await visible('#nav-panel-games .nav-item[data-tab="board"]');
     expect(i.focusVisible).toBe(true);
     expect((i.outline !== "none" && i.width > 0) || i.shadow !== "none", JSON.stringify(i)).toBe(true);
+  });
+});
+
+test.describe("review fixes @nav", () => {
+  for (const [w, h] of [[812, 375], [844, 390], [1024, 600], [1280, 720], [1366, 768]]) {
+    test(`at ${w}x${h} the last entry of every menu can be scrolled to and the panel ends inside the window @nav`, async ({ page }) => {
+      await load(page, w, "/", h);
+      for (const c of CATS) {
+        await openCat(page, c);
+        const r = await page.evaluate((cat) => {
+          const pn = document.getElementById(`nav-panel-${cat}`)!;
+          const items = pn.querySelectorAll<HTMLElement>(".nav-item");
+          const p = pn.getBoundingClientRect();
+          items[items.length - 1].scrollIntoView({ block: "nearest" });
+          const l = items[items.length - 1].getBoundingClientRect();
+          return { panelTop: p.top, panelBottom: p.bottom, lastTop: l.top, lastBottom: l.bottom, vh: innerHeight };
+        }, c);
+        expect(r.panelBottom, `${c} panel bottom`).toBeLessThanOrEqual(r.vh);
+        expect(r.panelTop, `${c} panel top`).toBeGreaterThanOrEqual(0);
+        expect(r.lastBottom, `${c} last entry bottom`).toBeLessThanOrEqual(r.vh);
+        expect(r.lastTop, `${c} last entry top`).toBeGreaterThanOrEqual(0);
+        await trigger(page, c).click();
+      }
+    });
+  }
+
+  for (const w of [761, 900, 1024, 1280, 1920]) {
+    test(`at ${w}px every menu is inside the window and attached to its button @nav`, async ({ page }) => {
+      await load(page, w);
+      for (const c of CATS) {
+        await openCat(page, c);
+        const p = (await panel(page, c).boundingBox())!;
+        const t = (await trigger(page, c).boundingBox())!;
+        expect(p.x, `${c} left`).toBeGreaterThanOrEqual(0);
+        expect(p.x + p.width, `${c} right`).toBeLessThanOrEqual(w);
+        expect(t.x + t.width / 2, `${c} button centre is within the panel's width`).toBeGreaterThanOrEqual(p.x);
+        expect(t.x + t.width / 2, `${c} button centre is within the panel's width`).toBeLessThanOrEqual(p.x + p.width);
+        if (w > 900) expect(Math.abs(p.x - t.x), `${c} hangs from its button's left edge`).toBeLessThanOrEqual(2);
+        await trigger(page, c).click();
+      }
+    });
+  }
+
+  test("closing the Game Center that the menu opened returns focus to the Games button @nav", async ({ page }) => {
+    await load(page, 1280);
+    await openCat(page, "games");
+    await item(page, '[data-action="game-center"]').click();
+    const dialog = page.locator("dialog.gc[open]");
+    const hint = page.locator(".nav-hint").filter({ hasText: /\S/ });
+    await expect(dialog.or(hint.filter({ hasText: /\S/ })).first()).toBeVisible({ timeout: 8000 });
+    if (await dialog.count()) {
+      await page.keyboard.press("Escape");
+      await expect(page.locator("dialog.gc[open]")).toHaveCount(0);
+      await expect(trigger(page, "games")).toBeFocused();
+    } else {
+      // no game: the menu stays open, the hint is in the live region and focus stays on the entry
+      await expect(item(page, '[data-action="game-center"]')).toBeFocused();
+      await expect(hint).toHaveAttribute("role", "status");
+    }
+  });
+
+  test("the hint region and the announcement region are in the page before anything is said @nav", async ({ page }) => {
+    await load(page, 1280);
+    await expect(page.locator(".nav-hint[role=status]")).toHaveCount(1);
+    await expect(page.locator(".nav-hint")).toHaveText("");
+    const live = page.locator("nav.site-nav [aria-live=polite]");
+    await expect(live).toHaveCount(1);
+    await expect(live).toHaveText("");
+    expect(await live.evaluate((el) => el.classList.contains("sr-only"))).toBe(true);
+  });
+
+  test("the title and a polite announcement follow the section, and focus stays on the button @nav", async ({ page }) => {
+    await load(page, 1280);
+    const base = await page.title();
+    expect(base).toBe("Football Watchability | The weekly board");
+    await choose(page, "teams", '[data-tab="injuries"]');
+    await expect(page).toHaveTitle("Injuries | Football Watchability");
+    await expect(page.locator("nav.site-nav [aria-live=polite]")).toHaveText("Injuries");
+    await expect(trigger(page, "teams")).toBeFocused();
+    await choose(page, "games", '[data-status="live"]');
+    await expect(page).toHaveTitle("Live Games | Football Watchability");
+    await choose(page, "games", '[data-tab="board"]');
+    await expect(page).toHaveTitle(base);
+    await page.goto("/?view=trades");
+    await expect(page).toHaveTitle("Trade Finder | Football Watchability");
+    await expect(page.locator("nav.site-nav [aria-live=polite]")).toHaveText("");
+  });
+
+  test("the entries are named by their visible label, groups are not landmarks and the panels have their own names @nav", async ({ page }) => {
+    await load(page, 1280);
+    expect(await page.locator("nav.site-nav section").count()).toBe(0);
+    await expect(page.locator("#nav-panel-more [role=group][aria-labelledby]")).toHaveCount(3);
+    await openCat(page, "games");
+    const live = item(page, '[data-status="live"]');
+    await expect(live).toHaveAccessibleName("Live Games");
+    const n = (await live.locator(".nav-count").textContent())!.trim();
+    await expect(live).toHaveAccessibleDescription(new RegExp(`In progress now ${n}$`));
+    await expect(page.getByRole("group", { name: "Games menu" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Games", exact: true })).toHaveCount(1);
+  });
+
+  test("the viewport allows the page under the notch and the phone bar has a mostly solid background @nav", async ({ page }) => {
+    await load(page, 390, "/", 800);
+    expect(await page.locator('meta[name="viewport"]').getAttribute("content")).toContain("viewport-fit=cover");
+    const a = await page.locator("nav.site-nav").evaluate((el) => getComputedStyle(el).backgroundColor);
+    const alpha = a.startsWith("rgba") ? parseFloat(a.split(",")[3]) : a.includes("/") ? parseFloat(a.split("/")[1]) : 1;
+    expect(alpha).toBeGreaterThanOrEqual(0.97);
+  });
+
+  test("on a phone the sheet sits flush above the bar, scrolls on its own and does not lock the page @nav", async ({ page }) => {
+    await load(page, 375, "/", 812);
+    await openCat(page, "more");
+    const bar = (await page.locator("nav.site-nav").boundingBox())!;
+    await expect.poll(async () => bar.y - (await panel(page, "more").boundingBox())!.y - (await panel(page, "more").boundingBox())!.height).toBeGreaterThanOrEqual(6);
+    await expect.poll(() => panel(page, "more").evaluate((el) => getComputedStyle(el).transform)).toBe("none");
+    expect(await panel(page, "more").evaluate((el) => getComputedStyle(el).overscrollBehaviorY)).toBe("contain");
+    expect(await page.locator(".nav-scrim").evaluate((el) => getComputedStyle(el).overscrollBehaviorY)).toBe("contain");
+    const lock = await page.evaluate(() => [document.documentElement, document.body].map((e) => getComputedStyle(e).overflowY));
+    expect(lock).not.toContain("hidden");
+    const y = await page.evaluate(() => (window.scrollBy(0, 300), scrollY));
+    expect(y).toBeGreaterThan(0);
+  });
+
+  test("on a phone the expanded button has a fill that the current one does not, in the light theme too @nav", async ({ page }) => {
+    await page.emulateMedia({ colorScheme: "light" });
+    await load(page, 390, "/", 800);
+    const bg = (c: Cat) => trigger(page, c).evaluate((el) => getComputedStyle(el).backgroundColor);
+    const closed = await bg("teams");
+    await openCat(page, "teams");
+    await expect.poll(() => bg("teams")).not.toBe(closed);
+    expect(await bg("teams")).not.toBe("rgba(0, 0, 0, 0)");
+    // the current category (Games) keeps its top bar and gets no fill
+    expect(await bg("games")).toBe(closed);
+    expect(await trigger(page, "games").evaluate((el) => getComputedStyle(el, "::after").height)).toBe("3px");
+  });
+
+  test("on a phone the page keeps scroll room above the bar and tabbing never leaves a focused element under it @nav", async ({ page }) => {
+    await load(page, 375, "/", 812);
+    expect(parseFloat(await page.evaluate(() => getComputedStyle(document.documentElement).scrollPaddingBottom))).toBeGreaterThanOrEqual(84);
+    const barTop = (await page.locator("nav.site-nav").boundingBox())!.y;
+    await page.locator("#games").focus();
+    for (let i = 0; i < 70; i++) {
+      await page.keyboard.press("Tab");
+      const r = await page.evaluate(() => {
+        const e = document.activeElement as HTMLElement;
+        if (!e || e === document.body || e.closest("nav.site-nav")) return null;
+        const b = e.getBoundingClientRect();
+        return { bottom: b.bottom, top: b.top, h: b.height, tag: e.outerHTML.slice(0, 80) };
+      });
+      if (r && r.h > 0 && r.top < barTop) expect(r.bottom, `tab ${i}: ${r.tag}`).toBeLessThanOrEqual(barTop + 1);
+    }
+  });
+
+  test("on a phone More then How to Read a Card shows the card guide above the bar @nav", async ({ page }) => {
+    await load(page, 375, "/", 812);
+    await openCat(page, "more");
+    await item(page, '[data-action="how-to"]').click();
+    const pop = page.locator("details#how-to-read .how-pop");
+    await expect(pop).toBeVisible();
+    await expect(pop).toBeInViewport();
+    await expect(page.locator("details#how-to-read summary")).toBeFocused();
+    const barTop = (await page.locator("nav.site-nav").boundingBox())!.y;
+    await expect.poll(async () => (await pop.boundingBox())!.y).toBeLessThan(barTop - 40);
   });
 });

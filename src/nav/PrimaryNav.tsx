@@ -14,10 +14,24 @@ type Props = {
   onGameCenter: () => boolean;
 };
 
+/** Every View's own name for the page title and the announcement (a view reached from inside another page uses its menu entry's). */
+const sectionName = (view: View, status: Status): string => {
+  const entry = ENTRY_OF(view);
+  for (const c of CATEGORIES)
+    for (const g of c.groups)
+      for (const i of g.items) {
+        if (view === "board" && status !== "all" ? i.kind === "status" && i.status === status : i.kind === "view" && i.view === entry) return i.label;
+      }
+  return "Watchability Dashboard";
+};
+const BOARD_TITLE = "Football Watchability | The weekly board";
+
 const csvName = () => slate.period.replace(/[^\w]+/g, "-");
 
 /** A view reached from inside a page lights the menu entry it belongs to. */
 const ENTRY: Partial<Record<View, View>> = { outlook: "standings", sim: "picks", upset: "picks" };
+
+const ENTRY_OF = (v: View): View => ENTRY[v] ?? v;
 
 const reveal = (el: HTMLElement | null) => {
   if (!el) return;
@@ -30,7 +44,9 @@ const SHOW: Record<ActionItem["action"], () => void> = {
   "how-to": () => {
     const d = document.getElementById("how-to-read") as HTMLDetailsElement | null;
     if (d) d.open = true;
-    reveal(d?.querySelector("summary") ?? null);
+    d?.querySelector<HTMLElement>("summary")?.focus({ preventScroll: true });
+    // On a phone the popover hangs below the fold: bring all of it into view (above the bar), keeping focus on the summary.
+    d?.querySelector<HTMLElement>(".how-pop")?.scrollIntoView({ block: "nearest" });
   },
   about: () => {
     const d = document.getElementById("about-slate") as HTMLDetailsElement | null;
@@ -49,6 +65,32 @@ export function PrimaryNav({ view, status, counts, onView, onStatus, onGameCente
   const [hint, setHint] = useState("");
   const root = useRef<HTMLElement>(null);
   const current = categoryOf(view);
+  const [said, setSaid] = useState("");
+  const lastSection = useRef<string | null>(null);
+  const section = sectionName(view, status);
+
+  // The page title follows the section; a change after the first load is announced politely (focus stays where it is).
+  useEffect(() => {
+    document.title = view === "board" && status === "all" ? BOARD_TITLE : `${section} | Football Watchability`;
+    if (lastSection.current !== null && lastSection.current !== section) setSaid(section);
+    lastSection.current = section;
+  }, [view, status, section]);
+
+  // Where the open panel starts (the button's bottom plus its 6px gap), so its height can end 12px above the window's bottom edge.
+  useEffect(() => {
+    if (!open) return;
+    const place = () => {
+      const t = trigger(open);
+      if (t && root.current) root.current.style.setProperty("--nav-panel-top", `${Math.round(t.getBoundingClientRect().bottom + 6)}px`);
+    };
+    place();
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, { passive: true });
+    return () => {
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place);
+    };
+  }, [open]);
 
   const triggers = () => [...(root.current?.querySelectorAll<HTMLElement>(".nav-trigger") ?? [])];
   const trigger = (id: CategoryId) => root.current?.querySelector<HTMLElement>(`.nav-trigger[data-category="${id}"]`) ?? null;
@@ -136,8 +178,15 @@ export function PrimaryNav({ view, status, counts, onView, onStatus, onGameCente
     } else if (item.kind === "link") {
       close(true);
     } else if (item.action === "game-center") {
+      // The dialog gives focus back to whatever had it when it opened. This entry is in a panel that is about to be hidden, so the Games
+      // button takes focus first; with no game to show, focus returns to the entry and the hint is spoken.
+      const from = document.activeElement as HTMLElement | null;
+      trigger("games")?.focus();
       if (onGameCenter()) close(false);
-      else setHint("No game is open to show right now. Open a game from the dashboard with its GC button.");
+      else {
+        from?.focus();
+        setHint("No game is open to show right now. Open a game from the dashboard with its GC button.");
+      }
     } else {
       close(false);
       setTimeout(SHOW[item.action], 0);
@@ -173,9 +222,9 @@ export function PrimaryNav({ view, status, counts, onView, onStatus, onGameCente
                 <path d="M2 4.5l4 4 4-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </button>
-            <div className="nav-panel" id={`nav-panel-${c.id}`} role="group" aria-label={c.label} onKeyDown={(e) => onPanel(e, c.id)}>
+            <div className="nav-panel" id={`nav-panel-${c.id}`} role="group" aria-label={`${c.label} menu`} onKeyDown={(e) => onPanel(e, c.id)}>
               {c.groups.map((g, gi) => (
-                <section key={gi} className="nav-group" aria-labelledby={g.label ? `nav-group-${c.id}-${gi}` : undefined}>
+                <div key={gi} className="nav-group" role={g.label ? "group" : undefined} aria-labelledby={g.label ? `nav-group-${c.id}-${gi}` : undefined}>
                   {g.label && (
                     <h3 className="nav-group-label" id={`nav-group-${c.id}-${gi}`}>
                       {g.label}
@@ -185,12 +234,17 @@ export function PrimaryNav({ view, status, counts, onView, onStatus, onGameCente
                     {g.items.map((item) => {
                       const n = countOf(item);
                       const descId = `nav-desc-${c.id}-${item.id}`;
+                      const labelId = `nav-label-${c.id}-${item.id}`;
+                      const countId = `nav-count-${c.id}-${item.id}`;
+                      const describedBy = n !== null ? `${descId} ${countId}` : descId;
                       const body = (
                         <>
                           <span className="nav-item-main">
-                            <span className="nav-item-label">{item.label}</span>
+                            <span className="nav-item-label" id={labelId}>
+                              {item.label}
+                            </span>
                             {n !== null && (
-                              <span className="nav-count" aria-hidden="true">
+                              <span className="nav-count" id={countId} aria-hidden="true">
                                 {n}
                               </span>
                             )}
@@ -209,8 +263,8 @@ export function PrimaryNav({ view, status, counts, onView, onStatus, onGameCente
                               download={item.download ?? (item.id === "csv" ? `watch-slate-${csvName()}.csv` : undefined)}
                               target={item.external ? "_blank" : undefined}
                               rel={item.external ? "noopener noreferrer" : undefined}
-                              aria-label={item.label}
-                              aria-describedby={descId}
+                              aria-labelledby={labelId}
+                              aria-describedby={describedBy}
                               onClick={() => choose(item)}
                             >
                               {body}
@@ -222,8 +276,8 @@ export function PrimaryNav({ view, status, counts, onView, onStatus, onGameCente
                               data-tab={item.kind === "view" ? item.view : undefined}
                               data-status={item.kind === "status" ? item.status : undefined}
                               data-action={item.kind === "action" ? item.action : undefined}
-                              aria-label={item.label}
-                              aria-describedby={descId}
+                              aria-labelledby={labelId}
+                              aria-describedby={describedBy}
                               aria-current={isActive(item) ? "page" : undefined}
                               onClick={() => choose(item)}
                             >
@@ -234,9 +288,9 @@ export function PrimaryNav({ view, status, counts, onView, onStatus, onGameCente
                       );
                     })}
                   </ul>
-                </section>
+                </div>
               ))}
-              {c.id === "games" && hint && (
+              {c.id === "games" && (
                 <p className="nav-hint" role="status">
                   {hint}
                 </p>
@@ -245,6 +299,9 @@ export function PrimaryNav({ view, status, counts, onView, onStatus, onGameCente
           </li>
         ))}
       </ul>
+      <div className="sr-only" aria-live="polite" aria-atomic="true">
+        {said}
+      </div>
       {open && <div className="nav-scrim" aria-hidden="true" onClick={() => close(false)} />}
     </nav>
   );
