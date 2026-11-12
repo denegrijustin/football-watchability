@@ -92,16 +92,22 @@ test("the season's games can be seen all together, highest insanity to lowest, w
 
 test("the main board has a conference filter for the NFL (AFC, NFC) as well as college", async ({ page }) => {
   await page.goto("/?league=NFL");
+  // Conference lives in the Filters panel; the panel closes again after each pick so it never covers the board.
+  const filters = page.getByRole("button", { name: /^Filters/ });
   const conf = page.getByLabel("Conference");
+  const open = async () => { if (!(await conf.isVisible())) await filters.click(); };
+  await open();
   await expect(conf.locator("option")).toHaveText(["Both conferences", "AFC", "NFC"]);
   const cards = page.locator(".game-card");
   await expect(cards.first()).toBeVisible();
   // The count is read once the list has stopped changing after a pick.
   const settled = async () => { let last = -1, now = await cards.count(); while (now !== last) { last = now; await page.waitForTimeout(200); now = await cards.count(); } return now; };
   const both = await settled();
+  await open();
   await conf.selectOption("afc");
   await expect(page.locator(".game-card").first().or(page.locator(".empty-state"))).toBeVisible();
   const afc = await settled();
+  await open();
   await conf.selectOption("nfc");
   const nfc = await settled();
   expect(afc).toBeGreaterThan(0);

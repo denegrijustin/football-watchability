@@ -40,7 +40,7 @@ for (const d of DIVS) {
   });
 
   test(`${d.div}: every conference has an entry and a downloaded logo (except ${d.noConf.join(", ") || "none"})`, () => {
-    const real = rowsOf(d.div).conf.filter((c) => c !== "Indies" && c !== "Unaffiliated");
+    const real = rowsOf(d.div).conf.filter((c) => !/^(Indies\d*|Unaffiliated)$/.test(c));
     const have = real.filter((c) => !d.noConf.includes(c));
     for (const c of have) expect(confs[confKey(d.div, c)], c).toBeTruthy();
     const bare = real.filter((c) => !confs[confKey(d.div, c)]?.src || !existsSync(`public${confs[confKey(d.div, c)].src}`));

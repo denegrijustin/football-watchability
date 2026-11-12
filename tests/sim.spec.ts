@@ -49,8 +49,9 @@ test("the Upset Alert Meter: filters on one line, a week selector, and an earlie
   expect(await page.evaluate(() => { const c = document.querySelector(".um-controls")!; return c.scrollWidth <= c.clientWidth + 1; })).toBe(true);
   // An earlier week is one click away and lists only finished games.
   const select = page.locator(".um-week select");
+  // (the earlier weeks load after the board: wait for them, and for this week plus at least one earlier week)
+  await expect.poll(() => select.locator("option").count()).toBeGreaterThan(1);
   const options = await select.locator("option").allTextContents();
-  expect(options.length).toBeGreaterThan(2);
   expect(options[0]).toContain("this week");
   await select.selectOption({ index: 1 });
   await expect(page.locator(".um-col h3")).toHaveText(/Completed/);

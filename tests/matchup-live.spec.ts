@@ -20,7 +20,7 @@ for (const league of ['NFL', 'CFB']) test(`${league} game cards show real crosso
   await expect(engine.getByText(/Sample data/)).toHaveCount(0);
   await expect(engine.getByText(/ESPN regular-season team statistics/)).toBeVisible();
   const scoring = engine.getByRole('table').first().getByRole('row').nth(1);
-  await expect(scoring.getByText(team.metrics[0].offense.value.toFixed(1), { exact: true })).toBeVisible();
+  await expect(scoring.getByText(team.metrics[0].offense.value.toFixed(1), { exact: true }).first()).toBeVisible(); // (two teams can share a value)
   await expect(scoring.getByText(`#${team.metrics[0].offense.rank}${league === 'CFB' ? ' nationally' : ''}`, { exact: true })).toBeVisible();
   await engine.getByRole('button', { name: 'Swap teams' }).click();
   await expect(engine.getByRole('button', { name: 'Swap teams' })).toHaveAttribute('aria-pressed', 'true');
