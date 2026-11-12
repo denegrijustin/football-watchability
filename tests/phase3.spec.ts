@@ -38,3 +38,17 @@ test("the board has no section intro, and Related to Dashboard opens the board @
   await expect(page.locator(".game-card, .board-heading").first()).toBeVisible();
   await expect(page.locator(".feature-intro")).toHaveCount(0);
 });
+
+test("standings column headings stay in view under the sticky bars while scrolling @phase3", async ({ page }) => {
+  await page.route("**/api/scores**", (r) => r.fulfill({ json: [] }));
+  await page.goto("/?view=standings&league=NFL");
+  const th = page.locator(".sd-table thead th").first();
+  await expect(th).toBeVisible();
+  expect(await th.evaluate((e) => getComputedStyle(e).position)).toBe("sticky");
+  await page.evaluate(() => scrollTo(0, 700));
+  await page.waitForTimeout(300);
+  const box = await th.boundingBox();
+  const row = await page.locator(".view-row").boundingBox();
+  expect(box!.y).toBeGreaterThanOrEqual(row!.y + row!.height - 2); // just under the nav row, not behind it
+  expect(box!.y).toBeLessThan(200);
+});

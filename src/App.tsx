@@ -87,10 +87,12 @@ export default function App() {
       root.style.setProperty("--stk-header", `${t}px`);
       root.style.setProperty("--stk-dock", `${t + h}px`);
       root.style.setProperty("--stk-nav", `${t + h + d}px`);
+      // Table headers stick under the whole stack, the nav row included.
+      root.style.setProperty("--stk-table", `${t + h + d + tall(pick(".view-row"))}px`);
     };
     apply();
     const ro = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(apply);
-    for (const sel of [".ticker", ".site-header", ".filter-dock"]) {
+    for (const sel of [".ticker", ".site-header", ".filter-dock", ".view-row"]) {
       const el = pick(sel);
       if (el) ro?.observe(el);
     }
