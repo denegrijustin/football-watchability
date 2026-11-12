@@ -92,3 +92,9 @@
   .fi-related::-webkit-scrollbar { display: none; }
   .fi-related button, .fi-label { flex: 0 0 auto; white-space: nowrap; }
 }
+
+/* the sort control is a slim row, not a 52px block: on a phone it sits under the status chips and every pixel above the first game counts */
+.board-sort { padding: 2px; }
+.board-sort button { min-height: 32px; padding: 0 10px; }
+@media (max-width: 760px) { .board-sort { margin-top: 2px; } }
+@media (max-width: 760px) { .board-heading:has(.status-chips) { row-gap: 2px; } .board-sort { margin-top: 0; } }
