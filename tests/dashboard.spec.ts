@@ -19,7 +19,12 @@ const pick = async (page: import("@playwright/test").Page, menu: string, option:
 };
 const league = (page: import("@playwright/test").Page, l: "NFL" | "CFB") => pick(page, "League", l === "CFB" ? "College" : "NFL");
 // The old Final tab is now the Completed status on the main board.
-const completed = (page: import("@playwright/test").Page) => pick(page, "Status", "Completed");
+const completed = async (page: import("@playwright/test").Page) => {
+  await pick(page, "Status", "Completed");
+  // The board holds this week's finals; earlier weeks wait behind "Earlier weeks".
+  const more = page.getByRole("button", { name: /^Earlier weeks/ });
+  if (await more.count()) await more.click();
+};
 const searchBox = (page: import("@playwright/test").Page) => page.getByLabel("Search teams, channels or locations");
 // Cards open as a compact strip (logos, scores, rating); these open them to the full card.
 const expand = async (card: import("@playwright/test").Locator) => {
@@ -644,7 +649,8 @@ test("board shows live first and collapses completed games below, with working s
   page.on("pageerror", (err) => errors.push(err.message));
   const games = slate.games.filter((g: any) => g.league === "NFL");
   const start = Math.min(...games.map((g: any) => new Date(g.date).getTime()));
-  const archived = results.games.filter((r: any) => r.league === "NFL").length;
+  const archived = results.games.filter((r: any) => r.league === "NFL" && r.week === slate.period).length; // this week only
+  test.skip(archived === 0, "no archived NFL finals for this week yet");
   // Game 0 is in progress, game 1 just finished (not archived yet), everything else is still ahead.
   await page.clock.install({ time: start + 90 * 60e3 });
   await page.route("**/api/scores**", (route) =>

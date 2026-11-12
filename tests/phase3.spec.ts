@@ -92,3 +92,25 @@ test("a team page opens on its upcoming games, links to related sections, and a 
     await expect(page.locator("dialog.gc[open]")).toBeVisible();
   } else await expect(page.locator(".rs-none")).toBeVisible();
 });
+
+test("the board's Completed holds this week's finals only; earlier weeks wait behind 'Earlier weeks' and are not counted @weekly", async ({ page }) => {
+  const { readFileSync } = await import("node:fs");
+  const slate = JSON.parse(readFileSync("src/data/slate.json", "utf8"));
+  const results = JSON.parse(readFileSync("src/data/results.json", "utf8")).games as { week: string; league: string }[];
+  const league = "CFB";
+  const current = results.filter((r) => r.week === slate.period && r.league === league).length;
+  const earlier = results.filter((r) => r.week !== slate.period && r.league === league).length;
+  test.skip(earlier === 0, "no earlier-week finals in the archive");
+  await page.route("**/api/scores**", (r) => r.fulfill({ json: [] }));
+  await page.goto(`/?league=${league}&status=final`);
+  const weekHeads = page.locator(".board-section.final .week-block .week-head h4");
+  // only this week's block is open by default
+  const heads = await weekHeads.allInnerTexts();
+  expect(heads.every((h) => h === slate.period)).toBe(true);
+  await expect(page.locator('[data-status-chip="final"] b')).toHaveText(String(current));
+  const more = page.getByRole("button", { name: /^Earlier weeks/ });
+  await expect(more).toBeVisible();
+  await more.click();
+  await expect(page.locator(".board-section.final .week-block .week-head h4", { hasText: /Nov\. 3/ }).first()).toBeVisible();
+  await expect(page.locator('[data-status-chip="final"] b')).toHaveText(String(current)); // still not counted
+});

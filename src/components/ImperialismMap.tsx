@@ -134,7 +134,7 @@ type NflMap = "full" | "AFC" | "NFC";
 
 const CAPTIONS: Record<string, string> = {
   national:
-    "Every county starts with the team whose stadium is nearest. When a team loses, all of its land goes to the winner; a landless team that wins takes all of its opponent's land.",
+    "Every county starts with the team whose stadium is nearest. Every time a team wins, it owns its opponent's territory: the opponent's home counties wherever they are held now, plus any other land the opponent holds. A landless opponent still gives up its home territory.",
   conference:
     "The national run, coloured by conference. Striped counties have been captured by a team from outside the conference they started in (still painted in their new owner's colors); plain ones are still held in-conference.",
   full: "All 32 teams. Every county starts with the nearest stadium's team; the loser's land goes to the winner.",
