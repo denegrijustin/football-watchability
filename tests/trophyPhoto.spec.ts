@@ -1,6 +1,7 @@
 import { expect, test } from "./fixtures";
 import { existsSync, readFileSync } from "node:fs";
 import { RIVALRIES } from "../scripts/rivalry.mjs";
+import { hasCfbGame, NO_CFB } from "./helpers/slate";
 
 const photos = JSON.parse(readFileSync("src/data/trophy-images.json", "utf8")).images as Record<string, { src: string; license: string; author: string; page: string; title?: string }>;
 const slate = JSON.parse(readFileSync("src/data/slate.json", "utf8"));
@@ -19,6 +20,7 @@ test("every trophy photograph is a real file, freely licensed, credited, and bel
 test("a trophy game with a photograph shows the photo on its card, and the credits list names it", async ({ page }) => {
   const key = Object.keys(photos)[0];
   test.skip(!key, "no trophy photographs yet");
+  test.skip(!hasCfbGame(), NO_CFB);
   const [a, b] = key.split("|");
   const g = slate.games.find((x: any) => x.league === "CFB");
   const edited = { ...slate, games: slate.games.map((x: any) => (x === g ? { ...x, rivalry: { level: 1, name: "Test trophy game", trophy: { name: "Test Trophy", icon: "cup", key }, sameGroup: false, meetings: 0 } } : x)) };

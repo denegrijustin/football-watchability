@@ -42,7 +42,7 @@ for (const [lg, name] of [["NFL", "NFL"], ["CFB", "College"]] as const) {
     test.skip(!hasCfbGame(), NO_CFB);
     await stubFinals(page);
     await page.goto(`/?league=${lg}`);
-    await page.locator('.view-switch [data-tab="picks"]').click();
+    await page.locator('.site-nav [data-tab="picks"]').click();
     await page.getByRole("group", { name: "Picks section" }).getByRole("button", { name: "Parlays" }).click();
     await expect(page.locator(".pl-slip").first()).toBeVisible({ timeout: 20_000 });
     await expect(page.locator(".pl-warn")).toContainText("every leg hits");

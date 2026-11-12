@@ -20,7 +20,7 @@ test("the Upset Meter's completed games sort by insanity in an earlier week too 
 
 test("the Insanity tab shows each game's watch score and each team's rank, and Highest ranked orders by the better rank shown", async ({ page }) => {
   await page.goto("/?league=CFB");
-  await page.getByRole("navigation", { name: "Sections" }).getByRole("button", { name: /^Insanity/ }).click();
+  await page.getByRole("navigation", { name: "Primary" }).getByRole("button", { name: /^Insanity/ }).click();
   await page.getByRole("group", { name: "Sort games by" }).getByRole("button", { name: "Highest ranked" }).click();
   await expect(page.locator(".ic .ic-watch").first()).toBeVisible();
   await expect(page.locator(".ic .plus-rank").first()).toBeVisible();
@@ -44,7 +44,7 @@ test("a game that just ended is sorted into the Insanity list with the rest, not
   await page.route("**/api/flow**", (route) => route.fulfill({ json: { wp: Array.from({ length: 80 }, (_, i) => [50 + (i % 2 ? 4 : -4), 1 + Math.floor(i / 20)]) } }));
   await page.route("**/api/game**", (route) => route.fulfill({ status: 503, json: {} }));
   await page.goto("/?league=CFB");
-  await page.getByRole("navigation", { name: "Sections" }).getByRole("button", { name: /^Insanity/ }).click();
+  await page.getByRole("navigation", { name: "Primary" }).getByRole("button", { name: /^Insanity/ }).click();
   await page.getByRole("group", { name: "Sort games by" }).getByRole("button", { name: "Score margin" }).click();
   await expect(page.locator(".ic-fresh")).toHaveCount(1);
   const margins = await page.locator(".ib-cards > li").evaluateAll((els) => els.map((e) => Number(e.getAttribute("data-margin"))));

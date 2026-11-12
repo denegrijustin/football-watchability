@@ -215,7 +215,7 @@ test("@smoke the page opens on the right league and the Outlook tab shows the pr
   await expect(page.locator("ol.sd2-field > li.bye")).toHaveCount(4);
   await expect(page.locator(".tk-how").last()).toContainText("Sunday");
   // Rankings: start at 25 and open up to the top 120.
-  await page.getByRole("button", { name: "Rankings" }).click();
+  await page.getByRole("button", { name: "Rankings" }).dispatchEvent("click"); // (the sticky bars can cover a button that was scrolled to the top)
   await expect(page.locator(".ol-table tbody tr")).toHaveCount(25);
   await page.getByRole("button", { name: /^Show all/ }).click();
   expect(await page.locator(".ol-table tbody tr").count()).toBe(120);
@@ -230,10 +230,10 @@ test("@smoke the page opens on the right league and the Outlook tab shows the pr
   await page.getByLabel("Conference", { exact: true }).selectOption("Ind");
   await expect(rows).toHaveCount(2);
   // Bowls.
-  await page.getByRole("button", { name: "Bowls" }).click();
+  await page.getByRole("button", { name: "Bowls" }).dispatchEvent("click"); // (the sticky bars can cover a button that was scrolled to the top)
   await expect(page.locator(".ol-bowls > li").first()).toBeVisible();
   // NFL: seven seeds per conference.
-  await page.getByRole("button", { name: "NFL", exact: true }).click();
+  await page.getByRole("button", { name: "NFL", exact: true }).dispatchEvent("click"); // (the sticky bars can cover a button that was scrolled to the top)
   await expect(page.getByRole("group", { name: "Conference" }).getByRole("button")).toHaveText(["AFC", "NFC"]); // one conference at a time
   await expect(page.locator(".tk-how").last()).toContainText("Tuesday");
   const width = await page.evaluate(() => document.documentElement.scrollWidth);
@@ -242,7 +242,7 @@ test("@smoke the page opens on the right league and the Outlook tab shows the pr
 
   // On a Sunday the same page opens on the NFL.
   await page.clock.setFixedTime(new Date("2026-10-11T18:00:00Z"));
-  await page.reload();
+  await page.goto("/"); // (a reload would stay on the Outlook section, which the address now names)
   await expect(page.getByLabel("League", { exact: true }).first()).toHaveValue("NFL");
 });
 
@@ -279,30 +279,20 @@ test("the NFL grid has a row per team, a column per seed, and the #1 seed column
   expect(errors).toEqual([]);
 });
 
-test("@phone the view tabs and Export never overlap, down to the narrowest phone", async ({ page }) => {
-  for (const w of [320, 360, 390, 430, 521, 760]) {
+test("@phone the five navigation buttons never overlap or leave the screen, down to the narrowest phone", async ({ page }) => {
+  for (const w of [320, 360, 390, 430, 521, 760, 768, 1024]) {
     await page.setViewportSize({ width: w, height: 800 });
     await page.goto("/?league=NFL");
-    await expect(page.locator(".view-switch button").first()).toBeVisible(); // the board renders once its data has loaded
-    const boxes = await page.evaluate(() => {
-      const box = (el: Element) => {
-        const b = el.getBoundingClientRect();
-        return { l: b.left, r: b.right, t: b.top, b: b.bottom };
-      };
-      const tabs = [...document.querySelectorAll(".view-switch button")].filter((x) => (x as HTMLElement).offsetParent !== null).map(box);
-      return { tabs, swr: document.querySelector(".view-switch")!.getBoundingClientRect().right, exp: box(document.querySelector(".export-btns summary")!), sw: document.querySelector(".view-switch")!.scrollWidth - document.querySelector(".view-switch")!.clientWidth };
+    await expect(page.locator(".site-nav .nav-trigger").first()).toBeVisible(); // the board renders once its data has loaded
+    const r = await page.evaluate(() => {
+      const bs = [...document.querySelectorAll(".site-nav .nav-trigger")].filter((x) => (x as HTMLElement).offsetParent !== null).map((x) => x.getBoundingClientRect());
+      let overlaps = 0;
+      for (let i = 0; i < bs.length; i++) for (let j = i + 1; j < bs.length; j++) if (bs[i].left < bs[j].right - 0.5 && bs[j].left < bs[i].right - 0.5 && bs[i].top < bs[j].bottom - 0.5 && bs[j].top < bs[i].bottom - 0.5) overlaps++;
+      return { n: bs.length, overlaps, off: bs.filter((b) => b.right > innerWidth + 1 || b.left < -1).length, rows: new Set(bs.map((b) => Math.round(b.top))).size, sw: document.documentElement.scrollWidth - document.documentElement.clientWidth };
     });
-    // Ten tabs share one row. From 375px up they all fit; on narrower phones the row scrolls sideways rather than wrapping or squeezing.
-    if (w >= 375) expect(boxes.sw, `tabs overflow at ${w}px`).toBeLessThanOrEqual(0);
-    expect(new Set(boxes.tabs.map((t) => Math.round(t.t))).size, `tabs wrapped at ${w}px`).toBe(1);
-    // On a phone they are four tabs and More, in a bar at the bottom; Export moves into the More sheet.
-    expect(boxes.tabs).toHaveLength(w <= 760 ? 5 : 8);
-    if (w <= 760) continue;
-    for (const t of boxes.tabs) {
-      if (t.r > boxes.swr + 0.5) continue; // scrolled out of view past the row's edge, so it cannot cover Export
-      const apart = t.r <= boxes.exp.l + 0.5 || t.l >= boxes.exp.r - 0.5 || t.b <= boxes.exp.t + 0.5 || t.t >= boxes.exp.b - 0.5;
-      expect(apart, `a view tab overlaps Export at ${w}px`).toBe(true);
-    }
+    // All five categories are visible on one row at every width (a bar at the bottom on a phone, Export now lives in More), with no sideways scroll.
+    expect(r, `navigation at ${w}px`).toMatchObject({ n: 5, overlaps: 0, off: 0, rows: 1 });
+    expect(r.sw, `page scrolls sideways at ${w}px`).toBeLessThanOrEqual(0);
   }
 });
 

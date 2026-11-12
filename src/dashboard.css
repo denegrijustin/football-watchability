@@ -1,0 +1,63 @@
+/* ---------- Phase 2: dashboard filters, status group, sort, card surface ---------- */
+.filter-more { position: relative; flex: 0 0 auto; }
+.reset-adv {
+  min-height: 32px; padding: 0 10px; border: 1px solid var(--line-strong); border-radius: 8px;
+  background: transparent; color: var(--lime); font-weight: 600; font-size: 0.8125rem;
+}
+.reset-adv:disabled { color: var(--muted); opacity: 0.6; }
+.sheet-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 4px; }
+.sheet-count { font-size: 0.8125rem; color: var(--text-2); }
+
+@media (min-width: 761px) {
+  .filter-toggle {
+    display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px;
+    border: 1px solid var(--line-strong); border-radius: 10px; background: var(--surface-2);
+    color: var(--text); font: inherit; font-weight: 600; cursor: pointer;
+  }
+  .filter-toggle[aria-expanded="true"] { border-color: var(--lime); }
+  .filter-n {
+    min-width: 20px; padding: 0 6px; border-radius: 10px; background: var(--lime); color: #12210a;
+    font-size: 0.75rem; line-height: 20px; text-align: center;
+  }
+  .filter-sheet { display: none; }
+  .filter-sheet[data-open="true"] {
+    display: grid; gap: 10px; position: absolute; top: calc(100% + 8px); left: 0; z-index: 60;
+    width: 300px; padding: 14px; border: 1px solid var(--line-strong); border-radius: 12px;
+    background: var(--surface-2); box-shadow: 0 18px 40px rgb(0 0 0 / 45%);
+  }
+  .filter-sheet .sheet-head { display: flex; justify-content: space-between; align-items: center; }
+  .filter-sheet .sheet-grabber, .filter-sheet .sheet-done { display: none; }
+  .filter-sheet .fmenu { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0; }
+  .filter-sheet .fmenu .sr-only {
+    position: static; width: auto; height: auto; clip: auto; overflow: visible; color: var(--text-2); font-weight: 600;
+  }
+  .filter-sheet .fmenu select { flex: 1 1 60%; max-width: 62%; min-height: 36px; }
+}
+
+.board-sort { margin-left: auto; align-items: center; }
+.board-sort .bs-label { font-size: 0.75rem; color: var(--muted); padding: 0 8px; }
+@media (max-width: 520px) {
+  .board-sort .bs-label { display: none; }
+}
+
+.status-chips { flex-wrap: nowrap; }
+.status-chip[data-status-chip] { min-height: 32px; white-space: nowrap; }
+.status-chip[data-status-chip] b { margin-right: 2px; }
+
+/* the whole compact card opens Game Center */
+.game-card.compact { cursor: pointer; }
+.game-card.compact:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
+.game-card.compact a, .game-card.compact button, .game-card.compact summary { cursor: pointer; }
+.game-card.compact .team-heading, .game-card.compact .team-name { min-width: 0; overflow-wrap: anywhere; }
+
+/* Game Center close: always in the upper right, clear of the notch */
+.gc-close {
+  top: max(12px, env(safe-area-inset-top));
+  right: max(12px, env(safe-area-inset-right));
+  z-index: 20;
+}
+
+/* tighter dashboard heading */
+.board-heading { margin: 10px 0 10px; }
+
+.status-chip[data-short]::after { text-transform: capitalize; }

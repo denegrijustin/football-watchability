@@ -69,12 +69,10 @@ html[data-hidden] *, html[data-hidden] *::before, html[data-hidden] *::after,
 @keyframes card-in { from { opacity: 0; transform: translateY(14px); } }
 .view-in { animation: view-in 0.24s cubic-bezier(0.2, 0.8, 0.2, 1) backwards; }
 @keyframes view-in { from { opacity: 0; transform: translateX(16px); } }
-.view-switch button { position: relative; }
-.view-switch button[aria-pressed="true"]::after { content: ""; position: absolute; left: 14%; right: 14%; bottom: 2px; height: 3px; border-radius: 2px; background: var(--lime); pointer-events: none; }
 
 /* ---- touch feedback ---- */
-.status-chip, .view-switch button, .segmented button, .btn, .wn-tile, .card-toggle, .reset { transition: transform 0.18s cubic-bezier(0.3, 1.6, 0.5, 1); }
-.status-chip:active, .view-switch button:active, .segmented button:active, .btn:active, .wn-tile:active, .card-toggle:active, .reset:active { transform: scale(0.95); }
+.status-chip, .segmented button, .btn, .wn-tile, .card-toggle, .reset { transition: transform 0.18s cubic-bezier(0.3, 1.6, 0.5, 1); }
+.status-chip:active, .segmented button:active, .btn:active, .wn-tile:active, .card-toggle:active, .reset:active { transform: scale(0.95); }
 
 /* ---- refresh: pull indicator and toast ---- */
 .ptr { position: fixed; top: 0; left: 50%; z-index: 80; width: 36px; height: 36px; margin-top: calc(env(safe-area-inset-top, 0px) + 8px); border-radius: 50%; background: var(--surface-2); border: 1px solid var(--line-strong); box-shadow: 0 6px 18px rgb(0 0 0 / 35%); display: grid; place-items: center; opacity: 0; transform: translate(-50%, -48px); pointer-events: none; }
@@ -111,7 +109,7 @@ html[data-hidden] *, html[data-hidden] *::before, html[data-hidden] *::after,
 
 /* ---- motion off: the new one-shots do not play, the loops stand still ---- */
 html[data-motion="off"] :is(.game-grid > .game-card, .view-in, .pulse-ring, .team-score.scored .ts-num, .team-score.scored::after, .rise-tag, .toast, .sr-pop, .pr-bar, .pr-line, .pr-dot, .pr-badge, .lp-scale .dot, .skel-line::after, .late-flag::after, .late-flag i, .wn-tile.hot::after, .wn-when i) { animation: none !important; }
-html[data-motion="off"] :is(.sr-fill, .wp-track i, .status-chip, .view-switch button, .segmented button, .btn, .wn-tile, .card-toggle, .reset) { transition: none !important; }
+html[data-motion="off"] :is(.sr-fill, .wp-track i, .status-chip, .segmented button, .btn, .wn-tile, .card-toggle, .reset) { transition: none !important; }
 
 .wn-short { display: none; }
 @media (max-width: 560px) {

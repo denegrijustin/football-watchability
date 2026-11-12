@@ -42,7 +42,7 @@ const openTab = async (page: Page) => {
 test.describe("the CFB SP+ tab", () => {
   test("@smoke it sits with the other tabs and opens on the ratings table", async ({ page }) => {
     await openTab(page);
-    await expect(page.getByRole("button", { name: "CFB SP+" })).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByRole("button", { name: "CFB SP+" })).toHaveAttribute("aria-current", "page");
     await expect(page.locator(".spp .tbl tbody tr:not(.detail)")).toHaveCount(138);
     await expectSppTabs(page, ["Rankings", "Simulator", "ATS tracker", "Movement", "Team", "Matchups", "Compare", "Outliers", "Conferences", "Play vs Results", "Results", "SP+ vs lines", "Data"]);
     await expect(page.locator(".spp .foot")).toContainText("2026 SP+");
@@ -76,7 +76,7 @@ test.describe("the CFB SP+ tab", () => {
     await openTab(page);
     await openSppTab(page, "ATS tracker");
     await expect(page.locator(".spp").getByRole("heading", { name: "SP+ picks against the spread" })).toBeVisible();
-    await page.getByRole("button", { name: "Games" }).click();
+    await page.locator('.site-nav [data-tab="board"]').click();
     await page.getByRole("button", { name: "CFB SP+" }).click();
     await expectSppTabSelected(page, "ATS tracker");
   });
@@ -134,7 +134,7 @@ test.describe("Game Center", () => {
     await expect(panel.locator("h3.micro-label").first()).toHaveText("Projection");
     await block.getByRole("button", { name: /Open in CFB SP\+/ }).click();
     await expect(dialog).toBeHidden();
-    await expect(page.getByRole("button", { name: "CFB SP+" })).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByRole("button", { name: "CFB SP+" })).toHaveAttribute("aria-current", "page");
     await expect(page.locator(".spp").getByLabel("Team A")).toHaveValue("Ohio State");
     await expect(page.locator(".spp").getByLabel("Team B")).toHaveValue("Indiana");
     await expectSppTabSelected(page, "Simulator");

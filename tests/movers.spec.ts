@@ -1,4 +1,4 @@
-import { expect, test } from "./fixtures";
+import { expect, openSection, test } from "./fixtures";
 import { openSppTab } from "./helpers/spp";
 import { stubFinals } from "./helpers/finals";
 
@@ -6,7 +6,7 @@ test.beforeEach(async ({ page }) => { await stubFinals(page); });
 
 const open = async (page: import("@playwright/test").Page, league: "NFL" | "CFB", phone = false) => {
   await page.goto(`/?league=${league}`);
-  if (phone) { await page.locator(".view-switch .tab-more").click(); await page.locator(`.view-switch [data-tab="${league === "NFL" ? "nfl" : "spplus"}"]`).click(); }
+  if (phone) await openSection(page, league === "NFL" ? "nfl" : "spplus");
   else await page.getByRole("button", { name: league === "NFL" ? "NFL+" : "CFB SP+" }).click();
   await openSppTab(page, "Movement");
   await expect(page.locator(".spp .mv-table tbody tr").first()).toBeVisible({ timeout: 15_000 });

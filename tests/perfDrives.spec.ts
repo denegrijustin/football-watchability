@@ -163,6 +163,8 @@ const openDrives = async (page: Page) => {
   await expect(page.locator(".dv-lane > button").first()).toBeVisible({ timeout: 15_000 });
 };
 const latest = rowsOf("SEA").at(-1)!;
+/** The nickname of the team Seattle last played (the opponent changes as the season does), as the lane filter writes it. */
+const lastOpponentNick = (data.teams[latest.o]?.name ?? latest.o).split(" ").pop()!;
 const expectedLane = (f: (d: ReturnType<typeof buildGameDrives>[number]) => boolean = () => true) => buildGameDrives(data, latest, "all").filter(f).length;
 
 test.describe("Drives: the tab", () => {
@@ -187,7 +189,7 @@ test.describe("Drives: the tab", () => {
     const oppName = await page.locator(".dv-filters .seg").first().getByRole("button").nth(2).innerText();
     await page.locator(".dv-filters .seg").first().getByRole("button").nth(2).click();
     await expect(lanes).toHaveCount(expectedLane((d) => d.side === "opp"));
-    expect(oppName).toContain("Donkeys");
+    expect(oppName).toContain(lastOpponentNick === "Broncos" ? "Donkeys" : lastOpponentNick); // the board shows the Broncos as the Donkeys
     await page.locator(".dv-filters .seg").first().getByRole("button").first().click();
     await page.locator(".dv-filters [aria-label=Half]").getByRole("button", { name: /^1st/ }).click();
     await expect(lanes).toHaveCount(expectedLane((d) => d.period <= 2));

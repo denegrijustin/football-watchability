@@ -18,7 +18,7 @@ test("@phone the ticker, header, filters and tab row stay at the top of the page
   } else {
     expect(await top(".filter-dock")).toBe(await bottom(".ticker"));
     // On a phone the sections are a tab bar fixed to the bottom of the screen.
-    expect(await bottom(".view-switch")).toBeGreaterThan(await page.evaluate(() => innerHeight) - 4);
+    expect(await bottom(".site-nav")).toBeGreaterThan(await page.evaluate(() => innerHeight) - 4);
   }
 });
 

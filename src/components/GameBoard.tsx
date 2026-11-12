@@ -12,6 +12,7 @@ import { GameCard } from "./GameCard";
 import { ResultCard } from "./ResultCard";
 import { LinesBar } from "./LinesBar";
 import { WatchNow } from "./WatchNow";
+import type { BoardSortKey } from "./BoardSort";
 import { useFlip } from "../motion";
 import { liveHeat } from "../watchNow";
 import { observeScores, useTouchdowns } from "../touchdown";
@@ -78,10 +79,15 @@ function FlipGrid({ children, games, className = "game-grid", ...rest }: { child
   return <div ref={ref} className={className} {...rest}>{children}</div>;
 }
 
-function KickoffSlots({ games, hot = false }: { games: Game[]; hot?: boolean }) {
+function KickoffSlots({ games, hot = false, sort = "time" }: { games: Game[]; hot?: boolean; sort?: BoardSortKey }) {
   const tz = useTz();
   const map = useLiveMap();
   const heat = (g: Game) => (hot ? liveHeat(g.score, map[g.espnId]) : g.score);
+  // Sorted by watchability: one list, best first, and ties stay in kickoff order (then by id) so the order is stable.
+  if (sort === "watch") {
+    const flat = [...games].sort((a, b) => heat(b) - heat(a) || a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
+    return <FlipGrid games={flat}>{flat.map((game) => <GameCard key={game.id} game={game} />)}</FlipGrid>;
+  }
   const slots = new Map<string, Game[]>();
   for (const game of [...games].sort((a, b) => a.date.localeCompare(b.date))) {
     const kickoff = new Date(game.date);
@@ -103,11 +109,13 @@ function KickoffSlots({ games, hot = false }: { games: Game[]; hot?: boolean }) 
 /** Main board: Upcoming first, then In progress, with Completed collapsed below. */
 export function GameBoard({
   board,
+  sort = "time",
   status,
   filtered,
   onReset,
 }: {
   board: Board;
+  sort?: BoardSortKey;
   status: FilterState["status"];
   filtered: boolean;
   onReset: () => void;
@@ -188,7 +196,7 @@ export function GameBoard({
             <span className="section-note">{SECTION_HELP.live}</span>
           </div>
           {leadsLive && pinned.length > 0 && <FlipGrid games={pinned} className="game-grid td-lead">{pinned.map((game) => <GameCard key={game.id} game={game} />)}</FlipGrid>}
-          <KickoffSlots games={live} hot />
+          <KickoffSlots games={live} hot sort={sort} />
         </section>
       )}
 
@@ -200,7 +208,7 @@ export function GameBoard({
             <span className="section-note">{SECTION_HELP.upcoming}</span>
           </div>
           <LinesBar compact />
-          <KickoffSlots games={upcoming} />
+          <KickoffSlots games={upcoming} sort={sort} />
         </section>
       )}
 

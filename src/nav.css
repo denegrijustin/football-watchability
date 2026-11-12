@@ -1,0 +1,192 @@
+/*
+ * Primary navigation: Games, Teams, Rankings, Analytics, More (see src/nav/).
+ * One set of elements serves every screen. From 761px up the five buttons are a row under the filters and each opens a dropdown; on a phone
+ * the same buttons are a bar fixed to the bottom of the screen and each opens a sheet above it. A closed menu is hidden with `visibility`,
+ * never removed, so it is out of the tab order and the accessibility tree but its buttons still exist (and can be clicked by script).
+ */
+
+/* ---------- the row that holds the nav: stays with the ticker, header and filters ---------- */
+.view-row {
+  position: sticky;
+  top: var(--stk-nav, 0px);
+  z-index: 36;
+  margin: 0 -24px;
+  padding: 8px 24px;
+  background: var(--bg);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+.board-heading { scroll-margin-top: 8px; }
+
+.site-nav { position: relative; }
+.nav-list { display: flex; align-items: center; gap: 4px; list-style: none; margin: 0; padding: 0; }
+.nav-cat { position: relative; }
+
+/* ---------- the five buttons ---------- */
+.nav-trigger {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 42px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 0.9375rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+.nav-trigger .tab-ico { display: none; }
+.nav-caret { transition: transform 0.15s ease; }
+.nav-trigger[aria-expanded="true"] .nav-caret { transform: rotate(180deg); }
+.nav-trigger:hover { background: var(--surface-2); color: var(--text); }
+.nav-trigger[aria-expanded="true"] { background: var(--surface-3); color: var(--text); }
+/* the section you are in: brighter text and a bar under it (not colour alone) */
+.nav-trigger[aria-current] { color: var(--text); }
+.nav-trigger[aria-current]::after {
+  content: "";
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 3px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--lime);
+}
+
+/* ---------- a menu ---------- */
+.nav-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 40;
+  width: max-content;
+  min-width: 320px;
+  max-width: min(400px, calc(100vw - 32px));
+  /* sized from the panel's real top (--nav-panel-top is set by PrimaryNav) so the last entry is always reachable on a short screen */
+  max-height: calc(100vh - 160px);
+  max-height: calc(100dvh - var(--nav-panel-top, 160px) - 12px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 6px;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: var(--surface-2);
+  box-shadow: 0 12px 30px rgb(0 0 0 / 45%);
+  visibility: hidden;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity 0.12s ease, transform 0.12s ease, visibility 0s linear 0.12s;
+}
+/* On a narrow window the last two open towards the left so a menu never runs past the right edge; wider, every menu hangs from its own button */
+@media (min-width: 761px) and (max-width: 900px) {
+  .nav-cat:nth-last-child(-n + 2) > .nav-panel { left: auto; right: 0; }
+}
+.nav-cat[data-open="true"] > .nav-panel {
+  visibility: visible;
+  opacity: 1;
+  transform: none;
+  transition-delay: 0s;
+}
+.nav-group ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.nav-group + .nav-group { margin-top: 4px; padding-top: 4px; border-top: 1px solid var(--line); }
+.nav-group-label { margin: 6px 12px 2px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-2); }
+.nav-item {
+  display: grid;
+  gap: 1px;
+  width: 100%;
+  min-height: 44px;
+  padding: 7px 12px;
+  border: 0;
+  border-left: 3px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  text-decoration: none;
+  font: inherit;
+}
+.nav-item:hover { background: var(--surface-3); }
+.nav-item-main { display: flex; align-items: center; gap: 8px; font-size: 0.9375rem; font-weight: 650; }
+.nav-item-desc { font-size: 0.8125rem; line-height: 1.35; color: var(--text-2); font-weight: 450; }
+.nav-count { padding: 0 7px; border-radius: 99px; font-size: 0.75rem; font-variant-numeric: tabular-nums; background: var(--surface-3); color: var(--text-2); }
+.nav-item[aria-current="page"] { background: color-mix(in srgb, var(--lime) 13%, transparent); border-left-color: var(--lime); }
+.nav-item[aria-current="page"] .nav-item-label { color: var(--lime); }
+.nav-hint { margin: 6px 12px 4px; font-size: 0.8125rem; color: var(--text-2); }
+.nav-hint:empty { margin: 0; }
+.nav-scrim { display: none; }
+
+@media (pointer: coarse) { .nav-trigger { min-height: 44px; } }
+
+/* ---------- a phone: a bar at the bottom, menus open as a sheet above it ---------- */
+@media (max-width: 760px) {
+  .view-row { position: static; height: 0; margin: 0; padding: 0; background: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+  .site-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 60;
+    padding: 6px calc(4px + env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) calc(4px + env(safe-area-inset-left, 0px));
+    border-top: 1px solid var(--line-strong);
+    background: color-mix(in srgb, var(--bg) 98%, transparent);
+    backdrop-filter: blur(16px) saturate(1.4);
+    -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  }
+  .nav-list { position: relative; z-index: 2; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; }
+  .nav-cat { position: static; }
+  .nav-trigger {
+    width: 100%;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    min-width: 44px;
+    min-height: 56px;
+    padding: 4px 2px;
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-weight: 650;
+  }
+  .nav-trigger:hover { background: transparent; color: var(--muted); }
+  .nav-trigger .tab-ico { display: block; }
+  .nav-caret { display: none; }
+  .nav-trigger-label { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+  .nav-trigger[aria-current] { color: var(--lime); }
+  .nav-trigger[aria-current]::after { left: 26%; right: 26%; top: 0; bottom: auto; height: 3px; }
+  /* current = lime text and the bar on top; expanded = a fill only (a theme token, so it shows on light too) */
+  .nav-trigger[aria-expanded="true"] { background: var(--surface-3); color: var(--text); }
+  .nav-trigger[aria-expanded="true"][aria-current] { color: var(--lime); }
+  .site-nav .nav-cat > .nav-panel {
+    top: auto;
+    /* relative to the button row, which sits 7px inside the bar (1px border + 6px padding): 8px of air above the bar */
+    bottom: calc(100% + 15px);
+    left: 8px;
+    right: 8px;
+    z-index: 1;
+    width: auto;
+    min-width: 0;
+    max-width: none;
+    max-height: calc(100vh - 150px);
+    max-height: calc(100dvh - 150px);
+    overscroll-behavior: contain;
+    transform: translateY(8px);
+    padding: 8px;
+  }
+  /* (the closed offset above is more specific than the generic open rule, so the open state is restated here) */
+  .site-nav .nav-cat[data-open="true"] > .nav-panel { transform: none; }
+  .nav-item { min-height: 48px; }
+  .nav-scrim { display: block; position: absolute; left: 0; right: 0; bottom: 100%; height: 100vh; z-index: 0; background: rgb(0 0 0 / 40%); overscroll-behavior: contain; }
+  /* a focused element scrolls into view above the bar, never under it (WCAG 2.4.11) */
+  html { scroll-padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
+  /* room above the bar for the last of the page */
+  .page, footer { padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
+}
+@media (max-width: 340px) { .nav-trigger { font-size: 0.6875rem; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-panel, .nav-caret, .nav-trigger, .nav-item { transition: none; }
+}
+html[data-motion="off"] :is(.nav-panel, .nav-caret, .nav-trigger, .nav-item) { transition: none; }
+@media print { .view-row { display: none; } }
