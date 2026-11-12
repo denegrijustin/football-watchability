@@ -585,11 +585,11 @@ test.describe("Games entries @nav", () => {
       await expect(item(page, `[data-status="${status}"]`)).toHaveAttribute("aria-current", "page");
       await expect(item(page, '[data-tab="board"]')).not.toHaveAttribute("aria-current", /.*/);
       // the board's own Status control shows it too
-      await expect(page.locator('.filter-bar select[aria-label="Status"]')).toHaveValue(status);
+      await expect(page.locator(`[data-status-chip="${status}"]`)).toHaveAttribute("aria-pressed", "true");
       // every game card still shown matches (or the board is empty): none contradicts the filter
       await choose(page, "games", `[data-status="${status}"]`);
       expect(search(page).get("status")).toBeNull();
-      await expect(page.locator(".status-chip[aria-pressed=true]")).toHaveCount(0);
+      await expect(page.locator("[data-status-chip=all]")).toHaveAttribute("aria-pressed", "true");
     });
   }
 
@@ -598,7 +598,7 @@ test.describe("Games entries @nav", () => {
     await choose(page, "games", '[data-tab="board"]');
     expect(search(page).get("status")).toBeNull();
     expect(search(page).get("league")).toBe("NFL");
-    await expect(page.locator(".status-chip[aria-pressed=true]")).toHaveCount(0);
+    await expect(page.locator("[data-status-chip=all]")).toHaveAttribute("aria-pressed", "true");
     await expect(item(page, '[data-tab="board"]')).toHaveAttribute("aria-current", "page");
     await expect(item(page, '[data-status="live"]')).not.toHaveAttribute("aria-current", /.*/);
   });

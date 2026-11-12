@@ -6,8 +6,14 @@ const slate = JSON.parse(readFileSync("src/data/slate.json", "utf8"));
 // slate game whatever its status, so these counts hold at any time of day.
 const CARD = ".game-card:not(.result-card)";
 // Filters are pop-down menus: choose an option by its label.
-const pick = (page: import("@playwright/test").Page, menu: string, option: string) =>
-  page.getByLabel(menu, { exact: true }).selectOption({ label: option });
+const STATUS: Record<string, string> = { "All status": "all", "All games": "all", "In progress": "live", Live: "live", Completed: "final", Final: "final", Upcoming: "upcoming" };
+const pick = async (page: import("@playwright/test").Page, menu: string, option: string) => {
+  if (menu === "Status") return page.locator(`[data-status-chip="${STATUS[option]}"]`).click();
+  const select = page.getByLabel(menu, { exact: true });
+  // Day, Watchability and Conference live in the Filters panel.
+  if (menu !== "League" && !(await select.isVisible())) await page.getByRole("button", { name: /^Filters/ }).click();
+  await select.selectOption({ label: option });
+};
 const league = (page: import("@playwright/test").Page, l: "NFL" | "CFB") => pick(page, "League", l === "CFB" ? "College" : "NFL");
 // The old Final tab is now the Completed status on the main board.
 const completed = (page: import("@playwright/test").Page) => pick(page, "Status", "Completed");
@@ -660,15 +666,17 @@ test("board shows live first and collapses completed games below, with working s
   await expect(page.locator(".board-section.upcoming .game-card")).toHaveCount(games.length - 2);
   // The heading line carries the same counts, and the Status menu offers each status.
   const counts = page.locator(".board-heading [role=status]");
-  await expect(counts).toContainText(`1 in progress${archived + 1} completed${games.length - 2} upcoming`);
+  await expect(counts.locator('[data-status-chip="live"] b')).toHaveText("1");
+  await expect(counts.locator('[data-status-chip="final"] b')).toHaveText(String(archived + 1));
+  await expect(counts.locator('[data-status-chip="upcoming"] b')).toHaveText(String(games.length - 2));
   // Each count is a button that jumps straight to that status.
-  await counts.getByRole("button", { name: /completed/ }).click();
+  await counts.getByRole("button", { name: /Final/ }).click();
   await expect(page.locator(".board-section.final .result-card").first()).toBeVisible();
-  await expect(counts.getByRole("button", { name: /completed/ })).toHaveAttribute("aria-pressed", "true");
-  await counts.getByRole("button", { name: /completed/ }).click();
-  await expect(counts.getByRole("button", { name: /completed/ })).toHaveAttribute("aria-pressed", "false");
+  await expect(counts.getByRole("button", { name: /Final/ })).toHaveAttribute("aria-pressed", "true");
+  await counts.getByRole("button", { name: /Final/ }).click();
+  await expect(counts.getByRole("button", { name: /Final/ })).toHaveAttribute("aria-pressed", "false");
   const status = (name: string) => pick(page, "Status", name);
-  await expect(page.getByLabel("Status", { exact: true }).locator("option")).toHaveText(["All status", "In progress", "Completed", "Upcoming"]);
+  await expect(counts.locator("[data-status-chip]")).toHaveCount(4);
   // Completed games start collapsed below upcoming and live games.
   const toggle = page.getByRole("button", { name: "Show completed games", exact: true });
   await expect(toggle).toHaveAttribute("aria-expanded", "false");
@@ -961,7 +969,7 @@ test("@smoke @phone the persistent bar is slim and every filter is a pop-down me
   const sheetBtn = page.getByRole("button", { name: /^Filters/ });
   if (await sheetBtn.isVisible()) await sheetBtn.click();
   // Every filter is a pop-down (a select), not a row of buttons.
-  for (const menu of ["League", "Status", "Day", "Watchability"]) {
+  for (const menu of ["League", "Day", "Watchability"]) {
     await expect(page.getByLabel(menu, { exact: true })).toHaveJSProperty("tagName", "SELECT");
   }
   await expect(dock.locator("button:not(.search-clear):not(.filter-toggle):not(.sheet-done)")).toHaveCount(0);
@@ -1151,7 +1159,7 @@ test("completed games can be sorted by watch score, insanity or highest ranked, 
   expect(best.length).toBeGreaterThan(1);
   expect(best).toEqual([...best].sort((a, b) => a - b));
   // with everything showing, the order is still the most insane first
-  await page.getByLabel("Status", { exact: true }).selectOption({ label: "All status" });
+  await pick(page, "Status", "All status");
   await expect(page.getByRole("group", { name: "Sort completed games by" }).getByRole("button", { name: "Most insane" })).toHaveAttribute("aria-pressed", "false"); // the pick made above is kept
 });
 

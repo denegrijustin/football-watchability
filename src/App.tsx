@@ -291,7 +291,7 @@ export default function App() {
           <div className="board-heading">
             <h2>{heading}</h2>
             <span role="status" className="status-chips">
-              {([["all", board.counts.all, "All games", "All"], ["live", board.counts.live, "Live", "Live"], ["upcoming", board.counts.upcoming, "Upcoming", "Soon"], ["final", board.counts.final, "Final", "Final"]] as const).map(([k, n, label, short]) => (
+              {([["all", board.counts.all, "All games", "all"], ["live", board.counts.live, "Live", "live"], ["upcoming", board.counts.upcoming, "Upcoming", "soon"], ["final", board.counts.final, "Final", "final"]] as const).map(([k, n, label, short]) => (
                 <button key={k} type="button" data-short={short} data-status-chip={k} className={`status-chip${filters.status === k ? " on" : ""}`} aria-pressed={filters.status === k} onClick={() => update({ status: k })}>
                   <b>{n}</b> <span className="sc-l">{label}</span>
                 </button>
