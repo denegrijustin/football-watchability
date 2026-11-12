@@ -211,7 +211,12 @@ test.describe("NFL data and model", () => {
     expect(noLine.marginHome).toBeCloseTo(g.mm!, 0);
     // Swapping home and away flips the favorite.
     const flipped = projectNfl(nfl, g.home, g.away, g.week, { neutral: !!g.neutral, n: 20000 })!;
-    expect(Math.sign(flipped.marginHome)).toBe(-Math.sign(noLine.marginHome) || Math.sign(flipped.marginHome));
+    // Swapping the venue mirrors the ratings gap around the same home edge: with r the neutral-field margin and e the home edge,
+    // the home side is favored by r + e one way and -r + e the other (so only a gap bigger than the edge flips the favorite).
+    const neutral = projectNfl(nfl, g.away, g.home, g.week, { neutral: true, spread: null, total: null, n: 20000 })!;
+    const edge = noLine.marginHome - neutral.marginHome;
+    expect(Math.abs(flipped.marginHome - (-neutral.marginHome + edge))).toBeLessThan(1);
+    if (Math.abs(neutral.marginHome) > edge + 1) expect(Math.sign(flipped.marginHome)).toBe(-Math.sign(noLine.marginHome));
     // Same inputs, same simulation.
     const again = projectGameRow(nfl, g, { n: 20000 })!;
     expect(again.sim.meanA).toBe(withLine.sim.meanA);

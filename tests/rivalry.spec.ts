@@ -49,7 +49,7 @@ test("every named rivalry points at teams the site has a logo for", () => {
   for (const [a, b] of RIVALRIES) { expect(logos[a], a).toBeTruthy(); expect(logos[b], b).toBeTruthy(); }
 });
 
-test("this week's board carries its rivalries: a part in the breakdown, a rivalry line first in why-watch, and a trophy where there is one", () => {
+test("this week's board carries its rivalries: a part in the breakdown, a rivalry headline or history line in why-watch, and a trophy where there is one", () => {
 
   test.skip(!hasCfbGame(), NO_CFB);
   const slate = JSON.parse(readFileSync("src/data/slate.json", "utf8"));
@@ -57,7 +57,11 @@ test("this week's board carries its rivalries: a part in the breakdown, a rivalr
   expect(riv.length).toBeGreaterThan(0);
   for (const g of riv) {
     expect(g.breakdown.parts.some((p: any) => p.id === "rivalry")).toBe(true);
-    expect(g.watch[0]).toMatch(/meetings|first played|series|rival/i);
+    // A named or trophy rivalry is the card's headline (its chip says so) and is not repeated as a bullet; any other rivalry gets a history line
+    // in why-watch, ahead of or behind the week's stakes lines depending on how big the stakes are.
+    const asHeadline = g.narrativeChips.some((c: string) => /Rivalry|Trophy game/.test(c));
+    const asLine = g.watch.some((l: string) => /meetings|first played|series|rival|last meeting|meeting no|games between|revenge|straight/i.test(l));
+    expect(asHeadline || asLine, g.matchup).toBe(true);
   }
 });
 
