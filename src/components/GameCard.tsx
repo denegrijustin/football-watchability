@@ -37,6 +37,8 @@ import { NetChip } from "./NetChip";
 import { LiveMeters } from "./LiveMeters";
 import { HalftimeBand } from "../halftime";
 import { HalftimeAct } from "../nflHalftime";
+import { PregameCheer } from "../pregameCheer";
+import { usePregame } from "../pregameLogic";
 import { GameBadgeRow } from "./GameBadge";
 import { RivalryBadge, type Rivalry } from "./RivalryBadge";
 import { gameBadge } from "../gameLogo";
@@ -163,7 +165,17 @@ export function GameCard({
     ) : null;
   const atHalf = live?.state === "in" && !!game.espnId && (game.league === "CFB" || game.league === "NFL") && isHalftime(live.detail);
   const Halftime = game.league === "NFL" ? HalftimeAct : HalftimeBand;
-  const bandTop = atHalf ? <Halftime badge={badge} weather={game.weather} espnId={game.espnId} away={{ ...(game.teams[0] as { abbr?: string; name: string; color?: string | null; logoId?: string }), conf: (game.teams[0] as { ranks?: { confName?: string } }).ranks?.confName }} home={{ ...(game.teams[1] as { abbr?: string; name: string; color?: string | null; logoId?: string }), conf: (game.teams[1] as { ranks?: { confName?: string } }).ranks?.confName }} /> : null;
+  const pregame = usePregame({ league: game.league, date, state: live?.state ?? null, detail: live?.detail });
+  const sides = {
+    away: { ...(game.teams[0] as { abbr?: string; name: string; color?: string | null; logoId?: string }), conf: (game.teams[0] as { ranks?: { confName?: string } }).ranks?.confName },
+    home: { ...(game.teams[1] as { abbr?: string; name: string; color?: string | null; logoId?: string }), conf: (game.teams[1] as { ranks?: { confName?: string } }).ranks?.confName },
+  };
+  const pregameTop = !atHalf && pregame && game.espnId
+    ? pregame.league === "NFL"
+      ? <PregameCheer pregame={pregame} badge={badge} weather={game.weather} espnId={game.espnId} {...sides} />
+      : <HalftimeBand pregame={pregame} badge={badge} weather={game.weather} espnId={game.espnId} {...sides} />
+    : null;
+  const bandTop = pregameTop ?? (atHalf ? <Halftime badge={badge} weather={game.weather} espnId={game.espnId} away={{ ...(game.teams[0] as { abbr?: string; name: string; color?: string | null; logoId?: string }), conf: (game.teams[0] as { ranks?: { confName?: string } }).ranks?.confName }} home={{ ...(game.teams[1] as { abbr?: string; name: string; color?: string | null; logoId?: string }), conf: (game.teams[1] as { ranks?: { confName?: string } }).ranks?.confName }} /> : null);
   return (
     <article
       ref={cardRef}
