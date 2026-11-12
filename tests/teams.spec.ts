@@ -12,6 +12,8 @@ test("the Teams tab lists every team and opens one team's page, with its resumé
   await picks.first().click();
   const page_ = page.locator('section.tm[aria-label$="team page"]');
   await expect(page_.getByRole("heading", { name: "Kansas City Chiefs" })).toBeVisible();
+  await expect(page_.locator(".tm-sections button[aria-pressed=true]")).toHaveText("Upcoming games"); // the team page opens on its games
+  await page_.getByRole("button", { name: "Resumé", exact: true }).click();
   await expect(page_.locator(".rs-row")).toHaveCount(1); // the resumé
   await page_.getByRole("button", { name: "Ratings & performance" }).click();
   await expect(page.getByTestId("nfl-host")).toBeAttached();

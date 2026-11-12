@@ -131,3 +131,34 @@ export const VIEW_IDS: readonly View[] = [
 export const isView = (s: string | null): s is View => !!s && (VIEW_IDS as readonly string[]).includes(s);
 export const STATUSES = ["live", "upcoming", "final"] as const;
 export const isStatus = (s: string | null): s is Exclude<Status, "all"> => !!s && (STATUSES as readonly string[]).includes(s);
+
+/** What each section is for, shown once under the nav row (the same wording as the menus), and the sections most worth opening next. */
+export const SECTION_DESC: Partial<Record<View, string>> = (() => {
+  const d: Partial<Record<View, string>> = {
+    outlook: "Projected playoff field, rankings and bowls",
+    sim: "Simulate a matchup and see how often each side covers",
+    upset: "Games where an underdog is most likely to win",
+  };
+  for (const c of CATEGORIES) for (const g of c.groups) for (const i of g.items) if (i.kind === "view") d[i.view] = i.desc;
+  return d;
+})();
+export const RELATED: Partial<Record<View, View[]>> = {
+  teams: ["standings", "resumes", "injuries", "trades"],
+  injuries: ["teams", "standings"],
+  trades: ["teams", "injuries"],
+  standings: ["teams", "resumes", "outlook"],
+  resumes: ["teams", "standings", "spplus"],
+  spplus: ["standings", "resumes", "teams"],
+  nfl: ["standings", "teams", "picks"],
+  outlook: ["standings", "resumes", "spplus"],
+  insanity: ["board", "teams"],
+  empire: ["teams", "standings"],
+  picks: ["spplus", "nfl", "board"],
+  upset: ["picks", "spplus", "nfl"],
+  sim: ["picks", "spplus", "nfl"],
+  grid: ["board", "insanity"],
+};
+export const viewLabel = (view: View): string => {
+  for (const c of CATEGORIES) for (const g of c.groups) for (const i of g.items) if (i.kind === "view" && i.view === view) return i.label;
+  return view === "outlook" ? "Playoff Outlook" : view === "sim" ? "Simulator" : view === "upset" ? "Upset Watch" : view;
+};

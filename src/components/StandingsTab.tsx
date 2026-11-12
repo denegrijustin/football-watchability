@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { fetchData } from "../data/load";
 import { logos, type League } from "../data";
 import { ChipImg } from "../logoTone";
@@ -21,7 +21,19 @@ function Team({ r, nfl }: { r: Row; nfl: boolean }) {
   return <span className="sd-team">{s && <TeamOpen className="img" team={to}><ChipImg src={s} size={22} /></TeamOpen>}<b><TeamOpen team={to}>{r.short}</TeamOpen></b>{r.division && <em>{r.division}</em>}</span>;
 }
 
+type SortKey = "pct" | "pf" | "pa" | "diff";
+const SORTS: Record<SortKey, (r: Row) => number> = { pct: (r) => r.pct, pf: (r) => r.pf, pa: (r) => r.pa, diff: (r) => r.diff };
+
 function Table({ rows, nfl, rank = true }: { rows: Row[]; nfl: boolean; rank?: boolean }) {
+  // Click a stat heading to order by it (highest first, then lowest first, then back to the standings order).
+  const [sort, setSort] = useState<{ key: SortKey; dir: 1 | -1 } | null>(null);
+  const shown = useMemo(() => (sort ? [...rows].sort((x, y) => (SORTS[sort.key](y) - SORTS[sort.key](x)) * sort.dir || rows.indexOf(x) - rows.indexOf(y)) : rows), [rows, sort]);
+  const press = (key: SortKey) => setSort((s) => (!s || s.key !== key ? { key, dir: 1 } : s.dir === 1 ? { key, dir: -1 } : null));
+  const head = (key: SortKey, label: string) => (
+    <th scope="col" className="r hide-sm" aria-sort={sort?.key === key ? (sort.dir === 1 ? "descending" : "ascending") : "none"}>
+      <button type="button" className="sd-sort" onClick={() => press(key)} title={`Order by ${label}`}>{label}{sort?.key === key ? (sort.dir === 1 ? " ▼" : " ▲") : ""}</button>
+    </th>
+  );
   return (
     <table className="sd-table">
       <thead>
@@ -31,15 +43,15 @@ function Table({ rows, nfl, rank = true }: { rows: Row[]; nfl: boolean; rank?: b
           <th scope="col" className="r">Conf</th>
           <th scope="col" className="r">Overall</th>
           {nfl && <th scope="col" className="r hide-sm">Div</th>}
-          <th scope="col" className="r hide-sm">Pct</th>
-          <th scope="col" className="r hide-sm">PF</th>
-          <th scope="col" className="r hide-sm">PA</th>
-          <th scope="col" className="r hide-sm">Diff</th>
+          {head("pct", "Pct")}
+          {head("pf", "PF")}
+          {head("pa", "PA")}
+          {head("diff", "Diff")}
           <th scope="col" className="r">Strk</th>
         </tr>
       </thead>
       <tbody>
-        {rows.map((r, i) => (
+        {shown.map((r, i) => (
           <tr key={r.id}>
             {rank && <td className="sd-rk">{i + 1}</td>}
             <th scope="row"><Team r={r} nfl={nfl} />{nfl && r.seed && r.seed <= 7 ? <span className="sd-seed" title={`Playoff seed ${r.seed}`}>{r.seed}</span> : null}</th>
@@ -58,13 +70,15 @@ function Table({ rows, nfl, rank = true }: { rows: Row[]; nfl: boolean; rank?: b
   );
 }
 
+const matches = (r: Row, q: string) => !q || `${r.name} ${r.short} ${r.abbr ?? ""}`.toLowerCase().includes(q);
+
 /** NFL: each conference's four divisions in order, with the playoff seeds beside the teams that hold one. */
-function NflStandings({ data, conf }: { data: Nfl; conf: string }) {
+function NflStandings({ data, conf, q }: { data: Nfl; conf: string; q: string }) {
   const c = data.conferences.find((x) => x.name === conf) ?? data.conferences[0];
   const seeds = c.divisions.flatMap((d) => d.teams).filter((t) => t.seed && t.seed <= 7).sort((a, b) => a.seed! - b.seed!);
   return (
     <>
-      {seeds.length > 0 && (
+      {!q && seeds.length > 0 && (
         <section className="sd-block" aria-label={`${c.name} playoff picture`}>
           <h3>{c.name} playoff picture</h3>
           <ol className="sd-seeds">
@@ -72,18 +86,30 @@ function NflStandings({ data, conf }: { data: Nfl; conf: string }) {
           </ol>
         </section>
       )}
-      {c.divisions.map((d) => (
+      {c.divisions.map((d) => ({ d, rows: d.teams.filter((t) => matches(t, q)) })).filter((x) => x.rows.length).map(({ d, rows }) => (
         <section className="sd-block" key={d.name} aria-label={d.name}>
           <h3>{d.name}</h3>
-          <Table rows={d.teams} nfl />
+          <Table rows={rows} nfl />
         </section>
       ))}
+      {q && !c.divisions.some((d) => d.teams.some((t) => matches(t, q))) && <p className="ol-note">No {c.name} team matches “{q}”.</p>}
     </>
   );
 }
 
 /** College: one conference at a time ordered by conference record, or every conference's top teams side by side. */
-function CfbStandings({ data, conf, onPick }: { data: Cfb; conf: string; onPick: (c: string) => void }) {
+function CfbStandings({ data, conf, onPick, q }: { data: Cfb; conf: string; onPick: (c: string) => void; q: string }) {
+  if (q) {
+    // A search looks across the chosen conference, or every conference when All is chosen.
+    const pool = conf === "all" ? data.conferences : data.conferences.filter((x) => x.name === conf);
+    const rows = pool.flatMap((c) => c.teams).filter((t) => matches(t, q));
+    return rows.length ? (
+      <section className="sd-block" aria-label="Search results">
+        <h3>{rows.length} team{rows.length === 1 ? "" : "s"} match “{q}”</h3>
+        <Table rows={rows} nfl={false} rank={false} />
+      </section>
+    ) : <p className="ol-note">No team matches “{q}”{conf === "all" ? "" : ` in the ${conf}`}.</p>;
+  }
   if (conf === "all") {
     return (
       <div className="sd-leaders">
@@ -115,6 +141,8 @@ export function StandingsTab({ defaultLeague }: { defaultLeague: League }) {
   const [nflConf, setNflConf] = useState("AFC");
   const [cfbConf, setCfbConf] = useState("all");
   useEffect(() => { let on = true; fetchData<Data>("standings").then((d) => on && setData(d), () => on && setError(true)); return () => { on = false; }; }, []);
+  const [q, setQ] = useState("");
+  const dq = useDeferredValue(q.trim().toLowerCase());
   const names = useMemo(() => data?.cfb?.conferences.map((c) => c.name) ?? [], [data]);
   if (error) return <p className="ol-note">The standings could not be loaded. Reload to try again.</p>;
   if (!data) return <Skeleton rows={4} kind="row" />;
@@ -126,6 +154,7 @@ export function StandingsTab({ defaultLeague }: { defaultLeague: League }) {
           <button aria-pressed={lg === "CFB"} onClick={() => setLg("CFB")}>College</button>
           <button aria-pressed={lg === "NFL"} onClick={() => setLg("NFL")}>NFL</button>
         </div>
+        <label className="sd-search"><span className="sr-only">Find a team</span><input type="search" value={q} onChange={(e) => setQ(e.target.value)} placeholder="Find a team" /></label>
         {lg === "NFL" && data.nfl && (
           <div className="segmented" role="group" aria-label="Conference">
             {data.nfl.conferences.map((c) => <button key={c.name} aria-pressed={nflConf === c.name} onClick={() => setNflConf(c.name)}>{c.name}</button>)}
@@ -137,7 +166,7 @@ export function StandingsTab({ defaultLeague }: { defaultLeague: League }) {
           {["all", ...names].map((n) => <button key={n} type="button" aria-pressed={cfbConf === n} onClick={() => setCfbConf(n)}>{n === "all" ? "All" : n}</button>)}
         </div>
       )}
-      {!block ? <p className="ol-note">No standings yet. They appear after the next refresh.</p> : lg === "NFL" ? <NflStandings data={data.nfl!} conf={nflConf} /> : <CfbStandings data={data.cfb!} conf={cfbConf} onPick={setCfbConf} />}
+      {!block ? <p className="ol-note">No standings yet. They appear after the next refresh.</p> : lg === "NFL" ? <NflStandings data={data.nfl!} conf={nflConf} q={dq} /> : <CfbStandings q={dq} data={data.cfb!} conf={cfbConf} onPick={setCfbConf} />}
       <p className="source-note">Source: ESPN. {lg === "NFL" ? "Ordered by ESPN's tiebreakers; the number is the playoff seed." : "Ordered by conference record, then overall record."}</p>
     </section>
   );
