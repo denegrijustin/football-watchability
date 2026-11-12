@@ -61,3 +61,23 @@
 .board-heading { margin: 10px 0 10px; }
 
 .status-chip[data-short]::after { text-transform: capitalize; }
+
+/* ---------- Phase 3: one intro line per section, tabular numbers ---------- */
+.feature-intro { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 16px; margin: 8px 0 10px; font-size: 0.8125rem; color: var(--text-2); }
+.fi-desc { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.fi-ctx { color: var(--muted); }
+.fi-related { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.fi-label { color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.fi-related button { min-height: 28px; padding: 0 10px; border: 1px solid var(--line-strong); border-radius: 99px; background: transparent; color: var(--lime); font: inherit; font-size: 0.8125rem; cursor: pointer; }
+@media (max-width: 760px) { .fi-related button { min-height: 32px; } }
+.view-in table td, .view-in table th { font-variant-numeric: tabular-nums; }
+
+/* ranking and standings tables keep their column headings in view under the sticky stack */
+.sd-table thead th, .ol-table thead th { position: sticky; top: var(--stk-table, 0px); z-index: 2; background: var(--bg); }
+/* on a phone the related links are one scrolling row, so the intro costs one line, not three */
+@media (max-width: 760px) {
+  .feature-intro { margin: 6px 0 8px; }
+  .fi-related { flex-wrap: nowrap; overflow-x: auto; max-width: 100%; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .fi-related::-webkit-scrollbar { display: none; }
+  .fi-related button, .fi-label { flex: 0 0 auto; white-space: nowrap; }
+}
