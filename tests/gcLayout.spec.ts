@@ -77,6 +77,8 @@ test("a game under way gets Team stats, Plays & drives and Players tabs, each ho
   const gc = page.locator("dialog.gc");
   const tabs = gc.getByRole("tab");
   await expect(tabs.first()).toBeVisible();
+  // (the game-under-way tabs arrive with the live data, a moment after the dialog opens)
+  await expect(gc.getByRole("tab", { name: "Team stats" })).toBeVisible();
   const names = await tabs.allInnerTexts();
   expect(names.slice(0, 4)).toEqual(["Overview", "Team stats", "Plays & drives", "Players"]);
   const open = async (name: string) => {
