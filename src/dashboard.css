@@ -61,3 +61,14 @@
 .board-heading { margin: 10px 0 10px; }
 
 .status-chip[data-short]::after { text-transform: capitalize; }
+
+/* ---------- pregame cheerleaders ---------- */
+.cheer-member { transition: transform 6s linear; }
+.cheer-poms { animation: cheer-shake 0.42s ease-in-out infinite alternate; animation-delay: var(--cheer-phase, 0s); transform-origin: 0 0; }
+@keyframes cheer-shake { from { transform: translateY(-0.14px) scale(1); } to { transform: translateY(0.14px) scale(1.07); } }
+.band-travel .cheer-poms { animation-duration: 0.3s; }
+.cheer-pose { animation: band-cadence 0.84s ease-in-out infinite; animation-delay: var(--cheer-phase, 0s); transform-origin: 0 0; }
+@media (prefers-reduced-motion: reduce) {
+  .cheer-member { transition: none; }
+  .cheer-poms, .cheer-pose { animation: none !important; }
+}

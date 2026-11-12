@@ -10,6 +10,7 @@ import { endzoneFor } from "./sim/endzone";
 import { MIDFIELD_ART } from "./sim/midfield";
 import type { WeatherLike } from "./weatherFx";
 import { logoOutline, logoFilled, exitPoints, bandCue, SCRIPT_OHIO, OHIO_DOTTER, OHIO_DOT, OHIO_STAGE, entrancePoints, type BandPoint } from "./bandLogo";
+import { pregameNow, pregameElapsed, pregameToKickoff, stepAtElapsed, EXIT_MARGIN_MS, type Pregame } from "./pregameLogic";
 import { FORMATIONS, HALFTIME_MS, mix, N, STEP_MS, clockText, firstSeen, halftimeLeft, nearestAssignment, MOVE_MS } from "./halftimeLogic";
 
 /**
@@ -102,14 +103,19 @@ export function FieldArt({ id, home, hc, badge }: { id: string; home: Side; away
   );
 }
 
-export function HalftimeBand({ espnId, home, away, badge, weather }: { espnId: string; home: Side; away: Side; badge?: GameBadge | null; weather?: WeatherLike | null }) {
+export function HalftimeBand({ espnId, home, away, badge, weather, pregame }: { espnId: string; home: Side; away: Side; badge?: GameBadge | null; weather?: WeatherLike | null; pregame?: Pregame }) {
   const ref = useRef<HTMLDivElement>(null);
   const isOhioState = home.logoId === "ohio-state";
   const conference = confEntry(home.conf);
   const scriptStep = conference ? 2 : 1;
-  const [seenAt] = useState(() => firstSeen(espnId, Date.now()));
-  const [now, setNow] = useState(() => Date.now());
-  const [step, setStep] = useState(0);
+  const [seenAt] = useState(() => (pregame ? 0 : firstSeen(espnId, Date.now())));
+  // The shared clock: real time at halftime; in the pregame, the game's own pregame clock (which a preview can shift).
+  const clockNow = () => (pregame ? pregameNow(pregame.kickoff) : Date.now());
+  const [now, setNow] = useState(clockNow);
+  const [stepState, setStep] = useState(0);
+  // Joining mid-show (a reload, opening the Game Center) puts the band where it is now: no replayed entrance.
+  const joinedLate = useRef(!!pregame && pregameElapsed(pregame, clockNow()) > 15_000);
+  const [snap, setSnap] = useState(joinedLate.current);
   const [visible, setVisible] = useState(true);
   const [still, setStill] = useState(() => typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches);
   const [moving, setMoving] = useState(false);
@@ -221,19 +227,21 @@ export function HalftimeBand({ espnId, home, away, badge, weather }: { espnId: s
     io.observe(el);
     return () => io.disconnect();
   }, []);
+  const step = pregame ? stepAtElapsed(pregameElapsed(pregame, now), STEP_MS, scriptStep, isOhioState ? 28_000 : STEP_MS) : stepState;
   const canMarch = logoReady && (step !== 1 || !conference || conferenceReady);
   useEffect(() => {
     if (!visible) return;
-    const clock = setInterval(() => !document.hidden && setNow(Date.now()), 1000);
-    const dance = still || !canMarch ? undefined : setInterval(() => !document.hidden && setStep((s) => s + 1), isOhioState && step === scriptStep ? 28_000 : STEP_MS);
-    setNow(Date.now());
+    const clock = setInterval(() => !document.hidden && setNow(clockNow()), 1000);
+    const dance = pregame || still || !canMarch ? undefined : setInterval(() => !document.hidden && setStep((s) => s + 1), isOhioState && step === scriptStep ? 28_000 : STEP_MS);
+    setNow(clockNow());
     return () => {
       clearInterval(clock);
       if (dance) clearInterval(dance);
     };
   }, [visible, still, step, isOhioState, canMarch, scriptStep]);
 
-  const left = halftimeLeft(seenAt, now);
+  // Pregame: the show ends (everyone off the field) a little before the five-minute cutoff.
+  const left = pregame ? Math.max(0, pregame.cutoff - EXIT_MARGIN_MS - now) : halftimeLeft(seenAt, now);
   const phase = bandCue(left, step, !!conference);
   const f = FORMATIONS[Math.max(0, step - scriptStep) % FORMATIONS.length];
   const entering = step === 0 && phase === "logo";
@@ -261,7 +269,8 @@ export function HalftimeBand({ espnId, home, away, badge, weather }: { espnId: s
       });
       return { points, angles, distances: points.map(([x, y], i) => Math.hypot(x - prev.points[i][0], y - prev.points[i][1])) };
     });
-    setMoving(!still);
+    setMoving(!still && !joinedLate.current);
+    if (joinedLate.current) { joinedLate.current = false; setTimeout(() => setSnap(false), 80); }
     // Hold the other 63 musicians, then let the sousaphone high-step to the dot.
     const dotTimer = scriptOhio && !still ? setTimeout(() => {
       setDotting(true);
@@ -283,17 +292,18 @@ export function HalftimeBand({ espnId, home, away, badge, weather }: { espnId: s
   }, [phase, target, still, scriptOhio, drillReady, entering]);
   const hc = teamColor(home.color) ?? "#2f7de1";
   const ac = teamColor(away.color) ?? "#c1403d";
-  const label = left > 0 ? `Second half in ${clockText(left)}` : "Second half starting";
-  const pctLeft = Math.round((left / HALFTIME_MS) * 100);
+  const toKick = pregame ? pregameToKickoff(pregame, now) : 0;
+  const label = pregame ? `Kickoff in ${clockText(toKick)}` : left > 0 ? `Second half in ${clockText(left)}` : "Second half starting";
+  const pctLeft = pregame ? Math.round((1 - pregameElapsed(pregame, now) / (pregame.cutoff - pregame.start)) * 100) : Math.round((left / HALFTIME_MS) * 100);
   const dots = useMemo(() => Array.from({ length: N }, (_, i) => i), []);
   const { angles, points } = drill;
 
   return (
     <div ref={ref} className={`halftime-band${moving ? " band-travel" : ""}${phase === "exit" ? " band-exit" : ""}${entering && moving ? " band-enter" : ""}${visible ? "" : " band-paused"}`} role="img" aria-label={`${label}. The ${home.abbr ?? home.name} band is on the field in a ${formationName} formation.`}>
       <div className="band-count" aria-hidden="true">
-        <span className="band-count-k">HALFTIME</span>
-        <strong className="band-count-t">{left > 0 ? clockText(left) : "0:00"}</strong>
-        <span className="band-count-l">{left > 0 ? "until the second half" : "second half starting"}</span>
+        <span className="band-count-k">{pregame ? "PREGAME BAND" : "HALFTIME"}</span>
+        <strong className="band-count-t">{pregame ? clockText(toKick) : left > 0 ? clockText(left) : "0:00"}</strong>
+        <span className="band-count-l">{pregame ? "until kickoff" : left > 0 ? "until the second half" : "second half starting"}</span>
         <i className="band-count-bar"><b style={{ width: `${pctLeft}%` }} /></i>
       </div>
       {/* The stadium seen from directly above: end zones with the schools' names and logos, the home logo at midfield, and the
@@ -310,7 +320,7 @@ export function HalftimeBand({ espnId, home, away, badge, weather }: { espnId: s
             <g
               key={i}
               className={`band-member ${role}${scriptOhio && dotting && i === OHIO_DOTTER ? " band-dotter" : ""}`}
-              style={{ transform: `translate(${x.toFixed(2)}px, ${y.toFixed(2)}px)`, ["--band-phase" as string]: `${-(Math.floor(i / 16) % 2) * 0.025}s`, transitionDuration: still ? "0s" : entering ? `${Math.min(14, Math.max(4, drill.distances[i] / 3.5))}s` : scriptOhio && dotting && i === OHIO_DOTTER ? "7s" : phase === "exit" ? `${Math.min(27, Math.max(4, drill.distances[i] / 1.8))}s` : `${MOVE_MS / 1000}s`, transitionDelay: phase === "exit" || entering ? `${(i % 8) * 0.12}s` : "0s" }}
+              style={{ transform: `translate(${x.toFixed(2)}px, ${y.toFixed(2)}px)`, ["--band-phase" as string]: `${-(Math.floor(i / 16) % 2) * 0.025}s`, transitionDuration: still || snap ? "0s" : entering ? `${Math.min(14, Math.max(4, drill.distances[i] / 3.5))}s` : scriptOhio && dotting && i === OHIO_DOTTER ? "7s" : phase === "exit" ? `${Math.min(27, Math.max(4, drill.distances[i] / 1.8))}s` : `${MOVE_MS / 1000}s`, transitionDelay: snap ? "0s" : phase === "exit" || entering ? `${(i % 8) * 0.12}s` : "0s" }}
             >
               <ellipse cx="0.3" cy="0.45" rx="1.25" ry="0.75" className="band-ground-shadow" />
               <g className="band-facing" style={{ transform: `rotate(${angles[i].toFixed(1)}deg)` }}>
