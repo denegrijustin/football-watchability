@@ -215,7 +215,7 @@ test("@smoke the page opens on the right league and the Outlook tab shows the pr
   await expect(page.locator("ol.sd2-field > li.bye")).toHaveCount(4);
   await expect(page.locator(".tk-how").last()).toContainText("Sunday");
   // Rankings: start at 25 and open up to the top 120.
-  await page.getByRole("button", { name: "Rankings" }).click();
+  await page.getByRole("button", { name: "Rankings" }).dispatchEvent("click"); // (the sticky bars can cover a button that was scrolled to the top)
   await expect(page.locator(".ol-table tbody tr")).toHaveCount(25);
   await page.getByRole("button", { name: /^Show all/ }).click();
   expect(await page.locator(".ol-table tbody tr").count()).toBe(120);
@@ -230,10 +230,10 @@ test("@smoke the page opens on the right league and the Outlook tab shows the pr
   await page.getByLabel("Conference", { exact: true }).selectOption("Ind");
   await expect(rows).toHaveCount(2);
   // Bowls.
-  await page.getByRole("button", { name: "Bowls" }).click();
+  await page.getByRole("button", { name: "Bowls" }).dispatchEvent("click"); // (the sticky bars can cover a button that was scrolled to the top)
   await expect(page.locator(".ol-bowls > li").first()).toBeVisible();
   // NFL: seven seeds per conference.
-  await page.getByRole("button", { name: "NFL", exact: true }).click();
+  await page.getByRole("button", { name: "NFL", exact: true }).dispatchEvent("click"); // (the sticky bars can cover a button that was scrolled to the top)
   await expect(page.getByRole("group", { name: "Conference" }).getByRole("button")).toHaveText(["AFC", "NFC"]); // one conference at a time
   await expect(page.locator(".tk-how").last()).toContainText("Tuesday");
   const width = await page.evaluate(() => document.documentElement.scrollWidth);
