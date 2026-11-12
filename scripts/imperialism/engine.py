@@ -77,9 +77,13 @@ def run_layer(layer_id, label, league, teams, counties, games):
     owners = list(home)
 
     # Which counties each team holds right now, kept as index lists for cheap transfers.
-    held = {t: [] for t in team_ids}
+    held = {t: set() for t in team_ids}
     for i, o in enumerate(owners):
-        held[o].append(i)
+        held[o].add(i)
+    # Each team's original home counties: a win always claims the loser's home territory, wherever it sits now.
+    home_of = {t: set() for t in team_ids}
+    for i, o in enumerate(home):
+        home_of[o].add(i)
 
     weeks = [_snapshot(owners, team_ids, 0, "Start")]
     ledger = []
@@ -96,12 +100,12 @@ def run_layer(layer_id, label, league, teams, counties, games):
             if hs is None or as_ is None or hs == as_:
                 continue  # unplayed or tie: moves nothing and is not recorded
             winner, loser = (h, a) if hs > as_ else (a, h)
-            moved = sorted(held[loser])  # ENTIRE current land of the loser
-            if moved:
-                for i in moved:
-                    owners[i] = winner
-                held[winner] = held[winner] + moved
-                held[loser] = []
+            # The winner takes the loser's home territory (wherever it is held now) and everything else the loser holds.
+            moved = sorted((held[loser] | home_of[loser]) - held[winner])
+            for i in moved:
+                held[owners[i]].discard(i)
+                owners[i] = winner
+                held[winner].add(i)
             ledger.append({
                 "week": n,
                 "game": str(g["id"]),

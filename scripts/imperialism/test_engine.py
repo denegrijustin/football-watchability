@@ -59,11 +59,20 @@ class EngineTests(unittest.TestCase):
         self.assertEqual(layer["weeks"][1]["landless"], ["B"])
         self.assertEqual(layer["current"], ["A"] * 6 + ["C"] * 3 + ["D"] * 3)
 
-    def test_landless_loser_transfers_nothing(self):
+    def test_a_win_over_a_landless_team_still_takes_its_home_territory(self):
+        # A beats B and holds B's land. C then beats B: B holds nothing, but its home territory is C's now, taken from A.
         layer = run([game("g1", 1, "2026-09-01", "A", "B", 3, 0),
                      game("g2", 2, "2026-09-08", "C", "B", 3, 0)])
-        self.assertEqual(layer["ledger"][1]["transferred"], [])
-        self.assertEqual(layer["weeks"][2]["holdings"], {"A": 6, "C": 3, "D": 3})
+        self.assertEqual(layer["ledger"][1]["transferred"], B_LAND)
+        self.assertEqual(layer["weeks"][2]["holdings"], {"A": 3, "C": 6, "D": 3})
+        self.assertEqual(layer["weeks"][2]["landless"], ["B"])
+
+    def test_every_win_over_a_team_that_has_land_or_home_moves_land(self):
+        layer = run([game("g1", 1, "2026-09-01", "A", "B", 3, 0),
+                     game("g2", 2, "2026-09-08", "C", "B", 3, 0),
+                     game("g3", 3, "2026-09-15", "D", "B", 3, 0)])
+        self.assertTrue(all(e["transferred"] for e in layer["ledger"]))
+        self.assertEqual(layer["ledger"][2]["transferred"], B_LAND)  # D now holds B's home territory too
 
     def test_landless_team_reenters(self):
         layer = run([game("g1", 1, "2026-09-01", "A", "B", 3, 0),
@@ -94,12 +103,12 @@ class EngineTests(unittest.TestCase):
         self.assertEqual(layer["current"], layer["home"])
 
     def test_order_by_date_then_id(self):
-        # Given out of order: B beats A first (by date); the later C-over-A game then finds A landless
+        # Given out of order: B beats A first (by date); the later C-over-A game then takes A's home territory from B
         g_late = game("g1", 1, "2026-09-05", "C", "A", 3, 0)
         g_early = game("g2", 1, "2026-09-01", "B", "A", 3, 0)
         layer = run([g_late, g_early])
         self.assertEqual([e["game"] for e in layer["ledger"]], ["g2", "g1"])
-        self.assertEqual(layer["ledger"][1]["transferred"], [])  # A already landless
+        self.assertEqual(layer["ledger"][1]["transferred"], A_LAND)  # A already landless: C takes A's home territory from B
 
     def test_nfl_conferences_independent(self):
         nfl = [{"id": "A", "lat": 0, "lon": 1.0}, {"id": "B", "lat": 0, "lon": 4.0},

@@ -53,7 +53,7 @@ Everything below is the contract between the Python engine (`scripts/imperialism
   "ledger": [{                                  // chronological; EVERY game between two teams of this space, in order
     "week": 3, "game": "401...", "date": "2026-09-13T16:00Z", "winner": "61", "loser": "99",
     "score": "31-17",
-    "transferred": [12, 40, ...]                // county indexes the loser held and the winner absorbed ([] = loser was landless)
+    "transferred": [12, 40, ...]                // county indexes that changed owner to the winner (the loser's home territory and anything else it held)
   }],
   "weeks": [{                                   // snapshot summary after each week (week 0 = initial split)
     "n": 0, "label": "Start",
@@ -77,7 +77,9 @@ Independents count as their own conference "Independent".
 ## Rules the engine implements
 
 1. Week 0: each county belongs to the layer team whose stadium is nearest (great-circle distance).
-2. Games run in date order (then id). Loser's land (all counties it owns at that moment) goes to the winner. A landless loser
-   transfers nothing. A landless winner that beats a land-holder takes all of it (that is how teams re-enter).
+2. Games run in date order (then id). Every win gives the winner the loser's home territory (the counties whose week-0 owner was the
+   loser, wherever they are held now) plus every other county the loser holds at that moment. `transferred` lists exactly the
+   counties that changed owner. A landless loser still gives up its home territory, so a win is never empty unless the winner
+   already owned all of it.
 3. A game only affects a layer if both teams belong to it: CFB national = all FBS teams; NFL full = 32; AFC = the 16 AFC teams
    (only AFC-vs-AFC games); NFC likewise.
