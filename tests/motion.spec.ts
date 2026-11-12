@@ -64,7 +64,7 @@ test.describe("on the board", () => {
     const ring = page.locator(".game-card:not(.result-card) .score-ring").first();
     await expect(ring).toBeVisible();
     await expect.poll(() => ring.locator(".sr-fill").evaluate((c) => Number(getComputedStyle(c).strokeDashoffset.replace("px", "")))).toBeLessThan(130);
-    await ring.getByRole("button", { name: /Show why/ }).click();
+    await ring.getByRole("button", { name: /Why this rating/ }).click();
     await expect(page.locator(".sr-pop")).toContainText("Starting point");
     await page.keyboard.press("Escape");
     await expect(page.locator(".sr-pop")).toHaveCount(0);
