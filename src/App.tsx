@@ -9,6 +9,7 @@ import { useOpenGame } from "./components/GameCenterContext";
 import { dayName, results, slate, tiers, type FilterState, type League, type View } from "./data";
 import { Filters } from "./components/Filters";
 import { GameBoard, useBoard } from "./components/GameBoard";
+import { BoardSort, type BoardSortKey } from "./components/BoardSort";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ScoreTicker } from "./components/ScoreTicker";
 import { FinalScores, FinalScoresToggle, useFinalScoresOpen, useFinalTiles } from "./components/FinalScores";
@@ -102,6 +103,7 @@ export default function App() {
   const board = useBoard(filters);
   const finalTiles = useFinalTiles(board);
   const [fsOpen, setFsOpen] = useFinalScoresOpen();
+  const [boardSort, setBoardSort] = useState<BoardSortKey>("time");
   const switchView = (v: View) => {
     pushNav(v, filters.status);
     setView(v);
@@ -236,7 +238,7 @@ export default function App() {
         <h1 className="sr-only">Football Watchability — {slate.period}</h1>
 
 
-        {view === "board" && <Filters {...filters} counts={board.counts} onChange={update} />}
+        {view === "board" && <Filters {...filters} onChange={update} />}
 
         <section id="games" tabIndex={-1} aria-label="Game dashboard">
           <div className="view-row">
@@ -289,8 +291,8 @@ export default function App() {
           <div className="board-heading">
             <h2>{heading}</h2>
             <span role="status" className="status-chips">
-              {([["live", board.counts.live, "in progress", "live"], ["final", board.counts.final, "completed", "final"], ["upcoming", board.counts.upcoming, "upcoming", "soon"]] as const).map(([k, n, label, short]) => (
-                <button key={k} type="button" data-short={short} className={`status-chip${filters.status === k ? " on" : ""}`} aria-pressed={filters.status === k} onClick={() => update({ status: filters.status === k ? "all" : k })}>
+              {([["all", board.counts.all, "All games", "All"], ["live", board.counts.live, "Live", "Live"], ["upcoming", board.counts.upcoming, "Upcoming", "Soon"], ["final", board.counts.final, "Final", "Final"]] as const).map(([k, n, label, short]) => (
+                <button key={k} type="button" data-short={short} data-status-chip={k} className={`status-chip${filters.status === k ? " on" : ""}`} aria-pressed={filters.status === k} onClick={() => update({ status: k })}>
                   <b>{n}</b> <span className="sc-l">{label}</span>
                 </button>
               ))}
@@ -301,11 +303,12 @@ export default function App() {
                 Reset filters
               </button>
             )}
-            <span className="sort-label">Kickoff time slots · best watchability first in each slot</span>
+            {filters.status !== "final" && board.counts.live + board.counts.upcoming > 1 && <BoardSort value={boardSort} onChange={setBoardSort} />}
           </div>
           <FinalScores tiles={finalTiles} open={fsOpen} />
           <GameBoard
             board={board}
+            sort={boardSort}
             status={filters.status}
             filtered={filtered}
             onReset={() => setFilters({ ...initial, league })}

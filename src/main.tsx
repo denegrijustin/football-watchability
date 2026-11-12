@@ -8,6 +8,7 @@ import "./motion.css";
 import "./phoneTop.css";
 import "./cardSize.css";
 import "./nav.css";
+import "./dashboard.css";
 import { guardLogos } from "./logoGuard";
 import { initMotion } from "./motion";
 initMotion();

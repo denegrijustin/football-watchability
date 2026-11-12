@@ -173,9 +173,15 @@ export function GameCard({
         homeColor ? ({ "--team-bg": homeColor } as CSSProperties) : undefined
       }
       aria-labelledby={`${game.id}-title`}
+      tabIndex={-1}
       onClick={(e) => {
-        if (!expanded && !(e.target as HTMLElement).closest("a,button,summary"))
-          setExpanded(true);
+        if (expanded || (e.target as HTMLElement).closest("a,button,summary,input,select,textarea,label,[role=button]")) return;
+        if (window.getSelection?.()?.toString()) return; // the reader is selecting text, not opening the game
+        // The card's own surface opens the Game Center (the cards without one open their details). The card takes focus first, so closing returns here.
+        if (game.espnId) {
+          cardRef.current?.focus({ preventScroll: true });
+          openGame(game.espnId);
+        } else setExpanded(true);
       }}
     >
       {pulse && <span className="pulse-ring" aria-hidden="true" />}

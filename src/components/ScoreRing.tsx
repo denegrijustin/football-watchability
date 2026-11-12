@@ -36,9 +36,9 @@ export function ScoreRing({ score, label, children }: { score: number; label: st
   return (
     <div className="score-ring" ref={box}>
       {children ? (
-        <button type="button" className="sr-btn" aria-expanded={open} aria-label={`${label}. Show why`} onClick={(e) => { e.stopPropagation(); setOpen(!open); }}>{ring}</button>
+        <button type="button" className="sr-btn" aria-expanded={open} aria-label={`${label}. Why this rating?`} title="Why this rating?" onClick={(e) => { e.stopPropagation(); setOpen(!open); }}>{ring}</button>
       ) : ring}
-      {open && children && <div className="sr-pop" role="dialog" aria-label="Why it scored this" onClick={(e) => e.stopPropagation()}>{children}</div>}
+      {open && children && <div className="sr-pop" role="dialog" aria-label="Why this rating?" onClick={(e) => e.stopPropagation()}>{children}</div>}
     </div>
   );
 }
