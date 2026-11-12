@@ -12,14 +12,21 @@ import "./dashboard.css";
 import { guardLogos } from "./logoGuard";
 import { initMotion } from "./motion";
 initMotion();
+const PregamePreview = new URLSearchParams(location.search).has("pregamePreview") ? React.lazy(() => import("./PregamePreview")) : null;
 ReactDOM.createRoot(document.getElementById("root")!).render(
+  PregamePreview ? (
+    <React.Suspense fallback={null}>
+      <PregamePreview />
+    </React.Suspense>
+  ) : (
   <React.StrictMode>
     <LiveScores>
       <GameCenterProvider>
         <App />
       </GameCenterProvider>
     </LiveScores>
-  </React.StrictMode>,
+  </React.StrictMode>
+  ),
 );
 
 // Fetch the Game Center code once the board is up, so the first tap on a game doesn't wait for it.

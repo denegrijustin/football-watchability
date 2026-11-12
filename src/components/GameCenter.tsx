@@ -23,6 +23,8 @@ import { LastPlay, latestShape } from "../LastPlayView";
 import type { WeatherLike } from "../weatherFx";
 import { HalftimeBand } from "../halftime";
 import { HalftimeAct } from "../nflHalftime";
+import { PregameCheer } from "../pregameCheer";
+import { usePregame } from "../pregameLogic";
 import { GameBadgeRow } from "./GameBadge";
 import { RivalryBadge, type Rivalry } from "./RivalryBadge";
 import { gameBadge } from "../gameLogo";
@@ -215,6 +217,7 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
   const [away, home] = teams;
   const abbr = (t?: TeamLike) => t?.abbr ?? t?.name ?? "";
   const state = game?.status.state ?? (fin || old ? "post" : "pre");
+  const pregame = usePregame({ league: league ?? "", date, state, detail: game?.status.detail });
   const proj: Projection | null =
     ((up as { projected?: Projection } | undefined)?.projected as Projection) ??
     (fin?.scoreCheck ? ({ ...fin.scoreCheck.projected } as Projection) : null);
@@ -274,6 +277,9 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
           ×
         </button>
         <div className="gc-body">
+          {pregame && (pregame.league === "NFL"
+            ? <PregameCheer pregame={pregame} badge={badge} weather={(up as { weather?: WeatherLike } | undefined)?.weather} espnId={espnId} away={{ ...away, logoId: away.logoId, conf: away.ranks?.confName }} home={{ ...home, logoId: home.logoId, conf: home.ranks?.confName }} />
+            : <HalftimeBand pregame={pregame} badge={badge} weather={(up as { weather?: WeatherLike } | undefined)?.weather} espnId={espnId} away={{ ...away, logoId: away.logoId, conf: away.ranks?.confName }} home={{ ...home, logoId: home.logoId, conf: home.ranks?.confName }} />)}
           {(league === "CFB" || league === "NFL") && state === "in" && isHalftime(game?.status.detail) && (() => {
             const Halftime = league === "NFL" ? HalftimeAct : HalftimeBand;
             return <Halftime badge={badge} weather={(up as { weather?: WeatherLike } | undefined)?.weather} espnId={espnId} away={{ ...away, logoId: away.logoId, conf: away.ranks?.confName }} home={{ ...home, logoId: home.logoId, conf: home.ranks?.confName }} />;

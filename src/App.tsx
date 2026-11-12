@@ -9,6 +9,7 @@ import { useOpenGame } from "./components/GameCenterContext";
 import { dayName, results, slate, tiers, type FilterState, type League, type View } from "./data";
 import { Filters } from "./components/Filters";
 import { GameBoard, useBoard } from "./components/GameBoard";
+import { FeatureIntro } from "./components/FeatureIntro";
 import { BoardSort, type BoardSortKey } from "./components/BoardSort";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ScoreTicker } from "./components/ScoreTicker";
@@ -86,10 +87,12 @@ export default function App() {
       root.style.setProperty("--stk-header", `${t}px`);
       root.style.setProperty("--stk-dock", `${t + h}px`);
       root.style.setProperty("--stk-nav", `${t + h + d}px`);
+      // Table headers stick under the whole stack, the nav row included.
+      root.style.setProperty("--stk-table", `${t + h + d + tall(pick(".view-row"))}px`);
     };
     apply();
     const ro = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(apply);
-    for (const sel of [".ticker", ".site-header", ".filter-dock"]) {
+    for (const sel of [".ticker", ".site-header", ".filter-dock", ".view-row"]) {
       const el = pick(sel);
       if (el) ro?.observe(el);
     }
@@ -253,6 +256,8 @@ export default function App() {
           </div>
           <div key={view} className="view-in">
           {view !== "board" ? (
+            <>
+            <FeatureIntro view={view} context={view === "spplus" || view === "nfl" ? undefined : league === "CFB" ? "College" : "NFL"} onView={showBoard} />
             <ErrorBoundary resetKey={view}>
               <Suspense fallback={<ViewSkeleton />}>
                 {view === "empire" ? (
@@ -286,6 +291,7 @@ export default function App() {
                 )}
               </Suspense>
             </ErrorBoundary>
+            </>
           ) : (
             <>
           <div className="board-heading">
