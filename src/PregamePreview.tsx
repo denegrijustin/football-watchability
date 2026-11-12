@@ -38,7 +38,7 @@ export default function PregamePreview() {
   };
   const mins = league === "NFL" ? [16, 15, 12, 8, 5.2, 4.8] : [21, 20, 14, 8, 5.2, 4.8];
   return (
-    <main style={{ padding: 16, maxWidth: 1000, margin: "0 auto", color: "#e8eef2", font: "14px system-ui" }}>
+    <main style={{ padding: 16, maxWidth: 1000, margin: "0 auto", minHeight: "100vh", background: "#101a22", color: "#e8eef2", font: "14px system-ui" }}>
       <h1 style={{ fontSize: 18 }}>Pregame preview · {league === "NFL" ? "NFL cheerleaders (15 min)" : "College band (20 min)"}</h1>
       <p>
         <button onClick={() => go({ pregamePreview: league === "NFL" ? "CFB" : "NFL" })}>Show {league === "NFL" ? "college" : "NFL"}</button>{" "}
@@ -50,9 +50,9 @@ export default function PregamePreview() {
         <button onClick={() => go({ shift: "10" })}>+10 min</button> <button onClick={() => go({ shift: "-10" })}>-10 min</button> <button onClick={() => go({ shift: null })}>as scheduled</button>
       </p>
       <h2 style={{ fontSize: 14 }}>Game card size</h2>
-      <div data-size="card" style={{ width: 380 }}><Stage league={league} /></div>
+      <div data-size="card" style={{ width: "100%", maxWidth: 380 }}><Stage league={league} /></div>
       <h2 style={{ fontSize: 14 }}>Game Center size</h2>
-      <div data-size="center" style={{ width: 720 }}><Stage league={league} /></div>
+      <div data-size="center" style={{ width: "100%", maxWidth: 720 }}><Stage league={league} /></div>
     </main>
   );
 }

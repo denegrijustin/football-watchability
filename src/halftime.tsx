@@ -356,8 +356,8 @@ export function HalftimeBand({ espnId, home, away, badge, weather, pregame }: { 
       </svg>
       <p className="drive-cap">
         <span className="drive-dot" aria-hidden="true" />
-        <b>{phase === "exit" ? "Band clearing the field" : entering && moving ? "Band entering from the home sideline" : label}</b>
-        <span> · {home.abbr ?? home.name} band: {formationName}</span>
+        <b>{pregame ? label : phase === "exit" ? "Band clearing the field" : entering && moving ? "Band entering from the home sideline" : label}</b>
+        <span> · {home.abbr ?? home.name} band: {pregame && phase === "exit" ? "leaving the field" : pregame && entering && moving ? "taking the field" : formationName}</span>
       </p>
     </div>
   );
