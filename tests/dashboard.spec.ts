@@ -13,6 +13,9 @@ const pick = async (page: import("@playwright/test").Page, menu: string, option:
   // Day, Watchability and Conference live in the Filters panel.
   if (menu !== "League" && !(await select.isVisible())) await page.getByRole("button", { name: /^Filters/ }).click();
   await select.selectOption({ label: option });
+  // Close the panel so it never covers the board.
+  const toggle = page.getByRole("button", { name: /^Filters/ });
+  if ((await toggle.count()) && (await toggle.getAttribute("aria-expanded")) === "true" && menu !== "League") await page.keyboard.press("Escape");
 };
 const league = (page: import("@playwright/test").Page, l: "NFL" | "CFB") => pick(page, "League", l === "CFB" ? "College" : "NFL");
 // The old Final tab is now the Completed status on the main board.
@@ -175,7 +178,7 @@ test("day and watchability filters narrow the board", async ({ page }) => {
   await expect(page.locator(CARD)).toHaveCount(
     nfl.filter((g: any) => g.score >= 90).length,
   );
-  await page.getByRole("button", { name: "Reset filters" }).click();
+  await page.locator("button.reset").click();
   await expect(page.locator(CARD)).toHaveCount(nfl.length);
   // Each kickoff slot runs from most to least watchable.
   const sections = await page
@@ -673,7 +676,7 @@ test("board shows live first and collapses completed games below, with working s
   await counts.getByRole("button", { name: /Final/ }).click();
   await expect(page.locator(".board-section.final .result-card").first()).toBeVisible();
   await expect(counts.getByRole("button", { name: /Final/ })).toHaveAttribute("aria-pressed", "true");
-  await counts.getByRole("button", { name: /Final/ }).click();
+  await counts.locator('[data-status-chip="all"]').click();
   await expect(counts.getByRole("button", { name: /Final/ })).toHaveAttribute("aria-pressed", "false");
   const status = (name: string) => pick(page, "Status", name);
   await expect(counts.locator("[data-status-chip]")).toHaveCount(4);
@@ -972,7 +975,7 @@ test("@smoke @phone the persistent bar is slim and every filter is a pop-down me
   for (const menu of ["League", "Day", "Watchability"]) {
     await expect(page.getByLabel(menu, { exact: true })).toHaveJSProperty("tagName", "SELECT");
   }
-  await expect(dock.locator("button:not(.search-clear):not(.filter-toggle):not(.sheet-done)")).toHaveCount(0);
+  await expect(dock.locator("button:not(.search-clear):not(.filter-toggle):not(.sheet-done):not(.reset-adv)")).toHaveCount(0);
   // The Conference menu is there for both leagues: AFC / NFC for the NFL (college conferences for college).
   await expect(page.getByLabel("Conference", { exact: true })).toHaveJSProperty("tagName", "SELECT");
   await expect(page.getByLabel("Conference", { exact: true }).locator("option")).toHaveText(["Both conferences", "AFC", "NFC"]);

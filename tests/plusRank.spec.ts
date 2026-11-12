@@ -109,8 +109,6 @@ test("finished games carry the rank too, compact and expanded", async ({ page })
   const r = results.find((x: { week: string; league: string; teams: T[] }) => x.week === slate.period && x.teams.every((t) => rankOf(x.league, t)));
   test.skip(!r, "no final from this week with both ranks");
   await page.goto(`/?league=${r.league}`);
-  const filters = page.getByRole("button", { name: /^Filters/ });
-  if ((await filters.count()) && (await filters.getAttribute("aria-expanded")) === "false") await filters.click();
   await page.getByLabel("League", { exact: true }).selectOption({ label: r.league === "CFB" ? "College" : "NFL" });
   await page.locator('[data-status-chip="final"]').click();
   const card = page.locator(`.result-card[aria-labelledby="r-${r.espnId}"]`);

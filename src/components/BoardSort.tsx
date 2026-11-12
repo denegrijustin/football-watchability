@@ -3,7 +3,7 @@ export type BoardSortKey = "time" | "watch";
 
 const OPTIONS: { id: BoardSortKey; label: string; short: string; note: string }[] = [
   { id: "time", label: "Game time", short: "Time", note: "Kickoff slots in time order, best watchability first within each slot" },
-  { id: "watch", label: "Watchability", short: "Rating", note: "One list, highest watchability first; ties keep kickoff order" },
+  { id: "watch", label: "Highest rated", short: "Rating", note: "One list, highest watchability first; ties keep kickoff order" },
 ];
 
 export function BoardSort({ value, onChange }: { value: BoardSortKey; onChange: (k: BoardSortKey) => void }) {
