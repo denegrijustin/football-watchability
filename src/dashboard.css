@@ -74,3 +74,10 @@
 
 /* ranking and standings tables keep their column headings in view under the sticky stack */
 .sd-table thead th, .ol-table thead th { position: sticky; top: var(--stk-table, 0px); z-index: 2; background: var(--bg); }
+/* on a phone the related links are one scrolling row, so the intro costs one line, not three */
+@media (max-width: 760px) {
+  .feature-intro { margin: 6px 0 8px; }
+  .fi-related { flex-wrap: nowrap; overflow-x: auto; max-width: 100%; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .fi-related::-webkit-scrollbar { display: none; }
+  .fi-related button, .fi-label { flex: 0 0 auto; white-space: nowrap; }
+}
