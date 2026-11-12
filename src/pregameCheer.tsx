@@ -96,11 +96,14 @@ export function PregameCheer({ espnId, home, away, badge, weather, pregame }: { 
                 <line x1="-0.3" x2="-0.3" y1="-0.9" y2="0.9" stroke="#fff" strokeWidth="0.22" />
                 <circle cx="0.15" cy="0" r="0.62" fill={["#f1c9a5", "#d8a47a", "#a8734e", "#7a4e30"][i % 4]} />
                 <ellipse cx="-0.35" cy="0" rx="0.4" ry="0.55" fill={["#3b2a1d", "#c89a3c", "#1a1a1a", "#7a3b1d"][(i + 1) % 4]} />
+                <ellipse className="cheer-tail" cx="-0.95" cy="0.15" rx="0.5" ry="0.17" fill={["#3b2a1d", "#c89a3c", "#1a1a1a", "#7a3b1d"][(i + 1) % 4]} />
+                <ellipse cx="-0.55" cy="0" rx="0.28" ry="1.05" fill="#ffffff" opacity="0.85" />
                 <g className="cheer-poms">
-                  <circle cx="0.9" cy="-1.55" r="0.78" fill="#ffffff" />
-                  <circle cx="0.9" cy="-1.55" r="0.42" fill={pom} />
-                  <circle cx="0.9" cy="1.55" r="0.78" fill="#ffffff" />
-                  <circle cx="0.9" cy="1.55" r="0.42" fill={pom} />
+                  {/* one pom in the team's color and one white, held overhead on either side, as in the broadcast stills */}
+                  <circle cx="0.9" cy="-1.55" r="0.8" fill={hc} stroke="#ffffff" strokeWidth="0.18" />
+                  <circle cx="0.9" cy="-1.55" r="0.32" fill="#ffffff" opacity="0.55" />
+                  <circle cx="0.9" cy="1.55" r="0.8" fill="#ffffff" stroke={mix(hc, -0.2)} strokeWidth="0.12" />
+                  <circle cx="0.9" cy="1.55" r="0.3" fill={pom} opacity="0.6" />
                 </g>
               </g>
             </g>

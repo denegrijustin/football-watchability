@@ -12,7 +12,7 @@ const ring = (cx: number, cy: number, rx: number, ry: number, n: number): BandPo
 
 /** Every routine places all sixteen on the field, spaced at least two units apart. */
 export const ROUTINES: { name: string; pts: BandPoint[] }[] = [
-  { name: "two lines", pts: [...line(24, 8, 36, 84), ...line(30, 8, 36, 84)] },
+  { name: "two lines", pts: [...line(24, 8, 26, 94), ...line(31, 8, 26, 94)] },
   { name: "V formation", pts: Array.from({ length: CHEER_N }, (_, i) => [60 + (i % 2 ? 1 : -1) * (Math.floor(i / 2) + 1) * 4.2, 10 + (Math.floor(i / 2) + 1) * 2.6] as BandPoint) },
   { name: "circle at midfield", pts: [...ring(60, 20, 9, 7, 10), ...ring(60, 20, 4, 3, 6)] },
   { name: "two columns", pts: [...Array.from({ length: 8 }, (_, i) => [50, 6 + i * 4] as BandPoint), ...Array.from({ length: 8 }, (_, i) => [70, 6 + i * 4] as BandPoint)] },
