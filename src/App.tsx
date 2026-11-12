@@ -9,6 +9,7 @@ import { useOpenGame } from "./components/GameCenterContext";
 import { dayName, results, slate, tiers, type FilterState, type League, type View } from "./data";
 import { Filters } from "./components/Filters";
 import { GameBoard, useBoard } from "./components/GameBoard";
+import { FeatureIntro } from "./components/FeatureIntro";
 import { BoardSort, type BoardSortKey } from "./components/BoardSort";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ScoreTicker } from "./components/ScoreTicker";
@@ -253,6 +254,8 @@ export default function App() {
           </div>
           <div key={view} className="view-in">
           {view !== "board" ? (
+            <>
+            <FeatureIntro view={view} context={view === "spplus" || view === "nfl" ? undefined : league === "CFB" ? "College" : "NFL"} onView={showBoard} />
             <ErrorBoundary resetKey={view}>
               <Suspense fallback={<ViewSkeleton />}>
                 {view === "empire" ? (
@@ -286,6 +289,7 @@ export default function App() {
                 )}
               </Suspense>
             </ErrorBoundary>
+            </>
           ) : (
             <>
           <div className="board-heading">
