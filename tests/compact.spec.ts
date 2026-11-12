@@ -26,7 +26,7 @@ test("@phone on a phone the controls take few rows and the first game starts hig
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(391);
   // Every filter is still reachable, in the Filters sheet.
   await page.getByRole("button", { name: /^Filters/ }).click();
-  for (const name of ["League", "Status", "Day", "Watchability", "Conference"]) await expect(page.getByLabel(name, { exact: true })).toBeAttached();
+  for (const name of ["League", "Day", "Watchability", "Conference"]) await expect(page.getByLabel(name, { exact: true })).toBeAttached();
   await expect(page.getByLabel("Search teams, channels or locations")).toBeAttached();
 });
 
