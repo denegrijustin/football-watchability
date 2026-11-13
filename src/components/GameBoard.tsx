@@ -12,7 +12,7 @@ import { GameCard } from "./GameCard";
 import { ResultCard } from "./ResultCard";
 import { LinesBar } from "./LinesBar";
 import { WatchNow } from "./WatchNow";
-import type { BoardSortKey } from "./BoardSort";
+import { BoardSort, type BoardSortKey } from "./BoardSort";
 import { useFlip } from "../motion";
 import { liveHeat } from "../watchNow";
 import { observeScores, useTouchdowns } from "../touchdown";
@@ -116,12 +116,14 @@ function KickoffSlots({ games, hot = false, sort = "time" }: { games: Game[]; ho
 export function GameBoard({
   board,
   sort = "time",
+  onSort,
   status,
   filtered,
   onReset,
 }: {
   board: Board;
   sort?: BoardSortKey;
+  onSort?: (k: BoardSortKey) => void;
   status: FilterState["status"];
   filtered: boolean;
   onReset: () => void;
@@ -151,6 +153,8 @@ export function GameBoard({
   const leadsClosing = showClosing, leadsLive = !showClosing && showLive;
   const showFinal = (status === "all" || status === "final") && (counts.final > 0 || board.earlier.length > 0);
   const showUpcoming = (status === "all" || status === "upcoming") && upcoming.length > 0;
+  // One sort control for the time-ordered lists: in the first of In progress / Upcoming that is on screen, and only when there is something to order.
+  const sortHere: "live" | "upcoming" | null = !onSort || board.live.length + upcoming.length < 2 ? null : showLive ? "live" : showUpcoming ? "upcoming" : null;
 
   if (!showClosing && !showLive && !showFinal && !showUpcoming) {
     const label = { all: "games", live: "games in progress", final: "completed games", upcoming: "upcoming games" }[status];
@@ -259,6 +263,7 @@ export function GameBoard({
             </h3>
             <span className="count">{board.live.length}</span>
             <span className="section-note">{SECTION_HELP.live}</span>
+            {sortHere === "live" && <BoardSort value={sort} onChange={onSort!} />}
           </div>
           {leadsLive && pinned.length > 0 && <FlipGrid games={pinned} className="game-grid td-lead">{pinned.map((game) => <GameCard key={game.id} game={game} />)}</FlipGrid>}
           <KickoffSlots games={live} hot sort={sort} />
@@ -271,6 +276,7 @@ export function GameBoard({
             <h3>Upcoming</h3>
             <span className="count">{upcoming.length}</span>
             <span className="section-note">{SECTION_HELP.upcoming}</span>
+            {sortHere === "upcoming" && <BoardSort value={sort} onChange={onSort!} />}
           </div>
           <LinesBar compact />
           <KickoffSlots games={upcoming} sort={sort} />

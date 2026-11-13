@@ -10,7 +10,7 @@ import { dayName, results, slate, tiers, type FilterState, type League, type Vie
 import { Filters } from "./components/Filters";
 import { GameBoard, useBoard } from "./components/GameBoard";
 import { FeatureIntro } from "./components/FeatureIntro";
-import { BoardSort, type BoardSortKey } from "./components/BoardSort";
+import type { BoardSortKey } from "./components/BoardSort";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ScoreTicker } from "./components/ScoreTicker";
 import { FinalScores, FinalScoresToggle, useFinalScoresOpen, useFinalTiles } from "./components/FinalScores";
@@ -309,12 +309,12 @@ export default function App() {
                 Reset filters
               </button>
             )}
-            {filters.status !== "final" && board.counts.live + board.counts.upcoming > 1 && <BoardSort value={boardSort} onChange={setBoardSort} />}
           </div>
           <FinalScores tiles={finalTiles} open={fsOpen} />
           <GameBoard
             board={board}
             sort={boardSort}
+            onSort={setBoardSort}
             status={filters.status}
             filtered={filtered}
             onReset={() => setFilters({ ...initial, league })}

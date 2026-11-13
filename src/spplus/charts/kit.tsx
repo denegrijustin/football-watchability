@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
 export const C = {
   s: ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#2f9d2f", "#9085e9", "#e66767"],
@@ -33,7 +33,8 @@ export interface TipState { x: number; y: number; title: string; rows: [string, 
 export function useTip() {
   const [tip, setTip] = useState<TipState | null>(null);
   const hide = useCallback(() => setTip(null), []);
-  useEffect(() => {
+  // A layout effect, so the Escape listener is attached the moment the tip is on screen (a passive effect can lag a frame on a slow machine).
+  useLayoutEffect(() => {
     if (!tip) return;
     const k = (e: KeyboardEvent) => e.key === "Escape" && setTip(null);
     window.addEventListener("keydown", k);
