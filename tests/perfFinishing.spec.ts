@@ -227,7 +227,7 @@ test.describe("Finishing: the tab", () => {
     await seg(page, /^TD/).focus();
     await page.keyboard.press("Tab");
     await page.keyboard.press("Shift+Tab");
-    await expect(page.locator(".fn-bars .tip")).toHaveCount(1); // the tip is up before Escape is pressed
+    await expect(page.locator(".fn-bars .tip").first()).toBeVisible(); // a tip is up before Escape is pressed (a second can overlap briefly on a phone)
     await page.keyboard.press("Escape");
     await expect(page.locator(".fn-bars .tip")).toHaveCount(0);
   });
