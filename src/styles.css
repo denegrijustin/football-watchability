@@ -1898,17 +1898,18 @@ footer details[open] summary::before {
 }
 
 /* ---------- Home-team card color ---------- */
-/* --team-bg is the home team's dark color, deepened at build time so text
-   keeps at least 4.5:1 contrast. Inner surfaces become translucent layers so
-   they sit on the team color instead of the default slate. */
+/* A neutral dark card with the home team's color as a restrained accent: a stripe along the top and a faint wash behind the matchup. --team-bg is the
+   home team's dark color, deepened at build time; the inner surfaces become translucent layers, and text stays light on the near-neutral surface. */
 .game-card.team-tinted {
-  --surface: var(--team-bg);
+  --card-base: #141d25;
+  --surface: color-mix(in srgb, var(--team-bg) 22%, var(--card-base));
   --surface-2: rgb(255 255 255 / 6%);
   --surface-3: rgb(255 255 255 / 11%);
-  --line: rgb(255 255 255 / 13%);
-  --line-strong: rgb(255 255 255 / 24%);
-  background: var(--team-bg);
-  border-color: rgb(255 255 255 / 14%);
+  --line: rgb(255 255 255 / 11%);
+  --line-strong: rgb(255 255 255 / 22%);
+  background: var(--surface);
+  border-color: var(--line);
+  border-top-color: color-mix(in srgb, var(--team-bg) 55%, #ffffff);
 }
 
 /* ---------- Projected score ---------- */
@@ -2956,12 +2957,12 @@ details.proj summary strong {
 .gc-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-  padding: 16px 20px 0;
+  gap: 12px;
+  padding: 14px 18px 0;
 }
 .gc-panel {
   min-width: 0;
-  padding: 14px 16px;
+  padding: 12px 14px;
   border: 1px solid var(--line);
   border-radius: 14px;
   background: var(--surface);

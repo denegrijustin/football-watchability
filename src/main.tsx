@@ -8,6 +8,7 @@ import "./cardSize.css";
 import "./nav.css";
 import "./dashboard.css";
 import "./reliability.css";
+import "./ui2.css";
 import { guardLogos } from "./logoGuard";
 import { initMotion } from "./motion";
 initMotion();

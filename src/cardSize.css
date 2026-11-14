@@ -1,11 +1,8 @@
-/* Every game card on the board is the same size. The optional parts (the game's logo and rivalry chip, the injuries, the weather, the lines) each
-   fit one line, and the card has one fixed height with the Details button at the bottom, so a card with a trophy is no taller than one without. */
-:root { --card-h: 360px; }
-@media (min-width: 761px) { :root { --card-h: 404px; } }
-.game-card.compact { min-height: var(--card-h); height: var(--card-h); display: flex; flex-direction: column; }
-.game-card.compact > .compact-overview { flex: 1 1 auto; display: flex; flex-direction: column; justify-content: space-between; min-height: 0; }
-/* the halftime show is its own tall thing, and the one case that is allowed to be taller */
-.game-card.compact:has(.halftime-band, .halftime-act) { height: auto; min-height: var(--card-h); }
+/* A compact card holds what it needs and no more: status and channel, the matchup, the watchability rating, the venue and the betting line, with the
+   Details button last. The injuries, projected score and win probability are in Details and the Game Center, so a card is no taller than its content
+   (cards in a row line up because they hold the same rows, not because they are padded to one height). */
+.game-card.compact { display: flex; flex-direction: column; }
+.game-card.compact > .compact-overview { flex: 1 1 auto; display: flex; flex-direction: column; gap: 10px; min-height: 0; }
 .game-card.compact .cc-actions { margin-top: auto; }
 /* one row for the game's logo and the rivalry or trophy chip */
 .cc-badges { display: flex; align-items: center; gap: 8px; flex-wrap: nowrap; min-width: 0; margin-bottom: 6px; overflow: hidden; }

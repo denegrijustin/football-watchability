@@ -19,7 +19,8 @@ import { loadResults } from "../data";
 import { useOptionalData } from "../data/optional";
 import { useFlip } from "../motion";
 import { liveHeat } from "../watchNow";
-import { observeScores, useTouchdowns } from "../touchdown";
+import { observeScores } from "../touchdown";
+import { useBoardBusy } from "../boardBusy";
 
 type Game = ReturnType<typeof filterGames>[number];
 const refOf = (r: Result) => ({ id: r.espnId, league: r.league, teams: r.teams });
@@ -91,10 +92,16 @@ function FlipGrid({ children, games, className = "game-grid", ...rest }: { child
 function KickoffSlots({ games, hot = false, sort = "time" }: { games: Game[]; hot?: boolean; sort?: BoardSortKey }) {
   const tz = useTz();
   const map = useLiveMap();
-  const heat = (g: Game) => (hot ? liveHeat(g.score, map[g.espnId]) : g.score);
+  const busy = useBoardBusy();
+  // While the reader is on a card (hovering, focused or expanded) the order they were looking at is kept; it settles when they step away.
+  const held = useRef(new Map<string, number>());
+  const fresh = (g: Game) => (hot ? liveHeat(g.score, map[g.espnId]) : g.score);
+  const heat = (g: Game) => (busy && held.current.has(g.id) ? 1000 - held.current.get(g.id)! : fresh(g));
+  const settle = (list: Game[]) => { if (!busy) list.forEach((g, i) => held.current.set(g.id, i)); };
   // Sorted by watchability: one list, best first, and ties stay in kickoff order (then by id) so the order is stable.
   if (sort === "watch") {
     const flat = [...games].sort((a, b) => heat(b) - heat(a) || a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
+    settle(flat);
     return <FlipGrid games={flat}>{flat.map((game) => <GameCard key={game.id} game={game} />)}</FlipGrid>;
   }
   const slots = new Map<string, Game[]>();
@@ -107,6 +114,7 @@ function KickoffSlots({ games, hot = false, sort = "time" }: { games: Game[]; ho
     group.sort((a, b) => heat(b) - heat(a) || a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
     slots.set(date, group);
   }
+  for (const g of slots.values()) settle(g);
   return <>{[...slots].map(([date, games]) => (
     <section className="kickoff-slot" key={date} data-kickoff={date} aria-label={`Kickoff ${date}`}>
       <h4>{new Date(date).toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric", timeZone: tz })} · {timeOf(date, tz, true)}–{timeOf(new Date(new Date(date).getTime() + 3600000).toISOString(), tz, true)} {tzAbbr(tz)}</h4>
@@ -135,7 +143,6 @@ export function GameBoard({
   const optional = useOptionalData();
   const liveNow = useLiveMap();
   useEffect(() => observeScores(liveNow), [liveNow]);
-  const scored = useTouchdowns();
   usePlusRanks(); // the "highest ranked" order needs the ranks, and re-sorts when they arrive
   const [showAll, setShowAll] = useState(false);
   const [earlierOpen, setEarlierOpen] = useState(false);
@@ -144,18 +151,11 @@ export function GameBoard({
   const [chosen, setChosen] = useState<DoneSort | null>(null);
   const doneSort: DoneSort = chosen ?? (status === "final" ? "watch" : "insanity");
   const completedExpanded = status === "final" || showCompleted;
-  // A game that just scored a touchdown moves to the top of the board for a minute and a half, whichever section it was in.
-  const hot = new Map(scored.map((t) => [t.id, t.at]));
-  const byRecent = (a: Game, b: Game) => (hot.get(b.espnId) ?? 0) - (hot.get(a.espnId) ?? 0);
-  const pinned = [...board.closing, ...board.live].filter((g) => hot.has(g.espnId)).sort(byRecent);
-  const unpinned = (gs: Game[]) => gs.filter((g) => !hot.has(g.espnId));
-  const { justFinal, finals, upcoming, counts } = board;
-  const closing = unpinned(board.closing), live = unpinned(board.live);
-  // The game that just scored is the first card of the board (top left), in whichever section the board starts with; it does not get a section of its own.
+  // A touchdown is celebrated on the card where it is (a burst, the score flash, a small TD badge for a minute and a half): nothing moves for it.
+  const { justFinal, finals, upcoming, counts, closing, live } = board;
   const inLive = (status === "all" || status === "live");
-  const showClosing = inLive && (closing.length > 0 || (pinned.length > 0 && board.closing.length > 0));
-  const showLive = inLive && board.live.length > 0 && (live.length > 0 || (pinned.length > 0 && !showClosing));
-  const leadsClosing = showClosing, leadsLive = !showClosing && showLive;
+  const showClosing = inLive && closing.length > 0;
+  const showLive = inLive && live.length > 0;
   const showFinal = (status === "all" || status === "final") && (counts.final > 0 || board.earlier.length > 0);
   const showUpcoming = (status === "all" || status === "upcoming") && upcoming.length > 0;
   // One sort control for the time-ordered lists: in the first of In progress / Upcoming that is on screen, and only when there is something to order.
@@ -266,7 +266,7 @@ export function GameBoard({
             <span className="count">{board.closing.length}</span>
             <span className="section-note">An upset is brewing in the 4th quarter or overtime; the game closest to final is first.</span>
           </div>
-          <FlipGrid games={leadsClosing ? [...pinned, ...closing] : closing}>{(leadsClosing ? [...pinned, ...closing] : closing).map((game) => <GameCard key={game.id} game={game} />)}</FlipGrid>
+          <FlipGrid games={closing}>{closing.map((game) => <GameCard key={game.id} game={game} />)}</FlipGrid>
         </section>
       )}
 
@@ -280,7 +280,6 @@ export function GameBoard({
             <span className="section-note">{SECTION_HELP.live}</span>
             {sortHere === "live" && <BoardSort value={sort} onChange={onSort!} />}
           </div>
-          {leadsLive && pinned.length > 0 && <FlipGrid games={pinned} className="game-grid td-lead">{pinned.map((game) => <GameCard key={game.id} game={game} />)}</FlipGrid>}
           <KickoffSlots games={live} hot sort={sort} />
         </section>
       )}
