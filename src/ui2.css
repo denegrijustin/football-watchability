@@ -180,3 +180,18 @@
 .gc .lp-key { color: var(--text-2); font-size: 0.8125rem; }
 .gc .lp-replay { min-height: 44px; padding: 0 16px; border-radius: 999px; border: 1.5px solid var(--glow); background: color-mix(in srgb, var(--glow) 14%, transparent); color: var(--text); font-weight: 700; }
 .gc .lp-svg { border: 2px solid var(--glow); border-radius: 14px; box-shadow: 0 0 16px color-mix(in srgb, var(--glow) 30%, transparent); }
+
+/* team logos sit on a tile that contrasts with them (white, or dark for a white logo), so none vanishes */
+.compact-overview.v2 .cc-team .chipimg { width: 56px !important; height: 56px !important; padding: 6px !important; border-radius: 12px; box-shadow: 0 0 0 1px rgb(255 255 255 / 30%); }
+.compact-overview.v2 .cc-team .chipimg img { width: 100%; height: 100%; padding: 0; border: 0; background: none; border-radius: 0; }
+@media (max-width: 560px) { .compact-overview.v2 .cc-team .chipimg { width: 48px !important; height: 48px !important; padding: 5px !important; } }
+
+/* every game card is the same size: the content is spread through the card and Details stays at the bottom (the halftime show is the one taller card) */
+:root { --card-h: 500px; }
+@media (min-width: 761px) { :root { --card-h: 520px; } }
+.game-card.compact { min-height: var(--card-h); }
+.game-card.compact > .compact-overview { justify-content: space-between; }
+.compact-overview.v2 .cc-team .chipimg { box-sizing: border-box; }
+.game-card.compact .cc-actions { margin-top: 0; }
+/* the size an off-screen card is assumed to have is the card size, so the page does not jump as cards come into view */
+.board-section .game-card.compact, .board-section .result-card.compact { contain-intrinsic-size: auto var(--card-h); }
