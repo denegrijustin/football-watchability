@@ -819,6 +819,10 @@ test.describe("review fixes @nav", () => {
     const dialog = page.locator("dialog.gc[open]");
     const hint = page.locator(".nav-hint").filter({ hasText: /\S/ });
     await expect(dialog.or(hint.filter({ hasText: /\S/ })).first()).toBeVisible({ timeout: 8000 });
+    // The Game Center opens behind a loading shell, which is swapped for the real dialog: for a moment neither is open. Take the outcome once it holds still.
+    const outcome = () => page.evaluate(() => (document.querySelector("dialog.gc[open]") ? "dialog" : document.querySelector(".nav-hint")?.textContent?.trim() ? "hint" : "none"));
+    let before = "";
+    await expect.poll(async () => { const now = await outcome(); const still = now !== "none" && now === before; before = now; return still; }, { intervals: [250], timeout: 10_000 }).toBe(true);
     if (await dialog.count()) {
       await page.keyboard.press("Escape");
       await expect(page.locator("dialog.gc[open]")).toHaveCount(0);
