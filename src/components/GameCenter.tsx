@@ -32,11 +32,9 @@ import { gameBadge } from "../gameLogo";
 import { isHalftime } from "../halftimeLogic";
 import { GameFlowPanel } from "./GameFlowPanel";
 import { GlanceTiles } from "./GlanceTiles";
+import { MatchupPanel } from "./MatchupPanel";
 import { TakeawaysPanel, TeamStatsPanel, TiltPanel } from "./TeamStatsPanels";
 import { ResultAnalysis } from "./ResultAnalysis";
-import { WeatherLook } from "./WeatherLook";
-import { Stakes } from "./TeamImpact";
-import { TeamForm } from "./Trends";
 
 import type { GameStub } from "./GameCenterContext";
 
@@ -488,7 +486,7 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
             )}
             {tab === "analysis" && (
               <>
-            {up && <section className="gc-panel gc-wide gc-deep-analysis"><h3 className="micro-label">Matchup & season analysis</h3><WeatherLook game={up} /><Stakes game={up} /><TeamForm game={up} /><GameDetails game={up} defaultOpen={false} /></section>}
+            {up && <><MatchupPanel game={up} /><section className="gc-panel gc-wide gc-deep-analysis"><h3 className="pd-title"><i aria-hidden="true" />Offense vs. defense <small className="mp-sub">(season avg)</small></h3><GameDetails game={up} defaultOpen={false} /></section></>}
             {fin && <section className="gc-panel gc-wide"><h3 className="micro-label">Forecast & final analysis</h3><ResultAnalysis result={fin} /></section>}
             {!up && !fin && (away.advanced || home.advanced) && (
               <section className="gc-panel gc-wide">

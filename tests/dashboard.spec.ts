@@ -216,9 +216,9 @@ test("season form chart, trends panel and network logos render", async ({ page }
   let card = page.locator(CARD).first();
   await expand(card);
   card = await deep(page, card);
-  await expect(card.locator(".form-row")).toHaveCount(2);
-  await card.locator(".form .mb-svg rect").first().focus();
-  await expect(card.locator(".mb-tip")).toBeVisible();
+  await expect(card.locator(".mp-form-row")).toHaveCount(2); // each team's recent form
+  await card.locator(".mp-margin rect").first().focus();
+  await expect(card.locator(".mp-tip")).toBeVisible(); // a bar names its game
   await card.locator("summary", { hasText: "Season trends" }).evaluate(el => { if (!(el.parentElement as HTMLDetailsElement).open) (el as HTMLElement).click(); });
   await expect(card.locator(".trend-team")).toHaveCount(2);
   await expect(card.locator(".tiles dd").first()).not.toBeEmpty();
