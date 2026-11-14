@@ -90,3 +90,23 @@
 .gc .gc-panel > h3, .gc .gc-panel .section-head h3 { font-size: 1.0625rem; letter-spacing: 0.04em; text-transform: uppercase; }
 .gc .gc-grid { gap: 16px; padding: 16px 16px 0; }
 .gc .gc-close { border: 2px solid rgb(255 255 255 / 70%); background: rgb(0 0 0 / 65%); }
+/* the line score and the live note sit in one bordered row, as in the design */
+.gc .gc-scorebar { display: flex; align-items: center; gap: 18px; margin: 14px 14px 0; padding: 10px 16px; border: 1.5px solid color-mix(in srgb, var(--glow) 70%, transparent); border-radius: 16px; background: rgb(255 255 255 / 4%); box-shadow: 0 0 16px color-mix(in srgb, var(--glow) 22%, transparent); }
+.gc .gc-scorebar:not(:has(*)) { display: none; }
+.gc .gc-scorebar .gc-lines { margin: 0; width: min(100%, 340px); flex: none; }
+.gc .gc-scorebar .gc-lines td, .gc .gc-scorebar .gc-lines th { padding: 3px 8px; color: var(--text); }
+.gc .gc-scorebar .gc-updated { margin: 0 0 0 auto; font-size: 0.875rem; color: var(--text-2); }
+@media (max-width: 720px) { .gc .gc-scorebar { flex-wrap: wrap; gap: 6px; padding: 8px 10px; } .gc .gc-scorebar .gc-updated { margin: 0; } }
+/* team stats: solid team-colored bars with the number inside */
+.gc .gc-compare td { isolation: isolate; font-size: 0.9375rem; font-weight: 750; color: #fff; }
+.gc .gc-cbar { opacity: 1; z-index: -1; top: 4px; bottom: 4px; border-radius: 999px; }
+.gc .gc-cbar.away { background: linear-gradient(90deg, color-mix(in srgb, var(--away-bg, #c0504a) 50%, #000000), color-mix(in srgb, var(--away-bg, #c0504a) 68%, #ffffff)); }
+.gc .gc-cbar.home { background: linear-gradient(270deg, color-mix(in srgb, var(--team-bg, #4a7fc0) 50%, #000000), color-mix(in srgb, var(--team-bg, #4a7fc0) 68%, #ffffff)); }
+.gc .gc-compare td.edge { color: #fff; }
+.gc .gc-compare tbody th { color: var(--text); font-size: 0.9375rem; }
+.gc .gc-cbar.away { background: linear-gradient(90deg, color-mix(in srgb, var(--away-bg, #c0504a) 62%, #ffffff 0%), color-mix(in srgb, var(--away-bg, #c0504a) 48%, #ffffff)); }
+.gc .gc-cbar.home { background: linear-gradient(270deg, color-mix(in srgb, var(--team-bg, #4a7fc0) 62%, #ffffff 0%), color-mix(in srgb, var(--team-bg, #4a7fc0) 48%, #ffffff)); }
+/* player rows take their team's color, as in the design */
+.gc .gc-tbteam:first-child .gc-pl { background: linear-gradient(90deg, color-mix(in srgb, var(--away-bg, #1d2a35) 78%, #000000), color-mix(in srgb, var(--away-bg, #1d2a35) 55%, #000000)); border: 1.5px solid color-mix(in srgb, var(--away-bg, #1d2a35) 50%, #ffffff); }
+.gc .gc-tbteam:last-child .gc-pl { background: linear-gradient(90deg, color-mix(in srgb, var(--team-bg, #1d2a35) 78%, #000000), color-mix(in srgb, var(--team-bg, #1d2a35) 55%, #000000)); border: 1.5px solid color-mix(in srgb, var(--team-bg, #1d2a35) 50%, #ffffff); }
+.gc .gc-pl { border-radius: 14px; }

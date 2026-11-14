@@ -333,12 +333,14 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
             </div>
             <TeamHead t={home} league={league ?? ""} onClose={onClose} score={scoreH} poss={!!game?.situation?.possession && game.situation.possession === game.teams[1]?.id} win={state === "post" && scoreH! > scoreA!} right />
           </header>
+          <div className="gc-scorebar">
           {game && (game.teams[0].linescores.length > 0) && <Linescore game={game} />}
           {updated && state === "in" && (
             <p className="gc-updated" role="status">
               Updating every 4 seconds · last {updated.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", second: "2-digit" })}
             </p>
           )}
+          </div>
 
           <nav className="gc-tabs" role="tablist" aria-label="Game Center sections">
             {tabs.map((t) => (
