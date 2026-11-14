@@ -34,6 +34,8 @@ const POLICY_OF: Record<string, keyof typeof POLICY> = { slate: "essential", res
 
 type Entry = { promise: Promise<unknown>; ctl: AbortController; waiters: number };
 const cache = new Map<string, Entry>();
+/** Files that failed before: asking again skips the browser's cache from the first try (a stalled or bad earlier request can be stuck in it, and the page's own preload of the slate can be what stalled). */
+const failedBefore = new Set<string>();
 
 /**
  * The Denver Broncos are called the Denver Donkeys on this site. Only the words people read change: ids, logo ids, abbreviations
@@ -70,7 +72,7 @@ function pause(ms: number, signal: AbortSignal) {
 }
 
 /** One data file under a policy. A retry skips the browser's cache in case a bad copy is stuck in it; an invalid answer is never retried. */
-async function getJson(name: string, policy: Policy, signal: AbortSignal, validate?: (j: unknown) => void): Promise<unknown> {
+async function getJson(name: string, policy: Policy, signal: AbortSignal, validate?: (j: unknown) => void, fresh = false): Promise<unknown> {
   let last: DataError = new DataError("network", `Could not load ${name}`);
   for (let i = 0; i < policy.attempts; i++) {
     if (signal.aborted) throw new DataError("aborted", `Loading ${name} was cancelled`);
@@ -80,7 +82,7 @@ async function getJson(name: string, policy: Policy, signal: AbortSignal, valida
     signal.addEventListener("abort", stop, { once: true });
     const timer = setTimeout(() => { timedOut = true; ctl.abort(); }, policy.timeoutMs);
     try {
-      const res = await fetch(`/data/${name}.json`, { signal: ctl.signal, ...(i ? { cache: "no-store" as const } : {}) });
+      const res = await fetch(`/data/${name}.json`, { signal: ctl.signal, ...(i || fresh ? { cache: "no-store" as const } : {}) });
       if (!res.ok) throw new DataError("http", `Could not load ${name} (${res.status})`, res.status);
       let json: unknown;
       try {
@@ -121,10 +123,10 @@ export function fetchData<T>(name: string, opts: Opts = {}): Promise<T> {
   if (!entry) {
     const ctl = new AbortController();
     const policy = tuned(opts.policy ?? POLICY_OF[name] ?? "deferred");
-    const promise = getJson(name, policy, ctl.signal, VALIDATE[name]).then((j) => rename(j));
+    const promise = getJson(name, policy, ctl.signal, VALIDATE[name], failedBefore.has(name)).then((j) => { failedBefore.delete(name); return rename(j); });
     entry = { promise, ctl, waiters: 0 };
     const mine = entry;
-    promise.catch(() => { if (cache.get(name) === mine) cache.delete(name); });
+    promise.catch((e) => { if (cache.get(name) === mine) cache.delete(name); if (!(e instanceof DataError && e.kind === "aborted")) failedBefore.add(name); });
     cache.set(name, entry);
   }
   const e = entry;
@@ -153,4 +155,18 @@ export function fetchData<T>(name: string, opts: Opts = {}): Promise<T> {
 export function refetchData<T>(name: string, opts: Opts = {}): Promise<T> {
   cache.delete(name);
   return fetchData<T>(name, opts);
+}
+
+/** Optional files the page asked for at startup, so the app can take the answer (success or failure) instead of asking a second time. */
+const warmed = new Map<string, Promise<unknown>>();
+export function warm(name: string) {
+  if (warmed.has(name)) return;
+  const p = fetchData(name);
+  p.catch(() => {}); // a failure is read by whoever takes it
+  warmed.set(name, p);
+}
+export function takeWarm<T>(name: string): Promise<T> {
+  const p = warmed.get(name) as Promise<T> | undefined;
+  warmed.delete(name);
+  return p ?? fetchData<T>(name);
 }

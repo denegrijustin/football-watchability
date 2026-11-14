@@ -13,12 +13,13 @@ export function setOptional(name: OptionalName, status: OptionalStatus, error?: 
   version += 1;
   // A ready board with a missing optional dataset is "degraded"; it is "ready" again once none is missing.
   const lc = getLifecycle();
-  const anyFailed = state.results.status === "failed" || state.broadcast.status === "failed";
+  const anyFailed = anyOptionalFailed();
   if (lc === "ready" && anyFailed) setLifecycle("degraded");
   else if (lc === "degraded" && !anyFailed) setLifecycle("ready");
   listeners.forEach((l) => l());
 }
 export const optionalState = () => state;
+export const anyOptionalFailed = () => state.results.status === "failed" || state.broadcast.status === "failed";
 /** Re-renders a component when an optional dataset arrives or fails; returns the current statuses. */
 export function useOptionalData() {
   useSyncExternalStore((l) => { listeners.add(l); return () => listeners.delete(l); }, () => version);

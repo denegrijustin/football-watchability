@@ -166,11 +166,19 @@ test.describe("error boundaries", () => {
 });
 
 test.describe("Game Center loading", () => {
-  /** Holds, fails or passes the files fetched after the board is up (the Game Center's code), without naming any hashed file. */
+  /**
+   * Holds, fails or passes the files fetched after the board is up, without naming any hashed file. "abort" fails only the file that holds the
+   * Game Center (recognised by its text); "abortAll" fails every file fetched from then on (a connection that is down).
+   */
   async function gate(page: Page) {
-    const g = { mode: "pass" as "pass" | "delay" | "abort", released: false };
+    const g = { mode: "pass" as "pass" | "delay" | "abort" | "abortAll", released: false };
     await page.route(/\/assets\/[^/]+\.js(\?.*)?$/, async (route) => {
-      if (g.mode === "abort") return route.abort();
+      if (g.mode === "abortAll") return route.abort();
+      if (g.mode === "abort") {
+        const res = await route.fetch();
+        if ((await res.text()).includes("Time on the field (possession)")) return route.abort();
+        return route.fulfill({ response: res });
+      }
       if (g.mode === "delay") { await sleep(2_500); g.released = true; }
       return route.continue();
     });
@@ -226,7 +234,7 @@ test.describe("Game Center loading", () => {
     await expect(dialog(page)).toHaveCount(0);
   });
 
-  test("a failed import shows Retry and Close, leaves the board alone, and Retry opens it once the network is back", async ({ page }) => {
+  test("a failed import shows Retry and Close, leaves the board alone, and Retry opens it once the file is reachable (no reload)", async ({ page }) => {
     await quiet(page);
     const nav = loads(page);
     const g = await gate(page);
@@ -237,15 +245,43 @@ test.describe("Game Center loading", () => {
     const failed = dialog(page).getByRole("alert").filter({ hasText: "The Game Center could not load." });
     await expect(failed).toBeVisible({ timeout: 10_000 });
     await expect(card(page)).toBeVisible(); // the board is still there behind it
-    // Close works from the failure; the same game can be opened again
+    // Close works from the failure
     await dialog(page).getByRole("button", { name: "Close Game Center" }).click();
     await expect(dialog(page)).toHaveCount(0);
+    await expect(card(page)).toBeVisible();
+    // the same game opened again fails again while the file is unreachable; once it is back, Retry opens it
     await card(page).click();
     await expect(failed).toBeVisible({ timeout: 10_000 });
     g.mode = "pass";
     await failed.getByRole("button", { name: "Retry" }).click();
     await expect(dialog(page).locator(".gc-head")).toBeVisible({ timeout: 15_000 });
     expect(nav.count).toBe(1); // no reload at any point
+    // and it opens again afterwards
+    await page.keyboard.press("Escape");
+    await expect(dialog(page)).toHaveCount(0);
+    await card(page).click();
+    await expect(dialog(page).locator(".gc-head")).toBeVisible();
+  });
+
+  test("with every file unreachable the failure offers an explicit refresh (nothing refreshes by itself), and after it the Game Center opens", async ({ page }) => {
+    await quiet(page);
+    const g = await gate(page);
+    await page.goto("/?league=NFL");
+    await expect(card(page)).toBeVisible();
+    g.mode = "abortAll";
+    await card(page).click();
+    const failed = dialog(page).getByRole("alert").filter({ hasText: "The Game Center could not load." });
+    await expect(failed).toBeVisible({ timeout: 10_000 });
+    await failed.getByRole("button", { name: "Retry" }).click();
+    await expect(failed).toBeVisible({ timeout: 10_000 }); // the browser remembers files that failed together: a second try cannot fix this
+    const refresh = failed.getByRole("button", { name: "Refresh the application" });
+    await expect(refresh).toBeVisible();
+    g.mode = "pass";
+    await refresh.click(); // the person's choice, and the only reload in this test
+    await page.waitForLoadState("domcontentloaded");
+    await expect(card(page)).toBeVisible();
+    await card(page).click();
+    await expect(dialog(page).locator(".gc-head")).toBeVisible({ timeout: 15_000 });
   });
 
   test("when the site was updated, the failure says so and offers an explicit refresh (nothing refreshes by itself)", async ({ page }) => {
@@ -260,7 +296,7 @@ test.describe("Game Center loading", () => {
       const html = (await res.text()).replace(/(<script[^>]+type="module"[^>]+src=")([^"]+)(")/, "$1/assets/index-updated.js$3");
       await r.fulfill({ response: res, body: html });
     });
-    g.mode = "abort";
+    g.mode = "abortAll";
     await card(page).click();
     await expect(dialog(page).getByText("Game Center was updated. Refresh the application to load the latest version.")).toBeVisible({ timeout: 10_000 });
     await expect(dialog(page).getByRole("button", { name: "Refresh the application" })).toBeVisible();
@@ -291,12 +327,12 @@ test.describe("Game Center loading", () => {
     await expect(card(page)).toBeVisible();
     await page.locator('[data-status-chip="upcoming"]').click();
     await expect(page.locator('[data-status-chip="upcoming"]')).toHaveAttribute("aria-pressed", "true");
-    await page.evaluate(() => scrollTo(0, 500));
-    const before = await page.evaluate(() => scrollY);
     const target = card(page);
     await target.focus();
-    await target.click();
+    await page.evaluate(() => scrollTo(0, 500));
+    await target.click({ position: { x: 20, y: 20 } });
     await expect(dialog(page).locator(".gc-head")).toBeVisible({ timeout: 15_000 });
+    const before = await page.evaluate(() => scrollY); // where the page was left, behind the open dialog
     await page.keyboard.press("Escape");
     await expect(dialog(page)).toHaveCount(0);
     await expect(page.getByLabel("League", { exact: true })).toHaveValue("NFL");

@@ -1,7 +1,7 @@
 import type { Ranks } from "../rankLine";
 import logoData from "./logos.json";
 import networkData from "./networks.json";
-import { fetchData, DataError } from "./load";
+import { fetchData, takeWarm, DataError } from "./load";
 import { recordDiag } from "../boot";
 import { setOptional, type OptionalName } from "./optional";
 import { dayOf } from "../tz";
@@ -190,12 +190,12 @@ const failed = (name: OptionalName, e: unknown) => {
 /** (Re)loads past results. A failure is recorded and shown only where results are asked for; the current board is untouched. */
 export function loadResults(): Promise<void> {
   setOptional("results", "loading");
-  return fetchData<{ games: unknown[] }>("results").then((j) => { applyResults(j); setOptional("results", "ready"); }, (e) => failed("results", e));
+  return takeWarm<{ games: unknown[] }>("results").then((j) => { applyResults(j); setOptional("results", "ready"); }, (e) => failed("results", e));
 }
 /** (Re)loads the independent TV checks. Without them the slate's own channel listings stand, exactly as listed. */
 export function loadBroadcast(): Promise<void> {
   setOptional("broadcast", "loading");
-  return fetchData<unknown>("broadcast-checks").then((j) => { applyBroadcast(j); setOptional("broadcast", "ready"); }, (e) => failed("broadcast", e));
+  return takeWarm<unknown>("broadcast-checks").then((j) => { applyBroadcast(j); setOptional("broadcast", "ready"); }, (e) => failed("broadcast", e));
 }
 void loadResults();
 void loadBroadcast();

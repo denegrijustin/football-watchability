@@ -1,10 +1,13 @@
 import { Component, useCallback, useEffect, useRef, useState, type ComponentType, type ErrorInfo, type ReactNode } from "react";
 import { setLifecycle, recordDiag } from "./boot";
-import { DataError, fetchData } from "./data/load";
+import { DataError, fetchData, warm } from "./data/load";
+import { loadWithRecovery, type ChunkMemo } from "./chunkRetry";
 import { StateNotice } from "./components/StateNotice";
+import { anyOptionalFailed } from "./data/optional";
 
 /** Past this long the loading line says so, instead of leaving a quiet screen. Nothing reloads and nothing is cancelled: a slow connection is not a failure. */
 const SLOW_MS = 8_000;
+const codeMemo: ChunkMemo = { url: null };
 const NAV = ["Games", "Teams", "Rankings", "Analytics", "More"];
 
 /** What the visitor sees before the board: the site's name and its five destinations, and one line about what is happening. */
@@ -40,6 +43,7 @@ export function Bootstrap() {
   const [error, setError] = useState<unknown>(null);
   const [Root, setRoot] = useState<ComponentType | null>(null);
   const run = useRef(0);
+  const warmed = useRef(false);
 
   const start = useCallback(() => {
     const mine = ++run.current;
@@ -49,16 +53,21 @@ export function Bootstrap() {
     setError(null);
     setLifecycle("loading");
     const timer = setTimeout(() => mine === run.current && setSlow(true), SLOW_MS);
-    // The app's code is asked for in step with the data, so neither waits on the other.
-    const code = import("./AppRoot");
-    code.catch(() => {});
+    // The optional files are asked for now, in parallel (a failure here is the app's business later, not startup's).
+    if (!warmed.current) {
+      warmed.current = true;
+      warm("results");
+      warm("broadcast-checks");
+    }
+    // The week's slate first, and only then the app's code: the app reads the slate while it loads, so a module that loaded while the slate was
+    // still failing would be remembered by the browser as failed for good. With the slate in hand, loading the code cannot depend on the network again.
     fetchData("slate", { signal: ctl.signal })
-      .then(() => code)
+      .then(() => loadWithRecovery(() => import("./AppRoot"), codeMemo))
       .then((m) => {
         if (mine !== run.current) return;
         setRoot(() => m.default);
         setPhase("ready");
-        setLifecycle("ready");
+        setLifecycle(anyOptionalFailed() ? "degraded" : "ready");
       })
       .catch((e) => {
         if (mine !== run.current || (e instanceof DataError && e.kind === "aborted")) return;

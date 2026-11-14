@@ -2,6 +2,7 @@ import { Component, createContext, useCallback, useContext, useEffect, useRef, u
 import { recordDiag } from "../boot";
 import { logos, slate } from "../data";
 import { fault } from "../fault";
+import { loadWithRecovery, type ChunkMemo } from "../chunkRetry";
 import { StateNotice } from "./StateNotice";
 
 // ---------- open/close from anywhere ----------
@@ -24,18 +25,17 @@ type GcProps = { espnId: string | null; stub?: GameStub; onClose: () => void };
 // Neither ever reloads the page: if the site was updated and the old file is gone, the person is asked to refresh, and chooses.
 let loaded: ComponentType<GcProps> | null = null;
 const IMPORT_TIMEOUT_MS = 20_000;
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export function preloadGameCenter() {
   if (loaded) return;
   import("./GameCenter").then((m) => { loaded = m.default as ComponentType<GcProps>; }, (e) => recordDiag("preload:gamecenter", e));
 }
 
+const memo: ChunkMemo = { url: null };
 function importGameCenter(): Promise<ComponentType<GcProps>> {
   if (loaded) return Promise.resolve(loaded);
-  const attempt = () => import("./GameCenter").then((m) => (loaded = m.default as ComponentType<GcProps>));
-  // Tried once more after a pause (a first failure is often a dropped connection), and never left pending: after the deadline it is a failure.
-  const tries = attempt().catch(() => sleep(700).then(attempt));
+  // Tried, and tried once more after a pause as a fresh request (see chunkRetry), and never left pending: after the deadline it is a failure.
+  const tries = loadWithRecovery(() => import("./GameCenter"), memo).then((m) => (loaded = m.default as ComponentType<GcProps>));
   const deadline = new Promise<never>((_, rej) => setTimeout(() => rej(new Error("Loading the Game Center timed out")), IMPORT_TIMEOUT_MS));
   return Promise.race([tries, deadline]);
 }

@@ -1173,33 +1173,6 @@ test("completed games can be sorted by watch score, insanity or highest ranked, 
   await expect(page.getByRole("group", { name: "Sort completed games by" }).getByRole("button", { name: "Most insane" })).toHaveAttribute("aria-pressed", "false"); // the pick made above is kept
 });
 
-test("if the board's data never loads, the grey bars give way to a message and a Reload button (after one automatic reload)", async ({ page }) => {
-  await page.clock.install();
-  await page.route("**/data/slate.json", (route) => route.fulfill({ status: 500, body: "nope" }));
-  await page.goto("/?league=NFL");
-  await expect(page.locator(".boot")).toBeVisible();
-  // Time runs in seconds with real pauses between, so the three tries at the data (and their failures) happen as they would for a visitor.
-  const run = async (seconds: number) => {
-    for (let i = 0; i < seconds; i++) {
-      await page.clock.fastForward(1000);
-      await page.waitForTimeout(120);
-    }
-  };
-  await run(13); // too long: it reloads once by itself
-  await page.waitForLoadState("domcontentloaded");
-  await expect(page.locator(".boot")).toBeVisible();
-  await run(13); // still nothing: it says so
-  const fail = page.locator(".boot-fail");
-  await expect(fail).toBeVisible();
-  await expect(fail).toContainText("taking too long");
-  await expect(fail).toContainText("slate"); // and what went wrong, so it can be reported
-  await expect(fail.getByRole("button", { name: "Reload" })).toBeVisible();
-  // With the data back, Reload brings the board up.
-  await page.unroute("**/data/slate.json");
-  await fail.getByRole("button", { name: "Reload" }).click();
-  await expect(page.locator(".game-card").first()).toBeVisible({ timeout: 15000 });
-});
-
 test("a data file that fails once is tried again, and the board still comes up", async ({ page }) => {
   let calls = 0;
   await page.route("**/data/results.json", (route) => {
@@ -1208,18 +1181,25 @@ test("a data file that fails once is tried again, and the board still comes up",
   });
   await page.goto("/?league=NFL");
   await expect(page.locator(".game-card").first()).toBeVisible({ timeout: 15000 });
-  expect(calls).toBeGreaterThanOrEqual(2);
+  await expect.poll(() => calls).toBeGreaterThanOrEqual(2); // the optional file is asked for again in the background; the board did not wait for it
 });
 
-test("a tab whose file is gone after an update reloads the page once and then opens", async ({ page }) => {
+test("a tab whose file is gone after an update shows Retry (the page never reloads itself), and Retry opens it once the file is back", async ({ page }) => {
   let block = false;
+  let reloaded = false;
   await page.route("**/assets/c-*.js", (route) => (block ? route.abort() : route.continue()));
   await page.goto("/?league=NFL");
   await expect(page.locator(".game-card").first()).toBeVisible();
+  page.on("framenavigated", (f) => { if (f === page.mainFrame()) reloaded = true; });
   block = true; // the site was updated: the files this page knows about are no longer there
-  page.once("framenavigated", () => (block = false)); // the reload fetches the new ones
-  await page.getByRole("button", { name: /^Insanity/ }).click();
-  await expect(page.locator(".ib")).toBeVisible({ timeout: 20000 });
+  await page.locator('[data-tab="standings"]').evaluate((b) => (b as HTMLElement).click());
+  const note = page.getByRole("alert").filter({ hasText: "could not load" });
+  await expect(note).toBeVisible({ timeout: 10000 });
+  await expect(page.locator(".site-header")).toBeVisible();
+  block = false;
+  await note.getByRole("button", { name: "Retry" }).click();
+  await expect(page.locator('.feature-intro[data-feature="standings"]')).toBeVisible({ timeout: 15000 });
+  expect(reloaded).toBe(false);
 });
 
 test("a tab that fails twice shows what went wrong and a way to reload", async ({ page }) => {

@@ -1,5 +1,6 @@
 import { createElement, lazy, type ComponentType } from "react";
 import { recordDiag } from "./boot";
+import { loadWithRecovery, type ChunkMemo } from "./chunkRetry";
 
 // A lazy view that failed to load is forgotten by its own lazy() for good, so Retry needs a fresh one: each view registers a reset here.
 const resets = new Set<() => void>();
@@ -15,11 +16,11 @@ export function resetFailedViews() {
  */
 export function lazyView<T extends ComponentType<any>>(load: () => Promise<{ default: T }>, name: string) {
   let failed = false;
+  const memo: ChunkMemo = { url: null };
   const make = () =>
     lazy(() => {
       failed = false;
-      return load()
-        .catch(() => new Promise((r) => setTimeout(r, 700)).then(load))
+      return loadWithRecovery(load, memo)
         .catch((err) => {
           failed = true;
           recordDiag(`view:${name}`, err);

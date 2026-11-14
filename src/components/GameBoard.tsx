@@ -163,7 +163,7 @@ export function GameBoard({
 
   if (!showClosing && !showLive && !showFinal && !showUpcoming) {
     // Asking for completed games while past results are missing is not "no games": say so, and offer to try again.
-    if ((status === "final" || status === "all") && optional.results.status !== "ready" && !filtered) {
+    if (status === "final" && optional.results.status !== "ready") {
       return optional.results.status === "failed" ? (
         <StateNotice kind="failed" title="Past results are unavailable right now." actions={<button type="button" className="primary" onClick={() => void loadResults()}>Retry</button>}>
           Current games are still shown under All, Live and Upcoming.
