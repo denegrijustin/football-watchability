@@ -216,9 +216,9 @@ test("season form chart, trends panel and network logos render", async ({ page }
   let card = page.locator(CARD).first();
   await expand(card);
   card = await deep(page, card);
-  await expect(card.locator(".form-row")).toHaveCount(2);
-  await card.locator(".form .mb-svg rect").first().focus();
-  await expect(card.locator(".mb-tip")).toBeVisible();
+  await expect(card.locator(".mp-form-row")).toHaveCount(2); // each team's recent form
+  await card.locator(".mp-margin rect").first().focus();
+  await expect(card.locator(".mp-tip")).toBeVisible(); // a bar names its game
   await card.locator("summary", { hasText: "Season trends" }).evaluate(el => { if (!(el.parentElement as HTMLDetailsElement).open) (el as HTMLElement).click(); });
   await expect(card.locator(".trend-team")).toHaveCount(2);
   await expect(card.locator(".tiles dd").first()).not.toBeEmpty();
@@ -269,9 +269,13 @@ test("final view compares forecast with actual and explains the score", async ({
   await expect(rows).toHaveCount(top.actual.parts.length + 2);
   await page.getByRole("button", { name: "Close Game Center" }).click();
   if (top.wp.length >= 8) {
+    await expect(page.getByRole("dialog")).toHaveCount(0); // the Game Center has finished closing (it hands focus back as it goes)
     await expect(card.locator(".wp svg")).toBeVisible();
-    await card.locator(".wp svg rect[tabindex='0']").first().focus();
-    await expect(card.locator(".wp-tip")).toBeVisible();
+    // Focusing a bar names its play; if focus is taken away a moment later the tip goes, so focus again until it shows.
+    await expect(async () => {
+      await card.locator(".wp svg rect[tabindex='0']").first().focus();
+      await expect(card.locator(".wp-tip")).toBeVisible({ timeout: 1000 });
+    }).toPass({ timeout: 10_000 });
   }
   const width = await page.evaluate(() => document.documentElement.scrollWidth);
   expect(width).toBeLessThanOrEqual((page.viewportSize()?.width ?? 0) + 1);

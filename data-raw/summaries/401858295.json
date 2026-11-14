@@ -16,14 +16,14 @@
     "dateValid": true,
     "neutralSite": false,
     "conferenceCompetition": true,
-    "boxscoreAvailable": false,
+    "boxscoreAvailable": true,
     "commentaryAvailable": false,
-    "liveAvailable": false,
+    "liveAvailable": true,
     "onWatchESPN": true,
     "recent": true,
-    "wallclockAvailable": false,
-    "boxscoreSource": "none",
-    "playByPlaySource": "none",
+    "wallclockAvailable": true,
+    "boxscoreSource": "full",
+    "playByPlaySource": "full",
     "competitors": [
      {
       "id": "258",
@@ -212,6 +212,21 @@
         }
        ]
       },
+      "score": "26",
+      "linescores": [
+       {
+        "displayValue": "6"
+       },
+       {
+        "displayValue": "10"
+       },
+       {
+        "displayValue": "10"
+       },
+       {
+        "displayValue": "0"
+       }
+      ],
       "record": [
        {
         "type": "total",
@@ -224,7 +239,8 @@
         "displayValue": "2-4"
        }
       ],
-      "possession": false
+      "timeoutsUsed": 2,
+      "possession": true
      },
      {
       "id": "25",
@@ -413,6 +429,21 @@
         }
        ]
       },
+      "score": "7",
+      "linescores": [
+       {
+        "displayValue": "0"
+       },
+       {
+        "displayValue": "7"
+       },
+       {
+        "displayValue": "0"
+       },
+       {
+        "displayValue": "0"
+       }
+      ],
       "record": [
        {
         "type": "total",
@@ -425,19 +456,25 @@
         "displayValue": "2-4"
        }
       ],
+      "timeoutsUsed": 2,
       "possession": false
      }
     ],
     "status": {
+     "displayClock": "7:00",
+     "period": 4,
      "type": {
-      "id": "1",
-      "name": "STATUS_SCHEDULED",
-      "state": "pre",
+      "id": "2",
+      "name": "STATUS_IN_PROGRESS",
+      "state": "in",
       "completed": false,
-      "description": "Scheduled",
-      "detail": "Sat, November 14th at 3:30 PM EST",
-      "shortDetail": "11/14 - 3:30 PM EST"
-     }
+      "description": "In Progress",
+      "detail": "7:00 - 4th Quarter",
+      "shortDetail": "7:00 - 4th",
+      "statusPrimary": "7:00",
+      "statusSecondary": "4th"
+     },
+     "displayPeriod": "4th"
     },
     "broadcasts": [
      {
@@ -464,43 +501,68 @@
      "shortName": "ACC",
      "midsizeName": "ACC"
     },
-    "boxscoreMinutes": false
+    "boxscoreMinutes": true
    }
   ],
   "links": [
    {
     "rel": [
-     "summary",
+     "live",
      "desktop",
      "event"
     ],
-    "href": "https://www.espn.com/college-football/game/_/gameId/401858295/california-virginia",
+    "href": "https://www.espn.com/college-football/game?gameId=401858295",
     "text": "Gamecast",
-    "shortText": "Summary",
+    "shortText": "Gamecast",
     "isExternal": false,
     "isPremium": false
    },
    {
     "rel": [
-     "preview",
+     "boxscore",
      "desktop",
      "event"
     ],
-    "href": "https://www.espn.com/college-football/preview/_/gameId/401858295",
-    "text": "Preview",
-    "shortText": "Preview",
+    "href": "https://www.espn.com/college-football/boxscore/_/gameId/401858295",
+    "text": "Box Score",
+    "shortText": "Box Score",
     "isExternal": false,
     "isPremium": false
    },
    {
     "rel": [
-     "tickets",
-     "desktop"
+     "pbp",
+     "desktop",
+     "event"
     ],
-    "href": "https://www.vividseats.com/virginia-cavaliers-football-tickets-scott-stadium-10-1-2026--sports-ncaa-football/production/6206995?wsUser=717",
-    "text": "Tickets",
-    "shortText": "Tickets",
-    "isExternal": true,
+    "href": "https://www.espn.com/college-football/playbyplay/_/gameId/401858295",
+    "text": "Play-by-Play",
+    "shortText": "Play-by-Play",
+    "isExternal": false,
+    "isPremium": false
+   },
+   {
+    "rel": [
+     "teamstats",
+     "desktop",
+     "event"
+    ],
+    "href": "https://www.espn.com/college-football/matchup?gameId=401858295",
+    "text": "Team Stats",
+    "shortText": "Team Stats",
+    "isExternal": false,
+    "isPremium": false
+   },
+   {
+    "rel": [
+     "videos",
+     "desktop",
+     "event"
+    ],
+    "href": "https://www.espn.com/college-football/video?gameId=401858295",
+    "text": "Videos",
+    "shortText": "Videos",
+    "isExternal": false,
     "isPremium": false
    }
   ],
@@ -674,17 +736,6 @@
      ]
     }
    ]
-  }
- },
- "predictor": {
-  "header": "Matchup Predictor",
-  "homeTeam": {
-   "id": "258",
-   "gameProjection": "87.2"
-  },
-  "awayTeam": {
-   "id": "25",
-   "gameProjection": "12.8"
   }
  },
  "pickcenter": [
@@ -888,7 +939,7 @@
       "bets"
      ],
      "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34964172",
-     "text": "See More Odds",
+     "text": "See More Live Odds",
      "shortText": "Game",
      "isExternal": true,
      "isPremium": false,
@@ -937,6 +988,9 @@
      },
      "open": {
       "odds": "-500"
+     },
+     "live": {
+      "odds": "OFF"
      }
     },
     "away": {
@@ -969,6 +1023,9 @@
      },
      "open": {
       "odds": "+380"
+     },
+     "live": {
+      "odds": "OFF"
      }
     }
    },
@@ -1007,6 +1064,9 @@
      "open": {
       "line": "-12.5",
       "odds": "-110"
+     },
+     "live": {
+      "odds": "OFF"
      }
     },
     "away": {
@@ -1041,6 +1101,9 @@
      "open": {
       "line": "+12.5",
       "odds": "-110"
+     },
+     "live": {
+      "odds": "OFF"
      }
     }
    },
@@ -1079,6 +1142,9 @@
      "open": {
       "line": "o47.5",
       "odds": "-110"
+     },
+     "live": {
+      "odds": "OFF"
      }
     },
     "under": {
@@ -1113,6 +1179,9 @@
      "open": {
       "line": "u47.5",
       "odds": "-110"
+     },
+     "live": {
+      "odds": "OFF"
      }
     }
    },
@@ -1124,7 +1193,7 @@
      "bets"
     ],
     "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34964172",
-    "text": "See More Odds",
+    "text": "See More Live Odds",
     "shortText": "Game",
     "isExternal": true,
     "isPremium": false,
@@ -1190,18 +1259,18 @@
    ]
   },
   "weather": {
-   "temperature": 56,
-   "highTemperature": 56,
-   "lowTemperature": 56,
-   "conditionId": "3",
-   "gust": 24,
+   "temperature": 48,
+   "highTemperature": 48,
+   "lowTemperature": 48,
+   "conditionId": "Clear",
+   "gust": 14,
    "precipitation": 0,
    "link": {
     "language": "en-US",
     "rel": [
      "22903"
     ],
-    "href": "http://www.accuweather.com/en/us/scott-stadium-va/22902/hourly-weather-forecast/53659_poi?day=1&hbhhour=15&lang=en-us",
+    "href": "http://www.accuweather.com/en/us/scott-stadium-va/22902/current-weather/53659_poi?lang=en-us",
     "text": "Weather",
     "shortText": "Weather",
     "isExternal": true,
@@ -1233,8 +1302,8 @@
          "shortDisplayName": "OVER",
          "description": "Overall Record",
          "type": "total",
-         "summary": "8-1",
-         "displayValue": "8-1"
+         "summary": "9-1",
+         "displayValue": "9-1"
         },
         {
          "id": "9",
@@ -1244,8 +1313,8 @@
          "shortDisplayName": "CONF",
          "description": "Conference Record",
          "type": "vsconf",
-         "summary": "6-0",
-         "displayValue": "6-0"
+         "summary": "7-0",
+         "displayValue": "7-0"
         }
        ],
        "logo": [
@@ -1287,8 +1356,8 @@
          "shortDisplayName": "OVER",
          "description": "Overall Record",
          "type": "total",
-         "summary": "8-1",
-         "displayValue": "8-1"
+         "summary": "9-1",
+         "displayValue": "9-1"
         },
         {
          "id": "9",
@@ -1298,8 +1367,8 @@
          "shortDisplayName": "CONF",
          "description": "Conference Record",
          "type": "vsconf",
-         "summary": "5-1",
-         "displayValue": "5-1"
+         "summary": "6-1",
+         "displayValue": "6-1"
         }
        ],
        "logo": [
@@ -1395,8 +1464,8 @@
          "shortDisplayName": "OVER",
          "description": "Overall Record",
          "type": "total",
-         "summary": "7-2",
-         "displayValue": "7-2"
+         "summary": "7-3",
+         "displayValue": "7-3"
         },
         {
          "id": "9",
@@ -1406,8 +1475,8 @@
          "shortDisplayName": "CONF",
          "description": "Conference Record",
          "type": "vsconf",
-         "summary": "5-2",
-         "displayValue": "5-2"
+         "summary": "5-3",
+         "displayValue": "5-3"
         }
        ],
        "logo": [
@@ -1449,8 +1518,8 @@
          "shortDisplayName": "OVER",
          "description": "Overall Record",
          "type": "total",
-         "summary": "7-2",
-         "displayValue": "7-2"
+         "summary": "7-3",
+         "displayValue": "7-3"
         },
         {
          "id": "9",
@@ -1460,8 +1529,8 @@
          "shortDisplayName": "CONF",
          "description": "Conference Record",
          "type": "vsconf",
-         "summary": "4-2",
-         "displayValue": "4-2"
+         "summary": "4-3",
+         "displayValue": "4-3"
         }
        ],
        "logo": [
@@ -1503,8 +1572,8 @@
          "shortDisplayName": "OVER",
          "description": "Overall Record",
          "type": "total",
-         "summary": "6-3",
-         "displayValue": "6-3"
+         "summary": "6-4",
+         "displayValue": "6-4"
         },
         {
          "id": "9",
@@ -1514,8 +1583,8 @@
          "shortDisplayName": "CONF",
          "description": "Conference Record",
          "type": "vsconf",
-         "summary": "4-2",
-         "displayValue": "4-2"
+         "summary": "4-3",
+         "displayValue": "4-3"
         }
        ],
        "logo": [
@@ -1760,6 +1829,114 @@
        ]
       },
       {
+       "team": "Syracuse",
+       "link": "https://www.espn.com/college-football/team/_/id/183/syracuse-orange",
+       "id": "183",
+       "uid": "s:20~l:23~t:183",
+       "stats": [
+        {
+         "id": "0",
+         "name": "overall",
+         "abbreviation": "overall",
+         "displayName": "Overall",
+         "shortDisplayName": "OVER",
+         "description": "Overall Record",
+         "type": "total",
+         "summary": "5-5",
+         "displayValue": "5-5"
+        },
+        {
+         "id": "9",
+         "name": "vs. Conf.",
+         "abbreviation": "CONF",
+         "displayName": "vs. Conference",
+         "shortDisplayName": "CONF",
+         "description": "Conference Record",
+         "type": "vsconf",
+         "summary": "3-5",
+         "displayValue": "3-5"
+        }
+       ],
+       "logo": [
+        {
+         "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/183.png",
+         "width": 500,
+         "height": 500,
+         "alt": "",
+         "rel": [
+          "full",
+          "default"
+         ],
+         "lastUpdated": "2025-12-19T22:33Z"
+        },
+        {
+         "href": "https://a.espncdn.com/i/teamlogos/ncaa/500-dark/183.png",
+         "width": 500,
+         "height": 500,
+         "alt": "",
+         "rel": [
+          "full",
+          "dark"
+         ],
+         "lastUpdated": "2025-12-19T22:35Z"
+        }
+       ]
+      },
+      {
+       "team": "Boston College",
+       "link": "https://www.espn.com/college-football/team/_/id/103/boston-college-eagles",
+       "id": "103",
+       "uid": "s:20~l:23~t:103",
+       "stats": [
+        {
+         "id": "0",
+         "name": "overall",
+         "abbreviation": "overall",
+         "displayName": "Overall",
+         "shortDisplayName": "OVER",
+         "description": "Overall Record",
+         "type": "total",
+         "summary": "4-5",
+         "displayValue": "4-5"
+        },
+        {
+         "id": "9",
+         "name": "vs. Conf.",
+         "abbreviation": "CONF",
+         "displayName": "vs. Conference",
+         "shortDisplayName": "CONF",
+         "description": "Conference Record",
+         "type": "vsconf",
+         "summary": "2-4",
+         "displayValue": "2-4"
+        }
+       ],
+       "logo": [
+        {
+         "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/103.png",
+         "width": 500,
+         "height": 500,
+         "alt": "",
+         "rel": [
+          "full",
+          "default"
+         ],
+         "lastUpdated": "2025-12-19T22:33Z"
+        },
+        {
+         "href": "https://a.espncdn.com/i/teamlogos/ncaa/500-dark/103.png",
+         "width": 500,
+         "height": 500,
+         "alt": "",
+         "rel": [
+          "full",
+          "dark"
+         ],
+         "lastUpdated": "2025-12-19T22:35Z"
+        }
+       ]
+      },
+      {
        "team": "Stanford",
        "link": "https://www.espn.com/college-football/team/_/id/24/stanford-cardinal",
        "id": "24",
@@ -1868,114 +2045,6 @@
        ]
       },
       {
-       "team": "NC State",
-       "link": "https://www.espn.com/college-football/team/_/id/152/nc-state-wolfpack",
-       "id": "152",
-       "uid": "s:20~l:23~t:152",
-       "stats": [
-        {
-         "id": "0",
-         "name": "overall",
-         "abbreviation": "overall",
-         "displayName": "Overall",
-         "shortDisplayName": "OVER",
-         "description": "Overall Record",
-         "type": "total",
-         "summary": "4-5",
-         "displayValue": "4-5"
-        },
-        {
-         "id": "9",
-         "name": "vs. Conf.",
-         "abbreviation": "CONF",
-         "displayName": "vs. Conference",
-         "shortDisplayName": "CONF",
-         "description": "Conference Record",
-         "type": "vsconf",
-         "summary": "2-4",
-         "displayValue": "2-4"
-        }
-       ],
-       "logo": [
-        {
-         "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/152.png",
-         "width": 500,
-         "height": 500,
-         "alt": "",
-         "rel": [
-          "full",
-          "default"
-         ],
-         "lastUpdated": "2025-12-19T22:33Z"
-        },
-        {
-         "href": "https://a.espncdn.com/i/teamlogos/ncaa/500-dark/152.png",
-         "width": 500,
-         "height": 500,
-         "alt": "",
-         "rel": [
-          "full",
-          "dark"
-         ],
-         "lastUpdated": "2025-12-19T22:35Z"
-        }
-       ]
-      },
-      {
-       "team": "Boston College",
-       "link": "https://www.espn.com/college-football/team/_/id/103/boston-college-eagles",
-       "id": "103",
-       "uid": "s:20~l:23~t:103",
-       "stats": [
-        {
-         "id": "0",
-         "name": "overall",
-         "abbreviation": "overall",
-         "displayName": "Overall",
-         "shortDisplayName": "OVER",
-         "description": "Overall Record",
-         "type": "total",
-         "summary": "4-5",
-         "displayValue": "4-5"
-        },
-        {
-         "id": "9",
-         "name": "vs. Conf.",
-         "abbreviation": "CONF",
-         "displayName": "vs. Conference",
-         "shortDisplayName": "CONF",
-         "description": "Conference Record",
-         "type": "vsconf",
-         "summary": "2-4",
-         "displayValue": "2-4"
-        }
-       ],
-       "logo": [
-        {
-         "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/103.png",
-         "width": 500,
-         "height": 500,
-         "alt": "",
-         "rel": [
-          "full",
-          "default"
-         ],
-         "lastUpdated": "2025-12-19T22:33Z"
-        },
-        {
-         "href": "https://a.espncdn.com/i/teamlogos/ncaa/500-dark/103.png",
-         "width": 500,
-         "height": 500,
-         "alt": "",
-         "rel": [
-          "full",
-          "dark"
-         ],
-         "lastUpdated": "2025-12-19T22:35Z"
-        }
-       ]
-      },
-      {
        "team": "California",
        "link": "https://www.espn.com/college-football/team/_/id/25/california-golden-bears",
        "id": "25",
@@ -2030,10 +2099,10 @@
        ]
       },
       {
-       "team": "Syracuse",
-       "link": "https://www.espn.com/college-football/team/_/id/183/syracuse-orange",
-       "id": "183",
-       "uid": "s:20~l:23~t:183",
+       "team": "NC State",
+       "link": "https://www.espn.com/college-football/team/_/id/152/nc-state-wolfpack",
+       "id": "152",
+       "uid": "s:20~l:23~t:152",
        "stats": [
         {
          "id": "0",
@@ -2043,8 +2112,8 @@
          "shortDisplayName": "OVER",
          "description": "Overall Record",
          "type": "total",
-         "summary": "4-5",
-         "displayValue": "4-5"
+         "summary": "4-6",
+         "displayValue": "4-6"
         },
         {
          "id": "9",
@@ -2060,7 +2129,7 @@
        ],
        "logo": [
         {
-         "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/183.png",
+         "href": "https://a.espncdn.com/i/teamlogos/ncaa/500/152.png",
          "width": 500,
          "height": 500,
          "alt": "",
@@ -2071,7 +2140,7 @@
          "lastUpdated": "2025-12-19T22:33Z"
         },
         {
-         "href": "https://a.espncdn.com/i/teamlogos/ncaa/500-dark/183.png",
+         "href": "https://a.espncdn.com/i/teamlogos/ncaa/500-dark/152.png",
          "width": 500,
          "height": 500,
          "alt": "",
@@ -2097,8 +2166,8 @@
          "shortDisplayName": "OVER",
          "description": "Overall Record",
          "type": "total",
-         "summary": "2-7",
-         "displayValue": "2-7"
+         "summary": "3-7",
+         "displayValue": "3-7"
         },
         {
          "id": "9",
@@ -2108,8 +2177,8 @@
          "shortDisplayName": "CONF",
          "description": "Conference Record",
          "type": "vsconf",
-         "summary": "1-5",
-         "displayValue": "1-5"
+         "summary": "2-5",
+         "displayValue": "2-5"
         }
        ],
        "logo": [
@@ -2197,8 +2266,8 @@
      "displayName": "Passing Yards",
      "leaders": [
       {
-       "displayValue": "139/212, 1,581 YDS, 14 TD, 3 INT",
-       "value": 1581,
+       "displayValue": "16/24, 146 YDS, 1 TD",
+       "value": 146,
        "athlete": {
         "id": "4685696",
         "uid": "s:20~l:23~a:4685696",
@@ -2236,10 +2305,10 @@
         }
        },
        "mainStat": {
-        "value": "1,581",
+        "value": "146",
         "label": "YDS"
        },
-       "summary": "139/212, 14 TD, 3 INT"
+       "summary": "16/24, 1 TD"
       }
      ]
     },
@@ -2248,16 +2317,16 @@
      "displayName": "Rushing Yards",
      "leaders": [
       {
-       "displayValue": "105 CAR, 513 YDS, 4 TD",
-       "value": 513,
+       "displayValue": "7 CAR, 67 YDS",
+       "value": 67,
        "athlete": {
-        "id": "5121721",
-        "uid": "s:20~l:23~a:5121721",
-        "guid": "a4ecc35a-35e1-3e35-9318-09d4a482119c",
-        "lastName": "Middlebrook",
-        "fullName": "Jekail Middlebrook",
-        "displayName": "Jekail Middlebrook",
-        "shortName": "J. Middlebrook",
+        "id": "4685696",
+        "uid": "s:20~l:23~a:4685696",
+        "guid": "5337be53-81b6-37b9-a7f5-46d06c57bf5a",
+        "lastName": "Pribula",
+        "fullName": "Beau Pribula",
+        "displayName": "Beau Pribula",
+        "shortName": "B. Pribula",
         "links": [
          {
           "rel": [
@@ -2265,19 +2334,19 @@
            "desktop",
            "athlete"
           ],
-          "href": "https://www.espn.com/college-football/player/_/id/5121721/jekail-middlebrook",
+          "href": "https://www.espn.com/college-football/player/_/id/4685696/beau-pribula",
           "text": "Player Card"
          }
         ],
         "headshot": {
-         "href": "https://a.espncdn.com/i/headshots/college-football/players/full/5121721.png",
-         "alt": "Jekail Middlebrook"
+         "href": "https://a.espncdn.com/i/headshots/college-football/players/full/4685696.png",
+         "alt": "Beau Pribula"
         },
-        "jersey": "21",
+        "jersey": "7",
         "position": {
-         "name": "Running Back",
-         "displayName": "Running Back",
-         "abbreviation": "RB"
+         "name": "Quarterback",
+         "displayName": "Quarterback",
+         "abbreviation": "QB"
         },
         "status": {
          "id": "1",
@@ -2287,10 +2356,10 @@
         }
        },
        "mainStat": {
-        "value": "513",
+        "value": "67",
         "label": "YDS"
        },
-       "summary": "105 CAR, 4 TD"
+       "summary": "7 CAR"
       }
      ]
     },
@@ -2299,8 +2368,8 @@
      "displayName": "Receiving Yards",
      "leaders": [
       {
-       "displayValue": "26 REC, 366 YDS, 6 TD",
-       "value": 366,
+       "displayValue": "4 REC, 59 YDS, 1 TD",
+       "value": 59,
        "athlete": {
         "id": "5222394",
         "uid": "s:20~l:23~a:5222394",
@@ -2338,10 +2407,10 @@
         }
        },
        "mainStat": {
-        "value": "366",
+        "value": "59",
         "label": "YDS"
        },
-       "summary": "26 REC, 6 TD"
+       "summary": "4 REC, 1 TD"
       }
      ]
     },
@@ -2350,8 +2419,8 @@
      "displayName": "Sacks",
      "leaders": [
       {
-       "displayValue": "5",
-       "value": 5,
+       "displayValue": "1",
+       "value": 1,
        "athlete": {
         "id": "4918427",
         "uid": "s:20~l:23~a:4918427",
@@ -2389,7 +2458,7 @@
         }
        },
        "mainStat": {
-        "value": "5",
+        "value": "1",
         "label": "SACKS"
        },
        "summary": ""
@@ -2401,16 +2470,16 @@
      "displayName": "Tackles",
      "leaders": [
       {
-       "displayValue": "44",
-       "value": 44,
+       "displayValue": "12",
+       "value": 12,
        "athlete": {
-        "id": "5153257",
-        "uid": "s:20~l:23~a:5153257",
-        "guid": "efdf4515-0a93-3b5d-a80d-240aee75c2af",
-        "lastName": "Marcellus",
-        "fullName": "Maddox Marcellus",
-        "displayName": "Maddox Marcellus",
-        "shortName": "M. Marcellus",
+        "id": "5078423",
+        "uid": "s:20~l:23~a:5078423",
+        "guid": "0568d3d1-ef61-3796-8e54-d7316fee7681",
+        "lastName": "Robinson",
+        "fullName": "Kam Robinson",
+        "displayName": "Kam Robinson",
+        "shortName": "K. Robinson",
         "links": [
          {
           "rel": [
@@ -2418,15 +2487,15 @@
            "desktop",
            "athlete"
           ],
-          "href": "https://www.espn.com/college-football/player/_/id/5153257/maddox-marcellus",
+          "href": "https://www.espn.com/college-football/player/_/id/5078423/kam-robinson",
           "text": "Player Card"
          }
         ],
         "headshot": {
-         "href": "https://a.espncdn.com/i/headshots/college-football/players/full/5153257.png",
-         "alt": "Maddox Marcellus"
+         "href": "https://a.espncdn.com/i/headshots/college-football/players/full/5078423.png",
+         "alt": "Kam Robinson"
         },
-        "jersey": "11",
+        "jersey": "5",
         "position": {
          "name": "Linebacker",
          "displayName": "Linebacker",
@@ -2440,10 +2509,10 @@
         }
        },
        "mainStat": {
-        "value": "44",
+        "value": "12",
         "label": "TOT"
        },
-       "summary": ""
+       "summary": "2 SOLO"
       }
      ]
     }
@@ -2497,8 +2566,8 @@
      "displayName": "Passing Yards",
      "leaders": [
       {
-       "displayValue": "178/264, 1,751 YDS, 11 TD, 6 INT",
-       "value": 1751,
+       "displayValue": "15/28, 139 YDS, 2 INT",
+       "value": 139,
        "athlete": {
         "id": "5164313",
         "uid": "s:20~l:23~a:5164313",
@@ -2536,10 +2605,10 @@
         }
        },
        "mainStat": {
-        "value": "1,751",
+        "value": "139",
         "label": "YDS"
        },
-       "summary": "178/264, 11 TD, 6 INT"
+       "summary": "15/28, 2 INT"
       }
      ]
     },
@@ -2548,8 +2617,8 @@
      "displayName": "Rushing Yards",
      "leaders": [
       {
-       "displayValue": "82 CAR, 363 YDS, 3 TD",
-       "value": 363,
+       "displayValue": "13 CAR, 41 YDS, 1 TD",
+       "value": 41,
        "athlete": {
         "id": "5147861",
         "uid": "s:20~l:23~a:5147861",
@@ -2587,10 +2656,10 @@
         }
        },
        "mainStat": {
-        "value": "363",
+        "value": "41",
         "label": "YDS"
        },
-       "summary": "82 CAR, 3 TD"
+       "summary": "13 CAR, 1 TD"
       }
      ]
     },
@@ -2599,16 +2668,16 @@
      "displayName": "Receiving Yards",
      "leaders": [
       {
-       "displayValue": "61 REC, 565 YDS, 4 TD",
-       "value": 565,
+       "displayValue": "6 REC, 66 YDS",
+       "value": 66,
        "athlete": {
-        "id": "4921110",
-        "uid": "s:20~l:23~a:4921110",
-        "guid": "38fa57e3-d877-35bc-a290-c68417aa8a80",
-        "lastName": "Hendricks",
-        "fullName": "Chase Hendricks",
-        "displayName": "Chase Hendricks",
-        "shortName": "C. Hendricks",
+        "id": "5165117",
+        "uid": "s:20~l:23~a:5165117",
+        "guid": "bcf8a1da-7768-3a94-abe1-0a8eac9485b8",
+        "lastName": "Hamper",
+        "fullName": "Mark Hamper",
+        "displayName": "Mark Hamper",
+        "shortName": "M. Hamper",
         "links": [
          {
           "rel": [
@@ -2616,15 +2685,15 @@
            "desktop",
            "athlete"
           ],
-          "href": "https://www.espn.com/college-football/player/_/id/4921110/chase-hendricks",
+          "href": "https://www.espn.com/college-football/player/_/id/5165117/mark-hamper",
           "text": "Player Card"
          }
         ],
         "headshot": {
-         "href": "https://a.espncdn.com/i/headshots/college-football/players/full/4921110.png",
-         "alt": "Chase Hendricks"
+         "href": "https://a.espncdn.com/i/headshots/college-football/players/full/5165117.png",
+         "alt": "Mark Hamper"
         },
-        "jersey": "7",
+        "jersey": "15",
         "position": {
          "name": "Wide Receiver",
          "displayName": "Wide Receiver",
@@ -2638,71 +2707,24 @@
         }
        },
        "mainStat": {
-        "value": "565",
+        "value": "66",
         "label": "YDS"
        },
-       "summary": "61 REC, 4 TD"
+       "summary": "6 REC"
       }
      ]
     },
     {
      "name": "sacks",
-     "displayName": "Sacks",
-     "leaders": [
-      {
-       "displayValue": "3",
-       "value": 3,
-       "athlete": {
-        "id": "5209183",
-        "uid": "s:20~l:23~a:5209183",
-        "guid": "c00b1a4e-8a60-34bf-83c5-bffa80d98d1c",
-        "lastName": "McKinley",
-        "fullName": "JD McKinley",
-        "displayName": "JD McKinley",
-        "shortName": "J. McKinley",
-        "links": [
-         {
-          "rel": [
-           "playercard",
-           "desktop",
-           "athlete"
-          ],
-          "href": "https://www.espn.com/college-football/player/_/id/5209183/jd-mckinley",
-          "text": "Player Card"
-         }
-        ],
-        "headshot": {
-         "href": "https://a.espncdn.com/i/headshots/college-football/players/full/5209183.png",
-         "alt": "JD McKinley"
-        },
-        "jersey": "33",
-        "position": {
-         "name": "Linebacker",
-         "displayName": "Linebacker",
-         "abbreviation": "LB"
-        },
-        "status": {
-         "id": "1",
-         "name": "Active",
-         "type": "active",
-         "abbreviation": "Active"
-        }
-       },
-       "mainStat": {
-        "value": "3",
-        "label": "SACKS"
-       },
-       "summary": ""
-      }
-     ]
+     "displayName": "Sacks"
     },
     {
      "name": "totalTackles",
      "displayName": "Tackles",
      "leaders": [
       {
-       "displayValue": "52",
-       "value": 52,
+       "displayValue": "11",
+       "value": 11,
        "athlete": {
         "id": "5249499",
         "uid": "s:20~l:23~a:5249499",
@@ -2740,10 +2762,10 @@
         }
        },
        "mainStat": {
-        "value": "52",
+        "value": "11",
         "label": "TOT"
        },
-       "summary": ""
+       "summary": "4 SOLO"
       }
      ]
     }
@@ -2768,44 +2790,94 @@
     },
     "statistics": [
      {
-      "name": "totalPointsPerGame",
-      "displayValue": "21.9",
-      "label": "Points Per Game"
+      "name": "firstDowns",
+      "displayValue": "17",
+      "value": 17,
+      "label": "1st Downs"
      },
      {
-      "name": "yardsPerGame",
-      "displayValue": "358.1",
+      "name": "thirdDownEff",
+      "displayValue": "6-12",
+      "value": 0.5,
+      "label": "3rd down efficiency"
+     },
+     {
+      "name": "fourthDownEff",
+      "displayValue": "0-1",
+      "value": 0,
+      "label": "4th down efficiency"
+     },
+     {
+      "name": "totalYards",
+      "displayValue": "208",
+      "value": "-",
       "label": "Total Yards"
      },
      {
-      "name": "passingYardsPerGame",
-      "displayValue": "275.3",
-      "label": "Yards Passing"
+      "name": "netPassingYards",
+      "displayValue": "155",
+      "value": 155,
+      "label": "Passing"
      },
      {
-      "name": "rushingYardsPerGame",
-      "displayValue": "82.8",
-      "label": "Yards Rushing"
+      "name": "completionAttempts",
+      "displayValue": "16/30",
+      "value": "-",
+      "label": "Comp/Att"
      },
      {
-      "name": "totalPointsPerGameAllowed",
-      "displayValue": "31.6",
-      "label": "Points Allowed Per Game"
+      "name": "yardsPerPass",
+      "displayValue": "5.2",
+      "value": 5.167,
+      "label": "Yards per pass"
      },
      {
-      "name": "yardsPerGameAllowed",
-      "displayValue": "392.6",
-      "label": "Yards Allowed"
+      "name": "rushingYards",
+      "displayValue": "53",
+      "value": 53,
+      "label": "Rushing"
      },
      {
-      "name": "passingYardsPerGameAllowed",
-      "displayValue": "208.0",
-      "label": "Pass Yards Allowed"
+      "name": "rushingAttempts",
+      "displayValue": "24",
+      "value": 24,
+      "label": "Rushing Attempts"
      },
      {
-      "name": "rushingYardsPerGameAllowed",
-      "displayValue": "184.6",
-      "label": "Rush Yards Allowed"
+      "name": "yardsPerRushAttempt",
+      "displayValue": "2.2",
+      "value": 2.208,
+      "label": "Yards per rush"
+     },
+     {
+      "name": "totalPenaltiesYards",
+      "displayValue": "3-28",
+      "value": "-",
+      "label": "Penalties"
+     },
+     {
+      "name": "turnovers",
+      "displayValue": "3",
+      "value": "-",
+      "label": "Turnovers"
+     },
+     {
+      "name": "fumblesLost",
+      "displayValue": "0",
+      "value": 0,
+      "label": "Fumbles lost"
+     },
+     {
+      "name": "interceptions",
+      "displayValue": "3",
+      "value": 3,
+      "label": "Interceptions thrown"
+     },
+     {
+      "name": "possessionTime",
+      "displayValue": "22:24",
+      "value": 1344,
+      "label": "Possession"
      }
     ],
     "displayOrder": 1,
@@ -2827,44 +2899,94 @@
     },
     "statistics": [
      {
-      "name": "totalPointsPerGame",
-      "displayValue": "25.9",
-      "label": "Points Per Game"
+      "name": "firstDowns",
+      "displayValue": "17",
+      "value": 17,
+      "label": "1st Downs"
      },
      {
-      "name": "yardsPerGame",
-      "displayValue": "357.4",
+      "name": "thirdDownEff",
+      "displayValue": "6-14",
+      "value": 0.4285714286,
+      "label": "3rd down efficiency"
+     },
+     {
+      "name": "fourthDownEff",
+      "displayValue": "3-3",
+      "value": 1,
+      "label": "4th down efficiency"
+     },
+     {
+      "name": "totalYards",
+      "displayValue": "342",
+      "value": "-",
       "label": "Total Yards"
      },
      {
-      "name": "passingYardsPerGame",
-      "displayValue": "212.0",
-      "label": "Yards Passing"
+      "name": "netPassingYards",
+      "displayValue": "182",
+      "value": 182,
+      "label": "Passing"
      },
      {
-      "name": "rushingYardsPerGame",
-      "displayValue": "145.4",
-      "label": "Yards Rushing"
+      "name": "completionAttempts",
+      "displayValue": "20/32",
+      "value": "-",
+      "label": "Comp/Att"
      },
      {
-      "name": "totalPointsPerGameAllowed",
-      "displayValue": "23.1",
-      "label": "Points Allowed Per Game"
+      "name": "yardsPerPass",
+      "displayValue": "5.7",
+      "value": 5.688,
+      "label": "Yards per pass"
      },
      {
-      "name": "yardsPerGameAllowed",
-      "displayValue": "350.1",
-      "label": "Yards Allowed"
+      "name": "rushingYards",
+      "displayValue": "160",
+      "value": 160,
+      "label": "Rushing"
      },
      {
-      "name": "passingYardsPerGameAllowed",
-      "displayValue": "189.7",
-      "label": "Pass Yards Allowed"
+      "name": "rushingAttempts",
+      "displayValue": "30",
+      "value": 30,
+      "label": "Rushing Attempts"
      },
      {
-      "name": "rushingYardsPerGameAllowed",
-      "displayValue": "160.4",
-      "label": "Rush Yards Allowed"
+      "name": "yardsPerRushAttempt",
+      "displayValue": "5.3",
+      "value": 5.333,
+      "label": "Yards per rush"
+     },
+     {
+      "name": "totalPenaltiesYards",
+      "displayValue": "8-99",
+      "value": "-",
+      "label": "Penalties"
+     },
+     {
+      "name": "turnovers",
+      "displayValue": "0",
+      "value": "-",
+      "label": "Turnovers"
+     },
+     {
+      "name": "fumblesLost",
+      "displayValue": "0",
+      "value": 0,
+      "label": "Fumbles lost"
+     },
+     {
+      "name": "interceptions",
+      "displayValue": "0",
+      "value": 0,
+      "label": "Interceptions thrown"
+     },
+     {
+      "name": "possessionTime",
+      "displayValue": "30:12",
+      "value": 1812,
+      "label": "Possession"
      }
     ],
     "displayOrder": 2,
@@ -2872,7 +2994,693 @@
    }
   ]
  },
- "winprobability": [],
+ "winprobability": [
+  [
+   0.876,
+   1
+  ],
+  [
+   0.869,
+   1
+  ],
+  [
+   0.872,
+   1
+  ],
+  [
+   0.881,
+   1
+  ],
+  [
+   0.888,
+   1
+  ],
+  [
+   0.887,
+   1
+  ],
+  [
+   0.887,
+   1
+  ],
+  [
+   0.883,
+   1
+  ],
+  [
+   0.866,
+   1
+  ],
+  [
+   0.902,
+   1
+  ],
+  [
+   0.897,
+   1
+  ],
+  [
+   0.898,
+   1
+  ],
+  [
+   0.909,
+   1
+  ],
+  [
+   0.924,
+   1
+  ],
+  [
+   0.948,
+   1
+  ],
+  [
+   0.913,
+   1
+  ],
+  [
+   0.918,
+   1
+  ],
+  [
+   0.922,
+   1
+  ],
+  [
+   0.908,
+   1
+  ],
+  [
+   0.907,
+   1
+  ],
+  [
+   0.906,
+   1
+  ],
+  [
+   0.902,
+   1
+  ],
+  [
+   0.906,
+   1
+  ],
+  [
+   0.906,
+   1
+  ],
+  [
+   0.918,
+   1
+  ],
+  [
+   0.913,
+   1
+  ],
+  [
+   0.913,
+   1
+  ],
+  [
+   0.913,
+   1
+  ],
+  [
+   0.918,
+   1
+  ],
+  [
+   0.924,
+   1
+  ],
+  [
+   0.918,
+   1
+  ],
+  [
+   0.92,
+   1
+  ],
+  [
+   0.909,
+   1
+  ],
+  [
+   0.908,
+   1
+  ],
+  [
+   0.926,
+   1
+  ],
+  [
+   0.919,
+   1
+  ],
+  [
+   0.919,
+   1
+  ],
+  [
+   0.916,
+   2
+  ],
+  [
+   0.911,
+   2
+  ],
+  [
+   0.906,
+   2
+  ],
+  [
+   0.908,
+   2
+  ],
+  [
+   0.908,
+   2
+  ],
+  [
+   0.915,
+   2
+  ],
+  [
+   0.913,
+   2
+  ],
+  [
+   0.923,
+   2
+  ],
+  [
+   0.924,
+   2
+  ],
+  [
+   0.924,
+   2
+  ],
+  [
+   0.921,
+   2
+  ],
+  [
+   0.916,
+   2
+  ],
+  [
+   0.94,
+   2
+  ],
+  [
+   0.941,
+   2
+  ],
+  [
+   0.924,
+   2
+  ],
+  [
+   0.926,
+   2
+  ],
+  [
+   0.924,
+   2
+  ],
+  [
+   0.929,
+   2
+  ],
+  [
+   0.931,
+   2
+  ],
+  [
+   0.935,
+   2
+  ],
+  [
+   0.935,
+   2
+  ],
+  [
+   0.927,
+   2
+  ],
+  [
+   0.92,
+   2
+  ],
+  [
+   0.927,
+   2
+  ],
+  [
+   0.926,
+   2
+  ],
+  [
+   0.918,
+   2
+  ],
+  [
+   0.911,
+   2
+  ],
+  [
+   0.899,
+   2
+  ],
+  [
+   0.899,
+   2
+  ],
+  [
+   0.906,
+   2
+  ],
+  [
+   0.88,
+   2
+  ],
+  [
+   0.882,
+   2
+  ],
+  [
+   0.889,
+   2
+  ],
+  [
+   0.904,
+   2
+  ],
+  [
+   0.973,
+   2
+  ],
+  [
+   0.974,
+   2
+  ],
+  [
+   0.973,
+   2
+  ],
+  [
+   0.974,
+   2
+  ],
+  [
+   0.97,
+   2
+  ],
+  [
+   0.968,
+   2
+  ],
+  [
+   0.969,
+   2
+  ],
+  [
+   0.969,
+   2
+  ],
+  [
+   0.958,
+   2
+  ],
+  [
+   0.959,
+   2
+  ],
+  [
+   0.961,
+   2
+  ],
+  [
+   0.962,
+   2
+  ],
+  [
+   0.96,
+   2
+  ],
+  [
+   0.934,
+   2
+  ],
+  [
+   0.929,
+   2
+  ],
+  [
+   0.931,
+   2
+  ],
+  [
+   0.928,
+   2
+  ],
+  [
+   0.932,
+   3
+  ],
+  [
+   0.935,
+   3
+  ],
+  [
+   0.94,
+   3
+  ],
+  [
+   0.947,
+   3
+  ],
+  [
+   0.943,
+   3
+  ],
+  [
+   0.937,
+   3
+  ],
+  [
+   0.93,
+   3
+  ],
+  [
+   0.926,
+   3
+  ],
+  [
+   0.927,
+   3
+  ],
+  [
+   0.952,
+   3
+  ],
+  [
+   0.952,
+   3
+  ],
+  [
+   0.949,
+   3
+  ],
+  [
+   0.958,
+   3
+  ],
+  [
+   0.964,
+   3
+  ],
+  [
+   0.966,
+   3
+  ],
+  [
+   0.964,
+   3
+  ],
+  [
+   0.96,
+   3
+  ],
+  [
+   0.952,
+   3
+  ],
+  [
+   0.953,
+   3
+  ],
+  [
+   0.957,
+   3
+  ],
+  [
+   0.956,
+   3
+  ],
+  [
+   0.961,
+   3
+  ],
+  [
+   0.953,
+   3
+  ],
+  [
+   0.942,
+   3
+  ],
+  [
+   0.936,
+   3
+  ],
+  [
+   0.943,
+   3
+  ],
+  [
+   0.95,
+   3
+  ],
+  [
+   0.962,
+   3
+  ],
+  [
+   0.959,
+   3
+  ],
+  [
+   0.96,
+   3
+  ],
+  [
+   0.953,
+   3
+  ],
+  [
+   0.959,
+   3
+  ],
+  [
+   0.978,
+   3
+  ],
+  [
+   0.976,
+   3
+  ],
+  [
+   0.973,
+   3
+  ],
+  [
+   0.965,
+   3
+  ],
+  [
+   0.968,
+   3
+  ],
+  [
+   0.967,
+   3
+  ],
+  [
+   0.963,
+   3
+  ],
+  [
+   0.994,
+   3
+  ],
+  [
+   0.996,
+   3
+  ],
+  [
+   0.995,
+   3
+  ],
+  [
+   0.995,
+   3
+  ],
+  [
+   0.995,
+   4
+  ],
+  [
+   0.996,
+   4
+  ],
+  [
+   0.997,
+   4
+  ],
+  [
+   0.999,
+   4
+  ],
+  [
+   0.997,
+   4
+  ],
+  [
+   0.997,
+   4
+  ],
+  [
+   0.997,
+   4
+  ],
+  [
+   0.997,
+   4
+  ],
+  [
+   0.999,
+   4
+  ],
+  [
+   0.998,
+   4
+  ],
+  [
+   0.998,
+   4
+  ],
+  [
+   0.997,
+   4
+  ],
+  [
+   0.999,
+   4
+  ],
+  [
+   0.998,
+   4
+  ],
+  [
+   0.998,
+   4
+  ],
+  [
+   0.997,
+   4
+  ],
+  [
+   0.997,
+   4
+  ],
+  [
+   0.999,
+   4
+  ],
+  [
+   0.999,
+   4
+  ],
+  [
+   0.999,
+   4
+  ],
+  [
+   0.999,
+   4
+  ],
+  [
+   0.999,
+   4
+  ],
+  [
+   0.999,
+   4
+  ],
+  [
+   0.999,
+   4
+  ],
+  [
+   0.999,
+   4
+  ],
+  [
+   0.999,
+   4
+  ],
+  [
+   0.999,
+   4
+  ],
+  [
+   0.999,
+   null
+  ]
+ ],
  "injuries": [],
- "scoringPlays": []
+ "scoringPlays": [
+  {
+   "period": 1,
+   "clock": "9:32",
+   "team": "258",
+   "text": "B. Pribula pass to D. Martin for 12 yds, for a TD (W. Bettridge PAT BLOCKED) (W. Bettridge PAT BLOCKED), K. Hudson returns",
+   "away": 0,
+   "home": 6
+  },
+  {
+   "period": 2,
+   "clock": "8:07",
+   "team": "258",
+   "text": "W. Bettridge 30 yd FG GOOD",
+   "away": 0,
+   "home": 9
+  },
+  {
+   "period": 2,
+   "clock": "2:00",
+   "team": "258",
+   "text": "M. Mini pass intercepted, B. Hillman return  for 100 yds, for a TD (W. Bettridge KICK)",
+   "away": 0,
+   "home": 16
+  },
+  {
+   "period": 2,
+   "clock": "0:14",
+   "team": "25",
+   "text": "A. Mohammed run for 5 yds, for a TD (T. McGough KICK)",
+   "away": 7,
+   "home": 16
+  },
+  {
+   "period": 3,
+   "clock": "8:02",
+   "team": "258",
+   "text": "W. Bettridge 30 yd FG GOOD",
+   "away": 7,
+   "home": 19
+  },
+  {
+   "period": 3,
+   "clock": "0:04",
+   "team": "258",
+   "text": "J. Sagapolutele pass intercepted, K. Robinson return  for 33 yds, for a TD (W. Bettridge KICK)",
+   "away": 7,
+   "home": 26
+  }
+ ]
 }
