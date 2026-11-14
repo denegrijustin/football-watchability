@@ -11,7 +11,7 @@
 
 /* ---------- Game card: the team-colored, glowing card ---------- */
 .game-card.team-tinted {
-  --glow: color-mix(in srgb, var(--team-bg) 38%, #ffffff);
+  --glow: var(--team-alt, color-mix(in srgb, var(--team-bg) 38%, #ffffff));
   background:
     radial-gradient(120% 70% at 85% 0%, color-mix(in srgb, var(--team-bg) 70%, #ffffff) 0%, transparent 60%),
     linear-gradient(160deg, color-mix(in srgb, var(--team-bg) 88%, #ffffff), color-mix(in srgb, var(--team-bg) 72%, #000000));
@@ -75,7 +75,7 @@
 .gc {
   --bg: #0b1117; --surface: #121b23; --surface-2: #17222c; --surface-3: #1d2a35; --line: #243441; --line-strong: #33475a;
   --text: #eaf0f4; --text-2: #b9c6d0; --muted: #8d9eac; --lime: #c0ed80; --green: #8fdcaa; --red: #f59f9e; --gold: #edd092; --orange: #f3b681;
-  --glow: color-mix(in srgb, var(--team-bg, #1d2a35) 38%, #ffffff);
+  --glow: var(--team-alt, color-mix(in srgb, var(--team-bg, #1d2a35) 38%, #ffffff));
   color-scheme: dark;
   background: linear-gradient(170deg, color-mix(in srgb, var(--team-bg, #1d2a35) 55%, #05080c), #05080c 70%);
   border: 2px solid var(--glow);
@@ -104,7 +104,7 @@
 .gc .gc-cbar.home { background: linear-gradient(270deg, color-mix(in srgb, var(--team-bg, #4a7fc0) 50%, #000000), color-mix(in srgb, var(--team-bg, #4a7fc0) 68%, #ffffff)); }
 .gc .gc-compare td.edge { color: #fff; }
 .gc .gc-compare tbody th { color: var(--text); font-size: 0.9375rem; }
-.gc .gc-cbar.away { background: linear-gradient(90deg, color-mix(in srgb, var(--away-bg, #c0504a) 62%, #ffffff 0%), color-mix(in srgb, var(--away-bg, #c0504a) 48%, #ffffff)); }
+.gc .gc-cbar.away { background: linear-gradient(90deg, var(--away-alt, color-mix(in srgb, var(--away-bg, #c0504a) 62%, #ffffff)), color-mix(in srgb, var(--away-alt, var(--away-bg, #c0504a)) 80%, #ffffff)); }
 .gc .gc-cbar.home { background: linear-gradient(270deg, color-mix(in srgb, var(--team-bg, #4a7fc0) 62%, #ffffff 0%), color-mix(in srgb, var(--team-bg, #4a7fc0) 48%, #ffffff)); }
 /* player rows take their team's color, as in the design */
 .gc .gc-tbteam:first-child .gc-pl { background: linear-gradient(90deg, color-mix(in srgb, var(--away-bg, #1d2a35) 78%, #000000), color-mix(in srgb, var(--away-bg, #1d2a35) 55%, #000000)); border: 1.5px solid color-mix(in srgb, var(--away-bg, #1d2a35) 50%, #ffffff); }
@@ -195,3 +195,30 @@
 .game-card.compact .cc-actions { margin-top: 0; }
 /* the size an off-screen card is assumed to have is the card size, so the page does not jump as cards come into view */
 .board-section .game-card.compact, .board-section .result-card.compact { contain-intrinsic-size: auto var(--card-h); }
+
+/* each team's second color (gold for Pittsburgh, lilac-white for TCU) where it has one: the glow, the stat bars and the player rows */
+.gc .gc-cbar.home { background: linear-gradient(270deg, var(--team-alt, color-mix(in srgb, var(--team-bg, #4a7fc0) 62%, #ffffff)), color-mix(in srgb, var(--team-alt, var(--team-bg, #4a7fc0)) 80%, #ffffff)); }
+.gc .gc-tbteam:first-child .gc-pl { border-color: var(--away-alt, color-mix(in srgb, var(--away-bg, #1d2a35) 50%, #ffffff)); }
+.gc .gc-tbteam:last-child .gc-pl { border-color: var(--team-alt, color-mix(in srgb, var(--team-bg, #1d2a35) 50%, #ffffff)); }
+
+
+/* phone: a top bar with a back arrow and the title, as in the design (the arrow is the close button) */
+.gc-bar, .gc-back { display: none; }
+@media (max-width: 860px) {
+  .gc-bar { display: grid; place-items: center; position: sticky; top: 0; z-index: 4; height: 56px; margin-bottom: -4px; font-size: 1.125rem; font-weight: 700; color: var(--text); background: color-mix(in srgb, var(--team-bg, #1d2a35) 70%, #05080c); border-bottom: 1px solid var(--line); }
+  .gc .gc-close { float: left; position: sticky; top: 6px; z-index: 6; width: 44px; height: 44px; margin: 6px 0 -50px 8px; border: 0; background: transparent; box-shadow: none; }
+  .gc .gc-close .gc-x { display: none; }
+  .gc .gc-close .gc-back { display: block; font-size: 2.25rem; line-height: 1; transform: translateY(-3px); }
+  .gc .gc-head { padding-top: 14px; }
+}
+
+/* the drive stats under the live field are pills with an icon, as in the design */
+.gc .lp-stats { gap: 8px; }
+.gc .lp-stats > div { border-radius: 999px; padding: 8px 14px; border: 1.5px solid color-mix(in srgb, var(--glow) 55%, transparent); background: rgb(255 255 255 / 5%); }
+.gc .lp-stats dt { display: flex; align-items: center; gap: 6px; font-size: 0.8125rem; font-weight: 700; color: var(--text); }
+.gc .lp-stats dd { font-size: 1.0625rem; }
+.gc .lp-stat-ico { flex: none; color: var(--glow); }
+.gc .lp-stats { display: flex; flex-wrap: wrap; }
+.gc .lp-stats > div { display: flex; align-items: center; gap: 8px; flex: 0 1 auto; }
+.gc .lp-stats dt { white-space: nowrap; }
+.gc .lp-stats dd { margin: 0; }

@@ -1,3 +1,4 @@
+import { BarChart3, Flag, Footprints, Goal, Layers, type LucideIcon } from "lucide-react";
 import { useDiscFill } from "./logoDisc";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { logos, teamColor } from "./data";
@@ -18,6 +19,12 @@ const fx = (yd: number) => EZ + Math.max(-10, Math.min(110, yd)) * U;
 const DURATION = 3400;
 
 /** The latest play the picture can show (a run, pass, sack, punt or field goal), looking back over the last few plays. */
+const STAT_ICON: Record<string, LucideIcon> = { "Run plays": Footprints, "Run yards": BarChart3, "Pass plays": Goal, "Pass yards": BarChart3, "Penalty for": Flag, "Penalty against": Flag, "Total plays": Layers, "Total yards": BarChart3 };
+function StatIcon({ k }: { k: string }) {
+  const I = STAT_ICON[k];
+  return I ? <I size={16} aria-hidden="true" className="lp-stat-ico" /> : null;
+}
+
 export function latestShape(plays: FeedPlay[] | undefined): { play: FeedPlay; shape: PlayShape; index: number } | null {
   if (!plays) return null;
   for (let i = plays.length - 1; i >= Math.max(0, plays.length - 4); i--) {
@@ -224,7 +231,7 @@ export function LastPlay({ plays, teams, live, situation, nfl }: { plays: FeedPl
             ["Penalty against", stats.penaltiesAgainst.n ? `${stats.penaltiesAgainst.n} · ${stats.penaltiesAgainst.yards} yds` : 0, "Pen. against"],
             ["Total plays", stats.totalPlays, "Total plays"], ["Total yards", stats.totalYards, "Total yds"],
           ] as [string, number | string, string][]).map(([k, v, short]) => (
-            <div key={k} data-stat={k}><dt><span className="full">{k}</span><span className="short" aria-hidden="true">{short}</span></dt><dd>{v}</dd></div>
+            <div key={k} data-stat={k}><dt><StatIcon k={k} /><span className="full">{k}</span><span className="short" aria-hidden="true">{short}</span></dt><dd>{v}</dd></div>
           ))}
         </dl>
       )}

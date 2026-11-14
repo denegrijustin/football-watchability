@@ -30,6 +30,7 @@ import { useOpenGame } from "./GameCenterContext";
 import { type Advanced } from "./AdvancedStats";
 import { InjuryWatch } from "./InjuryReport";
 import { GameInjuries, InjuryStrip } from "./GameInjuries";
+import { altColor } from "../teamAlt";
 import { useInjuryReport } from "../injuries";
 import { Booth, type CrewMember } from "./Booth";
 import { dayOf, timeOf, tzAbbr } from "../tz";
@@ -184,7 +185,7 @@ export function GameCard({
       data-game-id={game.id}
       className={`game-card ${game.tier}${pulse ? " score-pulse" : ""}${td ? " just-scored" : ""}${homeColor ? " team-tinted" : ""}${expanded ? " expanded" : " compact"}${upset ? ` upset-${upset}` : ""}`}
       style={
-        homeColor ? ({ "--team-bg": homeColor } as CSSProperties) : undefined
+        homeColor ? ({ "--team-bg": homeColor, ...(altColor(home.logoId) ? { "--team-alt": altColor(home.logoId) } : {}) } as CSSProperties) : undefined
       }
       aria-labelledby={`${game.id}-title`}
       tabIndex={-1}
