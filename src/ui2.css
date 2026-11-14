@@ -155,3 +155,28 @@
   .gc .matchup-engine td > div > div { font-size: 0.6875rem; }
   .gc .matchup-engine table { font-size: 0.8125rem; }
 }
+
+/* phone widths: the pills never run into their edges, and the team rows leave room for the rating tile */
+@media (max-width: 430px) {
+  .compact-overview .cl-chips { gap: 6px; }
+  .compact-overview .cl-chip { padding: 8px 6px; font-size: 0.75rem; gap: 4px; justify-content: center; letter-spacing: 0; }
+  .compact-overview .cl-chip svg, .compact-overview .cl-chip img, .compact-overview .cl-chip > span:first-child { flex: none; width: 16px; height: 16px; font-size: 0.875rem; }
+  .compact-overview .gi-chip { font-size: 0.75rem; }
+  .compact-overview .cl-bar { font-size: 0.8125rem; gap: 6px; }
+  .compact-overview.v2 .cc-team { gap: 8px; }
+  .compact-overview.v2 .cc-team h4 { font-size: 1.0625rem; }
+  .compact-overview.v2 .cc-rate { min-width: 88px; }
+}
+@media (max-width: 430px) {
+  /* the record sits under the name, so a long name is not cut short by the record and the score */
+  .compact-overview.v2 .cc-team > div { flex-direction: column; align-items: flex-start; gap: 0; }
+  .compact-overview.v2 .cc-team p { font-size: 0.75rem; line-height: 1.2; }
+}
+
+/* last play / live field: the direction is a pill, the Replay button is an outlined pill, the key is easy to read */
+.gc .lp-head { font-size: 1rem; gap: 6px 10px; }
+.gc .lp-head b { font-weight: 750; }
+.gc .lp-head .lp-dir { padding: 3px 12px; border-radius: 999px; border: 1.5px solid var(--glow); background: color-mix(in srgb, var(--glow) 18%, transparent); font-size: 0.875rem; }
+.gc .lp-key { color: var(--text-2); font-size: 0.8125rem; }
+.gc .lp-replay { min-height: 44px; padding: 0 16px; border-radius: 999px; border: 1.5px solid var(--glow); background: color-mix(in srgb, var(--glow) 14%, transparent); color: var(--text); font-weight: 700; }
+.gc .lp-svg { border: 2px solid var(--glow); border-radius: 14px; box-shadow: 0 0 16px color-mix(in srgb, var(--glow) 30%, transparent); }
