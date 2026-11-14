@@ -224,6 +224,8 @@ test.describe("Finishing: the tab", () => {
     await openFinishing(page);
     await expect(seg(page, /^TD \d+%/)).toBeVisible();
     await expect(page.locator(".fn-seg").first()).toHaveAttribute("aria-label", /touchdowns, \d+ of \d+ \(\d+%\)/);
+    // Park the pointer in a corner: the click that opened the tab can leave it over a segment, and Chrome re-sends a hover when the tip goes away.
+    await page.mouse.move(0, 0);
     await seg(page, /^TD/).focus();
     await page.keyboard.press("Tab");
     await page.keyboard.press("Shift+Tab");
