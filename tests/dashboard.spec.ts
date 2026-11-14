@@ -269,9 +269,13 @@ test("final view compares forecast with actual and explains the score", async ({
   await expect(rows).toHaveCount(top.actual.parts.length + 2);
   await page.getByRole("button", { name: "Close Game Center" }).click();
   if (top.wp.length >= 8) {
+    await expect(page.getByRole("dialog")).toHaveCount(0); // the Game Center has finished closing (it hands focus back as it goes)
     await expect(card.locator(".wp svg")).toBeVisible();
-    await card.locator(".wp svg rect[tabindex='0']").first().focus();
-    await expect(card.locator(".wp-tip")).toBeVisible();
+    // Focusing a bar names its play; if focus is taken away a moment later the tip goes, so focus again until it shows.
+    await expect(async () => {
+      await card.locator(".wp svg rect[tabindex='0']").first().focus();
+      await expect(card.locator(".wp-tip")).toBeVisible({ timeout: 1000 });
+    }).toPass({ timeout: 10_000 });
   }
   const width = await page.evaluate(() => document.documentElement.scrollWidth);
   expect(width).toBeLessThanOrEqual((page.viewportSize()?.width ?? 0) + 1);
