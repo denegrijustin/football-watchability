@@ -8,3 +8,62 @@
 /* Large text: the status chips wrap onto a second line instead of pushing the page sideways (one row whenever they fit). */
 .board-heading .status-chips { flex-wrap: wrap; }
 .board-heading .status-chips .status-chip { min-width: min-content; }
+
+/* ---------- Game card: the team-colored, glowing card ---------- */
+.game-card.team-tinted {
+  --glow: color-mix(in srgb, var(--team-bg) 38%, #ffffff);
+  background:
+    radial-gradient(120% 70% at 85% 0%, color-mix(in srgb, var(--team-bg) 70%, #ffffff) 0%, transparent 60%),
+    linear-gradient(160deg, color-mix(in srgb, var(--team-bg) 88%, #ffffff), color-mix(in srgb, var(--team-bg) 72%, #000000));
+  border: 2px solid var(--glow);
+  border-radius: 18px;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--glow) 35%, transparent), 0 0 22px color-mix(in srgb, var(--glow) 38%, transparent), inset 0 0 28px color-mix(in srgb, var(--glow) 12%, transparent);
+}
+.game-card.compact .cc-top { align-items: center; }
+.game-card.compact .cc-time { font-size: 1rem; }
+.game-card.compact .cc-network .net-chip, .game-card.compact .cc-network img { max-height: 34px; }
+.game-card.compact .cc-gc { min-width: 56px; min-height: 56px; border-radius: 12px; border: 1.5px solid var(--line-strong); background: rgb(255 255 255 / 5%); }
+/* teams: a rounded logo tile, a rank pill, a larger name, the record */
+.compact-overview.v2 .cc-team { grid-template-columns: 56px minmax(0, 1fr) auto; gap: 12px; }
+.compact-overview.v2 .cc-team .img, .compact-overview.v2 .cc-team img { width: 56px; height: 56px; }
+.compact-overview.v2 .cc-team img { padding: 5px; box-sizing: border-box; border-radius: 12px; background: rgb(255 255 255 / 92%); object-fit: contain; border: 1px solid rgb(255 255 255 / 30%); }
+.compact-overview.v2 .cc-team h4 { font-size: 1.375rem; font-weight: 750; }
+.compact-overview.v2 .cc-team p { font-size: 1.0625rem; }
+.compact-overview.v2 .matchup-teams { gap: 0; }
+.compact-overview.v2 .cc-team { padding: 4px 0; border-bottom: 1px solid rgb(255 255 255 / 14%); }
+.compact-overview.v2 .cc-team:last-child { border-bottom: 0; }
+.compact-overview.v2 .cc-team .team-score { font-size: 2.25rem; font-weight: 800; }
+/* the rating: a bordered, glowing tile with a larger ring */
+.compact-overview.v2 .cc-rate { min-width: 116px; padding: 12px 10px 10px; border-radius: 16px; border: 2px solid var(--glow, var(--line-strong)); background: color-mix(in srgb, var(--team-bg, #000) 55%, #000000); box-shadow: 0 0 18px color-mix(in srgb, var(--glow, #fff) 30%, transparent); }
+.compact-overview.v2 .cc-rate .score-tier, .compact-overview.v2 .cc-rate span { font-size: 0.9375rem; font-weight: 800; letter-spacing: 0.02em; text-transform: uppercase; }
+/* pills: the injuries, the line and the projection */
+.compact-overview .gi-strip { margin-top: 10px; gap: 8px; }
+.compact-overview .gi-chip, .compact-overview .gi-label { border-radius: 999px; font-size: 0.9375rem; }
+.compact-overview .cl-chips { gap: 10px; margin-top: 10px; }
+.compact-overview .cl-chip { padding: 9px 14px; border-radius: 999px; font-size: 1rem; font-weight: 700; background: rgb(0 0 0 / 18%); border: 1.5px solid rgb(255 255 255 / 30%); }
+.compact-overview .cl-bar { margin-top: 12px; font-size: 1rem; font-weight: 700; }
+.compact-overview .cl-track { height: 12px; border-radius: 999px; }
+.compact-overview .cc-venue { margin-top: 6px; font-size: 1rem; }
+.game-card.compact .cc-actions { margin-top: auto; padding-top: 12px; display: flex; justify-content: center; }
+.game-card.compact .card-toggle.cc-chevron { min-width: 230px; min-height: 52px; border-radius: 16px; border: 2px solid var(--glow, var(--line-strong)); background: color-mix(in srgb, var(--team-bg, #000) 60%, #000000); font-size: 1.1875rem; font-weight: 750; }
+.game-card.compact .late-flag, .game-card.compact .upset-banner { border-radius: 999px; }
+@media (max-width: 560px) {
+  .compact-overview.v2 .cc-team { grid-template-columns: 48px minmax(0, 1fr) auto; gap: 10px; }
+  .compact-overview.v2 .cc-team .img, .compact-overview.v2 .cc-team img { width: 48px; height: 48px; }
+  .compact-overview.v2 .cc-team h4 { font-size: 1.125rem; }
+  .compact-overview.v2 .cc-rate { min-width: 96px; }
+}
+/* sized to the card widths the board really gives (about 340–450px) */
+.compact-overview.v2 .cc-team { grid-template-columns: 48px minmax(0, 1fr) auto; gap: 10px; }
+.compact-overview.v2 .cc-team .img, .compact-overview.v2 .cc-team img { width: 48px; height: 48px; }
+.compact-overview.v2 .cc-team h4 { font-size: 1.125rem; gap: 5px; }
+.compact-overview.v2 .cc-team p { font-size: 0.875rem; }
+.compact-overview.v2 .cc-team .home-tag { font-size: 0.6875rem; padding: 2px 6px; }
+.compact-overview.v2 .cc-team .team-score { font-size: 1.75rem; }
+.compact-overview.v2 .cc-rate { min-width: 92px; padding: 10px 6px 8px; }
+.compact-overview.v2 .cc-rate .score-tier, .compact-overview.v2 .cc-rate span { font-size: 0.6875rem; }
+.compact-overview .gi-chip, .compact-overview .gi-label { font-size: 0.8125rem; }
+.compact-overview .cl-chip { font-size: 0.8125rem; padding: 8px 10px; }
+.compact-overview .cl-bar { font-size: 0.875rem; }
+.compact-overview .cc-venue { font-size: 0.875rem; }
+.game-card.compact .card-toggle.cc-chevron { min-width: 180px; min-height: 46px; font-size: 1rem; }

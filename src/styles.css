@@ -1898,18 +1898,16 @@ footer details[open] summary::before {
 }
 
 /* ---------- Home-team card color ---------- */
-/* A neutral dark card with the home team's color as a restrained accent: a stripe along the top and a faint wash behind the matchup. --team-bg is the
-   home team's dark color, deepened at build time; the inner surfaces become translucent layers, and text stays light on the near-neutral surface. */
+/* --team-bg is the home team's dark color, deepened at build time so text keeps at least 4.5:1 contrast. Inner surfaces become translucent layers so
+   they sit on the team color; ui2.css adds the glow edge and the card layout. */
 .game-card.team-tinted {
-  --card-base: #141d25;
-  --surface: color-mix(in srgb, var(--team-bg) 22%, var(--card-base));
+  --surface: var(--team-bg);
   --surface-2: rgb(255 255 255 / 6%);
   --surface-3: rgb(255 255 255 / 11%);
-  --line: rgb(255 255 255 / 11%);
-  --line-strong: rgb(255 255 255 / 22%);
-  background: var(--surface);
-  border-color: var(--line);
-  border-top-color: color-mix(in srgb, var(--team-bg) 55%, #ffffff);
+  --line: rgb(255 255 255 / 13%);
+  --line-strong: rgb(255 255 255 / 24%);
+  background: var(--team-bg);
+  border-color: rgb(255 255 255 / 14%);
 }
 
 /* ---------- Projected score ---------- */

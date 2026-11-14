@@ -38,11 +38,11 @@ test.describe("game cards", () => {
     await expect(c.locator(".score-tier")).toBeVisible(); // the category, in words
     await expect(c.locator(".cc-network")).toBeVisible(); // where to watch it
     await expect(c.locator(".cc-gc")).toHaveCount(1); // one clear way into the Game Center
-    // the detail lives behind Details and in the Game Center
-    await expect(c.locator(".gi-strip, .cl-bar, .pwp")).toHaveCount(0);
+    // the second level is on the card too: the betting line and the projection
+    await expect(c.locator(".cl-chip").first()).toBeVisible();
   });
 
-  test("the compact card's rating matches the data, and Details shows the projection and win probability that moved out of the card", async ({ page }) => {
+  test("the compact card's rating matches the data, and Details still opens the fuller projection", async ({ page }) => {
     await quiet(page);
     await page.goto("/?league=NFL");
     const c = card(page);
@@ -82,15 +82,14 @@ test.describe("game cards", () => {
     await expect(gc).toBeFocused();
   });
 
-  test("team identity is restrained: a neutral dark surface with a team accent, and logos keep their shape", async ({ page }) => {
+  test("the card carries its team's color with a glowing edge, and logos keep their shape", async ({ page }) => {
     await quiet(page);
     await page.goto("/?league=NFL");
     const c = card(page);
-    const bg = await c.evaluate((e) => getComputedStyle(e).backgroundColor);
-    // (the browser reports a mixed color as color(srgb r g b) with parts from 0 to 1, a plain one as rgb(r, g, b))
-    const parts = bg.match(/[\d.]+/g)!.slice(0, 3).map(Number);
-    const [r, g, b] = bg.startsWith("color(") ? parts.map((x) => x * 255) : parts;
-    expect(Math.max(r, g, b) - Math.min(r, g, b), `background ${bg} is near-neutral`).toBeLessThan(48);
+    await expect(c).toHaveClass(/team-tinted/);
+    const edge = await c.evaluate((e) => ({ w: getComputedStyle(e).borderTopWidth, shadow: getComputedStyle(e).boxShadow }));
+    expect(parseFloat(edge.w)).toBeGreaterThanOrEqual(2);
+    expect(edge.shadow).not.toBe("none"); // the glow
     const sizes = await page.locator(".game-card .cc-team img").evaluateAll((els) => els.slice(0, 12).map((e) => [(e as HTMLImageElement).clientWidth, (e as HTMLImageElement).clientHeight]));
     for (const [w, h] of sizes) { expect(w).toBeGreaterThan(0); expect(Math.abs(w - h)).toBeLessThanOrEqual(1); } // one consistent, undistorted box
   });

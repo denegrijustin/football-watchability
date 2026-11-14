@@ -16,7 +16,7 @@ test("@phone on a phone the space above the first game card is under 420px", asy
   const top = await card.evaluate((el) => el.getBoundingClientRect().top + scrollY);
   await page.screenshot({ path: "test-results/phone-top.png" });
   expect(top).toBeLessThan(420);
-  expect((await card.boundingBox())!.height).toBeLessThan(385); // a live card on a phone: one-line header, inline records, slim meters
+  expect((await card.boundingBox())!.height).toBeLessThan(500); // a live card on a phone: one-line header, team rows, rating tile, pills and slim meters
 });
 
 test("@phone every Watch now tile is the same size and shows its teams and scores whole", async ({ page }) => {

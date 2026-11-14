@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 const slate = JSON.parse(readFileSync("src/data/slate.json", "utf8"));
 
 for (const lg of ["NFL", "CFB"] as const) {
-  test(`no game card is padded: each holds its content and a pre-game card is shorter than the old fixed height (${lg})`, async ({ page }) => {
+  test(`no game card is padded: each holds its content and no card runs past a sensible height (${lg})`, async ({ page }) => {
     const games = slate.games.filter((g: any) => g.league === lg);
     test.skip(games.length < 3, `no ${lg} games on the board`);
     await page.clock.install({ time: Math.max(...games.map((g: any) => new Date(g.date).getTime())) + 90 * 60e3 });
@@ -24,8 +24,9 @@ for (const lg of ["NFL", "CFB"] as const) {
     expect(hs.length).toBeGreaterThan(2);
     // Pre-game cards hold only their content: status and channel, the matchup, the rating, the venue and the line, then Details.
     const pre: number[] = await cards.evaluateAll((els) => els.filter((e) => !e.querySelector(".halftime-band, .halftime-act, .live-meters") && e.getBoundingClientRect().height > 0).map((e) => Math.round(e.getBoundingClientRect().height)));
-    const oldFixed = (await page.evaluate(() => innerWidth)) > 760 ? 404 : 360;
-    expect(Math.max(...pre), `pre-game card heights: ${[...new Set(pre)].join(", ")}`).toBeLessThan(oldFixed);
+    // The cards carry the injuries, line, projection and win probability, so they are taller than a bare card but stay bounded.
+    const cap = (await page.evaluate(() => innerWidth)) > 760 ? 470 : 520;
+    expect(Math.max(...pre), `pre-game card heights: ${[...new Set(pre)].join(", ")}`).toBeLessThan(cap);
     // Nothing is cut off inside: the content fits the card.
     const cut = await cards.evaluateAll((els) => els.filter((e) => (e.querySelector(".compact-overview") as HTMLElement | null)!.scrollHeight > (e as HTMLElement).clientHeight + 1).length);
     expect(cut, "cards whose content is taller than the card").toBe(0);

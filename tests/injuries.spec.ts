@@ -93,22 +93,19 @@ test.describe("the Injuries tab", () => {
   });
 });
 
-/** Injuries are Level 3 detail: a compact card carries none, and the expanded card lists them. Opens the first few cards' Details so one with injuries shows. */
-async function expandSome(page: import("@playwright/test").Page) {
-  await expect(page.locator(".game-card:not(.result-card) .card-toggle").first()).toBeVisible({ timeout: 15_000 });
-  await page.locator(".game-card:not(.result-card) .card-toggle").evaluateAll((btns) => btns.slice(0, 8).forEach((b) => (b as HTMLElement).click()));
-}
-
 test.describe("injuries on the game card", () => {
   test.beforeEach(async ({ page }) => { await stubFinals(page); });
 
-  test("a compact card carries no injury strip; the expanded card lists each team's injuries with the reason for the impact", async ({ page }) => {
+  test("a card shows its key injuries in one line, and the expanded card lists each team's injuries with the reason for the impact", async ({ page }) => {
     await page.goto("/?league=NFL");
-    await expect(page.locator(".game-card").first()).toBeVisible({ timeout: 15_000 });
-    await expect(page.locator(".game-card.compact .gi-strip")).toHaveCount(0); // not on the compact card any more
-    await expandSome(page);
-    const sec = page.locator(".game-card.expanded .gi-fold").first();
-    await expect(sec).toBeVisible({ timeout: 15_000 });
+    const strip = page.locator(".gi-strip").first();
+    await expect(strip).toBeVisible({ timeout: 15_000 });
+    await expect(strip.locator(".gi-chip").first()).toContainText(/impact|High|Medium/i);
+    const id = await page.locator(".game-card:has(.gi-strip)").first().getAttribute("data-game-id");
+    const card = page.locator(`.game-card[data-game-id="${id}"]`);
+    await card.locator(".card-toggle").first().click();
+    const sec = card.locator(".gi-fold");
+    await expect(sec).toBeVisible();
     await expect(sec.locator(".gi-team").first()).toBeHidden(); // an option you open, not the whole expanded card
     await sec.locator("summary").first().click();
     await expect(sec.locator(".gi-team")).toHaveCount(2);
@@ -124,8 +121,7 @@ test.describe("injuries on the game card", () => {
 
     test.skip(!hasCfbGame(), NO_CFB);
     await page.goto("/?league=CFB");
-    await expandSome(page);
-    await expect(page.locator(".game-card.expanded .gi-fold, .game-card.expanded .gi").first()).toBeAttached({ timeout: 15_000 });
+    await expect(page.locator(".game-card .gi-strip, .game-card .gi").first()).toBeAttached({ timeout: 15_000 });
   });
 });
 
@@ -133,9 +129,8 @@ test("the Game Center's injury report is the same compact view, closed until ope
   await stubFinals(page);
   await page.goto("/?league=NFL");
   await expect(page.locator(".game-card").first()).toBeVisible();
-  await expandSome(page);
-  test.skip((await page.locator(".game-card.expanded:has(.gi-fold)").count()) === 0, "no key injuries on a game this week");
-  const id = await page.locator(".game-card.expanded:has(.gi-fold)").first().getAttribute("data-game-id");
+  test.skip((await page.locator(".game-card:has(.gi-strip)").count()) === 0, "no key injuries on a game this week");
+  const id = await page.locator(".game-card:has(.gi-strip)").first().getAttribute("data-game-id");
   const card = page.locator(`.game-card[data-game-id="${id}"]`);
   await card.getByRole("button", { name: /Game Center/ }).first().click();
   const gc = page.getByRole("dialog");

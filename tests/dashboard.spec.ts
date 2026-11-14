@@ -825,7 +825,7 @@ test("live and completed cards show the status above the teams and the score bes
   await expect(done.locator(".cc-team .team-score")).toHaveCount(2);
   await expect(done.locator(".cc-team .team-score.won")).toHaveCount(1);
   await expect(done.locator(".cc-rate strong")).toBeVisible();
-  expect((await done.boundingBox())!.height).toBeLessThan(540);
+  expect((await done.boundingBox())!.height).toBeLessThan(600);
   // Expanded: FINAL above the teams, score beside each name, no separate T column.
   await expand(done);
   await expect(done.locator(".game-status.post")).toContainText("Final");
@@ -1060,7 +1060,7 @@ test("@smoke game cards show a full compact overview and concise first expansion
   await completed(page);
   const done = page.locator(".result-card").first();
   await expect(done).toHaveClass(/compact/);
-  expect((await done.boundingBox())!.height).toBeLessThan(540);
+  expect((await done.boundingBox())!.height).toBeLessThan(600);
   await expect(done.locator(".cc-team img")).toHaveCount(2);
   await expect(done.locator(".cc-team .team-score")).toHaveCount(2);
   await expect(done.locator(".cc-rate strong")).toBeVisible();
