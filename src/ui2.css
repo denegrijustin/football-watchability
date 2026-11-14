@@ -1,0 +1,112 @@
+/* UI phase 2: additions that no earlier rule covers (new classes only). */
+
+/* A touchdown is shown where it happens: a brief border emphasis on the card and a small badge, never a move. */
+.td-badge { display: inline-flex; align-items: center; margin-left: 6px; padding: 1px 7px; border-radius: 99px; background: var(--lime, #b6f23c); color: #12210a; font-size: 0.75rem; font-weight: 800; letter-spacing: 0.02em; white-space: nowrap; }
+.game-card.just-scored { border-color: var(--lime, #b6f23c); transition: border-color 0.4s ease; }
+@media (prefers-reduced-motion: reduce) { .game-card.just-scored { transition: none; } }
+
+/* Large text: the status chips wrap onto a second line instead of pushing the page sideways (one row whenever they fit). */
+.board-heading .status-chips { flex-wrap: wrap; }
+.board-heading .status-chips .status-chip { min-width: min-content; }
+
+/* ---------- Game card: the team-colored, glowing card ---------- */
+.game-card.team-tinted {
+  --glow: color-mix(in srgb, var(--team-bg) 38%, #ffffff);
+  background:
+    radial-gradient(120% 70% at 85% 0%, color-mix(in srgb, var(--team-bg) 70%, #ffffff) 0%, transparent 60%),
+    linear-gradient(160deg, color-mix(in srgb, var(--team-bg) 88%, #ffffff), color-mix(in srgb, var(--team-bg) 72%, #000000));
+  border-radius: 18px;
+}
+/* an upset keeps its own neon edge */
+.game-card.team-tinted:not(.upset-alert, .upset-final) {
+  border: 2px solid var(--glow);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--glow) 35%, transparent), 0 0 22px color-mix(in srgb, var(--glow) 38%, transparent), inset 0 0 28px color-mix(in srgb, var(--glow) 12%, transparent);
+}
+.game-card.compact .cc-top { align-items: center; }
+.game-card.compact .cc-time { font-size: 1rem; }
+.game-card.compact .cc-network .net-chip, .game-card.compact .cc-network img { max-height: 34px; }
+.game-card.compact .cc-gc { min-width: 56px; min-height: 56px; border-radius: 12px; border: 1.5px solid var(--line-strong); background: rgb(255 255 255 / 5%); }
+/* teams: a rounded logo tile, a rank pill, a larger name, the record */
+.compact-overview.v2 .cc-team { grid-template-columns: 56px minmax(0, 1fr) auto; gap: 12px; }
+.compact-overview.v2 .cc-team .img, .compact-overview.v2 .cc-team img { width: 56px; height: 56px; }
+.compact-overview.v2 .cc-team img { padding: 5px; box-sizing: border-box; border-radius: 12px; background: rgb(255 255 255 / 92%); object-fit: contain; border: 1px solid rgb(255 255 255 / 30%); }
+.compact-overview.v2 .cc-team h4 { font-size: 1.375rem; font-weight: 750; }
+.compact-overview.v2 .cc-team p { font-size: 1.0625rem; }
+.compact-overview.v2 .matchup-teams { gap: 0; }
+.compact-overview.v2 .cc-team { padding: 4px 0; border-bottom: 1px solid rgb(255 255 255 / 14%); }
+.compact-overview.v2 .cc-team:last-child { border-bottom: 0; }
+.compact-overview.v2 .cc-team .team-score { font-size: 2.25rem; font-weight: 800; }
+/* the rating: a bordered, glowing tile with a larger ring */
+.compact-overview.v2 .cc-rate { min-width: 116px; padding: 12px 10px 10px; border-radius: 16px; border: 2px solid var(--glow, var(--line-strong)); background: color-mix(in srgb, var(--team-bg, #000) 55%, #000000); box-shadow: 0 0 18px color-mix(in srgb, var(--glow, #fff) 30%, transparent); }
+.compact-overview.v2 .cc-rate .score-tier, .compact-overview.v2 .cc-rate span { font-size: 0.9375rem; font-weight: 800; letter-spacing: 0.02em; text-transform: uppercase; }
+/* pills: the injuries, the line and the projection */
+.compact-overview .gi-strip { margin-top: 10px; gap: 8px; }
+.compact-overview .gi-chip, .compact-overview .gi-label { border-radius: 999px; font-size: 0.9375rem; }
+.compact-overview .cl-chips { gap: 10px; margin-top: 10px; }
+.compact-overview .cl-chip { padding: 9px 14px; border-radius: 999px; font-size: 1rem; font-weight: 700; background: rgb(0 0 0 / 18%); border: 1.5px solid rgb(255 255 255 / 30%); }
+.compact-overview .cl-bar { margin-top: 12px; font-size: 1rem; font-weight: 700; }
+.compact-overview .cl-track { height: 12px; border-radius: 999px; }
+.compact-overview .cc-venue { margin-top: 6px; font-size: 1rem; }
+.game-card.compact .cc-actions { margin-top: auto; padding-top: 12px; display: flex; justify-content: center; }
+.game-card.compact .card-toggle.cc-chevron { min-width: 230px; min-height: 52px; border-radius: 16px; border: 2px solid var(--glow, var(--line-strong)); background: color-mix(in srgb, var(--team-bg, #000) 60%, #000000); font-size: 1.1875rem; font-weight: 750; }
+.game-card.compact .late-flag, .game-card.compact .upset-banner { border-radius: 999px; }
+@media (max-width: 560px) {
+  .compact-overview.v2 .cc-team { grid-template-columns: 48px minmax(0, 1fr) auto; gap: 10px; }
+  .compact-overview.v2 .cc-team .img, .compact-overview.v2 .cc-team img { width: 48px; height: 48px; }
+  .compact-overview.v2 .cc-team h4 { font-size: 1.125rem; }
+  .compact-overview.v2 .cc-rate { min-width: 96px; }
+}
+/* sized to the card widths the board really gives (about 340–450px) */
+.compact-overview.v2 .cc-team { grid-template-columns: 48px minmax(0, 1fr) auto; gap: 10px; }
+.compact-overview.v2 .cc-team .img, .compact-overview.v2 .cc-team img { width: 48px; height: 48px; }
+.compact-overview.v2 .cc-team h4 { font-size: 1.125rem; gap: 5px; }
+.compact-overview.v2 .cc-team p { font-size: 0.875rem; }
+.compact-overview.v2 .cc-team .home-tag { font-size: 0.6875rem; padding: 2px 6px; }
+.compact-overview.v2 .cc-team .team-score { font-size: 1.75rem; }
+.compact-overview.v2 .cc-rate { min-width: 92px; padding: 10px 6px 8px; }
+.compact-overview.v2 .cc-rate .score-tier, .compact-overview.v2 .cc-rate span { font-size: 0.6875rem; }
+.compact-overview .gi-chip, .compact-overview .gi-label { font-size: 0.8125rem; }
+.compact-overview .cl-chip { font-size: 0.8125rem; padding: 8px 10px; }
+.compact-overview .cl-bar { font-size: 0.875rem; }
+.compact-overview .cc-venue { font-size: 0.875rem; }
+.game-card.compact .card-toggle.cc-chevron { min-width: 180px; min-height: 46px; font-size: 1rem; }
+
+/* ---------- Game Center: always dark, in the home team's color, with a glowing edge, header, tabs and panels ---------- */
+.gc {
+  --bg: #0b1117; --surface: #121b23; --surface-2: #17222c; --surface-3: #1d2a35; --line: #243441; --line-strong: #33475a;
+  --text: #eaf0f4; --text-2: #b9c6d0; --muted: #8d9eac; --lime: #c0ed80; --green: #8fdcaa; --red: #f59f9e; --gold: #edd092; --orange: #f3b681;
+  --glow: color-mix(in srgb, var(--team-bg, #1d2a35) 38%, #ffffff);
+  color-scheme: dark;
+  background: linear-gradient(170deg, color-mix(in srgb, var(--team-bg, #1d2a35) 55%, #05080c), #05080c 70%);
+  border: 2px solid var(--glow);
+  border-radius: 20px;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--glow) 35%, transparent), 0 0 34px color-mix(in srgb, var(--glow) 40%, transparent);
+}
+.gc .gc-head { border-radius: 18px 18px 22px 22px; border-bottom: 2px solid color-mix(in srgb, var(--glow) 70%, transparent); box-shadow: 0 6px 26px color-mix(in srgb, var(--glow) 30%, transparent); }
+.gc .gc-tabs { margin: 10px 14px 0; padding: 6px; gap: 8px; border: 1px solid var(--line-strong); border-radius: 14px; background: rgb(255 255 255 / 4%); }
+.gc .gc-tab { min-height: 44px; padding: 0 18px; border-radius: 12px; font-size: 1rem; font-weight: 700; color: var(--text); }
+.gc .gc-tab[aria-selected="true"] { border: 2px solid var(--glow); background: color-mix(in srgb, var(--glow) 18%, transparent); box-shadow: 0 0 14px color-mix(in srgb, var(--glow) 55%, transparent); }
+.gc .gc-panel { border: 2px solid color-mix(in srgb, var(--glow) 80%, transparent); border-radius: 16px; background: linear-gradient(180deg, rgb(255 255 255 / 6%), rgb(0 0 0 / 22%)); box-shadow: 0 0 18px color-mix(in srgb, var(--glow) 28%, transparent), inset 0 0 20px color-mix(in srgb, var(--glow) 8%, transparent); }
+.gc .gc-panel > h3, .gc .gc-panel .section-head h3 { font-size: 1.0625rem; letter-spacing: 0.04em; text-transform: uppercase; }
+.gc .gc-grid { gap: 16px; padding: 16px 16px 0; }
+.gc .gc-close { border: 2px solid rgb(255 255 255 / 70%); background: rgb(0 0 0 / 65%); }
+/* the line score and the live note sit in one bordered row, as in the design */
+.gc .gc-scorebar { display: flex; align-items: center; gap: 18px; margin: 14px 14px 0; padding: 10px 16px; border: 1.5px solid color-mix(in srgb, var(--glow) 70%, transparent); border-radius: 16px; background: rgb(255 255 255 / 4%); box-shadow: 0 0 16px color-mix(in srgb, var(--glow) 22%, transparent); }
+.gc .gc-scorebar:not(:has(*)) { display: none; }
+.gc .gc-scorebar .gc-lines { margin: 0; width: min(100%, 340px); flex: none; }
+.gc .gc-scorebar .gc-lines td, .gc .gc-scorebar .gc-lines th { padding: 3px 8px; color: var(--text); }
+.gc .gc-scorebar .gc-updated { margin: 0 0 0 auto; font-size: 0.875rem; color: var(--text-2); }
+@media (max-width: 720px) { .gc .gc-scorebar { flex-wrap: wrap; gap: 6px; padding: 8px 10px; } .gc .gc-scorebar .gc-updated { margin: 0; } }
+/* team stats: solid team-colored bars with the number inside */
+.gc .gc-compare td { isolation: isolate; font-size: 0.9375rem; font-weight: 750; color: #fff; }
+.gc .gc-cbar { opacity: 1; z-index: -1; top: 4px; bottom: 4px; border-radius: 999px; }
+.gc .gc-cbar.away { background: linear-gradient(90deg, color-mix(in srgb, var(--away-bg, #c0504a) 50%, #000000), color-mix(in srgb, var(--away-bg, #c0504a) 68%, #ffffff)); }
+.gc .gc-cbar.home { background: linear-gradient(270deg, color-mix(in srgb, var(--team-bg, #4a7fc0) 50%, #000000), color-mix(in srgb, var(--team-bg, #4a7fc0) 68%, #ffffff)); }
+.gc .gc-compare td.edge { color: #fff; }
+.gc .gc-compare tbody th { color: var(--text); font-size: 0.9375rem; }
+.gc .gc-cbar.away { background: linear-gradient(90deg, color-mix(in srgb, var(--away-bg, #c0504a) 62%, #ffffff 0%), color-mix(in srgb, var(--away-bg, #c0504a) 48%, #ffffff)); }
+.gc .gc-cbar.home { background: linear-gradient(270deg, color-mix(in srgb, var(--team-bg, #4a7fc0) 62%, #ffffff 0%), color-mix(in srgb, var(--team-bg, #4a7fc0) 48%, #ffffff)); }
+/* player rows take their team's color, as in the design */
+.gc .gc-tbteam:first-child .gc-pl { background: linear-gradient(90deg, color-mix(in srgb, var(--away-bg, #1d2a35) 78%, #000000), color-mix(in srgb, var(--away-bg, #1d2a35) 55%, #000000)); border: 1.5px solid color-mix(in srgb, var(--away-bg, #1d2a35) 50%, #ffffff); }
+.gc .gc-tbteam:last-child .gc-pl { background: linear-gradient(90deg, color-mix(in srgb, var(--team-bg, #1d2a35) 78%, #000000), color-mix(in srgb, var(--team-bg, #1d2a35) 55%, #000000)); border: 1.5px solid color-mix(in srgb, var(--team-bg, #1d2a35) 50%, #ffffff); }
+.gc .gc-pl { border-radius: 14px; }

@@ -24,7 +24,7 @@ test("scores are watched: the first look and a look after a long gap set a basel
   expect(FLASH_MS).toBeLessThan(PIN_MS);
 });
 
-test("a touchdown covers the card for a few seconds, takes the first spot on the board (top left) for a while, then goes back to its place", async ({ page }) => {
+test("a touchdown is shown on the card where it is (a burst, then a small TD badge for a while); the board does not move for it", async ({ page }) => {
   const g = games[2];
   const start = new Date(g.date).getTime();
   await page.clock.install({ time: start + 90 * 60e3 });
@@ -37,23 +37,26 @@ test("a touchdown covers the card for a few seconds, takes the first spot on the
   const card = page.locator(`.game-card[data-game-id="${g.id}"]`);
   await expect(card).toBeVisible({ timeout: 15_000 });
   await expect(card.locator(".team-score").first()).toContainText("14"); // the first live scores are in
-  test.skip((await page.locator(".game-card").first().getAttribute("data-game-id")) === g.id, "the scoring game is already first on the board");
+  const order = () => page.locator(".game-card").evaluateAll((els) => els.map((e) => e.getAttribute("data-game-id")));
+  const before = await order();
   await expect(page.locator(".td-burst")).toHaveCount(0); // opening the page does not celebrate points already on the board
+  await expect(page.locator(".td-badge")).toHaveCount(0);
   away = 21; // a touchdown and the extra point
   await page.locator(".live-fresh").evaluate((b) => (b as HTMLElement).click());
   const burst = card.locator(".td-burst");
   await expect(burst).toBeVisible({ timeout: 10_000 });
   await expect(burst).toContainText(/Touchdown/i);
-  // The game that scored is the first card on the board, in the grid it was already in: no section of its own.
-  await expect(page.locator(".game-card").first()).toHaveAttribute("data-game-id", g.id);
-  await expect(page.locator(".td-pinned")).toHaveCount(0);
-  // The celebration ends after a few seconds; the game stays at the top for a minute and a half, then goes back to its place.
+  await expect(card.locator(".td-badge")).toBeVisible();
+  await expect(card).toHaveClass(/just-scored/);
+  expect(await order()).toEqual(before); // nothing moved
+  // The burst ends after a few seconds; the small badge stays for a minute and a half; the card was never moved.
   await page.clock.fastForward(FLASH_MS + 1500);
   await expect(card.locator(".td-burst")).toHaveCount(0);
-  await expect(page.locator(".game-card").first()).toHaveAttribute("data-game-id", g.id); // still first
+  await expect(card.locator(".td-badge")).toBeVisible();
+  expect(await order()).toEqual(before);
   await page.clock.fastForward(PIN_MS);
-  await expect(page.locator(".game-card").first()).not.toHaveAttribute("data-game-id", g.id); // back in its place
-  await expect(card).toBeVisible();
+  await expect(card.locator(".td-badge")).toHaveCount(0);
+  expect(await order()).toEqual(before);
 });
 
 test("with motion off the touchdown banner still appears but nothing moves", async ({ page }) => {
