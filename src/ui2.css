@@ -119,3 +119,24 @@
 .gc .gc-feed .gc-what { color: var(--text); }
 .gc .gc-feed li.is-score .gc-what { color: var(--lime); }
 .gc .gc-feed li.is-to .gc-what { color: var(--red); }
+
+/* phone: the header is three columns, as in the design: a team (logo, name, record, rank, score) on each side and the status between them */
+@media (max-width: 860px) {
+  .gc .gc-head { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: start; gap: 6px; padding: 52px 10px 12px; }
+  .gc .gc-team, .gc .gc-team.right { flex-direction: column; align-items: center; text-align: center; gap: 4px; }
+  .gc .gc-team img { width: 52px; height: 52px; }
+  .gc .gc-team h2 { font-size: 1rem; line-height: 1.15; }
+  .gc .gc-team p { font-size: 0.75rem; }
+  .gc .gc-team > div { text-align: center; }
+  .gc .gc-team .gc-score, .gc .gc-team.right .gc-score { margin: 0; font-size: 2rem; line-height: 1; }
+  .gc .gc-mid { order: 0; max-width: 150px; gap: 3px; text-align: center; }
+  .gc .gc-mid .gc-clock { font-size: 0.875rem; }
+  .gc .gc-scorebar { margin: 10px 10px 0; }
+  .gc .gc-tabs { margin: 8px 10px 0; }
+}
+/* matchup & season: the form chart keeps a modest height */
+.gc .gc-deep-analysis svg, .gc .gc-deep-analysis .form-chart { max-height: 240px; }
+@media (max-width: 860px) {
+  .gc .gc-mid { max-width: 116px; }
+  .gc .gc-team h2 { overflow-wrap: anywhere; }
+}
