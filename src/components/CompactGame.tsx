@@ -8,6 +8,7 @@ import { useOpenGame } from "./GameCenterContext";
 import { SquareActivity } from "lucide-react";
 import { PlusRank } from "./PlusRank";
 import { ScoreRing } from "./ScoreRing";
+import { ChipImg } from "../logoTone";
 
 type Team = { name: string; logoId: string; record: string; ranks?: unknown; abbr?: string; espnId?: string | null };
 export function CompactGame({ titleId, matchup, date, broadcast, network, espnId, teams, league, score, tier, venue, driveChart, top, badge, weather, status, scores, momentum, lineStrip, why, rise, injuries, onExpand }: {
@@ -34,7 +35,7 @@ export function CompactGame({ titleId, matchup, date, broadcast, network, espnId
     <h3 className="sr-only" id={titleId}>{matchup}</h3>
     <div className="matchup">
       <div className="matchup-teams">{teams.map((team, i) => <div className="team-heading cc-team" key={team.name}>
-        <TeamOpen className="img" team={{ league, name: team.name, abbr: (team as { abbr?: string }).abbr }}><img src={logos[team.logoId]} alt="" width="36" height="36" loading="lazy" decoding="async" /></TeamOpen>
+        <TeamOpen className="img" team={{ league, name: team.name, abbr: (team as { abbr?: string }).abbr }}>{logos[team.logoId] && <ChipImg src={logos[team.logoId]} size={36} />}</TeamOpen>
         <div><h4><PlusRank league={league} team={team} /><TeamOpen team={{ league, name: team.name, abbr: (team as { abbr?: string }).abbr }}><TeamName league={league} name={team.name} /></TeamOpen>{i === 1 && <span className="home-tag">Home</span>}</h4>
           <p>{recordLine(team.record, league as League).split(" · ")[0]}</p>
         </div>{scores?.[i]}
