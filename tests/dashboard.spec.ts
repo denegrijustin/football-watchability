@@ -10,6 +10,7 @@ const STATUS: Record<string, string> = { "All status": "all", "All games": "all"
 const pick = async (page: import("@playwright/test").Page, menu: string, option: string) => {
   if (menu === "Status") return page.locator(`[data-status-chip="${STATUS[option]}"]`).click();
   const select = page.getByLabel(menu, { exact: true });
+  await page.locator(".filter-bar").waitFor(); // the board draws just after the page's load event
   // Day, Watchability and Conference live in the Filters panel.
   if (menu !== "League" && !(await select.isVisible())) await page.getByRole("button", { name: /^Filters/ }).click();
   await select.selectOption({ label: option });
@@ -1187,11 +1188,17 @@ test("a data file that fails once is tried again, and the board still comes up",
 test("a tab whose file is gone after an update shows Retry (the page never reloads itself), and Retry opens it once the file is back", async ({ page }) => {
   let block = false;
   let reloaded = false;
-  await page.route("**/assets/c-*.js", (route) => (block ? route.abort() : route.continue()));
+  // Only the file that holds the Standings view fails (it is recognised by its own text, not by a hashed name).
+  await page.route(/\/assets\/c-.*\.js/, async (route) => {
+    if (!block) return route.continue();
+    const res = await route.fetch();
+    if ((await res.text()).includes("Ordered by ESPN's tiebreakers")) return route.abort();
+    return route.fulfill({ response: res });
+  });
   await page.goto("/?league=NFL");
   await expect(page.locator(".game-card").first()).toBeVisible();
-  page.on("framenavigated", (f) => { if (f === page.mainFrame()) reloaded = true; });
-  block = true; // the site was updated: the files this page knows about are no longer there
+  page.on("load", () => { reloaded = true; }); // (a same-page route change is not a load)
+  block = true; // the site was updated: the file this page knows about is no longer there
   await page.locator('[data-tab="standings"]').evaluate((b) => (b as HTMLElement).click());
   const note = page.getByRole("alert").filter({ hasText: "could not load" });
   await expect(note).toBeVisible({ timeout: 10000 });
@@ -1199,6 +1206,7 @@ test("a tab whose file is gone after an update shows Retry (the page never reloa
   block = false;
   await note.getByRole("button", { name: "Retry" }).click();
   await expect(page.locator('.feature-intro[data-feature="standings"]')).toBeVisible({ timeout: 15000 });
+  await expect(page.getByRole("alert").filter({ hasText: "could not load" })).toHaveCount(0);
   expect(reloaded).toBe(false);
 });
 

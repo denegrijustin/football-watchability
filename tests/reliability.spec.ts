@@ -15,7 +15,7 @@ async function quiet(page: Page) {
 /** Counts how many times the document itself is loaded: a startup reload would make it 2. */
 function loads(page: Page) {
   const n = { count: 0 };
-  page.on("framenavigated", (f) => { if (f === page.mainFrame()) n.count++; });
+  page.on("load", () => { n.count++; });
   return n;
 }
 const boot = (page: Page) => page.locator("html");

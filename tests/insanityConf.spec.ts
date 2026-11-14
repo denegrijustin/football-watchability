@@ -95,6 +95,7 @@ test("the main board has a conference filter for the NFL (AFC, NFC) as well as c
   // Conference lives in the Filters panel; the panel closes again after each pick so it never covers the board.
   const filters = page.getByRole("button", { name: /^Filters/ });
   const conf = page.getByLabel("Conference");
+  await page.locator(".filter-bar").waitFor(); // the board draws just after the page's load event
   const open = async () => { if (!(await conf.isVisible())) await filters.click(); };
   await open();
   await expect(conf.locator("option")).toHaveText(["Both conferences", "AFC", "NFC"]);

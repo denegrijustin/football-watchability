@@ -61,7 +61,7 @@ test("if the Game Center's file is gone (site updated under an open page), the p
   });
   await page.goto("/?league=CFB");
   let reloaded = false;
-  page.on("framenavigated", (f) => { if (f === page.mainFrame()) reloaded = true; });
+  page.on("load", () => { reloaded = true; });
   await expect(page.locator(".game-card").first()).toBeVisible();
   reloaded = false;
   await page.locator(".cc-gc").first().click();
