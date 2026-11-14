@@ -140,3 +140,18 @@
   .gc .gc-mid { max-width: 116px; }
   .gc .gc-team h2 { overflow-wrap: anywhere; }
 }
+
+/* matchup & season: the fold-outs are bordered, glowing rows; the two matchup tables are bordered panels */
+.gc .game-details details { margin-top: 10px; border: 1.5px solid color-mix(in srgb, var(--glow) 65%, transparent); border-radius: 14px; background: rgb(255 255 255 / 4%); box-shadow: 0 0 14px color-mix(in srgb, var(--glow) 18%, transparent); overflow: hidden; }
+.gc .game-details details + details { margin-top: 10px; border-top-width: 1.5px; }
+.gc .game-details summary { min-height: 52px; padding: 10px 16px; font-size: 1.0625rem; font-weight: 700; }
+.gc .game-details details[open] > summary { border-bottom: 1px solid var(--line-strong); }
+.gc .game-details details > *:not(summary) { padding-left: 16px; padding-right: 16px; }
+.gc .game-details details > *:not(summary):last-child { padding-bottom: 14px; }
+.gc .game-details summary > span { font-size: 1.5rem; font-weight: 400; }
+@media (max-width: 560px) {
+  .gc .matchup-engine th, .gc .matchup-engine td { padding-left: 3px; padding-right: 3px; }
+  .gc .matchup-engine th[scope="row"] { padding-left: 8px; }
+  .gc .matchup-engine td > div > div { font-size: 0.6875rem; }
+  .gc .matchup-engine table { font-size: 0.8125rem; }
+}
