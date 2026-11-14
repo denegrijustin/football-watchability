@@ -30,7 +30,7 @@ import { GameBadgeRow } from "./GameBadge";
 import { RivalryBadge, type Rivalry } from "./RivalryBadge";
 import { gameBadge } from "../gameLogo";
 import { isHalftime } from "../halftimeLogic";
-import { MomentumFlow } from "./MomentumFlow";
+import { GameFlowPanel } from "./GameFlowPanel";
 import { ResultAnalysis } from "./ResultAnalysis";
 import { WeatherLook } from "./WeatherLook";
 import { Stakes } from "./TeamImpact";
@@ -441,7 +441,7 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
               </section>
             )}
 
-                {game && state !== "pre" && <Momentum game={game} away={abbr(away)} home={abbr(home)} />}
+                {game && state !== "pre" && <Momentum game={game} away={away} home={home} />}
                 {up && loreFor(up) && <section className="gc-panel gc-wide"><h3 className="micro-label">The rivalry, deep cut</h3><RivalryDeepCut game={up} /></section>}
               </>
             )}
@@ -532,45 +532,10 @@ function Linescore({ game }: { game: LiveGame }) {
   );
 }
 
-/** Momentum: win-probability swing over the last 12 plays and last 3 drives. */
-function Momentum({ game, away, home }: { game: LiveGame; away: string; home: string }) {
-  const wp = game.wp.map((w) => w[0]);
-  if (wp.length < 4) return null;
-  const n = Math.min(12, wp.length - 1);
-  const swing = wp[wp.length - 1] - wp[wp.length - 1 - n]; // + toward home
-  const hid = game.teams[1].id;
-  const last3 = game.drives.filter((d) => !d.current).slice(-6);
-  const pts = (d: Drive) => (/touchdown/i.test(d.result) ? 7 : /field goal/i.test(d.result) && d.score ? 3 : 0);
-  const recent = { away: 0, home: 0 };
-  for (const d of last3) recent[d.team === hid ? "home" : "away"] += pts(d);
-  const side = Math.abs(swing) < 3 ? null : swing > 0 ? home : away;
-  const w = Math.min(50, Math.abs(swing));
-  return (
-    <section className="gc-panel">
-      <h3 className="micro-label">Game flow · momentum</h3>
-      <MomentumFlow wp={game.wp} status={game.status} away={away} home={home} />
-      <p className="gc-big">
-        {side ? (
-          <>
-            <strong>{side}</strong> +{Math.round(Math.abs(swing))} pts of win probability over the last {n} plays
-          </>
-        ) : (
-          <>Even: win probability has held steady over the last {n} plays</>
-        )}
-      </p>
-      <div className="gc-diverge" role="img" aria-label={side ? `Momentum toward ${side}` : "Momentum even"}>
-        <span className="lbl">{away}</span>
-        <span className="track">
-          <i className="mid" />
-          <i className={`bar ${swing > 0 ? "home" : "away"}`} style={swing > 0 ? { left: "50%", width: `${w}%` } : { right: "50%", width: `${w}%` }} />
-        </span>
-        <span className="lbl">{home}</span>
-      </div>
-      <p className="gc-note">
-        Last {last3.length} drives: {away} {recent.away} pts, {home} {recent.home} pts
-      </p>
-    </section>
-  );
+/** Game flow & momentum: the win-probability story of the game, in the design's panel. */
+function Momentum({ game, away, home }: { game: LiveGame; away: TeamLike; home: TeamLike }) {
+  const side = (t: TeamLike) => ({ abbr: t.abbr ?? t.name, name: t.name, logo: logos[t.logoId] });
+  return <GameFlowPanel wp={game.wp} status={game.status} away={side(away)} home={side(home)} />;
 }
 
 /** Field tilt: share of each offense's snaps run in the opponent's territory, overall and by quarter. */
