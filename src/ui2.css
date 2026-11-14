@@ -97,9 +97,6 @@
 .gc .gc-compare tbody th { color: var(--text); font-size: 0.9375rem; }
 .gc .gc-cbar.away { background: linear-gradient(90deg, var(--away-alt, color-mix(in srgb, var(--away-bg, #c0504a) 62%, #ffffff)), color-mix(in srgb, var(--away-alt, var(--away-bg, #c0504a)) 80%, #ffffff)); }
 /* player rows take their team's color, as in the design */
-.gc .gc-tbteam:first-child .gc-pl { background: linear-gradient(90deg, color-mix(in srgb, var(--away-bg, #1d2a35) 78%, #000000), color-mix(in srgb, var(--away-bg, #1d2a35) 55%, #000000)); border: 1.5px solid color-mix(in srgb, var(--away-bg, #1d2a35) 50%, #ffffff); }
-.gc .gc-tbteam:last-child .gc-pl { background: linear-gradient(90deg, color-mix(in srgb, var(--team-bg, #1d2a35) 78%, #000000), color-mix(in srgb, var(--team-bg, #1d2a35) 55%, #000000)); border: 1.5px solid color-mix(in srgb, var(--team-bg, #1d2a35) 50%, #ffffff); }
-.gc .gc-pl { border-radius: 14px; }
 /* plays & drives: the play-by-play is a full-width panel, the team a pill, the time and text larger */
 .gc .gc-feedpanel { grid-column: 1 / -1; max-height: 560px; }
 .gc .gc-feed { font-size: 0.9375rem; }
@@ -188,8 +185,6 @@
 
 /* each team's second color (gold for Pittsburgh, lilac-white for TCU) where it has one: the glow, the stat bars and the player rows */
 .gc .gc-cbar.home { background: linear-gradient(270deg, var(--team-alt, color-mix(in srgb, var(--team-bg, #4a7fc0) 62%, #ffffff)), color-mix(in srgb, var(--team-alt, var(--team-bg, #4a7fc0)) 80%, #ffffff)); }
-.gc .gc-tbteam:first-child .gc-pl { border-color: var(--away-alt, color-mix(in srgb, var(--away-bg, #1d2a35) 50%, #ffffff)); }
-.gc .gc-tbteam:last-child .gc-pl { border-color: var(--team-alt, color-mix(in srgb, var(--team-bg, #1d2a35) 50%, #ffffff)); }
 
 
 /* phone: a top bar with a back arrow and the title, as in the design (the arrow is the close button) */
@@ -212,3 +207,6 @@
 .gc .lp-stats > div { display: flex; align-items: center; gap: 8px; flex: 0 1 auto; }
 .gc .lp-stats dt { white-space: nowrap; }
 .gc .lp-stats dd { margin: 0; }
+
+.gc .gc-tbteam.a .gc-pcard { border-color: color-mix(in srgb, var(--away-alt, #8a7ae0) 75%, transparent); }
+.gc .gc-tbteam.h .gc-pcard { border-color: color-mix(in srgb, var(--team-alt, #e05a5a) 75%, transparent); }

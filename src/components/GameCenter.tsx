@@ -606,10 +606,10 @@ function Drives({ game, away, home }: { game: LiveGame; away: FlowSide; home: Fl
 
 function TopBottom({ game, teams }: { game: LiveGame; teams: TeamLike[] }) {
   return (
-    <section className="gc-panel gc-wide">
-      <h3 className="micro-label">Top 3 / bottom 3 by team</h3>
+    <section className="gc-panel gc-wide pl-top">
+      <h3 className="pd-title"><i aria-hidden="true" />Top performers</h3>
       <p className="gc-note">
-        Ranked by a box-score impact score: yards, touchdowns and takeaways add; interceptions, fumbles, sacks taken and
+        Top 3 / bottom 3 by team, ranked by a box-score impact score: yards, touchdowns and takeaways add; interceptions, fumbles, sacks taken and
         missed targets or kicks subtract. Bottom 3 only counts players with real involvement.
       </p>
       <div className="gc-tb">
@@ -622,17 +622,17 @@ function TopBottom({ game, teams }: { game: LiveGame; teams: TeamLike[] }) {
             .sort((a, b) => a.value - b.value)
             .slice(0, 3);
           return (
-            <div key={t.id} className="gc-tbteam">
+            <div key={t.id} className={`gc-tbteam ${i ? "h" : "a"}`}>
               <h4>
                 <img src={logos[teams[i].logoId]} alt="" width="22" height="22" /> {teams[i].name}
               </h4>
-              <h5 className="gc-tbl top">Top 3</h5>
+              <h5 className="gc-tbl top">Top 3 impact</h5>
               <ol className="gc-top">
                 {top.map((x) => (
                   <PlayerLine key={x.p.id} x={x} team={{ ...teams[i], abbr: t.abbr }} game={game} good />
                 ))}
               </ol>
-              <h5 className="gc-tbl bottom">Bottom 3</h5>
+              <h5 className="gc-tbl bottom">Bottom 3 impact</h5>
               <ol className="gc-bottom">
                 {bottom.map((x) => (
                   <PlayerLine key={x.p.id} x={x} team={{ ...teams[i], abbr: t.abbr }} game={game} />
@@ -829,39 +829,39 @@ function Tracker({ game, teams }: { game: LiveGame; teams: TeamLike[] }) {
   const [tab, setTab] = useState(0);
   const t = game.teams[tab];
   const ps = game.players[t.id] ?? [];
-  const groups: [string, (p: PlayerRow) => string | null, (p: PlayerRow) => number][] = [
-    ["Passing", (p) => (p.passing?.att ? `${p.passing.cmp}/${p.passing.att} · ${p.passing.yds} yds · ${p.passing.td} TD · ${p.passing.int} INT${p.passing.qbr ? ` · QBR ${p.passing.qbr}` : ""}` : null), (p) => p.passing?.yds ?? 0],
-    ["Rushing", (p) => (p.rushing?.att ? `${p.rushing.att} car · ${p.rushing.yds} yds · ${(p.rushing.yds / p.rushing.att).toFixed(1)} avg${p.rushing.td ? ` · ${p.rushing.td} TD` : ""}` : null), (p) => p.rushing?.yds ?? 0],
-    ["Receiving", (p) => (p.receiving?.rec || p.receiving?.tgt ? `${p.receiving!.rec}/${p.receiving!.tgt || p.receiving!.rec} · ${p.receiving!.yds} yds${p.receiving!.td ? ` · ${p.receiving!.td} TD` : ""} · long ${p.receiving!.long}` : null), (p) => p.receiving?.yds ?? 0],
-    ["Defense", (p) => (p.defensive && (p.defensive.tkl || p.defensive.sacks || p.defensive.pd) ? `${p.defensive.tkl} tkl · ${p.defensive.sacks} sk · ${p.defensive.tfl} TFL · ${p.defensive.pd} PD${p.interceptions?.int ? ` · ${p.interceptions.int} INT` : ""}` : null), (p) => (p.defensive?.tkl ?? 0) + (p.defensive?.sacks ?? 0) * 3],
+  const n = (v: number | undefined) => String(v ?? 0);
+  const groups: [string, string[], (p: PlayerRow) => string[] | null, (p: PlayerRow) => number][] = [
+    ["Passing", ["C/Att", "Yds", "TD", "INT"], (p) => (p.passing?.att ? [`${p.passing.cmp}/${p.passing.att}`, n(p.passing.yds), n(p.passing.td), n(p.passing.int)] : null), (p) => p.passing?.yds ?? 0],
+    ["Rushing", ["Car", "Yds", "Avg", "TD"], (p) => (p.rushing?.att ? [n(p.rushing.att), n(p.rushing.yds), (p.rushing.yds / p.rushing.att).toFixed(1), n(p.rushing.td)] : null), (p) => p.rushing?.yds ?? 0],
+    ["Receiving", ["Rec", "Yds", "TD", "Long"], (p) => (p.receiving?.rec || p.receiving?.tgt ? [n(p.receiving.rec), n(p.receiving.yds), n(p.receiving.td), n(p.receiving.long)] : null), (p) => p.receiving?.yds ?? 0],
+    ["Defense", ["Tkl", "TFL", "Sck", "INT"], (p) => (p.defensive && (p.defensive.tkl || p.defensive.sacks || p.defensive.pd) ? [n(p.defensive.tkl), n(p.defensive.tfl), n(p.defensive.sacks), n(p.interceptions?.int)] : null), (p) => (p.defensive?.tkl ?? 0) + (p.defensive?.sacks ?? 0) * 3],
   ];
   return (
-    <section className="gc-panel gc-wide">
+    <section className="gc-panel gc-wide pl-track">
       <div className="gc-tabs-head">
-        <h3 className="micro-label">Player tracker</h3>
+        <h3 className="pd-title"><i aria-hidden="true" />Player tracker</h3>
         <div className="segmented" role="group" aria-label="Team">
           {game.teams.map((tm, i) => (
             <button key={tm.id} aria-pressed={tab === i} onClick={() => setTab(i)}>
-              <img src={logos[teams[i].logoId]} alt="" width="18" height="18" /> {tm.abbr}
+              <img src={logos[teams[i].logoId]} alt="" width="22" height="22" /> {tm.abbr}
             </button>
           ))}
         </div>
       </div>
       <div className="gc-tracker">
-        {groups.map(([label, line, sort]) => {
-          const rows = ps.filter((p) => line(p)).sort((a, b) => sort(b) - sort(a)).slice(0, label === "Defense" ? 6 : 5);
+        {groups.map(([label, cols, cells, sort]) => {
+          const rows = ps.filter((p) => cells(p)).sort((a, b) => sort(b) - sort(a)).slice(0, label === "Defense" ? 6 : 5);
           if (!rows.length) return null;
           return (
-            <div key={label}>
-              <h4 className="gc-sub">{label}</h4>
-              <ul>
+            <div key={label} className="pl-group">
+              <div className="pl-head" aria-hidden="true"><h4>{label}</h4>{cols.map((c) => <span key={c}>{c}</span>)}</div>
+              <ul aria-label={label}>
                 {rows.map((p) => (
                   <li key={p.id}>
                     <span className="gc-jersey">{p.jersey ? `#${p.jersey}` : ""}</span>
-                    <strong>
-                      {p.short} <span className="gc-pos">{positionOf(p)}</span>
-                    </strong>
-                    <span>{line(p)}</span>
+                    <strong>{p.short}</strong>
+                    <span className="gc-pos">{positionOf(p)}</span>
+                    {(cells(p) ?? []).map((v, i) => <span key={i} className="c" aria-label={`${cols[i]} ${v}`}>{v}</span>)}
                   </li>
                 ))}
               </ul>
