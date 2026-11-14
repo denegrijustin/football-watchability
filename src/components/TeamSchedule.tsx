@@ -53,7 +53,7 @@ export function TeamSchedule({ lg, name, abbr }: { lg: "CFB" | "NFL"; name: stri
         <span className="ts-date">{dateText(g, tz)}</span>
         <span className="ts-at" aria-label={g.venue === "at" ? "away" : g.venue === "N" ? "neutral site" : "home"}>{g.venue === "at" ? "@" : g.venue === "N" ? "N" : "vs"}</span>
         <button type="button" className="ts-logo" aria-label={`Open ${g.opp.name}`} onClick={() => openTeam({ league: lg, name: g.opp.name, abbr: g.opp.abbr })}>
-          {g.opp.logo ? <ChipImg src={g.opp.logo} size={30} /> : <span className="rs-nologo" aria-hidden="true">{g.opp.name.slice(0, 2)}</span>}
+          {g.opp.logo ? <ChipImg src={g.opp.logo} size={24} /> : <span className="rs-nologo" aria-hidden="true">{g.opp.name.slice(0, 2)}</span>}
         </button>
         <span className="ts-opp">{g.opp.rank != null && <small>#{g.opp.rank}</small>}<b>{g.opp.name}</b></span>
         {g.done ? (
