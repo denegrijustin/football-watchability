@@ -153,7 +153,8 @@
   .nav-trigger:hover { background: transparent; color: var(--muted); }
   .nav-trigger .tab-ico { display: block; }
   .nav-caret { display: none; }
-  .nav-trigger-label { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+  .nav-trigger { overflow: hidden; } /* at large text a long label truncates instead of widening the bar */
+  .nav-trigger-label { max-width: 100%; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .nav-trigger[aria-current] { color: var(--lime); }
   .nav-trigger[aria-current]::after { left: 26%; right: 26%; top: 0; bottom: auto; height: 3px; }
   /* current = lime text and the bar on top; expanded = a fill only (a theme token, so it shows on light too) */

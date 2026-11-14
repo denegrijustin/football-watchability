@@ -28,13 +28,17 @@ test("the small card is laid out like the NHL's: one top row with the channel an
   await expect(card.locator(".rank-line, .booth")).toHaveCount(0);
 });
 
-test("before kickoff the small card shows the line, the projected score and a win-probability bar instead of an empty momentum plot", async ({ page }) => {
+test("before kickoff the small card shows the betting line only; the projection and win probability are in Details and the Game Center", async ({ page }) => {
   await page.goto("/?league=NFL");
   const card = page.locator(".game-card.compact").first();
-  await expect(card.locator(".cl")).toBeVisible();
   await expect(card.locator(".cl-chip").first()).toContainText(/O\/U|PK|\+|-/);
-  await expect(card.locator(".cl-bar")).toHaveAttribute("aria-label", /Win probability: .* favored/);
+  await expect(card.locator(".cl-bar")).toHaveCount(0); // probability models are Level 3
+  await expect(card.locator(".cl-chip", { hasText: /–/ })).toHaveCount(0); // and so is the projected score
   await expect(card.locator(".momentum-flow")).toHaveCount(0);
+  await card.locator(".cc-gc").click();
+  const gc = page.locator("dialog.gc");
+  await expect(gc.getByRole("tabpanel")).toContainText("Projection");
+  await expect(gc.getByRole("tabpanel")).toContainText(/Win probability/i);
 });
 
 test("the Game Center is a scoreboard with tabs; only the open tab is drawn, and the arrow keys move between them", async ({ page }) => {
