@@ -7,6 +7,7 @@ import { ChipImg } from "../logoTone";
 import { lazyView } from "../lazyView";
 import { ResumeRow, useResumes } from "./ResumesTab";
 import { InjuriesTab } from "./InjuriesTab";
+import { TeamSchedule } from "./TeamSchedule";
 import { Skeleton } from "./Skeleton";
 import "../resume.css";
 import "../teams.css";
@@ -14,12 +15,12 @@ import "../teams.css";
 const SpPlusTab = lazyView(() => import("../spplus/SpPlusTab"), "SpPlusTab");
 const NflTab = lazyView(() => import("../nfl/NflTab"), "NflTab");
 
-type Section = "games" | "resume" | "ratings" | "injuries";
+type Section = "games" | "schedule" | "resume" | "ratings" | "injuries";
 const SECTIONS: { id: Section; label: string }[] = [
   { id: "games", label: "Upcoming games" },
-  { id: "resume", label: "Resumé" },
-  { id: "ratings", label: "Ratings & performance" },
-  { id: "injuries", label: "Injuries" },
+  { id: "schedule", label: "Full Schedule" },
+  { id: "resume", label: "Résumé" },
+  { id: "ratings", label: "Ratings" },
 ];
 
 /**
@@ -81,7 +82,7 @@ function TeamPage({ team }: { team: TeamRef }) {
       <p className="tm-links" aria-label="Related sections">
         <span aria-hidden="true">Related</span>
         {(["standings", "resumes", lg === "NFL" ? "nfl" : "spplus", "injuries"] as const).map((v) => (
-          <button key={v} type="button" onClick={() => window.dispatchEvent(new CustomEvent("fbwatch:open-view", { detail: v }))}>
+          <button key={v} type="button" onClick={() => (v === "injuries" ? setSection("injuries") : window.dispatchEvent(new CustomEvent("fbwatch:open-view", { detail: v })))}>
             {v === "standings" ? "Standings" : v === "resumes" ? "Resumés" : v === "injuries" ? "Injury report" : lg === "NFL" ? "NFL+ rankings" : "SP+ rankings"}
           </button>
         ))}
@@ -90,6 +91,7 @@ function TeamPage({ team }: { team: TeamRef }) {
         {SECTIONS.map((s) => <button key={s.id} type="button" aria-pressed={section === s.id} onClick={() => setSection(s.id)}>{s.label}</button>)}
       </div>
       {section === "games" && <TeamGames lg={lg} names={names} />}
+      {section === "schedule" && <TeamSchedule lg={lg} name={row?.name ?? team.name} abbr={lg === "NFL" ? (team.abbr ?? row?.ref.abbr) : undefined} />}
       {section === "resume" && (error ? <p role="alert" className="rs-none">The resumé could not load.</p> : !data ? <Skeleton rows={3} /> : row ? <ol className="rs-list"><ResumeRow r={row} logoOf={logoOf} /></ol> : <p className="rs-none">No resumé for {team.name} yet.</p>)}
       {section === "ratings" && <Suspense fallback={<Skeleton rows={4} />}>{lg === "NFL" ? <NflTab /> : <SpPlusTab />}</Suspense>}
       {section === "injuries" && <InjuriesTab defaultLeague={lg} only={{ league: lg, names }} />}
@@ -103,7 +105,7 @@ function TeamGames({ lg, names }: { lg: "CFB" | "NFL"; names: string[] }) {
   const mine = slate.games
     .filter((g) => g.league === lg && g.teams.some((t) => names.includes(t.name) || (!!t.abbr && names.includes(t.abbr))))
     .sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
-  if (!mine.length) return <p className="rs-none">No games on this week’s board. See the schedule in Resumé.</p>;
+  if (!mine.length) return <p className="rs-none">No games on this week’s board. See the Full Schedule.</p>;
   return (
     <ul className="tm-games">
       {mine.map((g) => {
