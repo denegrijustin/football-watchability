@@ -1,29 +1,32 @@
 import type { Ranks } from "../rankLine";
 import logoData from "./logos.json";
 import networkData from "./networks.json";
-import { fetchData } from "./load";
+import { fetchData, DataError } from "./load";
+import { recordDiag } from "../boot";
+import { setOptional, type OptionalName } from "./optional";
 import { dayOf } from "../tz";
-// The slate and the results are fetched before the app starts (see ./load), not bundled with the scripts.
-const [slateData, broadcastChecks, resultsData] = await Promise.all([
-  fetchData<typeof import("./slate.json")>("slate"),
-  fetchData<unknown>("broadcast-checks"),
-  fetchData<typeof import("./results.json")>("results"),
-]);
+// Only the week's slate is needed to draw the board, so it is awaited here (the page's startup has already asked for it and is holding the answer).
+// Past results and the independent TV checks are optional: they are fetched on their own below and fill in, or fail, without holding anything up.
+const slateData = await fetchData<typeof import("./slate.json")>("slate");
 export type Game = (typeof import("./slate.json"))["games"][number];
 export type Team = Game["teams"][number];
 export type League = "NFL" | "CFB";
 export type Tier = "elite" | "vgood" | "good" | "watch" | "bg";
 type BroadcastCheck = { date: string; broadcast: string; network: string | null; checkedAt: string; source: string };
-const checks = broadcastChecks as Record<string, BroadcastCheck>;
-export const slate = {
-  ...slateData,
-  broadcastNote: "TV/streaming uses ESPN listings, with missing or pending channels checked against FOX and CBS Sports. Final channel selections can remain pending; local NFL availability varies.",
-  games: slateData.games.map(game => {
+let checks: Record<string, BroadcastCheck> = {};
+/** The slate's own channel listings, replaced by an independent TV check only when one is fresh, for the same day, and the listing was still pending. */
+const withChecks = (games: Game[]): Game[] =>
+  games.map((game) => {
     const checked = checks[game.espnId];
     const date = new Date(game.date).toLocaleDateString("en-CA", { timeZone: "America/New_York" });
     if (!checked || checked.date !== date || !Number.isFinite(Date.parse(checked.checkedAt)) || Date.now() - Date.parse(checked.checkedAt) > 7 * 864e5 || !/\b(TBA|TBD|pending)\b|\sor\s/i.test(game.broadcast)) return game;
     return { ...game, broadcast: checked.broadcast, network: checked.network } as Game;
-  }),
+  });
+const slateGames = slateData.games as Game[];
+export const slate = {
+  ...slateData,
+  broadcastNote: "TV/streaming uses ESPN listings, with missing or pending channels checked against FOX and CBS Sports. Final channel selections can remain pending; local NFL availability varies.",
+  games: withChecks(slateGames),
 };
 /** Logo URLs carry a stamp of the logo set, so they can be cached for a year and still update when one changes. */
 export const logos: Record<string, string> = Object.fromEntries(
@@ -159,10 +162,43 @@ export type Result = {
   wp: [number, number | null][];
 };
 import { inConference } from "../teamConf";
-export const results = resultsData.games as unknown as Result[];
+/** Finished games, filled in when results.json arrives (an empty list until then, or for good if it never does: see useOptionalData). */
+export const results: Result[] = [];
+export const archivedIds = new Set<string>();
+/** Whether a game is one the app can open from its own data (this week's slate, or the archive). */
+export const isKnownGame = (id: string) => archivedIds.has(id) || slateGames.some((g) => g.espnId === id);
 
 /** Weeks with results, newest first. */
-export const resultWeeks = [...new Set(results.map((r) => r.week))];
+export const resultWeeks: string[] = [];
+
+function applyResults(j: { games: unknown[] }) {
+  results.length = 0;
+  results.push(...(j.games as Result[]));
+  archivedIds.clear();
+  for (const r of results) archivedIds.add(r.espnId);
+  resultWeeks.length = 0;
+  resultWeeks.push(...new Set(results.map((r) => r.week)));
+}
+function applyBroadcast(j: unknown) {
+  checks = j as Record<string, BroadcastCheck>;
+  slate.games.splice(0, slate.games.length, ...withChecks(slateGames));
+}
+const failed = (name: OptionalName, e: unknown) => {
+  recordDiag(`optional:${name}`, e);
+  setOptional(name, "failed", e instanceof DataError ? e.kind : "unknown");
+};
+/** (Re)loads past results. A failure is recorded and shown only where results are asked for; the current board is untouched. */
+export function loadResults(): Promise<void> {
+  setOptional("results", "loading");
+  return fetchData<{ games: unknown[] }>("results").then((j) => { applyResults(j); setOptional("results", "ready"); }, (e) => failed("results", e));
+}
+/** (Re)loads the independent TV checks. Without them the slate's own channel listings stand, exactly as listed. */
+export function loadBroadcast(): Promise<void> {
+  setOptional("broadcast", "loading");
+  return fetchData<unknown>("broadcast-checks").then((j) => { applyBroadcast(j); setOptional("broadcast", "ready"); }, (e) => failed("broadcast", e));
+}
+void loadResults();
+void loadBroadcast();
 
 export function filterResults({
   league,

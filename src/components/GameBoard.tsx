@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { filterGames, filterResults, results, slate, type FilterState, type Result } from "../data";
+import { archivedIds, filterGames, filterResults, slate, type FilterState, type Result } from "../data";
 import { gameStatus, useLiveMap, useNow } from "../live";
 import { timeOf, tzAbbr, useTz } from "../tz";
 import { compareDone, type DoneSort } from "../completedSort";
@@ -13,6 +13,10 @@ import { ResultCard } from "./ResultCard";
 import { LinesBar } from "./LinesBar";
 import { WatchNow } from "./WatchNow";
 import { BoardSort, type BoardSortKey } from "./BoardSort";
+import { StateNotice } from "./StateNotice";
+import { fault } from "../fault";
+import { loadResults } from "../data";
+import { useOptionalData } from "../data/optional";
 import { useFlip } from "../motion";
 import { liveHeat } from "../watchNow";
 import { observeScores, useTouchdowns } from "../touchdown";
@@ -20,7 +24,6 @@ import { observeScores, useTouchdowns } from "../touchdown";
 type Game = ReturnType<typeof filterGames>[number];
 const refOf = (r: Result) => ({ id: r.espnId, league: r.league, teams: r.teams });
 const avg = (xs: number[]) => Math.round(xs.reduce((a, b) => a + b, 0) / (xs.length || 1));
-const archived = new Set(results.map((r) => r.espnId));
 /** Completed games shown under "All" before a "Show all" button, so Upcoming isn't buried. */
 const COMPLETED_PREVIEW = 12;
 
@@ -47,7 +50,7 @@ export type Board = {
 export function useBoard(filters: FilterState): Board {
   const map = useLiveMap();
   const now = useNow();
-  const games = filterGames(filters).filter((g) => !archived.has(g.espnId));
+  const games = filterGames(filters).filter((g) => !archivedIds.has(g.espnId));
   const by = (s: "live" | "final" | "upcoming") =>
     games.filter((g) => gameStatus((g as { date?: string }).date ?? "", map[g.espnId], now) === s);
   const closingMap = useClosingUpsets();
@@ -128,6 +131,8 @@ export function GameBoard({
   filtered: boolean;
   onReset: () => void;
 }) {
+  fault("board");
+  const optional = useOptionalData();
   const liveNow = useLiveMap();
   useEffect(() => observeScores(liveNow), [liveNow]);
   const scored = useTouchdowns();
@@ -157,6 +162,16 @@ export function GameBoard({
   const sortHere: "live" | "upcoming" | null = !onSort || board.live.length + upcoming.length < 2 ? null : showLive ? "live" : showUpcoming ? "upcoming" : null;
 
   if (!showClosing && !showLive && !showFinal && !showUpcoming) {
+    // Asking for completed games while past results are missing is not "no games": say so, and offer to try again.
+    if ((status === "final" || status === "all") && optional.results.status !== "ready" && !filtered) {
+      return optional.results.status === "failed" ? (
+        <StateNotice kind="failed" title="Past results are unavailable right now." actions={<button type="button" className="primary" onClick={() => void loadResults()}>Retry</button>}>
+          Current games are still shown under All, Live and Upcoming.
+        </StateNotice>
+      ) : (
+        <StateNotice kind="loading" title="Loading past results…" />
+      );
+    }
     const label = { all: "games", live: "games in progress", final: "completed games", upcoming: "upcoming games" }[status];
     return (
       <div className="empty-state">
