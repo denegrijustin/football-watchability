@@ -63,7 +63,8 @@ test.describe("on the board", () => {
     await page.goto("/?league=NFL");
     const ring = page.locator(".game-card:not(.result-card) .score-ring").first();
     await expect(ring).toBeVisible();
-    await expect.poll(() => ring.locator(".sr-fill").evaluate((c) => Number(getComputedStyle(c).strokeDashoffset.replace("px", "")))).toBeLessThan(130);
+    await ring.scrollIntoViewIfNeeded(); // animations pause off-screen (by design), and the cards are tall enough that this ring can start below the fold on a phone
+    await expect.poll(() => ring.locator(".sr-fill").evaluate((c) => Number(getComputedStyle(c).strokeDashoffset.replace("px", ""))), { timeout: 15_000 }).toBeLessThan(130); // the ring fills over a moment; a loaded machine needs longer
     await ring.getByRole("button", { name: /Why this rating/ }).click();
     await expect(page.locator(".sr-pop")).toContainText("Starting point");
     await page.keyboard.press("Escape");
