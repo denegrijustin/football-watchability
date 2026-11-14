@@ -6,10 +6,12 @@ import { LiveFreshness } from "./live";
 import { PrimaryNav } from "./nav/PrimaryNav";
 import { pushNav, readNav, useViewHistory } from "./nav/useViewHistory";
 import { useOpenGame } from "./components/GameCenterContext";
-import { dayName, results, slate, tiers, type FilterState, type League, type View } from "./data";
+import { dayName, loadResults, results, slate, tiers, type FilterState, type League, type View } from "./data";
 import { Filters } from "./components/Filters";
 import { GameBoard, useBoard } from "./components/GameBoard";
 import { FeatureIntro } from "./components/FeatureIntro";
+import { StateNotice } from "./components/StateNotice";
+import { useOptionalData } from "./data/optional";
 import type { BoardSortKey } from "./components/BoardSort";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { ScoreTicker } from "./components/ScoreTicker";
@@ -46,6 +48,7 @@ const initial: FilterState = {
 
 export default function App() {
   const tz = useTz();
+  const optional = useOptionalData();
   const outdated = useUpdateCheck();
   const [filters, setFilters] = useState<FilterState>(() => ({ ...initial, status: readNav().status }));
   const [view, setView] = useState<View>(() => {
@@ -255,6 +258,11 @@ export default function App() {
             />
           </div>
           <div key={view} className="view-in">
+          {optional.results.status === "failed" && (
+            <StateNotice kind="degraded" compact title="Past results could not be loaded." actions={<button type="button" onClick={() => void loadResults()}>Retry</button>}>
+              Current games are unaffected; completed games and history will appear once they load.
+            </StateNotice>
+          )}
           {view !== "board" ? (
             <>
             <FeatureIntro view={view} context={view === "spplus" || view === "nfl" ? undefined : league === "CFB" ? "College" : "NFL"} onView={showBoard} />
@@ -311,14 +319,16 @@ export default function App() {
             )}
           </div>
           <FinalScores tiles={finalTiles} open={fsOpen} />
-          <GameBoard
-            board={board}
-            sort={boardSort}
-            onSort={setBoardSort}
-            status={filters.status}
-            filtered={filtered}
-            onReset={() => setFilters({ ...initial, league })}
-          />
+          <ErrorBoundary region="board" title="The game board could not load.">
+            <GameBoard
+              board={board}
+              sort={boardSort}
+              onSort={setBoardSort}
+              status={filters.status}
+              filtered={filtered}
+              onReset={() => setFilters({ ...initial, league })}
+            />
+          </ErrorBoundary>
             </>
           )}
           </div>
