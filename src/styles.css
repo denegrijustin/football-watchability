@@ -1898,9 +1898,8 @@ footer details[open] summary::before {
 }
 
 /* ---------- Home-team card color ---------- */
-/* --team-bg is the home team's dark color, deepened at build time so text
-   keeps at least 4.5:1 contrast. Inner surfaces become translucent layers so
-   they sit on the team color instead of the default slate. */
+/* --team-bg is the home team's dark color, deepened at build time so text keeps at least 4.5:1 contrast. Inner surfaces become translucent layers so
+   they sit on the team color; ui2.css adds the glow edge and the card layout. */
 .game-card.team-tinted {
   --surface: var(--team-bg);
   --surface-2: rgb(255 255 255 / 6%);
@@ -2956,12 +2955,12 @@ details.proj summary strong {
 .gc-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-  padding: 16px 20px 0;
+  gap: 12px;
+  padding: 14px 18px 0;
 }
 .gc-panel {
   min-width: 0;
-  padding: 14px 16px;
+  padding: 12px 14px;
   border: 1px solid var(--line);
   border-radius: 14px;
   background: var(--surface);
@@ -4471,8 +4470,9 @@ p.booth {
 }
 .section-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 6px 10px;
   margin: 0 0 14px;
   padding-bottom: 8px;
   border-bottom: 1px solid var(--line);

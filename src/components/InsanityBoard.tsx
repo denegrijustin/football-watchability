@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
-import { logos, results, slate, teamColor } from "../data";
+import { archivedIds, isKnownGame, logos, slate, teamColor } from "../data";
 import { NFL_CONFERENCES, inConference } from "../teamConf";
 import { fetchData, refetchData } from "../data/load";
 import { latestFlow, useLiveMap } from "../live";
@@ -21,7 +21,6 @@ const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? "" : "s"}`;
 const PAGE = 12;
 /** How often the board refreshes while a game is on. */
 export const LIVE_REFRESH_MS = 60_000;
-const known = new Set([...slate.games.map((g) => g.espnId), ...results.map((r) => r.espnId)]);
 
 export function facts(g: LedgerGame) {
   return [
@@ -41,7 +40,6 @@ const teamsOf = (g: LedgerGame) => {
   return [{ ...g.away, name: a }, { ...g.home, name: h }];
 };
 const refOf = (g: LedgerGame) => ({ id: g.id, league: g.league, teams: teamsOf(g) });
-const archived = new Set(results.map((r) => r.espnId));
 
 /**
  * The games in progress, scored on the same scale as finished ones from their live win-probability line, and refreshed every 60
@@ -57,7 +55,7 @@ function useLiveInsanity(onLedger: (games: LedgerGame[]) => void, have: Set<stri
   const onGoing = useMemo(() => slate.games.filter((g) => g.espnId && live[g.espnId]?.state === "in"), [live]);
   // Games that ended since the last rebuild are not in the ledger yet: they are scored from their final win-probability line.
   const justEnded = useMemo(
-    () => (have ? slate.games.filter((g) => g.espnId && live[g.espnId]?.state === "post" && !have.has(g.espnId) && !archived.has(g.espnId)) : []),
+    () => (have ? slate.games.filter((g) => g.espnId && live[g.espnId]?.state === "post" && !have.has(g.espnId) && !archivedIds.has(g.espnId)) : []),
     [live, have],
   );
   const tracked = useMemo(() => [...onGoing, ...justEnded], [onGoing, justEnded]);
@@ -270,14 +268,14 @@ export function InsanityBoard({ defaultLeague }: { defaultLeague: "NFL" | "CFB" 
             <h3 className="micro-label ib-live-head">Live now · rescored every 60 seconds</h3>
             <ol className="ib-cards ib-live-cards">
               {liveRows.map((g) => (
-                <InsanityCard key={g.id} g={g} rank={rankOf.get(g.id) ?? 0} live={(g as LiveLedgerGame).clock} showWeek={scope === "season"} onOpen={() => (known.has(g.id) ? openGame(g.id) : openGame(g.id, stubOf(g)))} />
+                <InsanityCard key={g.id} g={g} rank={rankOf.get(g.id) ?? 0} live={(g as LiveLedgerGame).clock} showWeek={scope === "season"} onOpen={() => (isKnownGame(g.id) ? openGame(g.id) : openGame(g.id, stubOf(g)))} />
               ))}
             </ol>
           </>
         )}
         <ol className="ib-cards">
           {finished.slice(0, shown).map((g, i) => (
-            <InsanityCard key={g.id} g={g} rank={rankOf.get(g.id) ?? i + 1} fresh={isFreshRow(g)} showWeek={scope === "season"} onOpen={() => (known.has(g.id) ? openGame(g.id) : openGame(g.id, stubOf(g)))} />
+            <InsanityCard key={g.id} g={g} rank={rankOf.get(g.id) ?? i + 1} fresh={isFreshRow(g)} showWeek={scope === "season"} onOpen={() => (isKnownGame(g.id) ? openGame(g.id) : openGame(g.id, stubOf(g)))} />
           ))}
         </ol>
         </>
@@ -311,7 +309,7 @@ export function InsanityBoard({ defaultLeague }: { defaultLeague: "NFL" | "CFB" 
             <>
               <ol className="ibs-list" aria-label="All games this season, highest insanity first">
                 {seasonAll.slice(0, shownAll).map((g, i) => (
-                  <SeasonRow key={g.id} g={g} rank={i + 1} onOpen={() => (known.has(g.id) ? openGame(g.id) : openGame(g.id, stubOf(g)))} />
+                  <SeasonRow key={g.id} g={g} rank={i + 1} onOpen={() => (isKnownGame(g.id) ? openGame(g.id) : openGame(g.id, stubOf(g)))} />
                 ))}
               </ol>
               {seasonAll.length > shownAll && (

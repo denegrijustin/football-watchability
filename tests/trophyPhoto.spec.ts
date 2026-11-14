@@ -32,9 +32,10 @@ test("a trophy game with a photograph shows the photo on its card, and the credi
   expect(await photo.getAttribute("src")).toBe(photos[key].src);
   await photo.scrollIntoViewIfNeeded();
   await expect.poll(() => photo.evaluate((i: HTMLImageElement) => i.complete && i.naturalWidth > 0), { message: "the photo loads" }).toBe(true);
-  // The photo does not make its card taller than the others, or crowd its content out.
+  // The photo does not make its card run past the height cards keep, or crowd its content out.
   const card = page.locator(".game-card.compact", { has: page.locator("img.trophy-photo") }).first();
-  expect(Math.round((await card.boundingBox())!.height)).toBe(Math.round((await page.locator(".game-card.compact").nth(1).boundingBox())!.height));
+  // (cards hold their own content now, so heights differ; the photo must not push this one past the bound every card keeps)
+  expect(Math.round((await card.boundingBox())!.height)).toBeLessThan(520);
   expect(await card.evaluate((e) => (e.querySelector(".compact-overview") as HTMLElement).scrollHeight <= (e as HTMLElement).clientHeight + 1)).toBe(true);
   await page.locator("footer details", { hasText: "About this slate" }).first().evaluate((d) => ((d as HTMLDetailsElement).open = true));
   await expect(page.locator(".trophy-credits")).toContainText(photos[key].author);

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { fetchData } from "../data/load";
-import { logos, results, slate, type League } from "../data";
+import { isKnownGame, logos, results, slate, type League } from "../data";
 import { plusRankFor, usePlusRanks, type TeamRef } from "../plusRanks";
 import { confOf } from "../teamConf";
 
@@ -15,7 +15,6 @@ import "../upsetMeter.css";
 
 type Show = "all" | "live" | "upcoming" | "final" | "upsets";
 const refOf = (r: MeterRow) => ({ id: r.espnId, league: r.league, teams: r.teams, ranks: r.teams.map((t) => t.rank) });
-const known = new Set([...slate.games.map((g) => g.espnId), ...results.map((r) => r.espnId)]);
 
 function Logo({ team }: { team: MeterTeam }) {
   const src = logos[team.logoId];
@@ -136,7 +135,7 @@ export function UpsetMeter({ defaultLeague }: { defaultLeague: League }) {
   const inPlay = closestToFinal(shownRows.filter((r) => r.status === "live"), (r) => r);
   const open = (r: MeterRow) => {
     if (!r.espnId) return;
-    if (known.has(r.espnId)) return openGame(r.espnId);
+    if (isKnownGame(r.espnId)) return openGame(r.espnId);
     const stub: GameStub = { league: r.league, date: r.date, matchup: `${r.teams[0].abbr} @ ${r.teams[1].abbr}`, teams: r.teams.map((t, i) => ({ name: t.name, abbr: t.abbr, logoId: t.logoId, color: t.color, score: r.score?.[i] ?? 0 })) };
     openGame(r.espnId, stub);
   };

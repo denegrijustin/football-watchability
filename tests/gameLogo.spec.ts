@@ -50,7 +50,7 @@ test("at halftime the game's logo is painted at midfield and tops the card", asy
   await expect(card.locator(".game-badge img")).toHaveAttribute("src", "/game-logos/red-river-rivalry.webp");
 });
 
-test("if the Game Center's file is gone (site updated under an open page), the page survives and says so", async ({ page }) => {
+test("if the Game Center's file is gone (site updated under an open page), the page survives, says so and offers Retry", async ({ page }) => {
 
   test.skip(!hasCfbGame(), NO_CFB);
   // Chunk names are plain hashes, so the Game Center's file is recognised by what is in it.
@@ -60,8 +60,15 @@ test("if the Game Center's file is gone (site updated under an open page), the p
     return r.fulfill({ response: res });
   });
   await page.goto("/?league=CFB");
-  await page.evaluate(() => sessionStorage.setItem("fbwatch-gc-reload", "1")); // the one automatic reload was already used
-  await page.locator(".cc-gc").first().click();
-  await expect(page.locator(".gc-failed")).toContainText("could not load");
+  let reloaded = false;
+  page.on("load", () => { reloaded = true; });
   await expect(page.locator(".game-card").first()).toBeVisible();
+  reloaded = false;
+  await page.locator(".cc-gc").first().click();
+  // a visible failure with Retry and Close; the board behind it stays, and the page does not reload itself
+  const failed = page.locator("dialog.gc").getByRole("alert").filter({ hasText: "The Game Center could not load." });
+  await expect(failed).toBeVisible({ timeout: 15000 });
+  await expect(failed.getByRole("button", { name: "Retry" })).toBeVisible();
+  await expect(page.locator(".game-card").first()).toBeVisible();
+  expect(reloaded).toBe(false);
 });
