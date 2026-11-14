@@ -266,6 +266,7 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
     <dialog
       ref={ref}
       className="gc"
+      style={{ "--team-bg": teamColor(home?.color ?? null) ?? "#1d2a35", "--away-bg": teamColor(away?.color ?? null) ?? "#1d2a35" } as CSSProperties}
       aria-label={up?.matchup ?? fin?.matchup ?? old?.matchup ?? "Game Center"}
       onClose={onClose}
       onClick={(e) => e.target === e.currentTarget && onClose()}
