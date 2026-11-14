@@ -1,12 +1,11 @@
 import { Suspense, useDeferredValue, useEffect, useState, useSyncExternalStore } from "react";
-import { slate, type League } from "../data";
-import { useOpenGame } from "./GameCenterContext";
-import { dayOf, timeOf, tzAbbr } from "../tz";
+import type { League } from "../data";
 import { hubTeam, openTeam, pointRatingsAt, setHubTeam, subscribeHub, type TeamRef } from "../openTeam";
 import { ChipImg } from "../logoTone";
 import { lazyView } from "../lazyView";
 import { ResumeRow, useResumes } from "./ResumesTab";
 import { InjuriesTab } from "./InjuriesTab";
+import { TeamSchedule } from "./TeamSchedule";
 import { Skeleton } from "./Skeleton";
 import "../resume.css";
 import "../teams.css";
@@ -14,16 +13,15 @@ import "../teams.css";
 const SpPlusTab = lazyView(() => import("../spplus/SpPlusTab"), "SpPlusTab");
 const NflTab = lazyView(() => import("../nfl/NflTab"), "NflTab");
 
-type Section = "games" | "resume" | "ratings" | "injuries";
+type Section = "schedule" | "resume" | "ratings" | "injuries";
 const SECTIONS: { id: Section; label: string }[] = [
-  { id: "games", label: "Upcoming games" },
-  { id: "resume", label: "Resumé" },
-  { id: "ratings", label: "Ratings & performance" },
-  { id: "injuries", label: "Injuries" },
+  { id: "schedule", label: "Full Schedule" },
+  { id: "resume", label: "Résumé" },
+  { id: "ratings", label: "Ratings" },
 ];
 
 /**
- * One page per team. Every team name or logo in the app opens it: the resumé (best wins, losses, schedule strength), the ratings and the eight
+ * One page per team. Every team name or logo in the app opens it: the full schedule, the resumé (best wins, losses, schedule strength), the ratings and the eight
  * performance views (the NFL+ and SP+ team views), and the team's injuries. With no team chosen it is the list of every team to pick from.
  */
 export function TeamsTab({ defaultLeague }: { defaultLeague: League }) {
@@ -66,7 +64,7 @@ function TeamList({ lg, setLg }: { lg: "CFB" | "NFL"; setLg: (l: "CFB" | "NFL") 
 
 function TeamPage({ team }: { team: TeamRef }) {
   const lg = team.league === "NFL" ? "NFL" : "CFB";
-  const [section, setSection] = useState<Section>("games");
+  const [section, setSection] = useState<Section>("schedule");
   const { data, error, rows, logoOf } = useResumes(lg);
   const row = rows.find((r) => (lg === "NFL" ? (r.ref.abbr === team.abbr || r.name === team.name) : r.name === team.name || r.key === team.id));
   useEffect(() => { if (section === "ratings") pointRatingsAt(team); }, [section, team]);
@@ -81,7 +79,7 @@ function TeamPage({ team }: { team: TeamRef }) {
       <p className="tm-links" aria-label="Related sections">
         <span aria-hidden="true">Related</span>
         {(["standings", "resumes", lg === "NFL" ? "nfl" : "spplus", "injuries"] as const).map((v) => (
-          <button key={v} type="button" onClick={() => window.dispatchEvent(new CustomEvent("fbwatch:open-view", { detail: v }))}>
+          <button key={v} type="button" onClick={() => (v === "injuries" ? setSection("injuries") : window.dispatchEvent(new CustomEvent("fbwatch:open-view", { detail: v })))}>
             {v === "standings" ? "Standings" : v === "resumes" ? "Resumés" : v === "injuries" ? "Injury report" : lg === "NFL" ? "NFL+ rankings" : "SP+ rankings"}
           </button>
         ))}
@@ -89,36 +87,10 @@ function TeamPage({ team }: { team: TeamRef }) {
       <div className="tm-sections segmented" role="group" aria-label="Team page sections">
         {SECTIONS.map((s) => <button key={s.id} type="button" aria-pressed={section === s.id} onClick={() => setSection(s.id)}>{s.label}</button>)}
       </div>
-      {section === "games" && <TeamGames lg={lg} names={names} />}
+      {section === "schedule" && <TeamSchedule lg={lg} name={row?.name ?? team.name} abbr={lg === "NFL" ? (team.abbr ?? row?.ref.abbr) : undefined} />}
       {section === "resume" && (error ? <p role="alert" className="rs-none">The resumé could not load.</p> : !data ? <Skeleton rows={3} /> : row ? <ol className="rs-list"><ResumeRow r={row} logoOf={logoOf} /></ol> : <p className="rs-none">No resumé for {team.name} yet.</p>)}
       {section === "ratings" && <Suspense fallback={<Skeleton rows={4} />}>{lg === "NFL" ? <NflTab /> : <SpPlusTab />}</Suspense>}
       {section === "injuries" && <InjuriesTab defaultLeague={lg} only={{ league: lg, names }} />}
     </section>
-  );
-}
-
-/** The team's games still on the board (every one the slate holds for the week), soonest first; each opens its Game Center. */
-function TeamGames({ lg, names }: { lg: "CFB" | "NFL"; names: string[] }) {
-  const openGame = useOpenGame();
-  const mine = slate.games
-    .filter((g) => g.league === lg && g.teams.some((t) => names.includes(t.name) || (!!t.abbr && names.includes(t.abbr))))
-    .sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
-  if (!mine.length) return <p className="rs-none">No games on this week’s board. See the schedule in Resumé.</p>;
-  return (
-    <ul className="tm-games">
-      {mine.map((g) => {
-        const home = names.includes(g.teams[1].name) || (!!g.teams[1].abbr && names.includes(g.teams[1].abbr as string));
-        const opp = g.teams[home ? 0 : 1];
-        return (
-          <li key={g.id}>
-            <span className="tm-g-when">{dayOf(g.date)} {timeOf(g.date, undefined, true)} {tzAbbr()}</span>
-            <span className="tm-g-opp">{home ? "vs" : "at"} <b>{opp.name}</b></span>
-            {g.broadcast && <span className="tm-g-net">{g.broadcast}</span>}
-            <span className="tm-g-score" title="Watchability">{Math.round(g.score)}</span>
-            {g.espnId && <button type="button" onClick={() => openGame(g.espnId)}>Game Center</button>}
-          </li>
-        );
-      })}
-    </ul>
   );
 }

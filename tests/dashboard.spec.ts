@@ -746,8 +746,15 @@ test("game details open fixed to the screen, keep the page still, and scroll ins
   };
   // Game Center, opened from far down the board.
   await page.locator(".game-card .card-toggle").first().click();
+  // Let the card finish opening (it grows for a moment) before measuring, as a person would.
+  const opened = page.locator(".game-card.expanded").first();
+  let last = -1;
+  await expect.poll(async () => { const h = Math.round((await opened.boundingBox())!.height); const same = h === last; last = h; return same; }, { intervals: [150] }).toBe(true);
   const open = page.locator(".game-card .gc-open").first();
-  await open.scrollIntoViewIfNeeded();
+  await open.evaluate((el) => el.scrollIntoView({ block: "center" })); // centered, so the click below has no scrolling of its own to do
+  // Wait until the page is still, then take its place.
+  let lastY = -1;
+  await expect.poll(async () => { const now = await y(); const same = now === lastY; lastY = now; return same; }, { intervals: [120] }).toBe(true);
   const before = await y();
   await open.click();
   const gc = page.locator("dialog.gc");

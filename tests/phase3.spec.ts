@@ -79,18 +79,19 @@ test("standings: find a team, order a stat column with a visible direction, and 
   await expect(page.locator(".ol-note")).toContainText("No");
 });
 
-test("a team page opens on its upcoming games, links to related sections, and a game opens its Game Center @phase3", async ({ page }) => {
+test("a team page opens on its schedule, links to related sections, and a game on the board opens its Game Center @phase3", async ({ page }) => {
+  const { readFileSync } = await import("node:fs");
+  const slate = JSON.parse(readFileSync("src/data/slate.json", "utf8"));
+  const onBoard = slate.games.find((g: { league: string }) => g.league === "NFL");
   await page.route("**/api/scores**", (r) => r.fulfill({ json: [] }));
+  await page.route("**/api/team-schedule**", (r) => r.fulfill({ json: { team: { id: "1", name: "Team", abbr: "TM" }, games: [{ id: onBoard.espnId, date: onBoard.date, week: 1, venue: "vs", opp: { id: "2", name: "Opponent", full: "Opponent U", abbr: "OPP", logo: null, rank: null }, done: false, live: false, result: null, pts: null, oppPts: null, timeValid: true, network: "FOX", detail: null }] } }));
   await page.goto("/?view=standings&league=NFL");
   await page.locator(".sd-table tbody th b a, .sd-table tbody th b button").first().click();
   await expect(page.locator(".tm-head h2")).toBeVisible();
   await expect(page.locator(".tm-links button", { hasText: "Standings" })).toBeVisible();
-  await expect(page.locator(".tm-sections button[aria-pressed=true]")).toHaveText("Upcoming games");
-  const go = page.locator(".tm-games li button", { hasText: "Game Center" }).first();
-  if (await go.count()) {
-    await go.click();
-    await expect(page.locator("dialog.gc[open]")).toBeVisible();
-  } else await expect(page.locator(".rs-none")).toBeVisible();
+  await expect(page.locator(".tm-sections button[aria-pressed=true]")).toHaveText("Full Schedule");
+  await page.locator(".ts-gc").first().click();
+  await expect(page.locator("dialog.gc[open]")).toBeVisible();
 });
 
 test("the board's Completed holds this week's finals only; earlier weeks wait behind 'Earlier weeks' and are not counted @weekly", async ({ page }) => {

@@ -220,7 +220,8 @@ test.describe("navigation (the real menus)", () => {
     await quiet(page);
     await page.goto("/?league=NFL");
     await page.locator('[data-status-chip="upcoming"]').click();
-    const target = card(page);
+    const id = await card(page).getAttribute("data-game-id");
+    const target = page.locator(`.game-card[data-game-id="${id}"]`); // this card, even if the board reorders while the Game Center is open
     await target.focus();
     await target.click({ position: { x: 20, y: 20 } });
     await expect(dialog(page)).toHaveCount(1);

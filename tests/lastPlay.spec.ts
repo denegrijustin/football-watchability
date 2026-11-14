@@ -110,7 +110,7 @@ test("the Game Center shows the last play as play art drawn from the play", asyn
   await expect(lp.locator("figcaption")).toContainText("deep right");
   await page.waitForTimeout(3600);
   await lp.scrollIntoViewIfNeeded();
-  await lp.locator("svg").screenshot({ path: process.env.LP_SHOT ?? "test-results/lastplay.png" });
+  await lp.locator("svg.lp-svg").screenshot({ path: process.env.LP_SHOT ?? "test-results/lastplay.png" });
   await lp.getByRole("button", { name: "Replay the last play" }).click();
   await expect(lp).toHaveAttribute("data-run", "1");
 });

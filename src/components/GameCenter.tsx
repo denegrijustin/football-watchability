@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 import { ART_COUNT, attributePlays, impact, summarizeEvents, type ImpactEvent, type PlayLog, type PlayerRow } from "../playImpact";
 import { ART_LABEL, PlayArt } from "./PlayArt";
 import { openModal } from "../modal";
+import { altColor } from "../teamAlt";
 import { broadcastExtra, logos, networkLogo, rankLine, results, slate, teamColor, tierLabel, type Ranks } from "../data";
 import { trimGame } from "../gameTrim.js";
 import { rename } from "../data/load";
@@ -266,7 +267,7 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
     <dialog
       ref={ref}
       className="gc"
-      style={{ "--team-bg": teamColor(home?.color ?? null) ?? "#1d2a35", "--away-bg": teamColor(away?.color ?? null) ?? "#1d2a35" } as CSSProperties}
+      style={{ "--team-bg": teamColor(home?.color ?? null) ?? "#1d2a35", "--away-bg": teamColor(away?.color ?? null) ?? "#1d2a35", ...(altColor(home?.logoId) ? { "--team-alt": altColor(home?.logoId) } : {}), ...(altColor(away?.logoId) ? { "--away-alt": altColor(away?.logoId) } : {}) } as CSSProperties}
       aria-label={up?.matchup ?? fin?.matchup ?? old?.matchup ?? "Game Center"}
       onClose={onClose}
       onClick={(e) => e.target === e.currentTarget && onClose()}
@@ -275,8 +276,10 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
         <>
         <span className="gc-grabber" aria-hidden="true" />
         <button className="gc-close" onClick={onClose} aria-label="Close Game Center">
-          ×
+          <span className="gc-x" aria-hidden="true">×</span>
+          <span className="gc-back" aria-hidden="true">‹</span>
         </button>
+        <div className="gc-bar" aria-hidden="true">Game Center</div>
         <div className="gc-body">
           {pregame && (pregame.league === "NFL"
             ? <PregameCheer pregame={pregame} badge={badge} weather={(up as { weather?: WeatherLike } | undefined)?.weather} espnId={espnId} away={{ ...away, logoId: away.logoId, conf: away.ranks?.confName }} home={{ ...home, logoId: home.logoId, conf: home.ranks?.confName }} />
