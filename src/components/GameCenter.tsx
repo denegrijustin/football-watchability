@@ -31,6 +31,7 @@ import { RivalryBadge, type Rivalry } from "./RivalryBadge";
 import { gameBadge } from "../gameLogo";
 import { isHalftime } from "../halftimeLogic";
 import { GameFlowPanel } from "./GameFlowPanel";
+import { TakeawaysPanel, TeamStatsPanel, TiltPanel } from "./TeamStatsPanels";
 import { ResultAnalysis } from "./ResultAnalysis";
 import { WeatherLook } from "./WeatherLook";
 import { Stakes } from "./TeamImpact";
@@ -134,10 +135,6 @@ export function positionOf(p: PlayerRow) {
 // ---------- helpers ----------
 type GcTab = "overview" | "stats" | "plays" | "players" | "analysis";
 type TeamLike = { name: string; abbr?: string; logoId: string; color?: string | null; record: string; ranks?: Ranks; advanced?: Advanced };
-const mmss = (t: string) => {
-  const [m, s] = t.split(":").map(Number);
-  return (m || 0) * 60 + (s || 0);
-};
 const pct = (n: number) => `${Math.round(n)}%`;
 
 export default function GameCenter({ espnId, stub, onClose }: { espnId: string | null; stub?: GameStub; onClose: () => void }) {
@@ -157,6 +154,19 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
     if (espnId && !d.open) openModal(d);
     if (!espnId && d.open) d.close();
   }, [espnId]);
+
+  // Escape closes it. The browser handles that itself, but it ignores the key for a dialog that opened without a fresh click (the Game Center opens
+  // behind its loading shell this way), so if the dialog is still open a moment after Escape, close it here.
+  useEffect(() => {
+    const d = ref.current;
+    if (!d || !espnId) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" || e.defaultPrevented) return;
+      window.setTimeout(() => { if (d.open && ref.current === d) onClose(); }, 60);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [espnId, onClose]);
 
   // On a phone the Game Center is a sheet: pulling it down from the top closes it (the way a sheet is dismissed on iOS).
   useEffect(() => {
@@ -217,6 +227,7 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
   const teams = ((up?.teams ?? fin?.teams ?? old?.teams.map((t) => ({ ...t, record: "" })) ?? []) as unknown as TeamLike[]).slice(0, 2);
   const [away, home] = teams;
   const abbr = (t?: TeamLike) => t?.abbr ?? t?.name ?? "";
+  const flowSide = (t: TeamLike) => ({ abbr: t.abbr ?? t.name, name: t.name, logo: logos[t.logoId] });
   const state = game?.status.state ?? (fin || old ? "post" : "pre");
   const pregame = usePregame({ league: league ?? "", date, state, detail: game?.status.detail });
   const proj: Projection | null =
@@ -337,7 +348,7 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
             <TeamHead t={home} league={league ?? ""} onClose={onClose} score={scoreH} poss={!!game?.situation?.possession && game.situation.possession === game.teams[1]?.id} win={state === "post" && scoreH! > scoreA!} right />
           </header>
           <div className="gc-scorebar">
-          {game && (game.teams[0].linescores.length > 0) && <Linescore game={game} />}
+          {game && (game.teams[0].linescores.length > 0) && <Linescore game={game} logoUrls={[logos[away.logoId], logos[home.logoId]]} />}
           {updated && state === "in" && (
             <p className="gc-updated" role="status">
               Updating every 4 seconds · last {updated.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", second: "2-digit" })}
@@ -447,8 +458,11 @@ export default function GameCenter({ espnId, stub, onClose }: { espnId: string |
             )}
             {tab === "stats" && game && state !== "pre" && (
               <>
-                <TeamCompare game={game} away={abbr(away)} home={abbr(home)} />
-                <Tilt game={game} away={abbr(away)} home={abbr(home)} />
+                <TeamStatsPanel game={game} away={flowSide(away)} home={flowSide(home)} />
+                <div className="ts-col">
+                  <TiltPanel game={game} away={flowSide(away)} home={flowSide(home)} />
+                  <TakeawaysPanel game={game} away={flowSide(away)} home={flowSide(home)} />
+                </div>
               </>
             )}
             {tab === "plays" && game && state !== "pre" && (
@@ -500,7 +514,7 @@ function TeamHead({ t, league, onClose, score, poss, win, right }: { t: TeamLike
   );
 }
 
-function Linescore({ game }: { game: LiveGame }) {
+function Linescore({ game, logoUrls }: { game: LiveGame; logoUrls?: (string | undefined)[] }) {
   const n = Math.max(...game.teams.map((t) => t.linescores.length), 4);
   return (
     <table className="gc-lines">
@@ -518,9 +532,9 @@ function Linescore({ game }: { game: LiveGame }) {
         </tr>
       </thead>
       <tbody>
-        {game.teams.map((t) => (
+        {game.teams.map((t, ti) => (
           <tr key={t.id}>
-            <th scope="row">{t.abbr}</th>
+            <th scope="row">{logoUrls?.[ti] && <img src={logoUrls[ti]} alt="" width="22" height="22" className="gc-lines-logo" />}{t.abbr}</th>
             {Array.from({ length: n }, (_, i) => (
               <td key={i}>{t.linescores[i] ?? "–"}</td>
             ))}
@@ -536,94 +550,6 @@ function Linescore({ game }: { game: LiveGame }) {
 function Momentum({ game, away, home }: { game: LiveGame; away: TeamLike; home: TeamLike }) {
   const side = (t: TeamLike) => ({ abbr: t.abbr ?? t.name, name: t.name, logo: logos[t.logoId] });
   return <GameFlowPanel wp={game.wp} status={game.status} away={side(away)} home={side(home)} />;
-}
-
-/** Field tilt: share of each offense's snaps run in the opponent's territory, overall and by quarter. */
-function Tilt({ game, away, home }: { game: LiveGame; away: string; home: string }) {
-  const snaps = game.allOffense;
-  if (snaps.length < 6) return null;
-  const share = (side: number, q?: number) => {
-    const s = snaps.filter((p) => p[0] === side && (q == null || p[2] === q));
-    return s.length ? (s.filter((p) => p[1] < 50).length / s.length) * 100 : null;
-  };
-  const a = share(0) ?? 0,
-    h = share(1) ?? 0;
-  const tot = a + h || 1;
-  const tiltH = (h / tot) * 100;
-  const leader = Math.abs(a - h) < 5 ? null : a > h ? away : home;
-  const [topA, topH] = game.teams.map((t) => mmss(game.teamStats[t.id]?.top ?? "0:00"));
-  const topTot = topA + topH;
-  const quarters = [1, 2, 3, 4].filter((q) => snaps.some((p) => p[2] === q));
-  return (
-    <section className="gc-panel">
-      <h3 className="micro-label">Who's tilting the field</h3>
-      <p className="gc-big">
-        {leader ? (
-          <>
-            <strong>{leader}</strong> is tilting the field: {pct(Math.max(a, h))} of its snaps in enemy territory vs {pct(Math.min(a, h))}
-          </>
-        ) : (
-          <>Level field: {away} {pct(a)} vs {home} {pct(h)} of snaps in enemy territory</>
-        )}
-      </p>
-      <div className="gc-split" role="img" aria-label={`Field tilt ${away} ${Math.round(100 - tiltH)}%, ${home} ${Math.round(tiltH)}%`}>
-        <i className="away" style={{ width: `${100 - tiltH}%` }}>
-          {away} {Math.round(100 - tiltH)}
-        </i>
-        <i className="home" style={{ width: `${tiltH}%` }}>
-          {Math.round(tiltH)} {home}
-        </i>
-      </div>
-      {topTot > 0 && (
-        <>
-          <h4 className="gc-sub">Time on the field (possession)</h4>
-          <div className="gc-split" role="img" aria-label={`Time of possession ${away} ${game.teamStats[game.teams[0].id]?.top}, ${home} ${game.teamStats[game.teams[1].id]?.top}`}>
-            <i className="away" style={{ width: `${(topA / topTot) * 100}%` }}>
-              {away} {game.teamStats[game.teams[0].id]?.top}
-            </i>
-            <i className="home" style={{ width: `${(topH / topTot) * 100}%` }}>
-              {game.teamStats[game.teams[1].id]?.top} {home}
-            </i>
-          </div>
-        </>
-      )}
-      {quarters.length > 1 && (
-        <>
-          <h4 className="gc-sub">Tilt by quarter (snaps in enemy territory)</h4>
-          <table className="gc-q">
-            <thead>
-              <tr>
-                <th scope="col">
-                  <span className="sr-only">Team</span>
-                </th>
-                {quarters.map((q) => (
-                  <th scope="col" key={q}>
-                    Q{q}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {[0, 1].map((side) => (
-                <tr key={side}>
-                  <th scope="row">{side ? home : away}</th>
-                  {quarters.map((q) => {
-                    const v = share(side, q);
-                    return (
-                      <td key={q}>
-                        <span className={`gc-qbar ${side ? "home" : "away"}`} style={{ height: `${Math.max(3, (v ?? 0) * 0.34)}px` }} />
-                        {v == null ? "–" : pct(v)}
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </>
-      )}
-    </section>
-  );
 }
 
 /** Drive chart: every drive as a bar on the field, from start to finish. */
@@ -671,71 +597,6 @@ function Drives({ game, away, home }: { game: LiveGame; away: string; home: stri
           );
         })}
       </ol>
-    </section>
-  );
-}
-
-function TeamCompare({ game, away, home }: { game: LiveGame; away: string; home: string }) {
-  const [A, H] = game.teams.map((t) => game.teamStats[t.id]);
-  if (!A || !H) return null;
-  const rows: [string, number, number, string, string, boolean?][] = [
-    ["Total yards", A.yards, H.yards, String(A.yards), String(H.yards)],
-    ["Yards / play", A.ypp, H.ypp, A.ypp ? A.ypp.toFixed(1) : "–", H.ypp ? H.ypp.toFixed(1) : "–"],
-    ["Passing yards", A.passYds, H.passYds, String(A.passYds), String(H.passYds)],
-    ["Rushing yards", A.rushYds, H.rushYds, String(A.rushYds), String(H.rushYds)],
-    ["First downs", A.firstDowns, H.firstDowns, String(A.firstDowns), String(H.firstDowns)],
-    ["Turnovers", A.turnovers, H.turnovers, String(A.turnovers), String(H.turnovers), true],
-  ];
-  return (
-    <section className="gc-panel">
-      <h3 className="micro-label">Team stats</h3>
-      <table className="gc-compare">
-        <thead>
-          <tr>
-            <th scope="col">{away}</th>
-            <th scope="col">
-              <span className="sr-only">Stat</span>
-            </th>
-            <th scope="col">{home}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map(([label, a, h, as, hs, lowGood]) => {
-            const max = Math.max(a, h) || 1;
-            const better = a === h ? -1 : (a > h) !== !!lowGood ? 0 : 1;
-            return (
-              <tr key={label}>
-                <td className={better === 0 ? "edge" : ""}>
-                  <span className="gc-cbar away" style={{ width: `${(a / max) * 100}%` }} />
-                  {as}
-                </td>
-                <th scope="row">{label}</th>
-                <td className={better === 1 ? "edge" : ""}>
-                  <span className="gc-cbar home" style={{ width: `${(h / max) * 100}%` }} />
-                  {hs}
-                </td>
-              </tr>
-            );
-          })}
-          <tr>
-            <td>{A.third || "–"}</td>
-            <th scope="row">3rd down</th>
-            <td>{H.third || "–"}</td>
-          </tr>
-          {(A.redZone || H.redZone) && (
-            <tr>
-              <td>{A.redZone || "–"}</td>
-              <th scope="row">Red zone</th>
-              <td>{H.redZone || "–"}</td>
-            </tr>
-          )}
-          <tr>
-            <td>{A.penalties || "–"}</td>
-            <th scope="row">Penalties</th>
-            <td>{H.penalties || "–"}</td>
-          </tr>
-        </tbody>
-      </table>
     </section>
   );
 }
