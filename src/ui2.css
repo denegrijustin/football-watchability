@@ -154,11 +154,6 @@
   .compact-overview.v2 .cc-team h4 { font-size: 1.0625rem; }
   .compact-overview.v2 .cc-rate { min-width: 88px; }
 }
-@media (max-width: 430px) {
-  /* the record sits under the name, so a long name is not cut short by the record and the score */
-  .compact-overview.v2 .cc-team > div { flex-direction: column; align-items: flex-start; gap: 0; }
-  .compact-overview.v2 .cc-team p { font-size: 0.75rem; line-height: 1.2; }
-}
 
 /* last play / live field: the direction is a pill, the Replay button is an outlined pill, the key is easy to read */
 .gc .lp-head { font-size: 1rem; gap: 6px 10px; }
@@ -174,7 +169,7 @@
 @media (max-width: 560px) { .compact-overview.v2 .cc-team .chipimg { width: 48px !important; height: 48px !important; padding: 5px !important; } }
 
 /* every game card is the same size: the content is spread through the card and Details stays at the bottom (the halftime show is the one taller card) */
-:root { --card-h: 500px; }
+:root { --card-h: 530px; }
 @media (min-width: 761px) { :root { --card-h: 520px; } }
 .game-card.compact { min-height: var(--card-h); }
 .game-card.compact > .compact-overview { justify-content: space-between; }
@@ -210,3 +205,31 @@
 
 .gc .gc-tbteam.a .gc-pcard { border-color: color-mix(in srgb, var(--away-alt, #8a7ae0) 75%, transparent); }
 .gc .gc-tbteam.h .gc-pcard { border-color: color-mix(in srgb, var(--team-alt, #e05a5a) 75%, transparent); }
+
+/* the watchability rating is a pill in the row with the line and the projection, not a tile beside the teams */
+.compact-overview .cl-chips { display: flex; flex-wrap: nowrap; align-items: center; gap: 6px; margin-top: 10px; }
+.compact-overview .cl-chips .cl-chip { flex: 0 1 auto; min-width: 0; }
+.compact-overview.v2 .cl-chips .cc-rate { flex: 0 0 auto; display: inline-flex; flex-direction: row; align-items: center; gap: 6px; width: auto; min-width: 0; margin: 0; padding: 3px 12px 3px 3px; border-radius: 999px; border: 1.5px solid rgb(255 255 255 / 30%); background: rgb(0 0 0 / 18%); box-shadow: none; }
+.compact-overview.v2 .cl-chips .cc-rate .score-ring { width: 34px; height: 34px; flex: none; }
+.compact-overview.v2 .cl-chips .cc-rate .score-ring strong { font-size: 0.8125rem; }
+.compact-overview.v2 .cl-chips .cc-rate .score-tier { margin: 0; padding: 0; font-size: 0.8125rem; font-weight: 700; text-transform: none; letter-spacing: 0; white-space: nowrap; background: none; }
+.compact-overview.v2 .cl-chips .cc-rate .rise-tag { display: none; }
+.compact-overview .cl-chips { gap: 5px; }
+.compact-overview .cl-chips .cl-chip { padding: 7px 8px; font-size: 0.75rem; gap: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: inline-block; }
+.compact-overview.v2 .cl-chips .cc-rate { padding: 2px 10px 2px 2px; }
+.compact-overview.v2 .cl-chips .cc-rate .score-ring { width: 38px; height: 38px; }
+.compact-overview.v2 .cl-chips .cc-rate .score-tier { font-size: 0.75rem; }
+@media (max-width: 430px) { .compact-overview .cl-chips .cl-chip { font-size: 0.6875rem; padding: 7px 6px; } }
+.compact-overview > .cl { min-width: 0; max-width: 100%; }
+.compact-overview .cl-chips { min-width: 0; max-width: 100%; }
+/* one row when there is room (the line, the projection, the rating); the rating drops to a second line on a narrower screen instead of cutting the text */
+.compact-overview .cl-chips { flex-wrap: wrap; row-gap: 6px; }
+.compact-overview .cl-chips .cl-chip { flex: 0 1 auto; max-width: 100%; }
+.compact-overview .cl-chips .cc-rate { margin-left: 0; }
+@media (max-width: 430px) {
+  .compact-overview .cl-chips { gap: 5px; }
+  .compact-overview .cl-chips .cl-chip { font-size: 0.6875rem; padding: 6px 8px; }
+  .compact-overview.v2 .cl-chips .cc-rate { padding: 2px 8px 2px 2px; gap: 5px; }
+  .compact-overview.v2 .cl-chips .cc-rate .score-ring { width: 36px; height: 36px; }
+  .compact-overview.v2 .cl-chips .cc-rate .score-tier { font-size: 0.6875rem; }
+}

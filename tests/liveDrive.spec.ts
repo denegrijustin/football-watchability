@@ -58,7 +58,8 @@ test("a live card whose lower NFL+-ranked team is ahead gets the neon outline an
   const card = await openScores(page, worse === 0 ? 24 : 10, worse === 0 ? 10 : 24, "in", wide);
   await expect(card).toHaveClass(/upset-alert/);
   await expect(card.locator(".upset-banner")).toContainText(/upset alert/i);
-  expect(await card.evaluate((e) => getComputedStyle(e).boxShadow)).toContain("57, 255, 136");
+  // (the card's shadow eases from its team glow to the neon, so wait for it to arrive instead of reading it mid-way)
+  await expect.poll(() => card.evaluate((e) => getComputedStyle(e).boxShadow), { timeout: 5000 }).toContain("57, 255, 136");
   // The strip is the first thing on the card and names who leads, with both ranks.
   const first = await card.evaluate((e) => (e.querySelector(".compact-overview")?.firstElementChild as HTMLElement).className);
   expect(first).toBe("upset-banner");
