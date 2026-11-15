@@ -35,3 +35,20 @@ test('the raw proxy preserves every byte and caches without transforming the ups
     expect(requests).toBe(1);
   } finally { globals.fetch = fetchBefore; if (cachesBefore === undefined) delete globals.caches; else globals.caches = cachesBefore; }
 });
+
+test('the down and distance is kept while play is stopped: ESPN blanks it at a timeout, the drive\'s latest snap still has it', () => {
+  const base = (situation: unknown) => ({
+    header: { id: 't', competitions: [{ competitors: [{ team: { id: '1', abbreviation: 'A' }, homeAway: 'away', score: 7 }, { team: { id: '2', abbreviation: 'H' }, homeAway: 'home', score: 3 }], status: { type: { state: 'in', shortDetail: '7:12 - 2nd' }, period: 2, displayClock: '7:12' }, ...(situation === undefined ? {} : { situation }) }] },
+    drives: { previous: [], current: { team: { id: '1' }, plays: [{ id: 'p1', text: 'rush', start: { shortDownDistanceText: '3rd & 5', downDistanceText: '3rd & 5 at H 38', yardsToEndzone: 62 }, end: { team: { id: '1' }, yardsToEndzone: 55, shortDownDistanceText: '1st & 10', downDistanceText: '1st & 10 at H 45' }, type: { text: 'Rush' } }] } },
+    boxscore: { players: [] }, winprobability: [],
+  });
+  // a timeout: the situation block is there, with down -1 and no text
+  expect(trimGame(base({ down: -1, distance: 0, possession: '1', lastPlay: { text: 'Official Timeout' } }), {}).situation?.text).toBe('1st & 10 at H 45');
+  // no situation block at all
+  expect(trimGame(base(undefined), {}).situation?.text).toBe('1st & 10 at H 45');
+  // when ESPN does give it, that is what is shown
+  expect(trimGame(base({ down: 2, distance: 6, downDistanceText: '2nd & 6 at H 41', possession: '1' }), {}).situation?.text).toBe('2nd & 6 at H 41');
+  // a game that is not under way has none
+  const pre = base(undefined) as any; pre.header.competitions[0].status.type.state = 'pre';
+  expect(trimGame(pre, {}).situation).toBeNull();
+});
