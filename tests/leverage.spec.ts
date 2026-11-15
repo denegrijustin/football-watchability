@@ -12,7 +12,8 @@ test("the saved leverage numbers make sense: a win never hurts, byes carry no sw
   for (const lg of ["nfl", "cfb"]) {
     const lev = outlook[lg].leverage;
     expect(lev.week).toBeGreaterThan(0);
-    expect(lev.rows.length).toBeGreaterThan(10);
+    // Sunday leaves few college games to play, so the hunt list can be short or empty; the pro board always has the full field.
+    if (lg === "nfl") expect(lev.rows.length).toBeGreaterThan(10);
     for (const r of lev.rows as Row[]) {
       if (r.bye) { expect(r.ifWin).toBeUndefined(); continue; }
       expect(r.ifWin).not.toBeNull();
