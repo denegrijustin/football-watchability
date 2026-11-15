@@ -14,6 +14,8 @@ export type LiveScore = {
   home: number;
   /** Which side has the ball, while the game is live. */
   ball?: "away" | "home" | null;
+  /** The down and distance while the ball is in play ("2nd & 7 at KC 35"); blank when ESPN has none. */
+  dd?: string;
 };
 export type LiveMap = Record<string, LiveScore>;
 const LiveContext = createContext<LiveMap>({});
@@ -37,11 +39,11 @@ export function LiveMirror({ map, children }: { map: LiveMap; children: ReactNod
  */
 export const useReportLive = () => useContext(ReportContext);
 const STATE_ORDER = { pre: 0, in: 1, post: 2 } as const;
-export function liveFromSummary(g: { id?: string; status: { state: string; detail: string }; teams: { homeAway: string; score: number; possession?: boolean }[] }, espnId: string): LiveScore | null {
+export function liveFromSummary(g: { id?: string; status: { state: string; detail: string }; teams: { homeAway: string; score: number; possession?: boolean }[]; situation?: { text?: string } | null }, espnId: string): LiveScore | null {
   const away = g.teams.find((t) => t.homeAway === "away"), home = g.teams.find((t) => t.homeAway === "home");
   const state = g.status.state as LiveScore["state"];
   if (!away || !home || !(state in STATE_ORDER)) return null;
-  return { id: espnId, state, detail: g.status.detail, away: Number(away.score) || 0, home: Number(home.score) || 0, ball: state === "in" ? (away.possession ? "away" : home.possession ? "home" : null) : null };
+  return { id: espnId, state, detail: g.status.detail, away: Number(away.score) || 0, home: Number(home.score) || 0, ball: state === "in" ? (away.possession ? "away" : home.possession ? "home" : null) : null, dd: state === "in" ? g.situation?.text ?? "" : "" };
 }
 /** When each game's score last changed here, so a copy older than what was just pushed cannot overwrite it. */
 const changedAt = new Map<string, number>();
@@ -110,7 +112,7 @@ async function scores(league: string, date: string): Promise<LiveScore[]> {
     const data = await res.json();
     type Comp = { id?: string; homeAway: string; score?: string };
     return (data.events ?? []).map(
-      (ev: { id: string; competitions?: { competitors?: Comp[]; situation?: { possession?: string }; status?: { type?: { state?: string; shortDetail?: string } } }[] }) => {
+      (ev: { id: string; competitions?: { competitors?: Comp[]; situation?: { possession?: string; downDistanceText?: string; shortDownDistanceText?: string }; status?: { type?: { state?: string; shortDetail?: string } } }[] }) => {
         const c = ev.competitions?.[0];
         const side = (h: string) => Number(c?.competitors?.find((x) => x.homeAway === h)?.score ?? 0);
         return {
@@ -124,6 +126,7 @@ async function scores(league: string, date: string): Promise<LiveScore[]> {
             const sideOf = (h: string) => c?.competitors?.find((x) => x.homeAway === h)?.id;
             return c?.status?.type?.state === "in" && who ? (sideOf("home") === who ? "home" : sideOf("away") === who ? "away" : null) : null;
           })(),
+          dd: c?.status?.type?.state === "in" ? c?.situation?.downDistanceText || c?.situation?.shortDownDistanceText || "" : "",
         };
       },
     );
@@ -160,7 +163,7 @@ export function LiveScores({ children }: { children: ReactNode }) {
         const merged: LiveMap = { ...m };
         for (const [id, s] of Object.entries(next)) {
           const old = m[id];
-          if (old && old.state === s.state && old.detail === s.detail && old.away === s.away && old.home === s.home && old.ball === s.ball) continue;
+          if (old && old.state === s.state && old.detail === s.detail && old.away === s.away && old.home === s.home && old.ball === s.ball && (old.dd ?? "") === (s.dd ?? "")) continue;
           if (!accept(old, s)) continue;
           if (!old || old.away + old.home !== s.away + s.home || old.state !== s.state) changedAt.set(id, Date.now());
           merged[id] = s;
@@ -323,12 +326,15 @@ export function GameStatus({ live }: { live?: LiveScore }) {
   }
   const { period, clock, text } = liveStatusParts(live.detail);
   return (
-    <div className="game-status in" role="status">
-      <span className="gs-pill">Live</span>
-      {period && <span className="gs-period">{period}</span>}
-      {clock && <span className="gs-clock">{clock}</span>}
-      {text && <span className="gs-period">{text}</span>}
-    </div>
+    <>
+      <div className="game-status in" role="status">
+        <span className="gs-pill">Live</span>
+        {period && <span className="gs-period">{period}</span>}
+        {clock && <span className="gs-clock">{clock}</span>}
+        {text && <span className="gs-period">{text}</span>}
+      </div>
+      {live.dd && <div className="gs-dd" aria-label={`Down and distance: ${live.dd}`}>{live.dd}</div>}
+    </>
   );
 }
 
