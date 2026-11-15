@@ -1,7 +1,8 @@
 import { TeamName } from "../teamShort";
 import { TeamOpen } from "../openTeam";
 import { broadcastExtra, logos, networkLogo, recordLine, tierLabel, type League } from "../data";
-import type { ReactNode } from "react";
+import { cloneElement, isValidElement, type ReactElement, type ReactNode } from "react";
+import { CardLine } from "./CardLine";
 import { dayOf, timeOf, tzAbbr } from "../tz";
 import { NetChip } from "./NetChip";
 import { useOpenGame } from "./GameCenterContext";
@@ -18,6 +19,9 @@ export function CompactGame({ titleId, matchup, date, broadcast, network, espnId
   status?: ReactNode; scores?: ReactNode[]; momentum?: ReactNode; lineStrip?: ReactNode; why?: ReactNode; rise?: number; injuries?: ReactNode; onExpand: () => void;
 }) {
   const openGame = useOpenGame();
+  const rateEl = <div className="score cc-rate" aria-label={`Watchability ${score} out of 100, ${tierLabel(tier)}`}><ScoreRing score={score} label={`Watchability ${score} out of 100, ${tierLabel(tier)}`}>{why}</ScoreRing><span className="score-tier">{tierLabel(tier)}</span>{rise ? <em className="rise-tag" title="This game got more worth watching as it played">▲ up {rise}</em> : null}</div>;
+  // the rating is a pill in the row with the line and the projection (inside the strip when there is one, on its own row when there is not)
+  const strip = isValidElement(lineStrip) && lineStrip.type === CardLine ? cloneElement(lineStrip as ReactElement<{ rate?: ReactNode }>, { rate: rateEl }) : <><div className="cl"><p className="cl-chips">{rateEl}</p></div>{lineStrip}</>;
   const logo = networkLogo(network);
   const impact = weather?.impact.replace(/\s*impact$/i, "").toLowerCase();
   const gc = espnId ? <button type="button" className="cc-gc" title="Open Game Center" aria-label={`Open Game Center for ${matchup}`} onClick={e => { e.stopPropagation(); openGame(espnId); }}><SquareActivity size={16} aria-hidden="true" /><span>GC</span></button> : null;
@@ -40,7 +44,7 @@ export function CompactGame({ titleId, matchup, date, broadcast, network, espnId
           <p>{recordLine(team.record, league as League).split(" · ")[0]}</p>
         </div>{scores?.[i]}
       </div>)}</div>
-      <div className="score cc-rate" aria-label={`Watchability ${score} out of 100, ${tierLabel(tier)}`}><ScoreRing score={score} label={`Watchability ${score} out of 100, ${tierLabel(tier)}`}>{why}</ScoreRing><span className="score-tier">{tierLabel(tier)}</span>{rise ? <em className="rise-tag" title="This game got more worth watching as it played">▲ up {rise}</em> : null}</div>
+
     </div>
     {driveChart}
     {/* the venue on one quiet line, and the weather only when it will matter; the betting line, booth and full forecast are in Details */}
@@ -50,7 +54,7 @@ export function CompactGame({ titleId, matchup, date, broadcast, network, espnId
       </li>
     </ul>
     {injuries}
-    {lineStrip}
+    {strip}
     {momentum}
     <div className="cc-actions"><button className="card-toggle cc-chevron" type="button" aria-label="Show game details" aria-expanded={false} onClick={onExpand}>Details <span aria-hidden="true">▾</span></button></div>
   </div>;
