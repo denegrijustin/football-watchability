@@ -7,17 +7,18 @@ const pct = (n: number) => `${Math.round(n)}%`;
  * The strip on a collapsed card: the betting line and total, the projected score, and (before kickoff) the win probability as a split bar,
  * so a card says who is favored and by how much without being opened.
  */
-export function CardLine({ line, wp, projected, away, home, showBar }: { line: string | null; wp?: WinProbData | null; projected?: Projection | null; away: string; home: string; showBar: boolean }) {
+export function CardLine({ line, wp, projected, away, home, showBar, rate }: { line: string | null; wp?: WinProbData | null; projected?: Projection | null; away: string; home: string; showBar: boolean; rate?: React.ReactNode }) {
   const homeWin = wp ? (wp.market ?? wp.espn ?? wp.home) : null;
   const fav = homeWin == null ? null : homeWin >= 50 ? home : away;
   const hasBar = showBar && homeWin != null;
-  if (!line && !projected && !hasBar) return null;
+  if (!line && !projected && !hasBar && !rate) return null;
   return (
     <div className="cl" aria-label="Line and win probability">
-      {(line || projected) && (
+      {(line || projected || rate) && (
         <p className="cl-chips">
           {line && <span className="cl-chip" title="Betting line and over/under"><span aria-hidden="true">⚖️</span> {line.replace(/\s*•\s*/g, " · ")}</span>}
           {projected && <span className="cl-chip" title={`Projected score (${projected.source})`}><span aria-hidden="true">🎯</span> {away} {projected.away} – {projected.home} {home}</span>}
+          {rate}
         </p>
       )}
       {hasBar && (
