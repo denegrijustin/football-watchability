@@ -79,6 +79,7 @@ export async function onRequestGet({ request }) {
       away: Number(side("away")?.score ?? 0),
       home: Number(side("home")?.score ?? 0),
       ball,
+      dd: st.state === "in" ? (c.situation?.downDistanceText || c.situation?.shortDownDistanceText || "") : "",
     };
   });
   // How long the edge may keep this: seconds while anything is live or a kickoff is near/past, a couple of minutes otherwise.

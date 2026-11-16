@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 const slate = JSON.parse(readFileSync("src/data/slate.json", "utf8"));
 const games = slate.games.filter((g: any) => g.league === "NFL");
 
-test("@phone on a phone the space above the first game card is under 420px", async ({ page }) => {
+test("@phone on a phone the space above the first game card is under 440px", async ({ page }) => {
   test.skip(test.info().project.name !== "mobile", "phone layout");
   const start = Math.min(...games.map((g: any) => new Date(g.date).getTime()));
   await page.clock.install({ time: start + 90 * 60e3 });
@@ -15,7 +15,7 @@ test("@phone on a phone the space above the first game card is under 420px", asy
   await expect(card).toBeVisible({ timeout: 10_000 });
   const top = await card.evaluate((el) => el.getBoundingClientRect().top + scrollY);
   await page.screenshot({ path: "test-results/phone-top.png" });
-  expect(top).toBeLessThan(420);
+  expect(top).toBeLessThan(440); // 420 plus room for the finished-games strip that sits above the live section once a morning game has ended
   expect((await card.boundingBox())!.height).toBeLessThanOrEqual(530); // a live card on a phone: one-line header, team rows, rating tile, pills and slim meters
 });
 

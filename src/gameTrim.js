@@ -190,13 +190,16 @@ export function trimGame(s, positions = {}) {
   const ball = lastSnap
     ? { team: lastSnap.end.team?.id ?? lastSnap.start?.team?.id ?? curDrive?.team?.id ?? null, own: 100 - num(lastSnap.end.yardsToEndzone) }
     : null;
+  // ESPN leaves the down and distance blank while play is stopped (a timeout, the gap between snaps: "down": -1), and some feeds carry no situation
+  // block at all; the drive's latest snap still carries the next down and spot, so use that.
+  const spotDownDistance = st.state === "in" ? (lastSnap?.end?.downDistanceText || lastSnap?.end?.shortDownDistanceText || "") : "";
   return {
     id: s.header?.id,
     status: { state: st.state ?? "pre", detail: st.shortDetail ?? st.detail ?? "", period: comp.status?.period ?? 0, clock: comp.status?.displayClock ?? "" },
     teams,
     situation: sit
       ? {
-          text: sit.downDistanceText ?? sit.shortDownDistanceText ?? "",
+          text: sit.downDistanceText || sit.shortDownDistanceText || spotDownDistance,
           possession: sit.possession ?? null,
           toGo: sit.yardsToEndzone ?? null,
           redZone: !!sit.isRedZone,
@@ -205,7 +208,9 @@ export function trimGame(s, positions = {}) {
           spotText: sit.possessionText ?? sit.lastPlay?.end?.possessionText ?? "",
           yardLine: sit.yardLine ?? null,
         }
-      : null,
+      : spotDownDistance
+        ? { text: spotDownDistance, possession: curDrive?.team?.id ?? null, toGo: null, redZone: false, lastPlay: "", spotText: "", yardLine: null }
+        : null,
     wp,
     drives,
     plays: plays.slice(-40),
