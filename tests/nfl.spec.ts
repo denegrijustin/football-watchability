@@ -134,6 +134,8 @@ test.describe("the NFL+ tab", () => {
     await openSppTab(page, "Team", true);
     await page.locator('.spp select[aria-label="Team"]').selectOption("KC");
     await expect(page.locator(".spp h2", { hasText: "Kansas City Chiefs" })).toBeVisible();
+    const showAll = page.getByRole("button", { name: /^Show all \d+ weeks$/ }); // a phone opens on the latest eight weeks
+    if (await showAll.count()) await showAll.click();
     await expect(page.locator('.spp svg[aria-label^="Kansas City Chiefs league percentile"] g.pt')).toHaveCount(4 * nfl.ratingsThroughWeek);
   });
 });
