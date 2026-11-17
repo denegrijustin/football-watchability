@@ -1,4 +1,5 @@
 import { expect, test } from "./fixtures";
+import { skipWithoutFinalScores } from "./helpers/finals";
 
 test("a team's name or logo in the resumés opens its profile, for the NFL and for college", async ({ page }) => {
   await page.goto("/");
@@ -31,6 +32,7 @@ test("an opponent in a resumé opens that team's profile", async ({ page }) => {
 
 test("a team on a final-score tile opens its profile, and the rest of the tile still opens the game", async ({ page }) => {
   await page.goto("/");
+  await skipWithoutFinalScores(page, test.skip);
   const tile = page.locator("section.fs .fs-tile").first();
   await expect(tile).toBeVisible();
   await tile.locator(".fs-abbr").first().click();
