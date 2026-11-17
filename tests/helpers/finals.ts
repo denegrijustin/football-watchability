@@ -14,3 +14,10 @@ export async function stubFinals(page: Page, games: Final[] = []) {
   });
   await page.route("https://site.api.espn.com/**", (r) => r.fulfill({ json: { events: [] } }));
 }
+
+/** The final-scores strip lists the week's finished games, so on the first days of a new week (before any game is played) there is none to check. Call after opening the board. */
+export async function skipWithoutFinalScores(page: Page, skip: (c: boolean, why: string) => void) {
+  await page.locator(".game-card").first().waitFor({ timeout: 15_000 });
+  await page.waitForTimeout(1500);
+  skip((await page.locator(".fs-toggle").count()) === 0, "no game has finished on this week's board yet, so there is no final-scores strip");
+}

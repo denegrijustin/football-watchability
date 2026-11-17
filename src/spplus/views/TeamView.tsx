@@ -61,7 +61,7 @@ export default function TeamView() {
       }),
     })),
     {
-      id: "all", label: "772 list SP+",
+      id: "all", label: "SP+, all 772",
       cells: model.weeks.map((w) => { const x = team.top[w]; return { value: percentile(x?.spRk ?? null, 772), text: x?.spRk == null ? "—" : `#${x.spRk}`, tip: [["772-list SP+", fmt(x?.sp)], ["Rank", x?.spRk == null ? "—" : `${x.spRk} of 772`], ["Percentile (derived)", String(percentile(x?.spRk ?? null, 772) ?? "—")]] as [string, string][] }; }),
     },
   ];
@@ -108,7 +108,7 @@ export default function TeamView() {
       </div>
 
       <div className="panel">
-        <div className="phead"><div><h2>Percentile by week</h2><p className="sub" style={{ margin: 0 }}>Cell text is the sheet's rank; color is the share of the division rated below <Derived why="(N − rank) ÷ (N − 1), from the source rank" /></p></div></div>
+        <div className="phead"><div><h2>Percentile by week</h2><p className="sub" style={{ margin: 0 }}>Each cell is the team's rank that week; the lighter the cell, the more teams it is ahead of <Derived why="(N − rank) ÷ (N − 1), from the source rank" /></p></div></div>
         <Heatmap rows={heatRows} cols={model.weeks.map((w) => `Wk ${w}`)} ariaLabel={`${team.name} national percentile by category and week`} rowTitle="Category" />
         <HeatScale />
         <Notes items={notes} />
