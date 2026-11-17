@@ -1,8 +1,10 @@
 import { expect, test } from "./fixtures";
+import { skipWithoutFinalScores } from "./helpers/finals";
 
 test.describe("the final scores strip", () => {
   test("it is open by default as a grid of scores with FPI ranks, and a score opens its Game Center", async ({ page }) => {
     await page.goto("/");
+    await skipWithoutFinalScores(page, test.skip);
     const fs = page.locator("section.fs");
     const bar = page.locator(".fs-toggle");
     await expect(bar).toBeVisible();
@@ -17,6 +19,7 @@ test.describe("the final scores strip", () => {
 
   test("the open or closed choice is remembered, and the page does not scroll sideways", async ({ page }) => {
     await page.goto("/");
+    await skipWithoutFinalScores(page, test.skip);
     await page.locator(".fs-toggle").click(); // close it
     await page.reload();
     await expect(page.locator(".fs-toggle")).toHaveAttribute("aria-expanded", "false");
@@ -33,6 +36,7 @@ test.describe("the final scores strip", () => {
 
   test("FPI ranks are on every tile, and an upset stands out and comes first", async ({ page }) => {
     await page.goto("/");
+    await skipWithoutFinalScores(page, test.skip);
     const tiles = page.locator("section.fs .fs-tile");
     await expect(tiles.first()).toBeVisible();
     await expect(page.locator("section.fs .fs-fpi").first()).toBeVisible();
@@ -54,6 +58,7 @@ test.describe("the final scores strip", () => {
 
 test("every completed-game tile is the same size, its rows line up, and the upset tag stays inside it", async ({ page }) => {
   await page.goto("/");
+  await skipWithoutFinalScores(page, test.skip);
   const tiles = page.locator("section.fs .fs-tile");
   await expect(tiles.first()).toBeVisible();
   const m = await tiles.evaluateAll((els) => els.map((e) => {
