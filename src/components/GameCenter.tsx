@@ -61,16 +61,18 @@ export type LiveGame = {
 };
 
 const PATHS: Record<string, string> = { nfl: "nfl", cfb: "college-football" };
+/** A game with fewer than two teams is not a usable summary (an empty or half-sent answer), so it is treated like no answer rather than drawn. */
+const usable = (g: LiveGame): LiveGame | null => (g && Array.isArray(g.teams) && g.teams.length >= 2 ? g : null);
 async function fetchGame(league: string, id: string): Promise<LiveGame | null> {
   try {
     const r = await fetch(`/api/game?league=${league}&event=${id}&format=raw`, { cache: "no-store" });
-    if (r.ok && (r.headers.get("content-type") ?? "").includes("json")) return rename(await decodeGame(await r.json(), league));
+    if (r.ok && (r.headers.get("content-type") ?? "").includes("json")) { const g = usable(rename(await decodeGame(await r.json(), league)) as LiveGame); if (g) return g; }
   } catch {
     /* fall through */
   }
   try {
     const r = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/${PATHS[league]}/summary?event=${id}`);
-    if (r.ok) return rename(trimGame(await r.json())) as LiveGame;
+    if (r.ok) return usable(rename(trimGame(await r.json())) as LiveGame);
   } catch {
     /* offline */
   }
