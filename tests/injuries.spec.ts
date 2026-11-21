@@ -97,6 +97,7 @@ test.describe("injuries on the game card", () => {
   test.beforeEach(async ({ page }) => { await stubFinals(page); });
 
   test("a card shows its key injuries in one line, and the expanded card lists each team's injuries with the reason for the impact", async ({ page }) => {
+    test.skip(test.info().project.name === "mobile", "on a phone the compact card shows only the essentials (teams, score, watch score, channel); this part is in Details and the expanded card");
     await page.goto("/?league=NFL");
     const strip = page.locator(".gi-strip").first();
     await expect(strip).toBeVisible({ timeout: 15_000 });

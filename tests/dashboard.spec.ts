@@ -511,6 +511,7 @@ test("insanity meter looks back on every final and ranks wild games above blowou
 });
 
 test("insanity meter updates live from the flow feed", async ({ page }) => {
+  test.skip(test.info().project.name === "mobile", "on a phone the compact card shows only the essentials (teams, score, watch score, channel); this part is in Details and the expanded card");
   const games = slate.games.filter((g: any) => g.league === "NFL");
   const start = Math.min(...games.map((g: any) => new Date(g.date).getTime()));
   await page.clock.install({ time: start + 90 * 60e3 });

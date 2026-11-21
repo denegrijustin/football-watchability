@@ -51,7 +51,7 @@ test.describe("on the board", () => {
     await expect(tile).toContainText("One-score game · 4th quarter");
     await expect(tile).toContainText("%");
     await expect(page.locator(".late-flag").first()).toContainText("One-score game");
-    await expect(page.locator(".live-meters .lm").first()).toBeVisible();
+    if (test.info().project.name !== "mobile") await expect(page.locator(".live-meters .lm").first()).toBeVisible(); // (a phone keeps the meters in Details)
     away = 28;
     await page.locator(".live-fresh").evaluate((b) => (b as HTMLElement).click());
     await expect(page.locator(".team-score.scored").first()).toBeVisible();

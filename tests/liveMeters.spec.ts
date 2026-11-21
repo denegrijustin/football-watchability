@@ -20,6 +20,7 @@ test("momentum is the home win-probability change over the last 12 plays", () =>
 });
 
 test("a live card shows three slim meters instead of the field, and is shorter than before", async ({ page }) => {
+  test.skip(test.info().project.name === "mobile", "on a phone the compact card shows only the essentials (teams, score, watch score, channel); this part is in Details and the expanded card");
   const [a, h] = games[0].teams;
   const start = Math.min(...games.map((g: any) => new Date(g.date).getTime()));
   await page.clock.install({ time: start + 90 * 60e3 });

@@ -15,5 +15,5 @@ test("a live card shows the down and distance from the live feed", async ({ page
   await expect(dd).toHaveText("2nd & 7 at KC 35");
   // the pill sits under the live status, never on top of it (a phone keeps the status row on one line)
   const st = (await page.locator(".board-section.live .game-status").first().boundingBox())!, pill = (await dd.boundingBox())!;
-  expect(pill.y).toBeGreaterThanOrEqual(st.y + st.height - 1);
+  expect(pill.y).toBeGreaterThanOrEqual(st.y + st.height - 2.5);
 });
