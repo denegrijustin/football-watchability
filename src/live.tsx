@@ -333,6 +333,7 @@ export function GameStatus({ live }: { live?: LiveScore }) {
         {clock && <span className="gs-clock">{clock}</span>}
         {text && <span className="gs-period">{text}</span>}
       </div>
+      {live.dd && <i className="gs-break" aria-hidden="true" />}
       {live.dd && <div className="gs-dd" aria-label={`Down and distance: ${live.dd}`}>{live.dd}</div>}
     </>
   );
