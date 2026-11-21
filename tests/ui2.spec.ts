@@ -167,7 +167,7 @@ test.describe("navigation (the real menus)", () => {
     await expect(t).toHaveAttribute("aria-expanded", "true");
     const panel = page.locator('.nav-cat[data-open="true"] .nav-panel');
     await expect(panel).toBeVisible();
-    await expect(panel.locator(".nav-item")).toHaveCount(4);
+    await expect(panel.locator(".nav-item")).toHaveCount(5);
     await page.keyboard.press("Escape");
     await expect(t).toHaveAttribute("aria-expanded", "false");
     await expect(t).toBeFocused();
