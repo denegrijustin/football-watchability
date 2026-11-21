@@ -65,6 +65,7 @@ export const CATEGORIES: NavCategory[] = [
           v("resumes", "Team Resumés", "Best wins, bad losses, strength of schedule, offense and defense ranks"),
           v("spplus", "CFB SP+", "College ratings, a matchup simulator and an against-the-spread tracker"),
           v("nfl", "NFL+", "EPA-based NFL ratings, a matchup simulator and an against-the-spread tracker"),
+          v("leverage", "Playoff Leverage", "How much each team's next game moves its playoff odds, for college and the NFL"),
         ],
       },
     ],
@@ -126,7 +127,7 @@ export function categoryOf(view: View): CategoryId {
 
 /** Every View id the address bar may name. Anything else opens the board. */
 export const VIEW_IDS: readonly View[] = [
-  "board", "picks", "grid", "insanity", "outlook", "empire", "spplus", "nfl", "sim", "upset", "injuries", "standings", "resumes", "teams", "trades",
+  "board", "picks", "grid", "insanity", "outlook", "leverage", "empire", "spplus", "nfl", "sim", "upset", "injuries", "standings", "resumes", "teams", "trades",
 ];
 export const isView = (s: string | null): s is View => !!s && (VIEW_IDS as readonly string[]).includes(s);
 export const STATUSES = ["live", "upcoming", "final"] as const;
