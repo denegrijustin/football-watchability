@@ -244,3 +244,7 @@
 }
 /* The down and distance on a live card: a clear pill under the clock. */
 .gs-dd { align-self: flex-start; margin: 4px 0 0; padding: 3px 10px; border-radius: 999px; font-size: 0.8125rem; font-weight: 800; color: var(--text); background: color-mix(in srgb, var(--text) 8%, transparent); border: 1px solid color-mix(in srgb, var(--text) 18%, transparent); max-width: 100%; overflow-wrap: anywhere; }
+/* The status row never squeezes the pill: the pill drops to its own line under the clock, whatever the phone layout does to the row. */
+.cc-when:has(.gs-dd), .compact-overview.v2 .cc-when:has(.gs-dd) { flex-wrap: wrap; row-gap: 4px; }
+.gs-break { flex: 0 0 100%; height: 0; }
+.gs-dd { flex: 0 1 auto; margin: 0; }

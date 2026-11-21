@@ -26,6 +26,7 @@ import { ViewSkeleton } from "./components/Skeleton";
 const PicksHub = lazyView(() => import("./components/PicksHub").then((m) => ({ default: m.PicksHub })), "PicksHub");
 const InsanityBoard = lazyView(() => import("./components/InsanityBoard").then((m) => ({ default: m.InsanityBoard })), "InsanityBoard");
 const TvGrid = lazyView(() => import("./components/TvGrid").then((m) => ({ default: m.TvGrid })), "TvGrid");
+const Outlook = lazyView(() => import("./components/Outlook").then((m) => ({ default: m.Outlook })), "Outlook");
 const SpPlusTab = lazyView(() => import("./spplus/SpPlusTab"), "SpPlusTab");
 const NflTab = lazyView(() => import("./nfl/NflTab"), "NflTab");
 const InjuriesTab = lazyView(() => import("./components/InjuriesTab").then((m) => ({ default: m.InjuriesTab })), "InjuriesTab");
@@ -284,6 +285,8 @@ export default function App() {
                   <InjuriesTab defaultLeague={league} />
                 ) : view === "outlook" ? (
                   <StandingsHub defaultLeague={league} start="playoff" />
+                ) : view === "leverage" ? (
+                  <Outlook defaultLeague={league === "NFL" ? "NFL" : "CFB"} only="leverage" />
                 ) : view === "spplus" ? (
                   <SpPlusTab />
                 ) : view === "nfl" ? (

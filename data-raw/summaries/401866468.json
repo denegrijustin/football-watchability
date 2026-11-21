@@ -16,14 +16,14 @@
     "dateValid": true,
     "neutralSite": false,
     "conferenceCompetition": true,
-    "boxscoreAvailable": false,
+    "boxscoreAvailable": true,
     "commentaryAvailable": false,
-    "liveAvailable": false,
+    "liveAvailable": true,
     "onWatchESPN": true,
     "recent": true,
-    "wallclockAvailable": false,
-    "boxscoreSource": "none",
-    "playByPlaySource": "none",
+    "wallclockAvailable": true,
+    "boxscoreSource": "full",
+    "playByPlaySource": "full",
     "competitors": [
      {
       "id": "2649",
@@ -212,6 +212,12 @@
         }
        ]
       },
+      "score": "3",
+      "linescores": [
+       {
+        "displayValue": "3"
+       }
+      ],
       "record": [
        {
         "type": "total",
@@ -224,7 +230,8 @@
         "displayValue": "5-1"
        }
       ],
-      "possession": false
+      "timeoutsUsed": 0,
+      "possession": true
      },
      {
       "id": "189",
@@ -413,6 +420,12 @@
         }
        ]
       },
+      "score": "0",
+      "linescores": [
+       {
+        "displayValue": "0"
+       }
+      ],
       "record": [
        {
         "type": "total",
@@ -425,19 +438,25 @@
         "displayValue": "3-3"
        }
       ],
+      "timeoutsUsed": 0,
       "possession": false
      }
     ],
     "status": {
+     "displayClock": "7:53",
+     "period": 1,
      "type": {
-      "id": "1",
-      "name": "STATUS_SCHEDULED",
-      "state": "pre",
+      "id": "2",
+      "name": "STATUS_IN_PROGRESS",
+      "state": "in",
       "completed": false,
-      "description": "Scheduled",
-      "detail": "Fri, November 20th at 7:30 PM EST",
-      "shortDetail": "11/20 - 7:30 PM EST"
-     }
+      "description": "In Progress",
+      "detail": "7:53 - 1st Quarter",
+      "shortDetail": "7:53 - 1st",
+      "statusPrimary": "7:53",
+      "statusSecondary": "1st"
+     },
+     "displayPeriod": "1st"
     },
     "broadcasts": [
      {
@@ -464,43 +483,68 @@
      "shortName": "MAC",
      "midsizeName": "Mid-American"
     },
-    "boxscoreMinutes": false
+    "boxscoreMinutes": true
    }
   ],
   "links": [
    {
     "rel": [
-     "summary",
+     "live",
      "desktop",
      "event"
     ],
-    "href": "https://www.espn.com/college-football/game/_/gameId/401866468/bowling-green-toledo",
+    "href": "https://www.espn.com/college-football/game?gameId=401866468",
     "text": "Gamecast",
-    "shortText": "Summary",
+    "shortText": "Gamecast",
     "isExternal": false,
     "isPremium": false
    },
    {
     "rel": [
-     "preview",
+     "boxscore",
      "desktop",
      "event"
     ],
-    "href": "https://www.espn.com/college-football/preview/_/gameId/401866468",
-    "text": "Preview",
-    "shortText": "Preview",
+    "href": "https://www.espn.com/college-football/boxscore/_/gameId/401866468",
+    "text": "Box Score",
+    "shortText": "Box Score",
     "isExternal": false,
     "isPremium": false
    },
    {
     "rel": [
-     "tickets",
-     "desktop"
+     "pbp",
+     "desktop",
+     "event"
     ],
-    "href": "https://www.vividseats.com/toledo-rockets-football-tickets-glass-bowl-stadium-11-18-2026--sports-ncaa-football/production/6823717?wsUser=717",
-    "text": "Tickets",
-    "shortText": "Tickets",
-    "isExternal": true,
+    "href": "https://www.espn.com/college-football/playbyplay/_/gameId/401866468",
+    "text": "Play-by-Play",
+    "shortText": "Play-by-Play",
+    "isExternal": false,
+    "isPremium": false
+   },
+   {
+    "rel": [
+     "teamstats",
+     "desktop",
+     "event"
+    ],
+    "href": "https://www.espn.com/college-football/matchup?gameId=401866468",
+    "text": "Team Stats",
+    "shortText": "Team Stats",
+    "isExternal": false,
+    "isPremium": false
+   },
+   {
+    "rel": [
+     "videos",
+     "desktop",
+     "event"
+    ],
+    "href": "https://www.espn.com/college-football/video?gameId=401866468",
+    "text": "Videos",
+    "shortText": "Videos",
+    "isExternal": false,
     "isPremium": false
    }
   ],
@@ -676,17 +720,6 @@
    ]
   }
  },
- "predictor": {
-  "header": "Matchup Predictor",
-  "homeTeam": {
-   "id": "2649",
-   "gameProjection": "87.8"
-  },
-  "awayTeam": {
-   "id": "189",
-   "gameProjection": "12.2"
-  }
- },
  "pickcenter": [
   {
    "provider": {
@@ -709,15 +742,15 @@
     ]
    },
    "details": "TOL -16.5",
-   "overUnder": 46.5,
+   "overUnder": 45.5,
    "spread": -16.5,
-   "overOdds": -108,
-   "underOdds": -112,
+   "overOdds": -112,
+   "underOdds": -108,
    "awayTeamOdds": {
     "favorite": false,
     "underdog": true,
-    "moneyLine": 525,
-    "spreadOdds": -105,
+    "moneyLine": 575,
+    "spreadOdds": -102,
     "team": {
      "$ref": "http://sports.core.api.espn.pvt/v2/sports/football/leagues/college-football/seasons/2026/teams/189?lang=en&region=us"
     },
@@ -727,8 +760,8 @@
    "homeTeamOdds": {
     "favorite": true,
     "underdog": false,
-    "moneyLine": -750,
-    "spreadOdds": -115,
+    "moneyLine": -850,
+    "spreadOdds": -118,
     "team": {
      "$ref": "http://sports.core.api.espn.pvt/v2/sports/football/leagues/college-football/seasons/2026/teams/2649?lang=en&region=us"
     },
@@ -839,7 +872,7 @@
       "desktop",
       "bets"
      ],
-     "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34999619%3Foutcomes%3D0OU87191403O4650_1",
+     "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34999619%3Foutcomes%3D0OU87191403O4550_1",
      "text": "Over Odds",
      "shortText": "Over Odds",
      "isExternal": true,
@@ -852,7 +885,7 @@
        "gameId": 401866468,
        "betSide": "over",
        "betType": "straight",
-       "betDetails": "Over:46.5"
+       "betDetails": "Over:45.5"
       }
      }
     },
@@ -863,7 +896,7 @@
       "desktop",
       "bets"
      ],
-     "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34999619%3Foutcomes%3D0OU87191403U4650_3",
+     "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34999619%3Foutcomes%3D0OU87191403U4550_3",
      "text": "Under Odds",
      "shortText": "Under Odds",
      "isExternal": true,
@@ -876,7 +909,7 @@
        "gameId": 401866468,
        "betSide": "under",
        "betType": "straight",
-       "betDetails": "Under:46.5"
+       "betDetails": "Under:45.5"
       }
      }
     },
@@ -888,7 +921,7 @@
       "bets"
      ],
      "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34999619",
-     "text": "See More Odds",
+     "text": "See More Live Odds",
      "shortText": "Game",
      "isExternal": true,
      "isPremium": false,
@@ -909,7 +942,7 @@
     "shortDisplayName": "ML",
     "home": {
      "close": {
-      "odds": "-750",
+      "odds": "-850",
       "link": {
        "language": "en-US",
        "rel": [
@@ -937,11 +970,38 @@
      },
      "open": {
       "odds": "-700"
+     },
+     "live": {
+      "odds": "-2800",
+      "link": {
+       "language": "en-US",
+       "rel": [
+        "home",
+        "desktop",
+        "bets",
+        "draftkings---live-odds"
+       ],
+       "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34999619%3Foutcomes%3D0ML87336503_1",
+       "text": "Home Bet",
+       "shortText": "Home Bet",
+       "isExternal": true,
+       "isPremium": false,
+       "tracking": {
+        "campaign": "betting-integrations",
+        "tags": {
+         "league": "college-football",
+         "sport": "football",
+         "gameId": 401866468,
+         "betSide": "home",
+         "betType": "straight"
+        }
+       }
+      }
      }
     },
     "away": {
      "close": {
-      "odds": "+525",
+      "odds": "+575",
       "link": {
        "language": "en-US",
        "rel": [
@@ -969,6 +1029,33 @@
      },
      "open": {
       "odds": "+500"
+     },
+     "live": {
+      "odds": "+1020",
+      "link": {
+       "language": "en-US",
+       "rel": [
+        "away",
+        "desktop",
+        "bets",
+        "draftkings---live-odds"
+       ],
+       "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34999619%3Foutcomes%3D0ML87336503_3",
+       "text": "Away Bet",
+       "shortText": "Away Bet",
+       "isExternal": true,
+       "isPremium": false,
+       "tracking": {
+        "campaign": "betting-integrations",
+        "tags": {
+         "league": "college-football",
+         "sport": "football",
+         "gameId": 401866468,
+         "betSide": "away",
+         "betType": "straight"
+        }
+       }
+      }
      }
     }
    },
@@ -978,7 +1065,7 @@
     "home": {
      "close": {
       "line": "-16.5",
-      "odds": "-115",
+      "odds": "-118",
       "link": {
        "language": "en-US",
        "rel": [
@@ -1007,12 +1094,40 @@
      "open": {
       "line": "-15.5",
       "odds": "-110"
+     },
+     "live": {
+      "line": "-23.5",
+      "odds": "-123",
+      "link": {
+       "language": "en-US",
+       "rel": [
+        "homeSpread",
+        "desktop",
+        "bets"
+       ],
+       "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34999619%3Foutcomes%3D0HC87336503N2350_1",
+       "text": "Home Point Spread",
+       "shortText": "Home Point Spread",
+       "isExternal": true,
+       "isPremium": false,
+       "tracking": {
+        "campaign": "betting-integrations",
+        "tags": {
+         "league": "college-football",
+         "sport": "football",
+         "gameId": 401866468,
+         "betSide": "none",
+         "betType": "straight",
+         "betDetails": "Spread:TOL-23.5"
+        }
+       }
+      }
      }
     },
     "away": {
      "close": {
       "line": "+16.5",
-      "odds": "-105",
+      "odds": "-102",
       "link": {
        "language": "en-US",
        "rel": [
@@ -1041,6 +1156,34 @@
      "open": {
       "line": "+15.5",
       "odds": "-110"
+     },
+     "live": {
+      "line": "+23.5",
+      "odds": "-108",
+      "link": {
+       "language": "en-US",
+       "rel": [
+        "awaySpread",
+        "desktop",
+        "bets"
+       ],
+       "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34999619%3Foutcomes%3D0HC87336503P2350_3",
+       "text": "Away Point Spread",
+       "shortText": "Away Point Spread",
+       "isExternal": true,
+       "isPremium": false,
+       "tracking": {
+        "campaign": "betting-integrations",
+        "tags": {
+         "league": "college-football",
+         "sport": "football",
+         "gameId": 401866468,
+         "betSide": "none",
+         "betType": "straight",
+         "betDetails": "Spread:BGSU+23.5"
+        }
+       }
+      }
      }
     }
    },
@@ -1049,8 +1192,8 @@
     "shortDisplayName": "Total",
     "over": {
      "close": {
-      "line": "o46.5",
-      "odds": "-108",
+      "line": "o45.5",
+      "odds": "-112",
       "link": {
        "language": "en-US",
        "rel": [
@@ -1058,7 +1201,7 @@
         "desktop",
         "bets"
        ],
-       "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34999619%3Foutcomes%3D0OU87191403O4650_1",
+       "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34999619%3Foutcomes%3D0OU87191403O4550_1",
        "text": "Over Odds",
        "shortText": "Over Odds",
        "isExternal": true,
@@ -1071,7 +1214,7 @@
          "gameId": 401866468,
          "betSide": "over",
          "betType": "straight",
-         "betDetails": "Over:46.5"
+         "betDetails": "Over:45.5"
         }
        }
       }
@@ -1079,12 +1222,40 @@
      "open": {
       "line": "o47.5",
       "odds": "-110"
+     },
+     "live": {
+      "line": "o49.5",
+      "odds": "-121",
+      "link": {
+       "language": "en-US",
+       "rel": [
+        "over",
+        "desktop",
+        "bets"
+       ],
+       "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34999619%3Foutcomes%3D0OU87336503O4950_1",
+       "text": "Over Odds",
+       "shortText": "Over Odds",
+       "isExternal": true,
+       "isPremium": false,
+       "tracking": {
+        "campaign": "betting-integrations",
+        "tags": {
+         "league": "college-football",
+         "sport": "football",
+         "gameId": 401866468,
+         "betSide": "over",
+         "betType": "straight",
+         "betDetails": "Over:49.5"
+        }
+       }
+      }
      }
     },
     "under": {
      "close": {
-      "line": "u46.5",
-      "odds": "-112",
+      "line": "u45.5",
+      "odds": "-108",
       "link": {
        "language": "en-US",
        "rel": [
@@ -1092,7 +1263,7 @@
         "desktop",
         "bets"
        ],
-       "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34999619%3Foutcomes%3D0OU87191403U4650_3",
+       "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34999619%3Foutcomes%3D0OU87191403U4550_3",
        "text": "Under Odds",
        "shortText": "Under Odds",
        "isExternal": true,
@@ -1105,7 +1276,7 @@
          "gameId": 401866468,
          "betSide": "under",
          "betType": "straight",
-         "betDetails": "Under:46.5"
+         "betDetails": "Under:45.5"
         }
        }
       }
@@ -1113,6 +1284,34 @@
      "open": {
       "line": "u47.5",
       "odds": "-110"
+     },
+     "live": {
+      "line": "u49.5",
+      "odds": "-110",
+      "link": {
+       "language": "en-US",
+       "rel": [
+        "under",
+        "desktop",
+        "bets"
+       ],
+       "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34999619%3Foutcomes%3D0OU87336503U4950_3",
+       "text": "Under Odds",
+       "shortText": "Under Odds",
+       "isExternal": true,
+       "isPremium": false,
+       "tracking": {
+        "campaign": "betting-integrations",
+        "tags": {
+         "league": "college-football",
+         "sport": "football",
+         "gameId": 401866468,
+         "betSide": "under",
+         "betType": "straight",
+         "betDetails": "Under:49.5"
+        }
+       }
+      }
      }
     }
    },
@@ -1124,7 +1323,7 @@
      "bets"
     ],
     "href": "https://sportsbook.draftkings.com/gateway?s=__s__&wpcid=__wpcid__&wpsrc=413&wpcn=ESPN&wpscn=Widget&wpcrn=BetSlipDeepLink&wpscid=__wpscid__&wpcrid=xx&preurl=https%3A%2F%2Fsportsbook.draftkings.com%2Fevent%2F34999619",
-    "text": "See More Odds",
+    "text": "See More Live Odds",
     "shortText": "Game",
     "isExternal": true,
     "isPremium": false,
@@ -1180,18 +1379,18 @@
    ]
   },
   "weather": {
-   "temperature": 55,
-   "highTemperature": 55,
-   "lowTemperature": 55,
-   "conditionId": "33",
-   "gust": 6,
+   "temperature": 48,
+   "highTemperature": 48,
+   "lowTemperature": 48,
+   "conditionId": "Clear",
+   "gust": 5,
    "precipitation": 0,
    "link": {
     "language": "en-US",
     "rel": [
      "43606"
     ],
-    "href": "http://www.accuweather.com/en/us/glass-bowl-oh/43620/hourly-weather-forecast/53618_poi?day=1&hbhhour=19&lang=en-us",
+    "href": "http://www.accuweather.com/en/us/glass-bowl-oh/43620/current-weather/53618_poi?lang=en-us",
     "text": "Weather",
     "shortText": "Weather",
     "isExternal": true,
@@ -1971,8 +2170,8 @@
      "displayName": "Passing Yards",
      "leaders": [
       {
-       "displayValue": "195/298, 2,501 YDS, 19 TD, 3 INT",
-       "value": 2501,
+       "displayValue": "3/6, 19 YDS",
+       "value": 19,
        "athlete": {
         "id": "5082330",
         "uid": "s:20~l:23~a:5082330",
@@ -2010,10 +2209,10 @@
         }
        },
        "mainStat": {
-        "value": "2,501",
+        "value": "19",
         "label": "YDS"
        },
-       "summary": "195/298, 19 TD, 3 INT"
+       "summary": "3/6"
       }
      ]
     },
@@ -2022,8 +2221,8 @@
      "displayName": "Rushing Yards",
      "leaders": [
       {
-       "displayValue": "151 CAR, 827 YDS, 7 TD",
-       "value": 827,
+       "displayValue": "3 CAR, 16 YDS",
+       "value": 16,
        "athlete": {
         "id": "5092811",
         "uid": "s:20~l:23~a:5092811",
@@ -2061,10 +2260,10 @@
         }
        },
        "mainStat": {
-        "value": "827",
+        "value": "16",
         "label": "YDS"
        },
-       "summary": "151 CAR, 7 TD"
+       "summary": "3 CAR"
       }
      ]
     },
@@ -2073,16 +2272,16 @@
      "displayName": "Receiving Yards",
      "leaders": [
       {
-       "displayValue": "47 REC, 736 YDS, 7 TD",
-       "value": 736,
+       "displayValue": "1 REC, 15 YDS",
+       "value": 15,
        "athlete": {
-        "id": "5153399",
-        "uid": "s:20~l:23~a:5153399",
-        "guid": "7625396f-9a92-3d32-80dd-11c4df3680d1",
-        "lastName": "Dabbs",
-        "fullName": "Adjatay Dabbs",
-        "displayName": "Adjatay Dabbs",
-        "shortName": "A. Dabbs",
+        "id": "5162858",
+        "uid": "s:20~l:23~a:5162858",
+        "guid": "2276391f-ef1f-31e7-9cff-226e4f67a75f",
+        "lastName": "Hammer",
+        "fullName": "Bryson Hammer",
+        "displayName": "Bryson Hammer",
+        "shortName": "B. Hammer",
         "links": [
          {
           "rel": [
@@ -2090,15 +2289,15 @@
            "desktop",
            "athlete"
           ],
-          "href": "https://www.espn.com/college-football/player/_/id/5153399/adjatay-dabbs",
+          "href": "https://www.espn.com/college-football/player/_/id/5162858/bryson-hammer",
           "text": "Player Card"
          }
         ],
         "headshot": {
-         "href": "https://a.espncdn.com/i/headshots/college-football/players/full/5153399.png",
-         "alt": "Adjatay Dabbs"
+         "href": "https://a.espncdn.com/i/headshots/college-football/players/full/5162858.png",
+         "alt": "Bryson Hammer"
         },
-        "jersey": "3",
+        "jersey": "12",
         "position": {
          "name": "Wide Receiver",
          "displayName": "Wide Receiver",
@@ -2112,28 +2311,32 @@
         }
        },
        "mainStat": {
-        "value": "736",
+        "value": "15",
         "label": "YDS"
        },
-       "summary": "47 REC, 7 TD"
+       "summary": "1 REC"
       }
      ]
     },
     {
      "name": "sacks",
-     "displayName": "Sacks",
+     "displayName": "Sacks"
+    },
+    {
+     "name": "totalTackles",
+     "displayName": "Tackles",
      "leaders": [
       {
-       "displayValue": "11.5",
-       "value": 11.5,
+       "displayValue": "2",
+       "value": 2,
        "athlete": {
-        "id": "5224269",
-        "uid": "s:20~l:23~a:5224269",
-        "guid": "27ada926-3e64-3425-8bd9-e5cec2dcd65b",
-        "lastName": "Zock",
-        "fullName": "Andrew Zock",
-        "displayName": "Andrew Zock",
-        "shortName": "A. Zock",
+        "id": "5252597",
+        "uid": "s:20~l:23~a:5252597",
+        "guid": "4f986912-0b73-39a2-a1ce-1ecfc728c6c5",
+        "lastName": "Johnson",
+        "fullName": "Zach Johnson",
+        "displayName": "Zach Johnson",
+        "shortName": "Z. Johnson",
         "links": [
          {
           "rel": [
@@ -2141,15 +2344,15 @@
            "desktop",
            "athlete"
           ],
-          "href": "https://www.espn.com/college-football/player/_/id/5224269/andrew-zock",
+          "href": "https://www.espn.com/college-football/player/_/id/5252597/zach-johnson",
           "text": "Player Card"
          }
         ],
         "headshot": {
-         "href": "https://a.espncdn.com/i/headshots/college-football/players/full/5224269.png",
-         "alt": "Andrew Zock"
+         "href": "https://a.espncdn.com/i/headshots/college-football/players/full/5252597.png",
+         "alt": "Zach Johnson"
         },
-        "jersey": "0",
+        "jersey": "90",
         "position": {
          "name": "Defensive End",
          "displayName": "Defensive End",
@@ -2163,61 +2366,10 @@
         }
        },
        "mainStat": {
-        "value": "11.5",
-        "label": "SACKS"
-       },
-       "summary": ""
-      }
-     ]
-    },
-    {
-     "name": "totalTackles",
-     "displayName": "Tackles",
-     "leaders": [
-      {
-       "displayValue": "81",
-       "value": 81,
-       "athlete": {
-        "id": "5153404",
-        "uid": "s:20~l:23~a:5153404",
-        "guid": "54e43c7a-4141-37d9-b060-62751aea4c76",
-        "lastName": "Fox",
-        "fullName": "Julian Fox",
-        "displayName": "Julian Fox",
-        "shortName": "J. Fox",
-        "links": [
-         {
-          "rel": [
-           "playercard",
-           "desktop",
-           "athlete"
-          ],
-          "href": "https://www.espn.com/college-football/player/_/id/5153404/julian-fox",
-          "text": "Player Card"
-         }
-        ],
-        "headshot": {
-         "href": "https://a.espncdn.com/i/headshots/college-football/players/full/5153404.png",
-         "alt": "Julian Fox"
-        },
-        "jersey": "10",
-        "position": {
-         "name": "Linebacker",
-         "displayName": "Linebacker",
-         "abbreviation": "LB"
-        },
-        "status": {
-         "id": "1",
-         "name": "Active",
-         "type": "active",
-         "abbreviation": "Active"
-        }
-       },
-       "mainStat": {
-        "value": "81",
+        "value": "2",
         "label": "TOT"
        },
-       "summary": ""
+       "summary": "1 SOLO"
       }
      ]
     }
@@ -2268,70 +2420,23 @@
    "leaders": [
     {
      "name": "passingYards",
-     "displayName": "Passing Yards",
-     "leaders": [
-      {
-       "displayValue": "150/225, 1,567 YDS, 11 TD, 8 INT",
-       "value": 1567,
-       "athlete": {
-        "id": "5385753",
-        "uid": "s:20~l:23~a:5385753",
-        "guid": "086ea1d9-35f8-3d65-9c17-13b2acc4ef1d",
-        "lastName": "Kastantin",
-        "fullName": "Jay Kastantin",
-        "displayName": "Jay Kastantin",
-        "shortName": "J. Kastantin",
-        "links": [
-         {
-          "rel": [
-           "playercard",
-           "desktop",
-           "athlete"
-          ],
-          "href": "https://www.espn.com/college-football/player/_/id/5385753/jay-kastantin",
-          "text": "Player Card"
-         }
-        ],
-        "headshot": {
-         "href": "https://a.espncdn.com/i/headshots/college-football/players/full/5385753.png",
-         "alt": "Jay Kastantin"
-        },
-        "jersey": "17",
-        "position": {
-         "name": "Quarterback",
-         "displayName": "Quarterback",
-         "abbreviation": "QB"
-        },
-        "status": {
-         "id": "1",
-         "name": "Active",
-         "type": "active",
-         "abbreviation": "Active"
-        }
-       },
-       "mainStat": {
-        "value": "1,567",
-        "label": "YDS"
-       },
-       "summary": "150/225, 11 TD, 8 INT"
-      }
-     ]
+     "displayName": "Passing Yards"
     },
     {
      "name": "rushingYards",
      "displayName": "Rushing Yards",
      "leaders": [
       {
-       "displayValue": "104 CAR, 371 YDS, 4 TD",
-       "value": 371,
+       "displayValue": "3 CAR, 8 YDS",
+       "value": 8,
        "athlete": {
-        "id": "5147347",
-        "uid": "s:20~l:23~a:5147347",
-        "guid": "7bfd97ea-9f0f-3741-b993-783376989709",
-        "lastName": "Dendy",
-        "fullName": "Austyn Dendy",
-        "displayName": "Austyn Dendy",
-        "shortName": "A. Dendy",
+        "id": "5219017",
+        "uid": "s:20~l:23~a:5219017",
+        "guid": "cb716837-d156-3f86-b261-b03cfc4ae505",
+        "lastName": "Amachree",
+        "fullName": "Nakai Amachree",
+        "displayName": "Nakai Amachree",
+        "shortName": "N. Amachree",
         "links": [
          {
           "rel": [
@@ -2339,15 +2444,15 @@
            "desktop",
            "athlete"
           ],
-          "href": "https://www.espn.com/college-football/player/_/id/5147347/austyn-dendy",
+          "href": "https://www.espn.com/college-football/player/_/id/5219017/nakai-amachree",
           "text": "Player Card"
          }
         ],
         "headshot": {
-         "href": "https://a.espncdn.com/i/headshots/college-football/players/full/5147347.png",
-         "alt": "Austyn Dendy"
+         "href": "https://a.espncdn.com/i/headshots/college-football/players/full/5219017.png",
+         "alt": "Nakai Amachree"
         },
-        "jersey": "1",
+        "jersey": "2",
         "position": {
          "name": "Running Back",
          "displayName": "Running Back",
@@ -2361,130 +2466,36 @@
         }
        },
        "mainStat": {
-        "value": "371",
+        "value": "8",
         "label": "YDS"
        },
-       "summary": "104 CAR, 4 TD"
+       "summary": "3 CAR"
       }
      ]
     },
     {
      "name": "receivingYards",
-     "displayName": "Receiving Yards",
-     "leaders": [
-      {
-       "displayValue": "35 REC, 356 YDS",
-       "value": 356,
-       "athlete": {
-        "id": "5207804",
-        "uid": "s:20~l:23~a:5207804",
-        "guid": "f9dcac91-fd45-3050-8eac-5f24af3514f6",
-        "lastName": "Scoby",
-        "fullName": "Jeremiah Scoby",
-        "displayName": "Jeremiah Scoby",
-        "shortName": "J. Scoby",
-        "links": [
-         {
-          "rel": [
-           "playercard",
-           "desktop",
-           "athlete"
-          ],
-          "href": "https://www.espn.com/college-football/player/_/id/5207804/jeremiah-scoby",
-          "text": "Player Card"
-         }
-        ],
-        "headshot": {
-         "href": "https://a.espncdn.com/i/headshots/college-football/players/full/5207804.png",
-         "alt": "Jeremiah Scoby"
-        },
-        "jersey": "0",
-        "position": {
-         "name": "Tight End",
-         "displayName": "Tight End",
-         "abbreviation": "TE"
-        },
-        "status": {
-         "id": "1",
-         "name": "Active",
-         "type": "active",
-         "abbreviation": "Active"
-        }
-       },
-       "mainStat": {
-        "value": "356",
-        "label": "YDS"
-       },
-       "summary": "35 REC"
-      }
-     ]
+     "displayName": "Receiving Yards"
     },
     {
      "name": "sacks",
-     "displayName": "Sacks",
-     "leaders": [
-      {
-       "displayValue": "14",
-       "value": 14,
-       "athlete": {
-        "id": "5093334",
-        "uid": "s:20~l:23~a:5093334",
-        "guid": "1ff4a3a3-4e71-3e0f-b371-ef8692bf5d3d",
-        "lastName": "Bradley",
-        "fullName": "Myles Bradley",
-        "displayName": "Myles Bradley",
-        "shortName": "M. Bradley",
-        "links": [
-         {
-          "rel": [
-           "playercard",
-           "desktop",
-           "athlete"
-          ],
-          "href": "https://www.espn.com/college-football/player/_/id/5093334/myles-bradley",
-          "text": "Player Card"
-         }
-        ],
-        "headshot": {
-         "href": "https://a.espncdn.com/i/headshots/college-football/players/full/5093334.png",
-         "alt": "Myles Bradley"
-        },
-        "jersey": "23",
-        "position": {
-         "name": "Defensive End",
-         "displayName": "Defensive End",
-         "abbreviation": "DE"
-        },
-        "status": {
-         "id": "1",
-         "name": "Active",
-         "type": "active",
-         "abbreviation": "Active"
-        }
-       },
-       "mainStat": {
-        "value": "14",
-        "label": "SACKS"
-       },
-       "summary": ""
-      }
-     ]
+     "displayName": "Sacks"
     },
     {
      "name": "totalTackles",
      "displayName": "Tackles",
      "leaders": [
       {
-       "displayValue": "96",
-       "value": 96,
+       "displayValue": "3",
+       "value": 3,
        "athlete": {
-        "id": "5193283",
-        "uid": "s:20~l:23~a:5193283",
-        "guid": "5b3bc503-3b03-3b2c-98b6-9f96d758fa5e",
-        "lastName": "Pringle",
-        "fullName": "Dorian Pringle",
-        "displayName": "Dorian Pringle",
-        "shortName": "D. Pringle",
+        "id": "5295261",
+        "uid": "s:20~l:23~a:5295261",
+        "guid": "27967431-c850-360c-9a1f-1cf902127df8",
+        "lastName": "Lewis",
+        "fullName": "Cashmire Lewis",
+        "displayName": "Cashmire Lewis",
+        "shortName": "C. Lewis",
         "links": [
          {
           "rel": [
@@ -2492,15 +2503,15 @@
            "desktop",
            "athlete"
           ],
-          "href": "https://www.espn.com/college-football/player/_/id/5193283/dorian-pringle",
+          "href": "https://www.espn.com/college-football/player/_/id/5295261/cashmire-lewis",
           "text": "Player Card"
          }
         ],
         "headshot": {
-         "href": "https://a.espncdn.com/i/headshots/college-football/players/full/5193283.png",
-         "alt": "Dorian Pringle"
+         "href": "https://a.espncdn.com/i/headshots/college-football/players/full/5295261.png",
+         "alt": "Cashmire Lewis"
         },
-        "jersey": "3",
+        "jersey": "8",
         "position": {
          "name": "Linebacker",
          "displayName": "Linebacker",
@@ -2514,10 +2525,10 @@
         }
        },
        "mainStat": {
-        "value": "96",
+        "value": "3",
         "label": "TOT"
        },
-       "summary": ""
+       "summary": "1 SOLO"
       }
      ]
     }
@@ -2542,44 +2553,94 @@
     },
     "statistics": [
      {
-      "name": "totalPointsPerGame",
-      "displayValue": "19.3",
-      "label": "Points Per Game"
+      "name": "firstDowns",
+      "displayValue": "0",
+      "value": 0,
+      "label": "1st Downs"
      },
      {
-      "name": "yardsPerGame",
-      "displayValue": "292.3",
+      "name": "thirdDownEff",
+      "displayValue": "0-1",
+      "value": 0,
+      "label": "3rd down efficiency"
+     },
+     {
+      "name": "fourthDownEff",
+      "displayValue": "0-0",
+      "value": "-",
+      "label": "4th down efficiency"
+     },
+     {
+      "name": "totalYards",
+      "displayValue": "12",
+      "value": "-",
       "label": "Total Yards"
      },
      {
-      "name": "passingYardsPerGame",
-      "displayValue": "181.6",
-      "label": "Yards Passing"
+      "name": "netPassingYards",
+      "displayValue": "0",
+      "value": 0,
+      "label": "Passing"
      },
      {
-      "name": "rushingYardsPerGame",
-      "displayValue": "110.7",
-      "label": "Yards Rushing"
+      "name": "completionAttempts",
+      "displayValue": "0/0",
+      "value": "-",
+      "label": "Comp/Att"
      },
      {
-      "name": "totalPointsPerGameAllowed",
-      "displayValue": "28.9",
-      "label": "Points Allowed Per Game"
+      "name": "yardsPerPass",
+      "displayValue": "0.0",
+      "value": 0,
+      "label": "Yards per pass"
      },
      {
-      "name": "yardsPerGameAllowed",
-      "displayValue": "381.0",
-      "label": "Yards Allowed"
+      "name": "rushingYards",
+      "displayValue": "12",
+      "value": 12,
+      "label": "Rushing"
      },
      {
-      "name": "passingYardsPerGameAllowed",
-      "displayValue": "182.5",
-      "label": "Pass Yards Allowed"
+      "name": "rushingAttempts",
+      "displayValue": "4",
+      "value": 4,
+      "label": "Rushing Attempts"
      },
      {
-      "name": "rushingYardsPerGameAllowed",
-      "displayValue": "198.5",
-      "label": "Rush Yards Allowed"
+      "name": "yardsPerRushAttempt",
+      "displayValue": "3.0",
+      "value": 3,
+      "label": "Yards per rush"
+     },
+     {
+      "name": "totalPenaltiesYards",
+      "displayValue": "0-0",
+      "value": "-",
+      "label": "Penalties"
+     },
+     {
+      "name": "turnovers",
+      "displayValue": "1",
+      "value": "-",
+      "label": "Turnovers"
+     },
+     {
+      "name": "fumblesLost",
+      "displayValue": "1",
+      "value": 1,
+      "label": "Fumbles lost"
+     },
+     {
+      "name": "interceptions",
+      "displayValue": "0",
+      "value": 0,
+      "label": "Interceptions thrown"
+     },
+     {
+      "name": "possessionTime",
+      "displayValue": " 2:16",
+      "value": 136,
+      "label": "Possession"
      }
     ],
     "displayOrder": 1,
@@ -2601,44 +2662,94 @@
     },
     "statistics": [
      {
-      "name": "totalPointsPerGame",
-      "displayValue": "34.3",
-      "label": "Points Per Game"
+      "name": "firstDowns",
+      "displayValue": "2",
+      "value": 2,
+      "label": "1st Downs"
      },
      {
-      "name": "yardsPerGame",
-      "displayValue": "453.0",
+      "name": "thirdDownEff",
+      "displayValue": "1-3",
+      "value": 0.3333333333,
+      "label": "3rd down efficiency"
+     },
+     {
+      "name": "fourthDownEff",
+      "displayValue": "0-0",
+      "value": "-",
+      "label": "4th down efficiency"
+     },
+     {
+      "name": "totalYards",
+      "displayValue": "34",
+      "value": "-",
       "label": "Total Yards"
      },
      {
-      "name": "passingYardsPerGame",
-      "displayValue": "256.2",
-      "label": "Yards Passing"
+      "name": "netPassingYards",
+      "displayValue": "19",
+      "value": 19,
+      "label": "Passing"
      },
      {
-      "name": "rushingYardsPerGame",
-      "displayValue": "196.8",
-      "label": "Yards Rushing"
+      "name": "completionAttempts",
+      "displayValue": "3/6",
+      "value": "-",
+      "label": "Comp/Att"
      },
      {
-      "name": "totalPointsPerGameAllowed",
-      "displayValue": "22.0",
-      "label": "Points Allowed Per Game"
+      "name": "yardsPerPass",
+      "displayValue": "3.2",
+      "value": 3.167,
+      "label": "Yards per pass"
      },
      {
-      "name": "yardsPerGameAllowed",
-      "displayValue": "301.7",
-      "label": "Yards Allowed"
+      "name": "rushingYards",
+      "displayValue": "15",
+      "value": 15,
+      "label": "Rushing"
      },
      {
-      "name": "passingYardsPerGameAllowed",
-      "displayValue": "192.3",
-      "label": "Pass Yards Allowed"
+      "name": "rushingAttempts",
+      "displayValue": "6",
+      "value": 6,
+      "label": "Rushing Attempts"
      },
      {
-      "name": "rushingYardsPerGameAllowed",
-      "displayValue": "109.4",
-      "label": "Rush Yards Allowed"
+      "name": "yardsPerRushAttempt",
+      "displayValue": "2.5",
+      "value": 2.5,
+      "label": "Yards per rush"
+     },
+     {
+      "name": "totalPenaltiesYards",
+      "displayValue": "0-0",
+      "value": "-",
+      "label": "Penalties"
+     },
+     {
+      "name": "turnovers",
+      "displayValue": "0",
+      "value": "-",
+      "label": "Turnovers"
+     },
+     {
+      "name": "fumblesLost",
+      "displayValue": "0",
+      "value": 0,
+      "label": "Fumbles lost"
+     },
+     {
+      "name": "interceptions",
+      "displayValue": "0",
+      "value": 0,
+      "label": "Interceptions thrown"
+     },
+     {
+      "name": "possessionTime",
+      "displayValue": " 4:51",
+      "value": 291,
+      "label": "Possession"
      }
     ],
     "displayOrder": 2,
@@ -2646,7 +2757,97 @@
    }
   ]
  },
- "winprobability": [],
+ "winprobability": [
+  [
+   0.892,
+   1
+  ],
+  [
+   0.897,
+   1
+  ],
+  [
+   0.898,
+   1
+  ],
+  [
+   0.891,
+   1
+  ],
+  [
+   0.907,
+   1
+  ],
+  [
+   0.902,
+   1
+  ],
+  [
+   0.895,
+   1
+  ],
+  [
+   0.882,
+   1
+  ],
+  [
+   0.897,
+   1
+  ],
+  [
+   0.897,
+   1
+  ],
+  [
+   0.922,
+   1
+  ],
+  [
+   0.924,
+   1
+  ],
+  [
+   0.919,
+   1
+  ],
+  [
+   0.909,
+   1
+  ],
+  [
+   0.893,
+   1
+  ],
+  [
+   0.901,
+   1
+  ],
+  [
+   0.901,
+   1
+  ],
+  [
+   0.908,
+   1
+  ],
+  [
+   0.908,
+   1
+  ],
+  [
+   0.9,
+   1
+  ]
+ ],
  "injuries": [],
- "scoringPlays": []
+ "scoringPlays": [
+  {
+   "period": 1,
+   "clock": "12:50",
+   "team": "2649",
+   "text": "R. Griffith 46 yd FG GOOD",
+   "away": 0,
+   "home": 3
+  }
+ ]
 }
