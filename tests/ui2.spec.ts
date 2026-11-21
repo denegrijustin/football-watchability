@@ -27,6 +27,7 @@ const noOverflow = async (page: Page) => {
 
 test.describe("game cards", () => {
   test("a compact card leads with the essentials: teams, logos, status, rating and its category, the channel, one Game Center button", async ({ page }) => {
+    test.skip(test.info().project.name === "mobile", "on a phone the compact card shows only the essentials (teams, score, watch score, channel); this part is in Details and the expanded card");
     await quiet(page);
     await page.goto("/?league=NFL");
     const c = card(page);

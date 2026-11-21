@@ -18,9 +18,12 @@ test("the small card is laid out like the NHL's: one top row with the channel an
   // A team's record sits on the line with its name when there is room, so each team is one or two short lines.
   const teams = card.locator(".cc-team");
   await expect(teams).toHaveCount(2);
-  const first = await teams.first().locator("h4").boundingBox();
-  const record = await teams.first().locator("p").boundingBox();
-  expect(record!.y).toBeLessThan(first!.y + first!.height + 10); // (the score ring takes a little width, so a long name can push the record a few pixels down)
+  const phone = (page.viewportSize()?.width ?? 1280) <= 760; // the phone card is a compact row: no record line (it is in Details)
+  if (!phone) {
+    const first = await teams.first().locator("h4").boundingBox();
+    const record = await teams.first().locator("p").boundingBox();
+    expect(record!.y).toBeLessThan(first!.y + first!.height + 10); // (the score ring takes a little width, so a long name can push the record a few pixels down)
+  } else expect((await card.boundingBox())!.height).toBeLessThanOrEqual(140); // about five cards fit on a phone screen
   // The card is short: it used to be well over 500px tall.
   expect((await card.boundingBox())!.height).toBeLessThanOrEqual(530); // the card size: 520 on a desktop, 530 on a phone
   // The details are still one tap away.

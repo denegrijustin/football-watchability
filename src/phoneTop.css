@@ -54,11 +54,11 @@
    Header (when / where to watch / Game Center), the two teams with their scores, the watch score, and a small Details link. The badges, meters, venue, injuries,
    betting line and projection are in Details (and the Game Center). */
 @media (max-width: 760px) {
-  :root:root { --card-h: 122px; }
+  :root:root { --card-h: 130px; }
   .board-section .game-card.compact:not(.result-card) { padding: 6px 10px 6px; border-radius: 14px; }
   .game-card.compact:not(.result-card) .compact-overview.v2 {
-    display: grid; grid-template-columns: minmax(0, 1fr) 62px; grid-template-areas: "top top" "head head" "teams rate" "teams act";
-    grid-template-rows: auto auto 1fr auto; column-gap: 8px; row-gap: 0; align-content: start;
+    position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 62px; grid-template-areas: "top top" "head head" "teams rate";
+    grid-template-rows: auto auto 1fr; column-gap: 8px; row-gap: 0; align-content: start;
   }
   .game-card.compact:not(.result-card) .compact-overview.v2 > * { display: none; }
   .game-card.compact:not(.result-card) .compact-overview.v2 > h3.sr-only { display: block; }
@@ -71,8 +71,13 @@
   .game-card.compact:not(.result-card) .compact-overview.v2 .cc-rate { display: flex; grid-area: rate; flex-direction: column; align-items: center; justify-content: center; gap: 0; padding: 0; border: 0; background: none; min-height: 0; box-shadow: none; }
   .game-card.compact:not(.result-card) .compact-overview.v2 .cc-rate .score-tier { font-size: 0.625rem; line-height: 1.1; max-width: 62px; text-align: center; }
   .game-card.compact:not(.result-card) .compact-overview.v2 .cc-rate .rise-tag { display: none; }
-  .game-card.compact:not(.result-card) .compact-overview.v2 > .cc-actions { display: flex; grid-area: act; justify-content: center; margin: 0; }
-  .game-card.compact:not(.result-card) .compact-overview.v2 > .cc-actions .card-toggle { min-height: 0; height: 22px; padding: 0 6px; font-size: 0.6875rem; }
+  /* the live meters keep running (their feed also updates the score) but take no room: a phone shows them in Details */
+  .game-card.compact:not(.result-card) .compact-overview.v2 > .live-meters { display: block; position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  /* Details is a 44px chevron at the end of the header, beside the Game Center button */
+  .game-card.compact:not(.result-card) .compact-overview.v2 > .cc-actions { display: flex; grid-area: head; justify-self: end; align-self: center; margin: 0; padding: 0; z-index: 1; }
+  .game-card.compact:not(.result-card) .compact-overview.v2 > .cc-actions .card-toggle { flex: none; min-width: 44px; min-height: 44px; width: 44px; height: 44px; padding: 0; font-size: 0; display: inline-flex; align-items: center; justify-content: center; }
+  .game-card.compact:not(.result-card) .compact-overview.v2 > .cc-actions .card-toggle span { font-size: 1rem; }
+  .game-card.compact:not(.result-card) .compact-overview.v2 > .card-top { padding-right: 52px; }
   /* header: when, where to watch, Game Center; the down and distance sits under the status inside the same height */
   .game-card.compact:not(.result-card) .compact-overview.v2 > .card-top { align-items: center; }
   .game-card.compact:not(.result-card) .cc-gc { min-width: 44px; min-height: 44px; width: 44px; padding: 2px; }
@@ -82,8 +87,7 @@
   .game-card.compact:not(.result-card) .cc-top .game-status { font-size: 0.75rem; }
   .game-card.compact:not(.result-card) .cc-network .net-chip, .game-card.compact:not(.result-card) .cc-network img { max-height: 28px; }
   .game-card.compact:not(.result-card) .compact-overview.v2 .cc-team > div:not(.team-score) p { display: none; }
-  .game-card.compact:not(.result-card) .compact-overview.v2 .cc-rate .score-ring { width: 34px !important; height: 34px !important; }
-  .game-card.compact:not(.result-card) .compact-overview.v2 > .cc-actions { padding-top: 0; }
+  .game-card.compact:not(.result-card) .compact-overview.v2 .cc-rate .score-ring { width: 38px !important; height: 38px !important; }
   .game-card.compact:not(.result-card) .compact-overview.v2 .cc-team .team-score { font-size: 1.5rem; line-height: 1; min-height: 0; }
   .game-card.compact:not(.result-card) .compact-overview.v2 .cc-team .team-score .ts-num { line-height: 1; }
   .game-card.compact:not(.result-card) .compact-overview.v2 .cc-team { grid-template-columns: 30px minmax(0, 1fr) auto; gap: 8px; }

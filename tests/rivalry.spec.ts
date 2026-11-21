@@ -69,6 +69,7 @@ test.describe("on the cards", () => {
   test.beforeEach(async ({ page }) => { await stubFinals(page); });
 
   test("a rivalry game has a small badge, and one with a trophy shows the trophy's drawing", async ({ page }) => {
+    test.skip(test.info().project.name === "mobile", "on a phone the compact card shows only the essentials (teams, score, watch score, channel); this part is in Details and the expanded card");
 
     test.skip(!hasCfbGame(), NO_CFB);
     await page.goto("/?league=CFB");

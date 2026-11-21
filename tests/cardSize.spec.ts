@@ -15,7 +15,7 @@ for (const lg of ["NFL", "CFB"] as const) {
     await page.goto(`/?league=${lg}`);
     const cards = page.locator(".game-card.compact");
     await expect(cards.first()).toBeVisible({ timeout: 15_000 });
-    await expect(page.locator(".live-meters").first()).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator(".live-meters").first()).toBeAttached({ timeout: 15_000 }); // (a phone keeps the meters in Details, so they are in the page but not shown)
     await page.waitForTimeout(800);
     // Scroll down the page in steps so every card has been drawn, then measure them all in one go.
     await page.evaluate(async () => { for (let y = 0; y < document.body.scrollHeight; y += 500) { window.scrollTo(0, y); await new Promise((r) => setTimeout(r, 60)); } window.scrollTo(0, 0); });
