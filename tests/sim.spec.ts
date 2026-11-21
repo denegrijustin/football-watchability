@@ -34,9 +34,9 @@ test("@phone all five categories stay on one row, visible and not overlapping, f
       return { n: bs.length, overlaps, off: bs.filter((b) => b.right > innerWidth + 1 || b.left < -1).length, rows: new Set(bs.map((b) => Math.round(b.top))).size };
     });
     expect(r, `categories at ${w}px`).toEqual({ n: 5, overlaps: 0, off: 0, rows: 1 });
-    // every destination is still in the page, once: the twelve sections the old tabs reached
+    // every destination is still in the page, once: the thirteen sections the menu reaches
     expect(await page.locator(".site-nav [data-tab]").evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset.tab).sort())).toEqual(
-      ["board", "empire", "grid", "injuries", "insanity", "nfl", "picks", "resumes", "spplus", "standings", "teams", "trades"],
+      ["board", "empire", "grid", "injuries", "insanity", "leverage", "nfl", "picks", "resumes", "spplus", "standings", "teams", "trades"],
     );
   }
 });
