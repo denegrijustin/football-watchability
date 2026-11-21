@@ -112,6 +112,6 @@ test("the board's Completed holds this week's finals only; earlier weeks wait be
   const more = page.getByRole("button", { name: /^Earlier weeks/ });
   await expect(more).toBeVisible();
   await more.click();
-  await expect(page.locator(".board-section.final .week-block .week-head h4", { hasText: /Nov\. 3/ }).first()).toBeVisible();
+  await expect(page.locator(".board-section.final .week-block .week-head h4").filter({ hasNotText: slate.period }).first()).toBeVisible(); // an earlier week opens (whichever weeks the archive holds)
   await expect(page.locator('[data-status-chip="final"] b')).toHaveText(String(current)); // still not counted
 });

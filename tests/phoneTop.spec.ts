@@ -16,7 +16,7 @@ test("@phone on a phone the space above the first game card is under 440px", asy
   const top = await card.evaluate((el) => el.getBoundingClientRect().top + scrollY);
   await page.screenshot({ path: "test-results/phone-top.png" });
   expect(top).toBeLessThan(440); // 420 plus room for the finished-games strip that sits above the live section once a morning game has ended
-  expect((await card.boundingBox())!.height).toBeLessThanOrEqual(530); // a live card on a phone: one-line header, team rows, rating tile, pills and slim meters
+  expect((await card.boundingBox())!.height).toBeLessThanOrEqual(530.5); // (half a pixel of rounding) a live card on a phone: one-line header, team rows, rating tile, pills and slim meters
 });
 
 test("@phone every Watch now tile is the same size and shows its teams and scores whole", async ({ page }) => {
