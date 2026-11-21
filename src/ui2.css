@@ -172,11 +172,15 @@
 :root { --card-h: 530px; }
 @media (min-width: 761px) { :root { --card-h: 520px; } }
 .game-card.compact { min-height: var(--card-h); }
+.game-card.compact.result-card { min-height: var(--result-h, var(--card-h)); }
 .game-card.compact > .compact-overview { justify-content: space-between; }
 .compact-overview.v2 .cc-team .chipimg { box-sizing: border-box; }
 .game-card.compact .cc-actions { margin-top: 0; }
 /* the size an off-screen card is assumed to have is the card size, so the page does not jump as cards come into view */
-.board-section .game-card.compact, .board-section .result-card.compact { contain-intrinsic-size: auto var(--card-h); }
+:root { --result-h: 530px; }
+@media (min-width: 761px) { :root { --result-h: 520px; } }
+.board-section .game-card.compact { contain-intrinsic-size: auto var(--card-h); }
+.board-section .result-card.compact { contain-intrinsic-size: auto var(--result-h); }
 
 /* each team's second color (gold for Pittsburgh, lilac-white for TCU) where it has one: the glow, the stat bars and the player rows */
 .gc .gc-cbar.home { background: linear-gradient(270deg, var(--team-alt, color-mix(in srgb, var(--team-bg, #4a7fc0) 62%, #ffffff)), color-mix(in srgb, var(--team-alt, var(--team-bg, #4a7fc0)) 80%, #ffffff)); }

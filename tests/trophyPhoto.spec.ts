@@ -18,6 +18,7 @@ test("every trophy photograph is a real file, freely licensed, credited, and bel
 });
 
 test("a trophy game with a photograph shows the photo on its card, and the credits list names it", async ({ page }) => {
+  test.skip(test.info().project.name === "mobile", "on a phone the compact card shows only the essentials (teams, score, watch score, channel); this part is in Details and the expanded card");
   const key = Object.keys(photos)[0];
   test.skip(!key, "no trophy photographs yet");
   test.skip(!hasCfbGame(), NO_CFB);

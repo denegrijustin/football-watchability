@@ -20,6 +20,11 @@ function loads(page: Page) {
 }
 const boot = (page: Page) => page.locator("html");
 const card = (page: Page) => page.locator(".game-card:not(.result-card)").first();
+/** Taps the card itself (not a button or a team on it): the middle on a computer, the empty bottom-left corner on a phone, where the compact row has no empty middle. */
+const tapCard = async (page: Page) => {
+  const c = card(page);
+  if ((page.viewportSize()?.width ?? 1280) <= 760) { const b = (await c.boundingBox())!; await c.click({ position: { x: 22, y: b.height - 4 } }); } else await c.click();
+};
 
 test.describe("startup", () => {
   test("normal startup draws the shell, then the board, and ends ready", async ({ page }) => {
@@ -192,7 +197,7 @@ test.describe("Game Center loading", () => {
     await page.goto("/?league=NFL");
     await expect(card(page)).toBeVisible();
     g.mode = "delay";
-    await card(page).click();
+    await tapCard(page);
     await expect(page.getByText("Opening Game Center…")).toBeVisible();
     const close = dialog(page).getByRole("button", { name: "Close Game Center" });
     const box = (await close.boundingBox())!;
@@ -208,7 +213,7 @@ test.describe("Game Center loading", () => {
     await page.goto("/?league=NFL");
     await expect(card(page)).toBeVisible();
     g.mode = "delay";
-    await card(page).click();
+    await tapCard(page);
     await expect(page.getByText("Opening Game Center…")).toBeVisible();
     await dialog(page).getByRole("button", { name: "Close Game Center" }).click();
     await expect(dialog(page)).toHaveCount(0);
@@ -223,12 +228,12 @@ test.describe("Game Center loading", () => {
     await page.goto("/?league=NFL");
     await expect(card(page)).toBeVisible();
     g.mode = "delay";
-    await card(page).click();
+    await tapCard(page);
     await expect(page.getByText("Opening Game Center…")).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(dialog(page)).toHaveCount(0);
     await expect.poll(() => g.released, { timeout: 15_000 }).toBe(true);
-    await card(page).click();
+    await tapCard(page);
     await expect(dialog(page).locator(".gc-head")).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(dialog(page)).toHaveCount(0);
@@ -241,7 +246,7 @@ test.describe("Game Center loading", () => {
     await page.goto("/?league=NFL");
     await expect(card(page)).toBeVisible();
     g.mode = "abort";
-    await card(page).click();
+    await tapCard(page);
     const failed = dialog(page).getByRole("alert").filter({ hasText: "The Game Center could not load." });
     await expect(failed).toBeVisible({ timeout: 10_000 });
     await expect(card(page)).toBeVisible(); // the board is still there behind it
@@ -250,7 +255,7 @@ test.describe("Game Center loading", () => {
     await expect(dialog(page)).toHaveCount(0);
     await expect(card(page)).toBeVisible();
     // the same game opened again fails again while the file is unreachable; once it is back, Retry opens it
-    await card(page).click();
+    await tapCard(page);
     await expect(failed).toBeVisible({ timeout: 10_000 });
     g.mode = "pass";
     await failed.getByRole("button", { name: "Retry" }).click();
@@ -259,7 +264,7 @@ test.describe("Game Center loading", () => {
     // and it opens again afterwards
     await page.keyboard.press("Escape");
     await expect(dialog(page)).toHaveCount(0);
-    await card(page).click();
+    await tapCard(page);
     await expect(dialog(page).locator(".gc-head")).toBeVisible();
   });
 
@@ -269,7 +274,7 @@ test.describe("Game Center loading", () => {
     await page.goto("/?league=NFL");
     await expect(card(page)).toBeVisible();
     g.mode = "abortAll";
-    await card(page).click();
+    await tapCard(page);
     const failed = dialog(page).getByRole("alert").filter({ hasText: "The Game Center could not load." });
     await expect(failed).toBeVisible({ timeout: 10_000 });
     await failed.getByRole("button", { name: "Retry" }).click();
@@ -280,7 +285,7 @@ test.describe("Game Center loading", () => {
     await refresh.click(); // the person's choice, and the only reload in this test
     await page.waitForLoadState("domcontentloaded");
     await expect(card(page)).toBeVisible();
-    await card(page).click();
+    await tapCard(page);
     await expect(dialog(page).locator(".gc-head")).toBeVisible({ timeout: 15_000 });
   });
 
@@ -297,7 +302,7 @@ test.describe("Game Center loading", () => {
       await r.fulfill({ response: res, body: html });
     });
     g.mode = "abortAll";
-    await card(page).click();
+    await tapCard(page);
     await expect(dialog(page).getByText("Game Center was updated. Refresh the application to load the latest version.")).toBeVisible({ timeout: 10_000 });
     await expect(dialog(page).getByRole("button", { name: "Refresh the application" })).toBeVisible();
     expect(nav.count).toBe(1);
@@ -308,13 +313,13 @@ test.describe("Game Center loading", () => {
     await page.addInitScript(() => { (window as unknown as { __fbFault: string }).__fbFault = "gc"; });
     await page.goto("/?league=NFL");
     await expect(card(page)).toBeVisible();
-    await card(page).click();
+    await tapCard(page);
     const failed = dialog(page).getByRole("alert").filter({ hasText: "The Game Center ran into a problem." });
     await expect(failed).toBeVisible();
     await expect(card(page)).toBeVisible();
     await failed.getByRole("button", { name: "Close" }).click();
     await expect(dialog(page)).toHaveCount(0);
-    await card(page).click();
+    await tapCard(page);
     await expect(failed).toBeVisible();
     await page.evaluate(() => { (window as unknown as { __fbFault: string | null }).__fbFault = null; });
     await failed.getByRole("button", { name: "Retry" }).click();
@@ -357,7 +362,7 @@ test.describe("real mobile journey", () => {
     await expect(card(page)).toBeVisible();
     // a game from the board, then its Game Center
     const target = card(page);
-    await target.tap();
+    await tapCard(page); // (the empty bottom-left corner of the compact row: its middle is a team)
     const dialog = page.locator("dialog.gc[open]");
     await expect(dialog).toBeVisible();
     await expect(dialog.locator(".gc-head").or(page.getByText("Opening Game Center…"))).toBeVisible();

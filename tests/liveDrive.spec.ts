@@ -60,6 +60,7 @@ test("a live card whose lower NFL+-ranked team is ahead gets the neon outline an
   await expect(card.locator(".upset-banner")).toContainText(/upset alert/i);
   // (the card's shadow eases from its team glow to the neon, so wait for it to arrive instead of reading it mid-way)
   await expect.poll(() => card.evaluate((e) => getComputedStyle(e).boxShadow), { timeout: 5000 }).toContain("57, 255, 136");
+  if (test.info().project.name === "mobile") return; // (the phone card is a compact row: the neon outline marks the upset and the banner is in Details)
   // The strip is the first thing on the card and names who leads, with both ranks.
   const first = await card.evaluate((e) => (e.querySelector(".compact-overview")?.firstElementChild as HTMLElement).className);
   expect(first).toBe("upset-banner");
