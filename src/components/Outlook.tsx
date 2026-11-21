@@ -271,7 +271,7 @@ function LeveragePart({ lev, sims, cycle, dow, league }: { lev?: Leverage | null
       <Note>
         Each logo sits at the team's playoff chance now. The orange end is its chance if it loses its next game, the blue end if it wins; the longer the bar, the more the game matters. Teams on a bye show only where they stand.
         {league === "NFL" ? " " : " Teams with no realistic shot are left out. "}
-        From {sims?.toLocaleString() ?? "many"} simulations of the rest of the season, as of the {dow} {dayText(cycle)} refresh (updates every {dow}). A team that already played this week is left out.
+        From {sims?.toLocaleString() ?? "many"} simulations of the rest of the season, as of the {dow} {dayText(cycle)} refresh ({dow === "Sunday" ? "rebuilt as each new week of games comes into the schedule" : `updates every ${dow}`}). A team that already played this week is left out.
       </Note>
       <LeverageChart rows={lev.rows} label={`${league} playoff chances now, after a loss and after a win`} />
       {lev.games.length > 0 && (
@@ -514,10 +514,10 @@ function CfbSeeds({ cfb }: { cfb: NonNullable<Data["cfb"]> }) {
   );
 }
 
-export function Outlook({ defaultLeague }: { defaultLeague: League }) {
+export function Outlook({ defaultLeague, only }: { defaultLeague: League; only?: "leverage" }) {
   const [data, setData] = useState<Data | null>(null);
   const [league, setLeague] = useState<League>(defaultLeague);
-  const [part, setPart] = useState<"playoff" | "tracker" | "leverage" | "ranking" | "bowls">("playoff");
+  const [part, setPart] = useState<"playoff" | "tracker" | "leverage" | "ranking" | "bowls">(only ?? "playoff");
   const [shown, setShown] = useState(25);
   const [conf, setConf] = useState("all");
   useEffect(() => {
@@ -537,14 +537,14 @@ export function Outlook({ defaultLeague }: { defaultLeague: League }) {
           <button aria-pressed={league === "CFB"} onClick={() => setLeague("CFB")}>College</button>
           <button aria-pressed={league === "NFL"} onClick={() => setLeague("NFL")}>NFL</button>
         </div>
-        {league === "NFL" && (
+        {!only && league === "NFL" && (
           <div className="segmented" role="group" aria-label="Outlook section">
             <button aria-pressed={part === "playoff"} onClick={() => setPart("playoff")}>Seeds</button>
             <button aria-pressed={part === "tracker"} onClick={() => setPart("tracker")}>Tracker</button>
             <button aria-pressed={part === "leverage"} onClick={() => setPart("leverage")}>Leverage</button>
           </div>
         )}
-        {league === "CFB" && (
+        {!only && league === "CFB" && (
           <div className="segmented" role="group" aria-label="Outlook section">
             <button aria-pressed={part === "playoff"} onClick={() => setPart("playoff")}>Playoff</button>
             <button aria-pressed={part === "tracker"} onClick={() => setPart("tracker")}>Tracker</button>

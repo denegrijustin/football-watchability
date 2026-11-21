@@ -84,7 +84,8 @@ function stamp(feedName, key) {
 const cfbKey = cycleKey(now, 0);
 const cfbSchedule = freshSchedule("cfb-schedule.json");
 // A snapshot saved without leverage (built before it existed, or overwritten by an older build) is rebuilt too, so the Leverage view cannot stay empty until the next cycle.
-if (force || saved.cfb?.cycle !== cfbKey || (!saved.cfb?.sim && cfbSchedule) || (!saved.cfb?.leverage && cfbSchedule?.games?.length) || (!saved.cfb?.tracker && cfbSchedule?.games?.length)) {
+if (force || saved.cfb?.cycle !== cfbKey || (!saved.cfb?.sim && cfbSchedule) || (!saved.cfb?.leverage && cfbSchedule?.games?.length) || (!saved.cfb?.tracker && cfbSchedule?.games?.length) || (cfbSchedule?.games?.length && saved.cfb?.leverage?.week !== firstWeek(cfbSchedule.games))) {
+  // (the last test: leverage is for the next week to be played, so it is rebuilt when that week moves on, not only on Sunday)
   const teams = parseFpi(feed("cfb-fpi.json"));
   if (teams.length < 100) console.log(`College outlook kept: only ${teams.length} teams in the FPI feed.`);
   else {

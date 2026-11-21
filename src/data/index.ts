@@ -102,7 +102,7 @@ export function daysFor(league: League) {
 }
 
 // ---------- finished games ----------
-export type View = "board" | "picks" | "grid" | "insanity" | "outlook" | "empire" | "spplus" | "nfl" | "sim" | "upset" | "injuries" | "standings" | "resumes" | "teams" | "trades";
+export type View = "board" | "picks" | "grid" | "insanity" | "outlook" | "leverage" | "empire" | "spplus" | "nfl" | "sim" | "upset" | "injuries" | "standings" | "resumes" | "teams" | "trades";
 export type StatusFilter = "all" | "live" | "final" | "upcoming";
 export type Part = { id: string; label: string; max: number; pts: number; note: string };
 export type Breakdown = { base: number; parts: Part[] };

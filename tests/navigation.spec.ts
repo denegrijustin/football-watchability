@@ -111,10 +111,10 @@ test.describe("structure @nav", () => {
 });
 
 test.describe("completeness @nav", () => {
-  test("every one of the 12 views has exactly one entry and every category lists exactly its own entries @nav", async ({ page }) => {
+  test("every one of the 13 views has exactly one entry and every category lists exactly its own entries @nav", async ({ page }) => {
     await load(page, 1280);
     for (const tab of Object.keys(TABS)) await expect(page.locator(`nav.site-nav [data-tab="${tab}"]`), tab).toHaveCount(1);
-    await expect(page.locator("nav.site-nav [data-tab]")).toHaveCount(12);
+    await expect(page.locator("nav.site-nav [data-tab]")).toHaveCount(13);
     for (const c of CATS) {
       // the visible label names the entry (no separate aria-label), so the name is the label and nothing else
       expect(await panel(page, c).locator(".nav-item[aria-label]").count(), `${c} entries with an aria-label`).toBe(0);
@@ -349,15 +349,15 @@ test.describe("keyboard @nav", () => {
     await page.keyboard.press("ArrowDown");
     await expect(all.nth(1)).toBeFocused();
     await page.keyboard.press("End");
-    await expect(all.nth(3)).toBeFocused();
+    await expect(all.nth(4)).toBeFocused();
     await page.keyboard.press("ArrowDown");
     await expect(all.nth(0)).toBeFocused();
     await page.keyboard.press("ArrowUp");
-    await expect(all.nth(3)).toBeFocused();
+    await expect(all.nth(4)).toBeFocused();
     await page.keyboard.press("Home");
     await expect(all.nth(0)).toBeFocused();
     await page.keyboard.press("ArrowUp");
-    await expect(all.nth(3)).toBeFocused();
+    await expect(all.nth(4)).toBeFocused();
     await expect(trigger(page, "rankings")).toHaveAttribute("aria-expanded", "true");
   });
 

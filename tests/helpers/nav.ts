@@ -8,29 +8,29 @@ export const CAT_LABELS = ["Games", "Teams", "Rankings", "Analytics", "More"];
 export const ITEMS: Record<Cat, string[]> = {
   games: ["Watchability Dashboard", "Live Games", "Upcoming Games", "Completed Games", "TV Grid", "Game Center"],
   teams: ["Team Profiles", "Injuries", "Trade Finder"],
-  rankings: ["Standings", "Team Resumés", "CFB SP+", "NFL+"],
+  rankings: ["Standings", "Team Resumés", "CFB SP+", "NFL+", "Playoff Leverage"],
   analytics: ["Insanity", "Empire", "ATS & Parlays"],
   more: ["Spreadsheet (CSV)", "Calendar (.ics)", "Change Time Zone", "How to Read a Card", "About & Methodology", "ESPN", "nflverse"],
 };
 
-/** The 12 views that have a menu entry, and the category each one lives in. */
+/** The 13 views that have a menu entry, and the category each one lives in. */
 export const TABS: Record<string, Cat> = {
   board: "games", grid: "games", teams: "teams", injuries: "teams", trades: "teams", standings: "rankings", resumes: "rankings",
-  spplus: "rankings", nfl: "rankings", insanity: "analytics", empire: "analytics", picks: "analytics",
+  spplus: "rankings", nfl: "rankings", leverage: "rankings", insanity: "analytics", empire: "analytics", picks: "analytics",
 };
 
 /** Every View id the address bar accepts, the entry it lights (data-tab) and the category. */
 export const VIEW_URLS: Record<string, { entry: string; cat: Cat }> = {
   board: { entry: "board", cat: "games" }, picks: { entry: "picks", cat: "analytics" }, grid: { entry: "grid", cat: "games" },
   insanity: { entry: "insanity", cat: "analytics" }, outlook: { entry: "standings", cat: "rankings" }, empire: { entry: "empire", cat: "analytics" },
-  spplus: { entry: "spplus", cat: "rankings" }, nfl: { entry: "nfl", cat: "rankings" }, sim: { entry: "picks", cat: "analytics" },
+  spplus: { entry: "spplus", cat: "rankings" }, nfl: { entry: "nfl", cat: "rankings" }, leverage: { entry: "leverage", cat: "rankings" }, sim: { entry: "picks", cat: "analytics" },
   upset: { entry: "picks", cat: "analytics" }, injuries: { entry: "injuries", cat: "teams" }, standings: { entry: "standings", cat: "rankings" },
   resumes: { entry: "resumes", cat: "rankings" }, teams: { entry: "teams", cat: "teams" }, trades: { entry: "trades", cat: "teams" },
 };
 
 /** A stable marker for each view's own content (the root element of its component, or its first heading). */
 export const MARKER: Record<string, string> = {
-  board: ".board-heading", picks: ".ph", grid: ".tvgrid", insanity: ".ib", outlook: ".sh", empire: ".imp", spplus: ".spp-host", nfl: ".nfl-host",
+  board: ".board-heading", picks: ".ph", grid: ".tvgrid", insanity: ".ib", outlook: ".sh", empire: ".imp", spplus: ".spp-host", nfl: ".nfl-host", leverage: ".ol",
   sim: ".ph", upset: ".ph", injuries: ".ij", standings: ".sh", resumes: ".rs", teams: ".tm", trades: ".tf",
 };
 
