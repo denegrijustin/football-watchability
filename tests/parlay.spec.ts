@@ -1,5 +1,5 @@
 import { test, expect } from "./fixtures";
-import { hasCfbGame, NO_CFB } from "./helpers/slate";
+import { hasCfbGame, NO_CFB, cfbToPlay, NO_CFB_TO_PLAY } from "./helpers/slate";
 import { stubFinals } from "./helpers/finals";
 import { american, byGame, evaluate, recommend, type Leg } from "../src/parlay";
 import { coverRule, ratingsMargin, strengthOf } from "../src/livePicks";
@@ -40,15 +40,13 @@ test("a pick says what has to happen, what the ratings expect and how strong it 
 for (const [lg, name] of [["NFL", "NFL"], ["CFB", "College"]] as const) {
   test(`the Parlays tab builds slips of two to four legs and lists the games (${name})`, async ({ page }) => {
     test.skip(!hasCfbGame(), NO_CFB);
+    test.skip(lg === "CFB" && cfbToPlay() < 4, NO_CFB_TO_PLAY); // (the 2, 3 and 4-leg slips need four games still to play)
     await stubFinals(page);
     await page.goto(`/?league=${lg}`);
     await page.locator('.site-nav [data-tab="picks"]').click();
     await page.getByRole("group", { name: "Picks section" }).getByRole("button", { name: "Parlays" }).click();
     await expect(page.locator(".pl-slip").first()).toBeVisible({ timeout: 20_000 });
     await expect(page.locator(".pl-warn")).toContainText("every leg hits");
-    // the 4-leg slip needs four games still to play with a line; late in a college week (Saturday night, Sunday) there are fewer, so only what can be built is checked
-    const built = await page.locator(".pl-slip h4", { hasText: /-leg · Top picks/ }).count();
-    test.skip(lg === "CFB" && built < 3, "fewer than four college games left to play with lines this week, so the 2, 3 and 4-leg Top picks slips cannot all be built");
     for (const n of [2, 3, 4]) await expect(page.locator(".pl-slip h4", { hasText: `${n}-leg · Top picks` })).toBeVisible();
     await expect(page.locator(".pl-slip").first().locator(".pl-leg")).toHaveCount(2);
     await page.getByRole("button", { name: "All football" }).click();
