@@ -5,7 +5,7 @@ import { LogoMark } from "./logoTone";
 import { WeatherLayer } from "./WeatherEffects";
 import { ConfMark, confEntry } from "./ConfMark";
 import { HomeEndZones, EZ_H, EZ_W } from "./sim/EndZones";
-import { retroFieldSrc } from "./sim/retroField";
+import { fullFieldSrc, retroFieldSrc } from "./sim/retroField";
 import { endzoneFor } from "./sim/endzone";
 import { MIDFIELD_ART } from "./sim/midfield";
 import type { WeatherLike } from "./weatherFx";
@@ -30,6 +30,9 @@ export function FieldArt({ id, home, hc, badge }: { id: string; home: Side; away
   const ezPicture = retroFieldSrc(home.logoId, nflGame ? "NFL" : "CFB");
   const fieldConf = nflGame ? "NFL" : home.conf && home.conf !== "Independent" ? home.conf : null;
   const midArt = !badge?.src && home.logoId ? MIDFIELD_ART[home.logoId] : undefined;
+  // a team whose picture is the whole field (Kansas State) shows that picture as the field, exactly as it is
+  const wholeField = nflGame ? null : fullFieldSrc(home.logoId, "CFB");
+  if (wholeField) return <image href={wholeField} data-full-field={home.logoId} x="0" y="0" width="120" height="40" preserveAspectRatio="none" />;
   return (
     <>
         <defs>
