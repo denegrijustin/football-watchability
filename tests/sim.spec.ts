@@ -141,6 +141,7 @@ test("the simulator names real players with ESPN and the server function both un
 });
 
 import { contrast, endzoneFor } from "../src/sim/endzone";
+import { retroFieldSrc } from "../src/sim/retroField";
 
 test("end zones: each known program's look, and a readable default for everyone else", () => {
   const ten = endzoneFor({ short: "Tennessee", color: "#4b2e83" });
@@ -402,4 +403,9 @@ test("the SP+ ratings table shows each team's Off, Def and ST as a rank, with th
   for (const c of info.cells) expect(c.text).toMatch(/^#\d+$/);
   expect(info.cells.some((c) => /rating -?\d/.test(c.title))).toBe(true);
   void shadow;
+});
+
+test("Kansas State plays on its painted field (purple end zones, white border, K-STATE in italic), not a photo of one", () => {
+  expect(retroFieldSrc("kansas-state", "CFB")).toBeNull();
+  expect(retroFieldSrc("kansas", "CFB")).toBe("/field-art/cfb/kansas.webp"); // the others that have a picture still do
 });
