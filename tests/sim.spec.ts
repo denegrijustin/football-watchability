@@ -141,6 +141,7 @@ test("the simulator names real players with ESPN and the server function both un
 });
 
 import { contrast, endzoneFor } from "../src/sim/endzone";
+import { fullFieldSrc, retroFieldSrc } from "../src/sim/retroField";
 
 test("end zones: each known program's look, and a readable default for everyone else", () => {
   const ten = endzoneFor({ short: "Tennessee", color: "#4b2e83" });
@@ -402,4 +403,10 @@ test("the SP+ ratings table shows each team's Off, Def and ST as a rank, with th
   for (const c of info.cells) expect(c.text).toMatch(/^#\d+$/);
   expect(info.cells.some((c) => /rating -?\d/.test(c.title))).toBe(true);
   void shadow;
+});
+
+test("Kansas State plays on a picture of its own field, shown whole at halftime; a team with only end zones is not", () => {
+  expect(retroFieldSrc("kansas-state", "CFB")).toBe("/field-art/cfb/kansas-state.webp");
+  expect(fullFieldSrc("kansas-state", "CFB")).toBe("/field-art/cfb/kansas-state.webp");
+  expect(fullFieldSrc("kansas", "CFB")).toBeNull(); // Kansas has a picture, but its end zones only
 });

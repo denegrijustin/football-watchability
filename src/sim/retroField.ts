@@ -7,3 +7,11 @@ export const RETRO_FIELDS: ReadonlySet<string> = new Set(["arizona-cardinals", "
 export const CFB_FIELDS: ReadonlySet<string> = new Set(["alabama", "arizona", "arizona-state", "arkansas", "auburn", "baylor", "byu", "cincinnati", "colorado", "east-carolina", "florida", "florida-atlantic", "georgia", "houston", "iowa-state", "kansas", "kansas-state", "kentucky", "missouri", "oklahoma-state", "ole-miss", "south-carolina", "southern-miss", "tcu", "texas-a-m", "texas-tech", "ucf", "utah", "vanderbilt", "west-virginia"]);
 export const retroFieldSrc = (logoId: string | undefined, league: "NFL" | "CFB" = "NFL"): string | null =>
   logoId && (league === "NFL" ? RETRO_FIELDS : CFB_FIELDS).has(logoId) ? `/field-art/${league === "NFL" ? "nfl" : "cfb"}/${logoId}.webp` : null;
+
+/**
+ * Teams whose picture is the whole field as it should look, turf, lines, numbers, midfield logo and conference marks included (Kansas State's, taken from the
+ * picture of its field). Where a team is in this set the halftime show draws the picture as the field instead of painting a field in code around its end zones.
+ */
+export const FULL_FIELD_ART: ReadonlySet<string> = new Set(["kansas-state"]);
+export const fullFieldSrc = (logoId: string | undefined, league: "NFL" | "CFB" = "CFB"): string | null =>
+  logoId && FULL_FIELD_ART.has(logoId) ? retroFieldSrc(logoId, league) : null;

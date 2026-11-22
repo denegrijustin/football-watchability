@@ -1,6 +1,6 @@
 import { test, expect } from "./fixtures";
 import { openOutlook } from "./helpers/outlook";
-import { hasCfbGame, NO_CFB } from "./helpers/slate";
+import { cfbToPlay, hasCfbGame, NO_CFB, NO_CFB_TO_PLAY } from "./helpers/slate";
 import { stubFinals } from "./helpers/finals";
 
 test.beforeEach(async ({ page }) => { await stubFinals(page); });
@@ -8,6 +8,7 @@ test.beforeEach(async ({ page }) => { await stubFinals(page); });
 for (const [lg, label] of [["NFL", "NFL"], ["CFB", "College"]] as const) {
   test(`the Picks tab puts the ${label} spread picks, over/under picks and parlays one tap from the board`, async ({ page }) => {
     test.skip(lg === "CFB" && !hasCfbGame(), NO_CFB);
+    test.skip(lg === "CFB" && cfbToPlay() < 1, NO_CFB_TO_PLAY);
     await page.goto(`/?league=${lg}`);
     await page.locator('.site-nav [data-tab="picks"]').click();
     await expect(page.getByRole("group", { name: "League" }).getByRole("button", { name: label, exact: true })).toHaveAttribute("aria-pressed", "true");

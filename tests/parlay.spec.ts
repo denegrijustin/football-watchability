@@ -1,5 +1,5 @@
 import { test, expect } from "./fixtures";
-import { hasCfbGame, NO_CFB } from "./helpers/slate";
+import { hasCfbGame, NO_CFB, cfbToPlay, NO_CFB_TO_PLAY } from "./helpers/slate";
 import { stubFinals } from "./helpers/finals";
 import { american, byGame, evaluate, recommend, type Leg } from "../src/parlay";
 import { coverRule, ratingsMargin, strengthOf } from "../src/livePicks";
@@ -40,6 +40,7 @@ test("a pick says what has to happen, what the ratings expect and how strong it 
 for (const [lg, name] of [["NFL", "NFL"], ["CFB", "College"]] as const) {
   test(`the Parlays tab builds slips of two to four legs and lists the games (${name})`, async ({ page }) => {
     test.skip(!hasCfbGame(), NO_CFB);
+    test.skip(lg === "CFB" && cfbToPlay() < 4, NO_CFB_TO_PLAY); // (the 2, 3 and 4-leg slips need four games still to play)
     await stubFinals(page);
     await page.goto(`/?league=${lg}`);
     await page.locator('.site-nav [data-tab="picks"]').click();
