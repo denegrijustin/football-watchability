@@ -66,7 +66,7 @@ test("the logo and channel number are links that open elsewhere and leave the ca
 
   test.skip(!hasCfbGame(), NO_CFB);
   await page.goto("/?league=CFB");
-  const card = page.locator(".game-card:not(.final)").filter({ has: page.locator("a.net-link[data-kind='espn']") }).filter({ has: page.locator(".ch-num") }).first(); // (an ESPN game with a DIRECTV number)
+  const card = page.locator(".game-card:not(.final)").filter({ has: page.locator("a.net-link[data-kind='espn']") }).first();
   const espnChip = card.locator("a.net-link[data-kind='espn']").first();
   await expect(espnChip).toBeAttached();
   await expect(espnChip).toHaveAttribute("href", /^https:\/\/www\.espn\.com\/college-football\/game\/_\/gameId\/\d+$/);
@@ -94,8 +94,10 @@ test.describe("on a phone", () => {
 
     test.skip(!hasCfbGame(), NO_CFB);
     await page.goto("/?league=CFB");
-    const card = page.locator(".game-card:not(.final)").filter({ has: page.locator("a.net-link[data-kind='espn']") }).first();
+    const card = page.locator(".game-card:not(.final)").filter({ has: page.locator("a.net-link[data-kind='espn']") }).filter({ has: page.locator(".ch-num") }).first(); // (an ESPN game that also has a DIRECTV number)
     await page.evaluate(() => { (window as any).__nav = []; window.open = () => null; });
+    // (the app is taken to open, so the page counts as hidden and the timed fall-back to the web page does not navigate away in the middle of the test, however slow the machine)
+    await page.evaluate(() => Object.defineProperty(document, "hidden", { configurable: true, get: () => true }));
     // The app address is attempted in a hidden frame; the page itself does not navigate yet.
     await card.locator("a.net-link[data-kind='espn']").first().evaluate((a) => (a as HTMLAnchorElement).click());
     const frame = page.locator("iframe[data-app-link]");
