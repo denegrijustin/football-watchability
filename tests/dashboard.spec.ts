@@ -580,8 +580,10 @@ test("Insanity tab ranks the week and season for NFL and college", async ({ page
 
 test("Key players show photo, name, position and team for every upcoming game", async ({ page }) => {
   for (const g of slate.games) {
-    const players = g.history.boxes.find((b: any) => /Key players/.test(b.label))?.players ?? [];
-    expect(players.length, g.matchup).toBeGreaterThan(0);
+    const box = g.history.boxes.find((b: any) => /Key players/.test(b.label));
+    const players = box?.players ?? [];
+    // a game with no player leaders yet (a team with no games in the stats) lists its units instead ("Arkansas State offense"), so the box is never empty
+    expect(players.length + (players.length ? 0 : (box?.items ?? []).length), g.matchup).toBeGreaterThan(0);
     for (const p of players) {
       expect(p.name, g.matchup).toBeTruthy();
       expect(p.logoId, g.matchup).toBeTruthy();
