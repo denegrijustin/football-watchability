@@ -65,7 +65,8 @@ export function FinalScores({ tiles, open }: { tiles: Tile[]; open: boolean }) {
                 {t.teams.map((tm, i) => (
                   <span key={i} className={`fs-row${w === i ? " won" : w === -1 ? "" : " lost"}`}>
                     <TeamOpen className="img" team={{ league: t.league, name: tm.name, abbr: tm.abbr }}><img src={logos[tm.logoId]} alt="" width="16" height="16" loading="lazy" decoding="async" /></TeamOpen>
-                    {tm.fpi != null && <small className="fs-fpi" title={`ESPN FPI rank ${tm.fpi}`}>{tm.fpi}</small>}
+                    {/* the rank column is always there (empty for a team with no FPI rank, an FCS side for one) so the columns of every tile line up */}
+                    <small className="fs-fpi" title={tm.fpi != null ? `ESPN FPI rank ${tm.fpi}` : undefined} aria-hidden={tm.fpi == null ? true : undefined}>{tm.fpi ?? ""}</small>
                     <TeamOpen className="fs-abbr" team={{ league: t.league, name: tm.name, abbr: tm.abbr }}>{tm.abbr}</TeamOpen>
                     <b>{tm.score}</b>
                   </span>

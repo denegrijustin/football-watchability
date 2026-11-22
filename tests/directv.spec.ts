@@ -66,7 +66,7 @@ test("the logo and channel number are links that open elsewhere and leave the ca
 
   test.skip(!hasCfbGame(), NO_CFB);
   await page.goto("/?league=CFB");
-  const card = page.locator(".game-card:not(.final)").filter({ has: page.locator("a.net-link[data-kind='espn']") }).first();
+  const card = page.locator(".game-card:not(.final)").filter({ has: page.locator("a.net-link[data-kind='espn']") }).filter({ has: page.locator(".ch-num") }).first(); // (an ESPN game with a DIRECTV number)
   const espnChip = card.locator("a.net-link[data-kind='espn']").first();
   await expect(espnChip).toBeAttached();
   await expect(espnChip).toHaveAttribute("href", /^https:\/\/www\.espn\.com\/college-football\/game\/_\/gameId\/\d+$/);
